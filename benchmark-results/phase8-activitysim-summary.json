@@ -1,0 +1,330 @@
+{
+  "phase": "8A",
+  "date": "2026-08-11",
+  "hardware": {
+    "gpu": "NVIDIA RTX A4000 16 GB",
+    "nvidia_driver": "571.59",
+    "logical_cpus": 48,
+    "ram_gb": 63.9,
+    "operating_system": "Windows"
+  },
+  "software": {
+    "activitysim_commit": "16ab11180a26912987eb902daf945e268f3efc11",
+    "activitysim_version": "1000.dev1+g16ab11180",
+    "python": "3.11.14",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "cupy": "14.1.1",
+    "cuda_runtime": "12.9"
+  },
+  "benchmark": {
+    "workflow": "ActivitySim sharrow-contrast/mtc_mini",
+    "dataset": "public prototype_mtc_sf",
+    "households": 50000,
+    "zones": 190,
+    "design": "interleaved fresh-process A1/B1/A2/B2/A3/B3",
+    "baseline": "pinned current ActivitySim; Sharrow required",
+    "optimized": "baseline plus explicit ChoiceForge scheduling and destination overlays",
+    "openblas_threads": 24
+  },
+  "metrics": {
+    "all_models": {
+      "baseline_seconds": [
+        155.19,
+        147.225,
+        146.863
+      ],
+      "optimized_seconds": [
+        133.41,
+        131.812,
+        131.384
+      ],
+      "baseline_median_seconds": 147.225,
+      "optimized_median_seconds": 131.812,
+      "median_seconds_saved": 15.412999999999982,
+      "speedup": 1.1169316905896276,
+      "paired_seconds_saved": [
+        21.78,
+        15.412999999999982,
+        15.479000000000013
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.1008395172775653
+    },
+    "scheduling_suite": {
+      "baseline_seconds": [
+        30.4,
+        30.1,
+        29.9
+      ],
+      "optimized_seconds": [
+        24.4,
+        23.7,
+        23.7
+      ],
+      "baseline_median_seconds": 30.1,
+      "optimized_median_seconds": 23.7,
+      "median_seconds_saved": 6.400000000000002,
+      "speedup": 1.270042194092827,
+      "paired_seconds_saved": [
+        6.0,
+        6.400000000000002,
+        6.199999999999999
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.2254098360655739
+    },
+    "mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        20.4,
+        20.5,
+        20.4
+      ],
+      "optimized_seconds": [
+        17.3,
+        17.1,
+        17.0
+      ],
+      "baseline_median_seconds": 20.4,
+      "optimized_median_seconds": 17.1,
+      "median_seconds_saved": 3.299999999999997,
+      "speedup": 1.1929824561403506,
+      "paired_seconds_saved": [
+        3.099999999999998,
+        3.3999999999999986,
+        3.3999999999999986
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.1791907514450866
+    },
+    "joint_tour_scheduling": {
+      "baseline_seconds": [
+        1.0,
+        0.9,
+        0.9
+      ],
+      "optimized_seconds": [
+        0.8,
+        0.7,
+        0.7
+      ],
+      "baseline_median_seconds": 0.9,
+      "optimized_median_seconds": 0.7,
+      "median_seconds_saved": 0.20000000000000007,
+      "speedup": 1.2857142857142858,
+      "paired_seconds_saved": [
+        0.19999999999999996,
+        0.20000000000000007,
+        0.20000000000000007
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.125
+    },
+    "non_mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        7.8,
+        7.6,
+        7.5
+      ],
+      "optimized_seconds": [
+        5.4,
+        5.1,
+        5.2
+      ],
+      "baseline_median_seconds": 7.6,
+      "optimized_median_seconds": 5.2,
+      "median_seconds_saved": 2.3999999999999995,
+      "speedup": 1.4615384615384615,
+      "paired_seconds_saved": [
+        2.3999999999999995,
+        2.5,
+        2.3
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.3888888888888888
+    },
+    "atwork_subtour_scheduling": {
+      "baseline_seconds": [
+        1.2,
+        1.1,
+        1.1
+      ],
+      "optimized_seconds": [
+        0.9,
+        0.8,
+        0.8
+      ],
+      "baseline_median_seconds": 1.1,
+      "optimized_median_seconds": 0.8,
+      "median_seconds_saved": 0.30000000000000004,
+      "speedup": 1.375,
+      "paired_seconds_saved": [
+        0.29999999999999993,
+        0.30000000000000004,
+        0.30000000000000004
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.2222222222222223
+    },
+    "trip_destination": {
+      "baseline_seconds": [
+        35.1,
+        30.9,
+        30.9
+      ],
+      "optimized_seconds": [
+        21.9,
+        21.8,
+        21.6
+      ],
+      "baseline_median_seconds": 30.9,
+      "optimized_median_seconds": 21.8,
+      "median_seconds_saved": 9.099999999999998,
+      "speedup": 1.4174311926605503,
+      "paired_seconds_saved": [
+        13.200000000000003,
+        9.099999999999998,
+        9.299999999999997
+      ],
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.4109589041095891
+    }
+  },
+  "correctness": {
+    "reference": "phase8-ab-a1",
+    "checked_trials": [
+      "phase8-ab-a1",
+      "phase8-ab-a2",
+      "phase8-ab-a3",
+      "phase8-ab-b1",
+      "phase8-ab-b2",
+      "phase8-ab-b3"
+    ],
+    "byte_identical_substantive_files": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv",
+      "final_trips.csv"
+    ],
+    "file_count": 7,
+    "sha256": {
+      "final_accessibility.csv": "dba5fcef7311ee3b483d98b9c1d485316872de4449af15bcae0d32b134a360e1",
+      "final_households.csv": "723e52f8ceb8b6938dd583c15cc085a2052d40b93fd970e16113410e03fb1c5f",
+      "final_joint_tour_participants.csv": "76b52258709dc766982bcd6d22ffaa44e0f9f9150379dc5e50b7a43aacf1bf37",
+      "final_land_use.csv": "d4b96f88d04bf98a661a85dc00e31ae0369d0e66c88ccff33ba0b86366828c06",
+      "final_persons.csv": "81afa11cc0be6972fec06fba9c08a0f22bd88cd7a3808f8ccfc4bd18fd781edd",
+      "final_tours.csv": "aab50bd12c28e4c9195ab579dc14cf6d0c76edcc78a44900c3d870d0b3539d94",
+      "final_trips.csv": "27f78bb4691189f3700b4e247a2029d40a00f0000775a193c857405fa9fb9cfb"
+    },
+    "rows": {
+      "final_households.csv": 50000,
+      "final_persons.csv": 111130,
+      "final_tours.csv": 142761,
+      "final_trips.csv": 350751
+    },
+    "checkpoint_csv_excluded_reason": "contains run timing metadata"
+  },
+  "real_boundary_telemetry": {
+    "phase8-ab-b1": {
+      "scheduling_calls": 16,
+      "scheduling_rows": 21045645,
+      "largest_scheduling_call": {
+        "rows": 9561750,
+        "choosers": 50325,
+        "compact_mb": 327.92,
+        "gpu_ms": 389.061,
+        "total_ms": 3246.986
+      },
+      "destination_batches": [
+        {
+          "purposes": 10,
+          "rows": 2381612,
+          "preprocessor_ms": 4829.683,
+          "total_ms": 14105.336
+        },
+        {
+          "purposes": 10,
+          "rows": 605782,
+          "preprocessor_ms": 1005.672,
+          "total_ms": 3975.228
+        },
+        {
+          "purposes": 10,
+          "rows": 198736,
+          "preprocessor_ms": 397.04,
+          "total_ms": 2731.729
+        }
+      ]
+    },
+    "phase8-ab-b2": {
+      "scheduling_calls": 16,
+      "scheduling_rows": 21045645,
+      "largest_scheduling_call": {
+        "rows": 9561750,
+        "choosers": 50325,
+        "compact_mb": 327.92,
+        "gpu_ms": 424.513,
+        "total_ms": 3286.049
+      },
+      "destination_batches": [
+        {
+          "purposes": 10,
+          "rows": 2381612,
+          "preprocessor_ms": 4818.299,
+          "total_ms": 13958.574
+        },
+        {
+          "purposes": 10,
+          "rows": 605782,
+          "preprocessor_ms": 985.172,
+          "total_ms": 3965.237
+        },
+        {
+          "purposes": 10,
+          "rows": 198736,
+          "preprocessor_ms": 402.351,
+          "total_ms": 2783.452
+        }
+      ]
+    },
+    "phase8-ab-b3": {
+      "scheduling_calls": 16,
+      "scheduling_rows": 21045645,
+      "largest_scheduling_call": {
+        "rows": 9561750,
+        "choosers": 50325,
+        "compact_mb": 327.92,
+        "gpu_ms": 410.728,
+        "total_ms": 3305.406
+      },
+      "destination_batches": [
+        {
+          "purposes": 10,
+          "rows": 2381612,
+          "preprocessor_ms": 4810.223,
+          "total_ms": 13902.225
+        },
+        {
+          "purposes": 10,
+          "rows": 605782,
+          "preprocessor_ms": 972.744,
+          "total_ms": 3915.271
+        },
+        {
+          "purposes": 10,
+          "rows": 198736,
+          "preprocessor_ms": 411.181,
+          "total_ms": 2738.847
+        }
+      ]
+    }
+  },
+  "notes": [
+    "ActivitySim's own component and whole-model timers are used; no setup cost is subtracted.",
+    "The GPU timings include host preparation, transfers, kernel execution, result mapping, and conservative fallbacks.",
+    "The official 500-household compile pass is reported separately and excluded from warmed A/B timings."
+  ]
+}

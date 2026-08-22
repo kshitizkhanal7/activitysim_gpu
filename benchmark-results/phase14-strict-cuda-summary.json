@@ -1,0 +1,52 @@
+{
+  "activitysim_authoritative": true,
+  "alternatives_per_batch": 21,
+  "batches": 30,
+  "benchmark": "public Prototype MTC Extended generated strict-IR CUDA real-batch gate",
+  "compiled_calls": 10,
+  "conclusion": "The generated strict-IR CUDA target matched the strict CPU oracle exactly for every feature and utility cell in every real batch. Timings are diagnostic because input packing and feature downloads remain qualification scaffolding.",
+  "exact_batches": 30,
+  "exact_feature_cells": 32262754,
+  "exact_utility_cells": 1787646,
+  "feature_cells": 32262754,
+  "households": 1001,
+  "ir_hashes": [
+    "2af42e9ed01030d6248a0067280033ae0f521b56109e7f2fad6475f9c6488264",
+    "3df86a48d358e3003b7653c0189ed01e6b721625c84848ab8e25a1f8e5c883ec",
+    "3dfd7c340ed3af1a75efd90d819b5f8e24e5c393ae924a4c3ff5f18ead3c6d1d",
+    "41e44d3a0dda11c03cdc15b95f1f78459b8f0004e21859eea0156f1786bc1a98",
+    "480ee107a3e5aca0ec9a2fa901e89a5536db696fd21031aa08c28469112fc648",
+    "877157577ed5c5a8272f86423f14f9480690a26549cd42920cd0f9bb78c0b3ec",
+    "9dab7922d4ba98fae78129bead5b6c77145dd6b79b853de0d729ee669d40a62e",
+    "a154f6fdb74d8a55451b4e0fb4f067d1edac6f3f648cd992808d292070a55e0a",
+    "e5e8a5a123e84867b0c7d442bccda87a0198a57f8ffe229e55ee61f318931018",
+    "ee488de1b582d1ebc869f080c05e06069a47a5fd0099b85c600ae2fa050f4f59"
+  ],
+  "kernel_cache_keys": [
+    "2af42e9ed01030d6248a0067280033ae0f521b56109e7f2fad6475f9c6488264:79849bf1d5abbacdacf7834e3a4178b27b45f4231789df1adc336e1cec5e5193",
+    "3df86a48d358e3003b7653c0189ed01e6b721625c84848ab8e25a1f8e5c883ec:4013baeaed0008b49d7e857ef9e9738a5c864c9d7dca1f00575c5cc334ce28e2",
+    "3dfd7c340ed3af1a75efd90d819b5f8e24e5c393ae924a4c3ff5f18ead3c6d1d:c4594dee700df8ed170b4e524d8e9ab8fc722d2e5c0eee05da496937a58af351",
+    "41e44d3a0dda11c03cdc15b95f1f78459b8f0004e21859eea0156f1786bc1a98:4674df5767801f11fd9a05d321b9219213849b0bd77fdaad35741f598185e15a",
+    "480ee107a3e5aca0ec9a2fa901e89a5536db696fd21031aa08c28469112fc648:ea83510817eb6b07d67b7fead52f475037bf2dffa3587f8c9c79612cfdf9ed6d",
+    "877157577ed5c5a8272f86423f14f9480690a26549cd42920cd0f9bb78c0b3ec:e36bace2a318e87894627add00f6ba5d10aa77b383d2313e9a429162bac73495",
+    "9dab7922d4ba98fae78129bead5b6c77145dd6b79b853de0d729ee669d40a62e:a4aa39ad396413b62b53ec001d7b90c872fb6f88f916b359e5c44c2844296e2b",
+    "a154f6fdb74d8a55451b4e0fb4f067d1edac6f3f648cd992808d292070a55e0a:9f6016d12a9e8013b031773d593a4252fe995c3c9dc454d5278d797debf27608",
+    "e5e8a5a123e84867b0c7d442bccda87a0198a57f8ffe229e55ee61f318931018:be41dccec3b9649b8cc9c69cb25a42c97ae0c761e175ad43c1c63b8261b1d046",
+    "ee488de1b582d1ebc869f080c05e06069a47a5fd0099b85c600ae2fa050f4f59:4626194b16ed121a8218db0dc118262301d8b29e9ed5156f72f57f31b93d8a49"
+  ],
+  "kernel_source_sha256": [
+    "63d16a939dd62c9c8da2ae0d8cbd0ee9bfd5bfaa828932ee32820460c65b2fa4"
+  ],
+  "max_feature_abs": 0.0,
+  "max_utility_abs": 0.0,
+  "phase": 14,
+  "report_tree_sha256": "6b84ae838c67b2d4077321124a6a1ff3e6d7ee5fa6375908f5a32a18b68f80e2",
+  "rows": 85126,
+  "terms_per_batch": 379,
+  "timing_diagnostic_only": {
+    "median_device_to_host_ms": 1.5928999928291887,
+    "median_host_to_device_ms": 116.15699998219498,
+    "median_kernel_ms": 5.8680999936768785
+  },
+  "utility_cells": 1787646
+}

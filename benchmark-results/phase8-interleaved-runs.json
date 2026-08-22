@@ -1,0 +1,62 @@
+{
+  "phase": "8A",
+  "design": "interleaved fresh-process A1/B1/A2/B2/A3/B3",
+  "baseline": "pinned current ActivitySim with Sharrow required",
+  "optimized": "baseline plus explicit ChoiceForge scheduling and destination overlays",
+  "runs": [
+    {
+      "name": "phase8-ab-a1",
+      "condition": "a",
+      "households": 50000,
+      "started": "2026-08-11T13:46:00.3853122-04:00",
+      "finished": "2026-08-11T13:48:40.4008296-04:00",
+      "wall_seconds": 160.0155174,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-a1"
+    },
+    {
+      "name": "phase8-ab-b1",
+      "condition": "b",
+      "households": 50000,
+      "started": "2026-08-11T13:48:40.4113063-04:00",
+      "finished": "2026-08-11T13:50:59.4325975-04:00",
+      "wall_seconds": 139.0212912,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-b1"
+    },
+    {
+      "name": "phase8-ab-a2",
+      "condition": "a",
+      "households": 50000,
+      "started": "2026-08-11T13:50:59.4346120-04:00",
+      "finished": "2026-08-11T13:53:31.4552728-04:00",
+      "wall_seconds": 152.0206608,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-a2"
+    },
+    {
+      "name": "phase8-ab-b2",
+      "condition": "b",
+      "households": 50000,
+      "started": "2026-08-11T13:53:31.4563734-04:00",
+      "finished": "2026-08-11T13:55:48.4646508-04:00",
+      "wall_seconds": 137.0082774,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-b2"
+    },
+    {
+      "name": "phase8-ab-a3",
+      "condition": "a",
+      "households": 50000,
+      "started": "2026-08-11T13:55:48.4655729-04:00",
+      "finished": "2026-08-11T13:58:20.5030122-04:00",
+      "wall_seconds": 152.0374393,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-a3"
+    },
+    {
+      "name": "phase8-ab-b3",
+      "condition": "b",
+      "households": 50000,
+      "started": "2026-08-11T13:58:20.5042104-04:00",
+      "finished": "2026-08-11T14:00:37.5321239-04:00",
+      "wall_seconds": 137.0279135,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase8-mtc-mini\\prototype_mtc_sf\\output-phase8-ab-b3"
+    }
+  ]
+}

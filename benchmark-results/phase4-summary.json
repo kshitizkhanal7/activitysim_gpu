@@ -1,0 +1,75 @@
+{
+  "phase": 4,
+  "date": "2026-08-11",
+  "hardware": "NVIDIA RTX A4000 16 GB",
+  "software": {
+    "activitysim": "1.4.0",
+    "backend": "ChoiceForge compact CUDA"
+  },
+  "boundary": "ActivitySim mandatory_tour_scheduling workflow component",
+  "trials": 3,
+  "baseline_cached_sharrow_seconds": [
+    8.763,
+    8.599,
+    8.512
+  ],
+  "choiceforge_seconds": [
+    8.193,
+    8.014,
+    7.818
+  ],
+  "baseline_median_seconds": 8.599,
+  "choiceforge_median_seconds": 8.014,
+  "whole_component_speedup": 1.072997254804093,
+  "normal_full_run_trials": {
+    "cached_sharrow_seconds": [
+      5.775,
+      5.502,
+      5.515
+    ],
+    "choiceforge_seconds": [
+      4.934,
+      4.925,
+      4.888
+    ],
+    "cached_sharrow_median_seconds": 5.515,
+    "choiceforge_median_seconds": 4.925,
+    "whole_component_speedup": 1.1197969543147208,
+    "final_tour_rows": 9806,
+    "max_mismatches": {
+      "tdd": 0,
+      "start": 0,
+      "end": 0,
+      "duration": 0,
+      "destination_logsum": 0,
+      "mode_choice_logsum": 0
+    }
+  },
+  "correctness": {
+    "mandatory_tours": 4477,
+    "max_mismatches_across_choiceforge_trials": {
+      "tdd": 0,
+      "start": 0,
+      "end": 0,
+      "duration": 0
+    }
+  },
+  "largest_batch_median_stage_ms": {
+    "stateful_ms": 330.579,
+    "pack_ms": 15.753,
+    "rng_ms": 17.418,
+    "gpu_ms": 394.956,
+    "map_ms": 0.194,
+    "total_ms": 757.152
+  },
+  "largest_batch": {
+    "choosers": 3381,
+    "interaction_rows": 642390,
+    "compact_mb": 22.033
+  },
+  "notes": [
+    "Each trial restores the identical mandatory_tour_frequency checkpoint and cached Sharrow assets.",
+    "The timer includes mode-choice logsums, compact state extraction, packing, ActivitySim RNG, host-device transfers, GPU execution, pandas mapping, and timetable updates.",
+    "ChoiceForge compilation/context initialization remains inside each fresh-process component trial; it is not hidden."
+  ]
+}

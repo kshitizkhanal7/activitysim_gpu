@@ -1,0 +1,31 @@
+{
+  "phase": "10A",
+  "status": "stopped_intentionally",
+  "scope": {
+    "households": 50000,
+    "zones": 1454,
+    "dataset": "Prototype MTC Extended public full geography"
+  },
+  "settings": {
+    "precision_guard": "shadow_fallback",
+    "chunk_size_bytes": 8000000000,
+    "chunk_training_mode": "training"
+  },
+  "scheduling_guard": {
+    "batches_compared": 30,
+    "mismatched_batches": 3,
+    "mismatched_choices": 3,
+    "fallback_behavior": "Restored ActivitySim RNG offsets and returned ActivitySim choices for each mismatched batch."
+  },
+  "resource_observations": {
+    "private_memory_gb_observed_range": [20, 25.13],
+    "trip_destination_seconds": 723.375,
+    "termination_elapsed_minutes_approx": 40,
+    "termination_reason": "Generic capped chunking made trip scheduling retry processing operationally too slow; completion would not produce a valid GPU performance result."
+  },
+  "claim_policy": {
+    "final_hash_comparison_complete": false,
+    "performance_claim_allowed": false,
+    "correctness_finding": "The experimental GPU scheduler has real near-boundary disagreements and requires a fallback or higher-precision implementation."
+  }
+}

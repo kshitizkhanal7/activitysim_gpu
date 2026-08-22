@@ -1,0 +1,389 @@
+{
+  "phase": "11A",
+  "manifest": "benchmark-results\\phase9-mtc-full-p11f50-runs.json",
+  "benchmark": {
+    "benchmark": "public Prototype MTC extended full geography",
+    "full_population_households": 2875192,
+    "zones": 1454,
+    "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+    "design": "interleaved fresh-process A1/B1/A2/B2/A3/B3 design with repeated baseline and ChoiceForge trials",
+    "reproducibility": {
+      "activitysim_commit": "16ab11180a26912987eb902daf945e268f3efc11",
+      "activitysim_patch_sha256": "aa2eed95d99fe4853365b9ed49427722ac467ef928013ccf7944fd9eda0e04e2",
+      "environment_lock_sha256": "84b97738100cd4b8c405af50ff823cdddf4a33f5f203deab7839e4a8739a3adc",
+      "python": "Python 3.11.14 (main, Dec  9 2025, 18:59:10) [MSC v.1944 64 bit (AMD64)]",
+      "gpu": "NVIDIA RTX A4000, 571.59, 16376 MiB",
+      "base_config_sha256": "38f0b343f569bd69d51ef4595a4441115524f4f13bc0e20fde1b855e56d18c2c",
+      "shared_config_sha256": null,
+      "choiceforge_overlay_sha256": "e036373ae155455994d3ce9f73aa62c6344057b12f9b645af1cbd556b2da4506",
+      "additional_choiceforge_overlay_sha256": null
+    }
+  },
+  "runs": [
+    {
+      "name": "phase9-p11f50-baseline-50000-hh-1",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-17T10:05:06.9442292-04:00",
+      "finished": "2026-08-17T10:08:35.5167306-04:00",
+      "wall_seconds": 208.5725014,
+      "launcher_peak_working_set_bytes": 5939200,
+      "launcher_peak_private_bytes": 987136,
+      "gpu_samples": 191,
+      "gpu_peak_utilization_percent": 28.0,
+      "gpu_mean_utilization_percent": 0.680628272251309,
+      "gpu_peak_memory_mib": 1406.0,
+      "all_models": 202.403,
+      "activitysim_high_water_rss_bytes": 8365998080,
+      "activitysim_high_water_uss_bytes": 1765961728,
+      "scheduling_suite": 36.6,
+      "mandatory_tour_scheduling": 24.1,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 39.5
+    },
+    {
+      "name": "phase9-p11f50-choiceforge-50000-hh-1",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-17T10:08:35.5587951-04:00",
+      "finished": "2026-08-17T10:11:52.6566924-04:00",
+      "wall_seconds": 197.0978973,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 995328,
+      "gpu_samples": 181,
+      "gpu_peak_utilization_percent": 19.0,
+      "gpu_mean_utilization_percent": 0.5911602209944752,
+      "gpu_peak_memory_mib": 1996.0,
+      "all_models": 190.231,
+      "activitysim_high_water_rss_bytes": 8720056320,
+      "activitysim_high_water_uss_bytes": 2136813568,
+      "scheduling_suite": 36.4,
+      "mandatory_tour_scheduling": 23.9,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.6,
+      "atwork_subtour_scheduling": 1.5,
+      "trip_destination": 28.6
+    },
+    {
+      "name": "phase9-p11f50-baseline-50000-hh-2",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-17T10:11:52.6858705-04:00",
+      "finished": "2026-08-17T10:15:21.1108069-04:00",
+      "wall_seconds": 208.4249364,
+      "launcher_peak_working_set_bytes": 5939200,
+      "launcher_peak_private_bytes": 983040,
+      "gpu_samples": 191,
+      "gpu_peak_utilization_percent": 54.0,
+      "gpu_mean_utilization_percent": 0.93717277486911,
+      "gpu_peak_memory_mib": 1403.0,
+      "all_models": 202.492,
+      "activitysim_high_water_rss_bytes": 8410255360,
+      "activitysim_high_water_uss_bytes": 1810194432,
+      "scheduling_suite": 36.9,
+      "mandatory_tour_scheduling": 24.2,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.7,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 39.7
+    },
+    {
+      "name": "phase9-p11f50-choiceforge-50000-hh-2",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-17T10:15:21.1392050-04:00",
+      "finished": "2026-08-17T10:18:38.0630584-04:00",
+      "wall_seconds": 196.9238534,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 991232,
+      "gpu_samples": 181,
+      "gpu_peak_utilization_percent": 52.0,
+      "gpu_mean_utilization_percent": 0.9060773480662984,
+      "gpu_peak_memory_mib": 1996.0,
+      "all_models": 190.38,
+      "activitysim_high_water_rss_bytes": 8743960576,
+      "activitysim_high_water_uss_bytes": 2160861184,
+      "scheduling_suite": 36.4,
+      "mandatory_tour_scheduling": 23.7,
+      "joint_tour_scheduling": 1.7,
+      "non_mandatory_tour_scheduling": 9.5,
+      "atwork_subtour_scheduling": 1.5,
+      "trip_destination": 28.4
+    },
+    {
+      "name": "phase9-p11f50-baseline-50000-hh-3",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-17T10:18:38.0899850-04:00",
+      "finished": "2026-08-17T10:22:06.8442408-04:00",
+      "wall_seconds": 208.7542558,
+      "launcher_peak_working_set_bytes": 5939200,
+      "launcher_peak_private_bytes": 978944,
+      "gpu_samples": 191,
+      "gpu_peak_utilization_percent": 34.0,
+      "gpu_mean_utilization_percent": 0.3403141361256545,
+      "gpu_peak_memory_mib": 1403.0,
+      "all_models": 202.502,
+      "activitysim_high_water_rss_bytes": 8761872384,
+      "activitysim_high_water_uss_bytes": 2178637824,
+      "scheduling_suite": 37.300000000000004,
+      "mandatory_tour_scheduling": 23.8,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 10.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 39.7
+    },
+    {
+      "name": "phase9-p11f50-choiceforge-50000-hh-3",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-17T10:22:06.8712471-04:00",
+      "finished": "2026-08-17T10:25:27.2964649-04:00",
+      "wall_seconds": 200.4252178,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 995328,
+      "gpu_samples": 184,
+      "gpu_peak_utilization_percent": 53.0,
+      "gpu_mean_utilization_percent": 0.44021739130434784,
+      "gpu_peak_memory_mib": 1996.0,
+      "all_models": 194.906,
+      "activitysim_high_water_rss_bytes": 8853233664,
+      "activitysim_high_water_uss_bytes": 2270007296,
+      "scheduling_suite": 37.300000000000004,
+      "mandatory_tour_scheduling": 24.6,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.6,
+      "atwork_subtour_scheduling": 1.7,
+      "trip_destination": 28.6
+    }
+  ],
+  "metrics": {
+    "all_models": {
+      "baseline_seconds": [
+        202.403,
+        202.492,
+        202.502
+      ],
+      "optimized_seconds": [
+        190.231,
+        190.38,
+        194.906
+      ],
+      "baseline_median_seconds": 202.492,
+      "optimized_median_seconds": 190.38,
+      "median_seconds_saved": 12.111999999999995,
+      "speedup": 1.063620128164723,
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.038464695802079,
+      "paired_seconds_saved": [
+        12.171999999999997,
+        12.111999999999995,
+        7.596000000000004
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        7.596000000000004,
+        12.171999999999997
+      ]
+    },
+    "scheduling_suite": {
+      "baseline_seconds": [
+        36.6,
+        36.9,
+        37.300000000000004
+      ],
+      "optimized_seconds": [
+        36.4,
+        36.4,
+        37.300000000000004
+      ],
+      "baseline_median_seconds": 36.9,
+      "optimized_median_seconds": 36.4,
+      "median_seconds_saved": 0.5,
+      "speedup": 1.0137362637362637,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9812332439678283,
+      "paired_seconds_saved": [
+        0.20000000000000284,
+        0.5,
+        0.0
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        0.0,
+        0.5
+      ]
+    },
+    "mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        24.1,
+        24.2,
+        23.8
+      ],
+      "optimized_seconds": [
+        23.9,
+        23.7,
+        24.6
+      ],
+      "baseline_median_seconds": 24.1,
+      "optimized_median_seconds": 23.9,
+      "median_seconds_saved": 0.20000000000000284,
+      "speedup": 1.0083682008368202,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9674796747967479,
+      "paired_seconds_saved": [
+        0.20000000000000284,
+        0.5,
+        -0.8000000000000007
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.8000000000000007,
+        0.5
+      ]
+    },
+    "joint_tour_scheduling": {
+      "baseline_seconds": [
+        1.4,
+        1.4,
+        1.4
+      ],
+      "optimized_seconds": [
+        1.4,
+        1.7,
+        1.4
+      ],
+      "baseline_median_seconds": 1.4,
+      "optimized_median_seconds": 1.4,
+      "median_seconds_saved": 0.0,
+      "speedup": 1.0,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.8235294117647058,
+      "paired_seconds_saved": [
+        0.0,
+        -0.30000000000000004,
+        0.0
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.30000000000000004,
+        0.0
+      ]
+    },
+    "non_mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        9.5,
+        9.7,
+        10.5
+      ],
+      "optimized_seconds": [
+        9.6,
+        9.5,
+        9.6
+      ],
+      "baseline_median_seconds": 9.7,
+      "optimized_median_seconds": 9.6,
+      "median_seconds_saved": 0.09999999999999964,
+      "speedup": 1.0104166666666667,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9895833333333334,
+      "paired_seconds_saved": [
+        -0.09999999999999964,
+        0.1999999999999993,
+        0.9000000000000004
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.09999999999999964,
+        0.9000000000000004
+      ]
+    },
+    "atwork_subtour_scheduling": {
+      "baseline_seconds": [
+        1.6,
+        1.6,
+        1.6
+      ],
+      "optimized_seconds": [
+        1.5,
+        1.5,
+        1.7
+      ],
+      "baseline_median_seconds": 1.6,
+      "optimized_median_seconds": 1.5,
+      "median_seconds_saved": 0.10000000000000009,
+      "speedup": 1.0666666666666667,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9411764705882354,
+      "paired_seconds_saved": [
+        0.10000000000000009,
+        0.10000000000000009,
+        -0.09999999999999987
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.09999999999999987,
+        0.10000000000000009
+      ]
+    },
+    "trip_destination": {
+      "baseline_seconds": [
+        39.5,
+        39.7,
+        39.7
+      ],
+      "optimized_seconds": [
+        28.6,
+        28.4,
+        28.6
+      ],
+      "baseline_median_seconds": 39.7,
+      "optimized_median_seconds": 28.6,
+      "median_seconds_saved": 11.100000000000001,
+      "speedup": 1.3881118881118881,
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.381118881118881,
+      "paired_seconds_saved": [
+        10.899999999999999,
+        11.300000000000004,
+        11.100000000000001
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        10.899999999999999,
+        11.300000000000004
+      ]
+    }
+  },
+  "correctness": {
+    "reference": "phase9-p11f50-baseline-50000-hh-1",
+    "checked_runs": [
+      "phase9-p11f50-baseline-50000-hh-1",
+      "phase9-p11f50-choiceforge-50000-hh-1",
+      "phase9-p11f50-baseline-50000-hh-2",
+      "phase9-p11f50-choiceforge-50000-hh-2",
+      "phase9-p11f50-baseline-50000-hh-3",
+      "phase9-p11f50-choiceforge-50000-hh-3"
+    ],
+    "byte_identical_substantive_files": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv",
+      "final_trips.csv"
+    ],
+    "sha256": {
+      "final_accessibility.csv": "ef2658d714e80e25a10638ae7ccd58c402e6cde7227eed811d5acd6e43077b22",
+      "final_households.csv": "a1b5e317e2f71326a699a3cae3e9b2e2b55a29d4290a143ad7432411983856ad",
+      "final_joint_tour_participants.csv": "f536b7c14abf7d6763e9356f38642352208b0e2d106f2d420d6aed5d64960008",
+      "final_land_use.csv": "608933cd2e3ce17ab19a17cfd6be7b780cad3206dcf85a664c9fbd3b7f33c192",
+      "final_persons.csv": "b18af5d8501b1b2003b69bd113e9a94dbfec22bd71e540711432d5a4377597c6",
+      "final_tours.csv": "5b291a61c8f99b44d5ab179dc58cd718547a607553151cfd2a3046dd359b5ad8",
+      "final_trips.csv": "4ba90e6c13947f7ed95af95fa859e10c0e24735b6f4b6645f60643d3e1d651fb"
+    },
+    "rows": {
+      "final_households.csv": 50000,
+      "final_persons.csv": 132536,
+      "final_tours.csv": 175579,
+      "final_trips.csv": 442682
+    },
+    "checkpoint_csv_excluded_reason": "contains run timing metadata"
+  }
+}

@@ -1,0 +1,38 @@
+﻿{
+    "phase":  "9A",
+    "benchmark":  "public Prototype MTC extended full geography",
+    "full_population_households":  2875192,
+    "zones":  1454,
+    "design":  "fresh-process baseline then ChoiceForge per repetition; not an interleaved superiority proof unless repetitions are increased",
+    "baseline":  "pinned current ActivitySim with Sharrow required",
+    "optimized":  "baseline plus explicit ChoiceForge trip-destination overlay; scheduling remains on ActivitySim",
+    "data_sha256":  "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+    "runs":  [
+                 {
+                     "name":  "phase9-f50-baseline-50000-hh-1",
+                     "condition":  "baseline",
+                     "households":  50000,
+                     "started":  "2026-08-17T08:25:01.6372739-04:00",
+                     "finished":  "2026-08-17T08:28:26.4360197-04:00",
+                     "wall_seconds":  204.79874579999998,
+                     "launcher_peak_working_set_bytes":  5189632,
+                     "launcher_peak_private_bytes":  917504,
+                     "output":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\output-phase9-f50-baseline-50000-hh-1",
+                     "stdout":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-f50-baseline-50000-hh-1.stdout.log",
+                     "stderr":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-f50-baseline-50000-hh-1.stderr.log"
+                 },
+                 {
+                     "name":  "phase9-f50-choiceforge-50000-hh-1",
+                     "condition":  "choiceforge",
+                     "households":  50000,
+                     "started":  "2026-08-17T08:28:26.4520093-04:00",
+                     "finished":  "2026-08-17T08:31:39.7801632-04:00",
+                     "wall_seconds":  193.3281539,
+                     "launcher_peak_working_set_bytes":  5189632,
+                     "launcher_peak_private_bytes":  921600,
+                     "output":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\output-phase9-f50-choiceforge-50000-hh-1",
+                     "stdout":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-f50-choiceforge-50000-hh-1.stdout.log",
+                     "stderr":  "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-f50-choiceforge-50000-hh-1.stderr.log"
+                 }
+             ]
+}

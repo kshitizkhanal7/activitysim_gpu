@@ -1,0 +1,95 @@
+{
+  "phase": "7E",
+  "date": "2026-08-11",
+  "hardware": "NVIDIA RTX A4000 16 GB",
+  "software": {
+    "activitysim": "1.4.0",
+    "sharrow": "required",
+    "cupy": "13.6.0"
+  },
+  "design": "interleaved A1/B1/A2/B2/A3/B3 fresh-process trials",
+  "baseline": "Phase 5 scheduling plus Phase 6 combined-direction destination logsums",
+  "optimized": "Phase 5 plus trip-number preprocessing batches and transfer-inclusive CUDA MTC21 nested-logit reduction",
+  "trip_destination": {
+    "baseline_seconds": [
+      12.125,
+      12.179,
+      12.187
+    ],
+    "optimized_seconds": [
+      10.254,
+      10.324,
+      10.281
+    ],
+    "baseline_median_seconds": 12.179,
+    "optimized_median_seconds": 10.281,
+    "median_seconds_saved": 1.8979999999999997,
+    "speedup": 1.184612391790682,
+    "paired_seconds_saved": [
+      1.8710000000000004,
+      1.8550000000000004,
+      1.9059999999999988
+    ],
+    "all_optimized_faster_than_all_baseline": true,
+    "worst_optimized_vs_best_baseline_speedup": 1.1744478884153429
+  },
+  "all_models": {
+    "baseline_seconds": [
+      54.459,
+      54.349,
+      54.859
+    ],
+    "optimized_seconds": [
+      52.166,
+      52.29,
+      52.008
+    ],
+    "baseline_median_seconds": 54.459,
+    "optimized_median_seconds": 52.166,
+    "median_seconds_saved": 2.2930000000000064,
+    "speedup": 1.043955833301384,
+    "paired_seconds_saved": [
+      2.2930000000000064,
+      2.0589999999999975,
+      2.850999999999999
+    ],
+    "all_optimized_faster_than_all_baseline": true,
+    "worst_optimized_vs_best_baseline_speedup": 1.039376553834385
+  },
+  "correctness": {
+    "reference": "output_phase5_final3",
+    "checked_trials": [
+      "output_phase7_ab_a1",
+      "output_phase7_ab_a2",
+      "output_phase7_ab_a3",
+      "output_phase7_ab_b1",
+      "output_phase7_ab_b2",
+      "output_phase7_ab_b3"
+    ],
+    "byte_identical_substantive_files": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv",
+      "final_trips.csv"
+    ],
+    "file_count": 7,
+    "sha256": {
+      "final_accessibility.csv": "8803cb6ee7e1125c054577ea6bb72123a1624c49f88269cb1b2f1777df413e5a",
+      "final_households.csv": "ec766a1f268fe0087156997400588bfe88f1f4be0a3ea9da47a61cc5b1574f6c",
+      "final_joint_tour_participants.csv": "34f30ca0cd262e6737aefc002aa3cbd3f4702c25cec344ac48302b59b4c1bbcc",
+      "final_land_use.csv": "c43eaaa761f463df152af2e3d3aa3bea8b60d20f091ac9028b07c273bac6a80b",
+      "final_persons.csv": "6d816032223d1c1c477e58655d897428929b379dbc525c36d4343e2cae07ec96",
+      "final_tours.csv": "c7a0e08af86358036367bc6533bd4d61104ce25ecaa744965f240319cca07f23",
+      "final_trips.csv": "57f4901aeb674042ad6d6d34e6a6f962c9136fc9fa2cc155a749c323bda5318b"
+    },
+    "checkpoint_csv_excluded_reason": "contains run timing metadata"
+  },
+  "notes": [
+    "A and B use identical public benchmark data and differ only in the explicit destination backend overlay.",
+    "ActivitySim's own component and all-model timers include setup; no time is subtracted.",
+    "The CUDA kernel has a CPU fallback over the already-evaluated utilities and does not repeat random draws."
+  ]
+}

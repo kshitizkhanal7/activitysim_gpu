@@ -1,0 +1,220 @@
+--- a/activitysim/abm/models/util/vectorize_tour_scheduling.py
++++ b/activitysim/abm/models/util/vectorize_tour_scheduling.py
+@@ -32,6 +32,9 @@
+ #     SPEC: Path
+ 
+ 
+ class TourSchedulingSettings(LogitComponentSettings, extra="forbid"):
++    CHOICE_BACKEND: str = "activitysim"
++    """Choice engine at the interaction-simulation boundary."""
++
+     LOGSUM_SETTINGS: Path | None = None
+     DESTINATION_FOR_TOUR_PURPOSE: str | dict[str, str] | None = None
+@@ -853,16 +856,41 @@
+     log_alt_losers = state.settings.log_alt_losers
+ 
+-    choices = interaction_sample_simulate(
+-        state,
+-        tours,
+-        alt_tdd,
+-        spec,
+-        choice_column=choice_column,
+-        log_alt_losers=log_alt_losers,
+-        locals_d=locals_d,
+-        chunk_size=0,
+-        trace_label=tour_trace_label,
+-        estimator=estimator,
+-        compute_settings=compute_settings,
+-    )
++    choice_backend = model_settings.CHOICE_BACKEND.lower()
++    if choice_backend == "choiceforge":
++        from choiceforge.activitysim_scheduling import (
++            interaction_sample_simulate_choiceforge,
++        )
++
++        choices = interaction_sample_simulate_choiceforge(
++            state,
++            tours,
++            alt_tdd,
++            spec,
++            choice_column=choice_column,
++            log_alt_losers=log_alt_losers,
++            locals_d=locals_d,
++            chunk_size=0,
++            trace_label=tour_trace_label,
++            estimator=estimator,
++            compute_settings=compute_settings,
++            fallback=interaction_sample_simulate,
++        )
++    elif choice_backend == "activitysim":
++        choices = interaction_sample_simulate(
++            state,
++            tours,
++            alt_tdd,
++            spec,
++            choice_column=choice_column,
++            log_alt_losers=log_alt_losers,
++            locals_d=locals_d,
++            chunk_size=0,
++            trace_label=tour_trace_label,
++            estimator=estimator,
++            compute_settings=compute_settings,
++        )
++    else:
++        raise ValueError(
++            f"unsupported tour-scheduling CHOICE_BACKEND {model_settings.CHOICE_BACKEND!r}"
++        )
+     chunk_sizer.log_df(tour_trace_label, "choices", choices)
+
+--- a/activitysim/abm/models/trip_destination.py
++++ b/activitysim/abm/models/trip_destination.py
+@@ -54,6 +54,9 @@ class TripDestinationSettings(LocationComponentSettings, extra="forbid"):
+ 
+     DEST_CHOICE_LOGSUM_COLUMN_NAME: str = None
+     DEST_CHOICE_SAMPLE_TABLE_NAME: str = None
++    DESTINATION_LOGSUM_BACKEND: str = "activitysim"
++    DESTINATION_NESTED_LOGIT_BACKEND: str = "activitysim"
++    """Explicit ChoiceForge destination and nested-logit backends."""
+     TRIP_ORIGIN: str = "origin"
+     ALT_DEST_COL_NAME: str = "dest_taz"
+     PRIMARY_ORIGIN: str = "origin"
+@@ -746,7 +748,7 @@ def compute_ood_logsums(
+     return logsums
+ 
+ 
+-def compute_logsums(
++def _compute_logsums_activitysim(
+     state: workflow.State,
+     primary_purpose,
+     trips: pd.DataFrame,
+@@ -884,6 +886,48 @@ def compute_logsums(
+     return destination_sample
+ 
+ 
++def compute_logsums(
++    state: workflow.State,
++    primary_purpose,
++    trips: pd.DataFrame,
++    destination_sample,
++    tours_merged: pd.DataFrame,
++    model_settings: TripDestinationSettings,
++    skim_hotel,
++    trace_label: str,
++):
++    backend = model_settings.DESTINATION_LOGSUM_BACKEND.lower()
++    if backend == "activitysim":
++        return _compute_logsums_activitysim(
++            state,
++            primary_purpose,
++            trips,
++            destination_sample,
++            tours_merged,
++            model_settings,
++            skim_hotel,
++            trace_label,
++        )
++    if backend in ("choiceforge_combined", "choiceforge_tripnum_batched"):
++        from choiceforge.activitysim_destination import compute_logsums_combined
++
++        return compute_logsums_combined(
++            state,
++            primary_purpose,
++            trips,
++            destination_sample,
++            tours_merged,
++            model_settings,
++            skim_hotel,
++            trace_label,
++            fallback=_compute_logsums_activitysim,
++        )
++    raise ValueError(
++        "unsupported trip-destination DESTINATION_LOGSUM_BACKEND "
++        f"{model_settings.DESTINATION_LOGSUM_BACKEND!r}"
++    )
++
++
+ def trip_destination_simulate(
+     state: workflow.State,
+     primary_purpose,
+@@ -1417,28 +1462,59 @@ def run_trip_destination(
+             logger.info("Running %s with %d trips", nth_trace_label, nth_trips.shape[0])
+ 
+             # - choose destination for nth_trips, segmented by primary_purpose
+-            choices_list = []
+-            for primary_purpose, trips_segment in nth_trips.groupby(
+-                "primary_purpose", observed=True
+-            ):
+-                choices, destination_sample = choose_trip_destination(
+-                    state,
+-                    primary_purpose,
+-                    trips_segment,
+-                    alternatives,
+-                    tours_merged,
+-                    model_settings,
+-                    want_logsums,
+-                    want_sample_table,
+-                    size_term_matrix,
+-                    skim_hotel,
+-                    estimator,
+-                    chunk_size,
+-                    trace_label=tracing.extend_trace_label(
+-                        nth_trace_label, primary_purpose
+-                    ),
+-                )
++            purpose_results = None
++            if model_settings.DESTINATION_LOGSUM_BACKEND.lower() == "choiceforge_tripnum_batched":
++                try:
++                    from choiceforge.activitysim_destination import (
++                        DestinationBatchUnsupported,
++                        choose_trip_destinations_batched,
++                    )
+ 
++                    purpose_results = choose_trip_destinations_batched(
++                        state,
++                        nth_trips,
++                        alternatives,
++                        tours_merged,
++                        model_settings,
++                        want_logsums,
++                        want_sample_table,
++                        size_term_matrix,
++                        skim_hotel,
++                        estimator,
++                        chunk_size,
++                        nth_trace_label,
++                    )
++                except DestinationBatchUnsupported as err:
++                    logger.warning("%s falling back to per-purpose logsums: %s", nth_trace_label, err)
++
++            if purpose_results is None:
++                purpose_results = []
++                for primary_purpose, trips_segment in nth_trips.groupby(
++                    "primary_purpose", observed=True
++                ):
++                    choices, destination_sample = choose_trip_destination(
++                        state,
++                        primary_purpose,
++                        trips_segment,
++                        alternatives,
++                        tours_merged,
++                        model_settings,
++                        want_logsums,
++                        want_sample_table,
++                        size_term_matrix,
++                        skim_hotel,
++                        estimator,
++                        chunk_size,
++                        trace_label=tracing.extend_trace_label(
++                            nth_trace_label, primary_purpose
++                        ),
++                    )
++                    purpose_results.append(
++                        (primary_purpose, choices, destination_sample)
++                    )
++
++            choices_list = []
++            for primary_purpose, choices, destination_sample in purpose_results:
+                 choices_list.append(choices)
+                 if want_sample_table:
+                     assert destination_sample is not None
+ 

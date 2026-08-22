@@ -1,0 +1,42 @@
+{
+  "phase": "8B",
+  "date": "2026-08-11",
+  "hardware": "NVIDIA RTX A4000 16 GB",
+  "boundary": "30 real trip-destination 21-mode nested-logit reductions",
+  "design": "11 interleaved warmed repetitions; GPU includes H2D, kernels, and D2H",
+  "batches": 30,
+  "rows": 3186130,
+  "utility_matrix_megabytes": 535.26984,
+  "cpu_activitysim_pandas_seconds": [
+    4.617209699936211,
+    4.66505579999648,
+    4.7378185000270605,
+    4.593432600144297,
+    4.682388999965042,
+    4.6521477999631315,
+    4.67507250001654,
+    4.593246700009331,
+    4.646627200068906,
+    4.626306700054556,
+    4.62504560011439
+  ],
+  "gpu_transfer_inclusive_seconds": [
+    0.12562660011462867,
+    0.08718729997053742,
+    0.3590675999876112,
+    0.08713120012544096,
+    0.26102049998007715,
+    0.09531260002404451,
+    0.349122199928388,
+    0.08554850006476045,
+    0.2830904999282211,
+    0.08529199985787272,
+    0.2697478998452425
+  ],
+  "cpu_median_seconds": 4.646627200068906,
+  "gpu_median_seconds": 0.12562660011462867,
+  "speedup": 36.98760609480051,
+  "median_seconds_saved": 4.521000599954277,
+  "max_abs_logsum_error": 5.329070518200751e-15,
+  "live_integration_decision": "integrate only if end-to-end A/B improves and outputs remain equivalent"
+}

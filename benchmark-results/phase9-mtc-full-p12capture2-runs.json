@@ -1,0 +1,57 @@
+{
+  "phase": "12B",
+  "benchmark": "public Prototype MTC extended full geography",
+  "full_population_households": 2875192,
+  "zones": 1454,
+  "design": "one fresh-process baseline/ChoiceForge pair; not a superiority proof without repeated interleaved trials",
+  "baseline": "pinned current ActivitySim with Sharrow required",
+  "optimized": "Phase 12 DatasetWrapper GPU utility shadow capture; CPU/Sharrow output retained",
+  "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+  "reproducibility": {
+    "activitysim_commit": "16ab11180a26912987eb902daf945e268f3efc11",
+    "activitysim_patch_sha256": "aa2eed95d99fe4853365b9ed49427722ac467ef928013ccf7944fd9eda0e04e2",
+    "environment_lock_sha256": "84b97738100cd4b8c405af50ff823cdddf4a33f5f203deab7839e4a8739a3adc",
+    "python": "Python 3.11.14 (main, Dec  9 2025, 18:59:10) [MSC v.1944 64 bit (AMD64)]",
+    "gpu": "NVIDIA RTX A4000, 571.59, 16376 MiB",
+    "base_config_sha256": "38f0b343f569bd69d51ef4595a4441115524f4f13bc0e20fde1b855e56d18c2c",
+    "shared_config_sha256": null,
+    "choiceforge_overlay_sha256": "e036373ae155455994d3ce9f73aa62c6344057b12f9b645af1cbd556b2da4506",
+    "additional_choiceforge_overlay_sha256": null
+  },
+  "runs": [
+    {
+      "name": "phase9-p12capture2-baseline-1001-hh-1",
+      "condition": "baseline",
+      "households": 1001,
+      "started": "2026-08-17T14:29:35.3194672-04:00",
+      "finished": "2026-08-17T14:31:11.1697716-04:00",
+      "wall_seconds": 95.8503044,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 995328,
+      "gpu_samples": 88,
+      "gpu_peak_utilization_percent": 15.0,
+      "gpu_mean_utilization_percent": 0.4659090909090909,
+      "gpu_peak_memory_mib": 1333.0,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p12capture2-baseline-1001-1",
+      "stdout": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-p12capture2-baseline-1001-hh-1.stdout.log",
+      "stderr": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-p12capture2-baseline-1001-hh-1.stderr.log"
+    },
+    {
+      "name": "phase9-p12capture2-choiceforge-1001-hh-1",
+      "condition": "choiceforge",
+      "households": 1001,
+      "started": "2026-08-17T14:31:11.2034265-04:00",
+      "finished": "2026-08-17T14:32:41.4518172-04:00",
+      "wall_seconds": 90.2483907,
+      "launcher_peak_working_set_bytes": 5947392,
+      "launcher_peak_private_bytes": 991232,
+      "gpu_samples": 83,
+      "gpu_peak_utilization_percent": 19.0,
+      "gpu_mean_utilization_percent": 0.7108433734939759,
+      "gpu_peak_memory_mib": 1448.0,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p12capture2-choiceforge-1001-1",
+      "stdout": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-p12capture2-choiceforge-1001-hh-1.stdout.log",
+      "stderr": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-p12capture2-choiceforge-1001-hh-1.stderr.log"
+    }
+  ]
+}

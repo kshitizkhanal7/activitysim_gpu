@@ -1,0 +1,45 @@
+{
+  "phase": "12",
+  "claim_scope": "lowered numeric utility plus MTC-21 logsum microbenchmark; not ActivitySim end-to-end",
+  "rows": 250000,
+  "features": 64,
+  "alternatives": 21,
+  "repetitions": 3,
+  "cpu_reference_pipeline_median_ms": 235.21549999713898,
+  "cpu_reference_pipeline_samples_ms": [
+    231.92620000918396,
+    235.21549999713898,
+    237.9660999868065
+  ],
+  "gpu_pipeline_median_ms": 28.98760000243783,
+  "gpu_pipeline_samples_ms": [
+    43.05399997974746,
+    28.98760000243783,
+    28.668599989032373
+  ],
+  "gpu_pipeline_speedup": 8.114348893228746,
+  "correctness": {
+    "rtol": 1e-11,
+    "atol": 1e-11,
+    "passed": true
+  },
+  "telemetry_last_run": {
+    "utility": {
+      "rows": 250000,
+      "features": 64,
+      "alternatives": 21,
+      "input_bytes": 128000000,
+      "host_to_device_ms": 12.401600019074976,
+      "kernel_ms": 4.617899976437911,
+      "device_to_host_ms": 0.0
+    },
+    "nested_logsum": {
+      "rows": 250000,
+      "input_bytes": 42000000,
+      "host_to_device_ms": 0.0,
+      "kernel_ms": 2.1204999939072877,
+      "device_to_host_ms": 0.3680999798234552
+    }
+  },
+  "note": "The CPU reference is a vectorized NumPy implementation of the same lowered linear utility and canonical MTC-21 nesting."
+}

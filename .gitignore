@@ -1,0 +1,26 @@
+.venv*/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+tmp/
+output/
+cache_sharrow/
+benchmark-data/
+.coverage
+htmlcov/
+.env
+.env.*
+*.log
+
+# Keep compact, machine-readable benchmark evidence while excluding captured
+# arrays and run directories. Phase 13/14 exact-gate reports are intentionally
+# versioned because their hashes are part of the replication contract.
+benchmark-results/*
+!benchmark-results/*.json
+!benchmark-results/phase13-strict-cpu-real-gate/
+!benchmark-results/phase13-strict-cpu-real-gate/*.json
+!benchmark-results/phase14-strict-cuda-real-gate/
+!benchmark-results/phase14-strict-cuda-real-gate/*.json

@@ -1,0 +1,607 @@
+{
+  "schema_version": 2,
+  "benchmark": "phase1_linear_choice",
+  "environment": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 8 Stepping 2, AuthenticAMD",
+    "python": "3.11.14",
+    "numpy": "1.25.2",
+    "logical_cpu_count": 48,
+    "configured_physical_cpu_threads": 24,
+    "threadpools": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "prefix": "libopenblas",
+        "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\numpy\\.libs\\libopenblas64__v0.3.23-246-g3d31191b-gcc_10_3_0.dll",
+        "version": "0.3.23.dev",
+        "threading_layer": "pthreads",
+        "architecture": "Zen"
+      },
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "prefix": "libscipy_openblas",
+        "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll",
+        "version": "0.3.30",
+        "threading_layer": "pthreads",
+        "architecture": "Haswell"
+      }
+    ],
+    "numba": "0.66.0",
+    "cupy": "13.6.0",
+    "gpu": "NVIDIA RTX A4000"
+  },
+  "settings": {
+    "sizes": [
+      10000,
+      100000,
+      1000000
+    ],
+    "alternatives": 32,
+    "features": 16,
+    "repetitions": 11,
+    "warmups": 10,
+    "cpu_threads": 24,
+    "seed": 20260810
+  },
+  "results": [
+    {
+      "choosers": 10000,
+      "alternatives": 32,
+      "features": 16,
+      "materialized_utility_bytes": 1280000,
+      "methods": {
+        "numpy_materialized_1t": {
+          "seconds": [
+            0.0048041,
+            0.0045831,
+            0.0046252,
+            0.0046021,
+            0.0047488,
+            0.0062764,
+            0.004703,
+            0.0047007,
+            0.0047263,
+            0.0046982,
+            0.0047566
+          ],
+          "median_seconds": 0.004703,
+          "min_seconds": 0.0045831,
+          "max_seconds": 0.0062764,
+          "speedup_vs_best_cpu": 0.08313842228364875
+        },
+        "numpy_materialized_24t": {
+          "seconds": [
+            0.0060126,
+            0.0059774,
+            0.004875,
+            0.0046903,
+            0.0060003,
+            0.0047898,
+            0.0060986,
+            0.0061766,
+            0.0048163,
+            0.0048639,
+            0.0050985
+          ],
+          "median_seconds": 0.0050985,
+          "min_seconds": 0.0046903,
+          "max_seconds": 0.0061766,
+          "speedup_vs_best_cpu": 0.0766892223202903
+        },
+        "numba_fused_serial": {
+          "seconds": [
+            0.0082259,
+            0.0081616,
+            0.0082012,
+            0.0081674,
+            0.0099968,
+            0.0081933,
+            0.0081529,
+            0.008154,
+            0.0081738,
+            0.0104439,
+            0.0081913
+          ],
+          "median_seconds": 0.0081913,
+          "min_seconds": 0.0081529,
+          "max_seconds": 0.0104439,
+          "speedup_vs_best_cpu": 0.04773357098384872
+        },
+        "numba_fused_parallel_1t": {
+          "seconds": [
+            0.0083025,
+            0.0098708,
+            0.0082149,
+            0.0082016,
+            0.0082054,
+            0.0082037,
+            0.0082055,
+            0.0081991,
+            0.0082026,
+            0.0081948,
+            0.0082145
+          ],
+          "median_seconds": 0.0082054,
+          "min_seconds": 0.0081948,
+          "max_seconds": 0.0098708,
+          "speedup_vs_best_cpu": 0.04765154654252078
+        },
+        "numba_fused_parallel_24t": {
+          "seconds": [
+            0.0004607,
+            0.000391,
+            0.0003748,
+            0.0005106,
+            0.0004011,
+            0.0004516,
+            0.0003774,
+            0.0003706,
+            0.0003653,
+            0.0003664,
+            0.000396
+          ],
+          "median_seconds": 0.000391,
+          "min_seconds": 0.0003653,
+          "max_seconds": 0.0005106,
+          "speedup_vs_best_cpu": 1.0
+        },
+        "gpu_transfer_inclusive": {
+          "seconds": [
+            0.0012627,
+            0.0009132,
+            0.000872,
+            0.0009215,
+            0.0009698,
+            0.0010439,
+            0.0014785,
+            0.001455,
+            0.0014859,
+            0.001476,
+            0.0014735
+          ],
+          "median_seconds": 0.0012627,
+          "min_seconds": 0.000872,
+          "max_seconds": 0.0014859,
+          "speedup_vs_best_cpu": 0.30965391621129323
+        },
+        "gpu_resident": {
+          "seconds": [
+            0.0010908,
+            0.0008198,
+            0.0008149,
+            0.000807,
+            0.0008009,
+            0.0008135,
+            0.0008009,
+            0.0008112,
+            0.0008011,
+            0.0007988,
+            0.000815
+          ],
+          "median_seconds": 0.0008112,
+          "min_seconds": 0.0007988,
+          "max_seconds": 0.0010908,
+          "speedup_vs_best_cpu": 0.4820019723865878
+        }
+      },
+      "correctness": {
+        "numpy_materialized_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numpy_materialized_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 0.0,
+          "p999_logsum_absolute_error": 0.0
+        },
+        "numba_fused_serial": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_transfer_inclusive": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_resident": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        }
+      }
+    },
+    {
+      "choosers": 100000,
+      "alternatives": 32,
+      "features": 16,
+      "materialized_utility_bytes": 12800000,
+      "methods": {
+        "numpy_materialized_1t": {
+          "seconds": [
+            0.0489366,
+            0.0487667,
+            0.0479329,
+            0.0480538,
+            0.0479069,
+            0.0548162,
+            0.050533,
+            0.0486911,
+            0.0483313,
+            0.0481952,
+            0.0497596
+          ],
+          "median_seconds": 0.0486911,
+          "min_seconds": 0.0479069,
+          "max_seconds": 0.0548162,
+          "speedup_vs_best_cpu": 0.11419335361082417
+        },
+        "numpy_materialized_24t": {
+          "seconds": [
+            0.0491541,
+            0.0469135,
+            0.0472122,
+            0.0538569,
+            0.049953,
+            0.0480139,
+            0.0474023,
+            0.0480562,
+            0.0484135,
+            0.0486537,
+            0.0482559
+          ],
+          "median_seconds": 0.0482559,
+          "min_seconds": 0.0469135,
+          "max_seconds": 0.0538569,
+          "speedup_vs_best_cpu": 0.11522321622848192
+        },
+        "numba_fused_serial": {
+          "seconds": [
+            0.0823698,
+            0.0832379,
+            0.0818564,
+            0.0816869,
+            0.0826483,
+            0.0820251,
+            0.0816765,
+            0.0816033,
+            0.0817529,
+            0.0816585,
+            0.0819306
+          ],
+          "median_seconds": 0.0818564,
+          "min_seconds": 0.0816033,
+          "max_seconds": 0.0832379,
+          "speedup_vs_best_cpu": 0.06792627088413368
+        },
+        "numba_fused_parallel_1t": {
+          "seconds": [
+            0.0820877,
+            0.082473,
+            0.0828886,
+            0.0825635,
+            0.0822723,
+            0.0826522,
+            0.0820085,
+            0.0819439,
+            0.082045,
+            0.0819727,
+            0.0818203
+          ],
+          "median_seconds": 0.0820877,
+          "min_seconds": 0.0818203,
+          "max_seconds": 0.0828886,
+          "speedup_vs_best_cpu": 0.067734873799607
+        },
+        "numba_fused_parallel_24t": {
+          "seconds": [
+            0.0055998,
+            0.0054747,
+            0.0055602,
+            0.005537,
+            0.0055699,
+            0.0054989,
+            0.0055401,
+            0.0055677,
+            0.0054958,
+            0.0056192,
+            0.0055886
+          ],
+          "median_seconds": 0.0055602,
+          "min_seconds": 0.0054747,
+          "max_seconds": 0.0056192,
+          "speedup_vs_best_cpu": 1.0
+        },
+        "gpu_transfer_inclusive": {
+          "seconds": [
+            0.0047085,
+            0.0043658,
+            0.0041656,
+            0.00415,
+            0.0041333,
+            0.0045819,
+            0.0050796,
+            0.0043078,
+            0.0039088,
+            0.0038384,
+            0.004042
+          ],
+          "median_seconds": 0.0041656,
+          "min_seconds": 0.0038384,
+          "max_seconds": 0.0050796,
+          "speedup_vs_best_cpu": 1.3347897061647782
+        },
+        "gpu_resident": {
+          "seconds": [
+            0.0013225,
+            0.0011928,
+            0.0012793,
+            0.0012685,
+            0.0012651,
+            0.0012836,
+            0.001162,
+            0.0011133,
+            0.0011265,
+            0.0010998,
+            0.001144
+          ],
+          "median_seconds": 0.0011928,
+          "min_seconds": 0.0010998,
+          "max_seconds": 0.0013225,
+          "speedup_vs_best_cpu": 4.661468812877264
+        }
+      },
+      "correctness": {
+        "numpy_materialized_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numpy_materialized_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 0.0,
+          "p999_logsum_absolute_error": 0.0
+        },
+        "numba_fused_serial": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_transfer_inclusive": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_resident": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        }
+      }
+    },
+    {
+      "choosers": 1000000,
+      "alternatives": 32,
+      "features": 16,
+      "materialized_utility_bytes": 128000000,
+      "methods": {
+        "numpy_materialized_1t": {
+          "seconds": [
+            0.4954278,
+            0.4949279,
+            0.4970065,
+            0.4965194,
+            0.493399,
+            0.5017601,
+            0.4995212,
+            0.5039256,
+            0.4938889,
+            0.5413584,
+            0.4950652
+          ],
+          "median_seconds": 0.4965194,
+          "min_seconds": 0.493399,
+          "max_seconds": 0.5413584,
+          "speedup_vs_best_cpu": 0.11935787403271654
+        },
+        "numpy_materialized_24t": {
+          "seconds": [
+            0.4862052,
+            0.4794303,
+            0.4981859,
+            0.4765747,
+            0.5009928,
+            0.4715114,
+            0.4999235,
+            0.4739964,
+            0.4963383,
+            0.4964352,
+            0.5009571
+          ],
+          "median_seconds": 0.4963383,
+          "min_seconds": 0.4715114,
+          "max_seconds": 0.5009928,
+          "speedup_vs_best_cpu": 0.11940142439138789
+        },
+        "numba_fused_serial": {
+          "seconds": [
+            0.8300712,
+            0.8338578,
+            0.8347754,
+            0.827852,
+            0.8318678,
+            0.8323514,
+            0.8277989,
+            0.8367232,
+            0.8330842,
+            0.8427313,
+            0.8349784
+          ],
+          "median_seconds": 0.8330842,
+          "min_seconds": 0.8277989,
+          "max_seconds": 0.8427313,
+          "speedup_vs_best_cpu": 0.0711374672572112
+        },
+        "numba_fused_parallel_1t": {
+          "seconds": [
+            0.8481222,
+            0.8471124,
+            0.8442662,
+            0.8325264,
+            0.8451067,
+            0.836844,
+            0.8421146,
+            0.834059,
+            0.8402417,
+            0.8690322,
+            0.8407451
+          ],
+          "median_seconds": 0.8421146,
+          "min_seconds": 0.8325264,
+          "max_seconds": 0.8690322,
+          "speedup_vs_best_cpu": 0.07037462597133454
+        },
+        "numba_fused_parallel_24t": {
+          "seconds": [
+            0.0578033,
+            0.0603543,
+            0.0575471,
+            0.0592096,
+            0.0578085,
+            0.0595492,
+            0.0592635,
+            0.0578269,
+            0.0593654,
+            0.0602107,
+            0.0594805
+          ],
+          "median_seconds": 0.0592635,
+          "min_seconds": 0.0575471,
+          "max_seconds": 0.0603543,
+          "speedup_vs_best_cpu": 1.0
+        },
+        "gpu_transfer_inclusive": {
+          "seconds": [
+            0.0357995,
+            0.0345236,
+            0.0343051,
+            0.034173,
+            0.0347305,
+            0.0378332,
+            0.0373472,
+            0.0349202,
+            0.0343447,
+            0.0343597,
+            0.034405
+          ],
+          "median_seconds": 0.0345236,
+          "min_seconds": 0.034173,
+          "max_seconds": 0.0378332,
+          "speedup_vs_best_cpu": 1.7166083490713597
+        },
+        "gpu_resident": {
+          "seconds": [
+            0.00737,
+            0.0071178,
+            0.0071489,
+            0.0071043,
+            0.0071113,
+            0.0071163,
+            0.0071102,
+            0.0070977,
+            0.0071008,
+            0.0071248,
+            0.0071122
+          ],
+          "median_seconds": 0.0071122,
+          "min_seconds": 0.0070977,
+          "max_seconds": 0.00737,
+          "speedup_vs_best_cpu": 8.332653749894547
+        }
+      },
+      "correctness": {
+        "numpy_materialized_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numpy_materialized_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 0.0,
+          "p999_logsum_absolute_error": 0.0
+        },
+        "numba_fused_serial": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_1t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "numba_fused_parallel_24t": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 9.5367431640625e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_transfer_inclusive": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        },
+        "gpu_resident": {
+          "choice_mismatches": 0,
+          "invalid_row_mismatches": 0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07
+        }
+      }
+    }
+  ]
+}

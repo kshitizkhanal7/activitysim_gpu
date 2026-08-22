@@ -1,0 +1,164 @@
+from collections import defaultdict
+import ast
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from choiceforge.activitysim_expression import parse_activitysim_expression
+from choiceforge.sharrow_cuda import (
+    clear_strict_cuda_cache,
+    compare_strict_cpu_cuda,
+    evaluate_strict_cuda,
+    mtc21_logsums_from_strict_ir_cuda,
+)
+from choiceforge.sharrow_ir import evaluate_strict_cpu, specification_ir
+from choiceforge.nested_logit import MTC21_ALTERNATIVES
+from test_nested_logit import NEST
+
+
+def _spec():
+    return pd.DataFrame({
+        "Label": ["arithmetic", "mask", "range", "maximum", "integer"],
+        "Expression": [
+            "@scale * (od_skims['DIST'] - threshold).clip(lower=0, upper=5) / denom",
+            "df.flag & ~df.other",
+            "@lower <= df.x <= upper",
+            "np.maximum(odt_skims['TIME'], dot_skims['TIME'])",
+            "df.count",
+        ],
+        "A": [0.25, -999.0, 1.5, -0.03, 2.0],
+        "B": [-0.5, 0.0, -2.0, 0.07, -0.25],
+    })
+
+
+def _environment():
+    return {
+        "scale": 2.0,
+        "threshold": 1.0,
+        "denom": np.array([2.0, 4.0, 8.0, 3.0]),
+        "lower": -1.0,
+        "upper": 2.0,
+        "df": {
+            "flag": np.array([True, True, False, False]),
+            "other": np.array([False, True, False, True]),
+            "x": np.array([-1.0, 0.5, 3.0, 2.0]),
+            "count": np.array([1, 2, 3, 4], dtype=np.int64),
+        },
+        "od_skims": {"DIST": np.array([0.5, 3.0, 9.0, 4.0], dtype=np.float32)},
+        "odt_skims": {"TIME": np.array([10.0, 40.0, 30.0, 8.0], dtype=np.float32)},
+        "dot_skims": {"TIME": np.array([12.0, 20.0, 35.0, 8.0], dtype=np.float64)},
+    }
+
+
+def test_generated_cuda_matches_strict_cpu_for_every_supported_operation():
+    pytest.importorskip("cupy")
+    document = specification_ir(_spec())
+    cpu = evaluate_strict_cpu(document, _environment())
+    cuda = evaluate_strict_cuda(document, _environment())
+    report = compare_strict_cpu_cuda(cpu, cuda)
+    assert report["exact_gate_passed"]
+    np.testing.assert_array_equal(cuda.features, cpu.features)
+    np.testing.assert_array_equal(cuda.utilities, cpu.utilities)
+
+
+def test_generated_cuda_preserves_nonfinite_edge_cases_exactly():
+    pytest.importorskip("cupy")
+    spec = pd.DataFrame({
+        "Expression": ["df.x / df.y", "np.maximum(df.x, df.z)", "df.subnormal"],
+        "A": [1.0, 0.5, 1.0],
+    })
+    environment = {
+        "df": {
+            "x": np.array([1.0, 0.0, np.nan, np.inf]),
+            "y": np.array([0.0, 0.0, 1.0, np.inf]),
+            "z": np.array([2.0, np.nan, 3.0, -np.inf]),
+            "subnormal": np.full(
+                4, np.nextafter(np.float32(0), np.float32(1)), dtype=np.float32
+            ),
+        }
+    }
+    document = specification_ir(spec)
+    cpu = evaluate_strict_cpu(document, environment)
+    cuda = evaluate_strict_cuda(document, environment)
+    assert compare_strict_cpu_cuda(cpu, cuda)["exact_gate_passed"]
+
+
+def test_strict_cuda_cache_reuses_ir_and_typed_schema():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(_spec())
+    first = evaluate_strict_cuda(document, _environment())
+    second = evaluate_strict_cuda(document, _environment())
+    assert first.telemetry.compiled_this_call
+    assert not second.telemetry.compiled_this_call
+    assert first.telemetry.cache_key == second.telemetry.cache_key
+    assert first.telemetry.cache_key.startswith(document["sha256"])
+
+
+def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():
+    pytest.importorskip("cupy")
+    path = Path("benchmark-data/phase9-mtc-full/prototype_mtc_extended/configs/trip_mode_choice.csv")
+    spec = pd.read_csv(path, comment="#")
+    document = specification_ir(spec)
+    rows = 5
+    values = lambda: np.full(rows, 2, dtype=np.int64)
+    names = set()
+    for term in document["terms"]:
+        names.update(
+            node.id
+            for node in ast.walk(parse_activitysim_expression(term["expression"]))
+            if isinstance(node, ast.Name)
+        )
+    mappings = {"df", "od_skims", "odt_skims", "dot_skims"}
+    environment = {name: values() for name in names - mappings - {"np"}}
+    environment.update({name: defaultdict(values) for name in mappings})
+    symbols = {
+        value["symbol"]: 1.0
+        for term in document["terms"]
+        for value in term["coefficients"].values()
+        if isinstance(value, dict)
+    }
+    cpu = evaluate_strict_cpu(
+        document, environment, coefficient_environment=symbols
+    )
+    cuda = evaluate_strict_cuda(
+        document, environment, coefficient_environment=symbols
+    )
+    report = compare_strict_cpu_cuda(cpu, cuda)
+    assert report["exact_gate_passed"]
+    assert report["terms"] == 379
+    assert report["alternatives"] == 21
+
+
+def test_generated_strict_utilities_stay_on_device_through_nested_logsum():
+    pytest.importorskip("cupy")
+    alternatives = list(MTC21_ALTERNATIVES)
+    rng = np.random.default_rng(1402)
+    spec = pd.DataFrame({
+        "Expression": ["df.x", "df.y", "df.x * df.y"],
+        **{
+            alternative: rng.normal(size=3)
+            for alternative in alternatives
+        },
+    })
+    environment = {
+        "df": {
+            "x": rng.normal(size=257),
+            "y": rng.normal(size=257),
+        }
+    }
+    document = specification_ir(spec)
+    cpu = evaluate_strict_cpu(document, environment)
+    from choiceforge.nested_logit import mtc21_nested_logsums_cuda
+
+    expected = mtc21_nested_logsums_cuda(
+        cpu.utilities, NEST, alternatives
+    )
+    actual, telemetry = mtc21_logsums_from_strict_ir_cuda(
+        document, environment, NEST, return_telemetry=True
+    )
+    np.testing.assert_array_equal(actual, expected)
+    assert telemetry.utility.device_to_host_ms == 0
+    assert telemetry.nested_logsum.host_to_device_ms == 0

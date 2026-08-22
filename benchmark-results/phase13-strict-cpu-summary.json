@@ -1,0 +1,74 @@
+{
+  "activitysim_authoritative": true,
+  "alternatives_per_batch": 21,
+  "batches": 30,
+  "benchmark": "public Prototype MTC Extended strict CPU/Sharrow real-batch gate",
+  "conclusion": "The strict CPU evaluator completed every real term and alternative. Observed Sharrow differences are explicitly separated into expression-policy and ordered-accumulation-policy categories; Sharrow remained authoritative.",
+  "households": 1001,
+  "ir_hashes": [
+    "055cb9a2cbf4ee0a0d722005972f73c53a13542a95e22c84189f22a5dd49b1b3",
+    "2da8a51166ef69e2625a012b5c027b7c4f45ae4073d17deeb517faffbf0b69ea",
+    "3aa7d98d9979cc0189621f0dc15fd33453bf5a60925453b1b17342e189aa26c8",
+    "3d75b64e893383e45cf6e3831d3d98a398130f94ff98be893244ac0ca5d0c4c5",
+    "46b1aebeb4e671e0e0fd8b91db024df968c96e0879faa4ff1cdd2ae55b52bbcb",
+    "7a1567e5d2fd3a00685ef87b3e6470126457fa7c9c6dacc1de94a21b1d88e726",
+    "a72dcbec973b54c9ef4f4d75c7cedf489aadefc12adbb292710c44b6d49bb650",
+    "c4092fccb607849f0ef4970a3df693cb0cf712b9102a4285fb750398d6984c21",
+    "d3bed7643d79961ad9accd18346319664a2b5b0e237a1c9fe21871ea4f1fd26c",
+    "fbb9c07a4dd17bef153e2266b1fad736d380be3b4c6e5971a51de0c3f8049bc5"
+  ],
+  "phase": 13,
+  "report_tree_sha256": "108007aca296c5d65efe9bb7c1c0f6e7b84529d06ff34403852c61ae0ef11bb0",
+  "rows": 85126,
+  "sharrow_flow_hashes": [
+    "3J2MHTKNW3JQLC7WKZDKAMBMOYKYPYTZ",
+    "AQYKAN7SHSD2DCIC6CR3WNF22QTC5MEN",
+    "DRXUA4A4QV5ERKS7X7BRRBZSEIPZQIUK"
+  ],
+  "sharrow_observation": {
+    "classification": {
+      "expression_policy_cells": 28466,
+      "utility_cells_explained_by_expression_inputs": 183,
+      "utility_cells_with_accumulation_policy_difference": 593163
+    },
+    "divergent_batches": 30,
+    "exact_batches": 0,
+    "exact_feature_cells": 32234288,
+    "exact_utility_cells": 1194300,
+    "feature_cells": 32262754,
+    "first_divergence": {
+      "feature": {
+        "abs_difference": 7.62939453125e-06,
+        "explanation": "Sharrow's compiled expression does not implement the declared strict float64-expression then float32-feature policy for this cell",
+        "expression": "@ivt_cost_multiplier * df.ivot * (odt_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL'])",
+        "row_label": 351937149,
+        "row_position": 0,
+        "sharrow": 97.63229370117188,
+        "stage": "completed_expression_cast_to_float32",
+        "strict": 97.6323013305664,
+        "term_label": "util_TNC_Single_Bridge_toll",
+        "term_position": 295
+      },
+      "report": "batch_001_trip_destination.trip_num_1.atwork.compute_logsums_tripnum_batched.json",
+      "trace_label": "trip_destination.trip_num_1.atwork.compute_logsums_tripnum_batched",
+      "utility": {
+        "abs_difference": 1.1920928955078125e-07,
+        "alternative": "SHARED2FREE",
+        "alternative_position": 2,
+        "explanation": "Sharrow's dot reduction does not implement separate source-ordered float32 multiply/add operations",
+        "row_label": 351937149,
+        "row_position": 0,
+        "sharrow": -1.138773798942566,
+        "stage": "ordered_float32_utility_accumulation",
+        "strict": -1.1387739181518555,
+        "strict_from_sharrow_features": -1.1387739181518555
+      }
+    },
+    "max_feature_abs": 3.0517578125e-05,
+    "max_strict_accumulator_from_sharrow_features_abs": 0.25,
+    "max_utility_abs": 0.25,
+    "utility_cells": 1787646
+  },
+  "strict_policy_self_gate": "passed by canonical and edge-case test suite",
+  "terms_per_batch": 379
+}

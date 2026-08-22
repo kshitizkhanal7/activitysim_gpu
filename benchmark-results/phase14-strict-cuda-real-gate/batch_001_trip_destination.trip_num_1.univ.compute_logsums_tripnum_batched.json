@@ -1,0 +1,32 @@
+{
+  "activitysim_authoritative": true,
+  "alternatives": 21,
+  "comparison_mode": "require_exact",
+  "exact_gate_passed": true,
+  "feature_comparison": {
+    "exact_cells": 285008,
+    "first_divergence": null,
+    "max_abs": 0.0,
+    "total_cells": 285008
+  },
+  "ir_sha256": "877157577ed5c5a8272f86423f14f9480690a26549cd42920cd0f9bb78c0b3ec",
+  "kernel": {
+    "cache_key": "877157577ed5c5a8272f86423f14f9480690a26549cd42920cd0f9bb78c0b3ec:e36bace2a318e87894627add00f6ba5d10aa77b383d2313e9a429162bac73495",
+    "compiled_this_call": true,
+    "device_to_host_ms": 1.4641000016126782,
+    "host_to_device_ms": 120.08729999070056,
+    "input_bytes": 1638108,
+    "kernel_ms": 6.0437000065576285,
+    "source_sha256": "63d16a939dd62c9c8da2ae0d8cbd0ee9bfd5bfaa828932ee32820460c65b2fa4"
+  },
+  "rows": 752,
+  "schema_version": 1,
+  "terms": 379,
+  "trace_label": "trip_destination.trip_num_1.univ.compute_logsums_tripnum_batched",
+  "utility_comparison": {
+    "exact_cells": 15792,
+    "first_divergence": null,
+    "max_abs": 0.0,
+    "total_cells": 15792
+  }
+}

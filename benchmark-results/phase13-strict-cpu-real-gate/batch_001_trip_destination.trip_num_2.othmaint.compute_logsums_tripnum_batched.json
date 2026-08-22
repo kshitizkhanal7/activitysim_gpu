@@ -1,0 +1,68 @@
+{
+  "activitysim_authoritative": true,
+  "alternatives": 21,
+  "classification": {
+    "expression_policy_cells": 458,
+    "utility_cells_explained_by_expression_inputs": 5,
+    "utility_cells_with_accumulation_policy_difference": 9666
+  },
+  "comparison_mode": "observe",
+  "exact_gate_passed": false,
+  "feature_comparison": {
+    "divergent_terms": 2,
+    "exact_cells": 486936,
+    "exact_terms": 377,
+    "first_divergence": {
+      "abs_difference": 4.76837158203125e-07,
+      "explanation": "Sharrow's compiled expression does not implement the declared strict float64-expression then float32-feature policy for this cell",
+      "expression": "@ivt_cost_multiplier * df.ivot * (odt_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL'])",
+      "row_label": 21997222,
+      "row_position": 1,
+      "sharrow": 5.155206680297852,
+      "stage": "completed_expression_cast_to_float32",
+      "strict": 5.155206203460693,
+      "term_label": "util_TNC_Single_Bridge_toll",
+      "term_position": 295
+    },
+    "max_abs": 1.52587890625e-05,
+    "total_cells": 487394
+  },
+  "interpretation": "Sharrow is observational evidence, not the strict oracle; all mismatches are classified as expression-policy and/or ordered-accumulation-policy differences",
+  "ir_sha256": "3aa7d98d9979cc0189621f0dc15fd33453bf5a60925453b1b17342e189aa26c8",
+  "numeric_policy": {
+    "allow_fastmath": false,
+    "coefficient_dtype": "float32",
+    "contract_multiply_add": false,
+    "expression_dtype": "float64",
+    "feature_storage_dtype": "float32",
+    "nonfinite": "preserve",
+    "ordered_terms": true,
+    "rounding": "ieee754-nearest-even",
+    "utility_dtype": "float32"
+  },
+  "rows": 1286,
+  "schema_version": 1,
+  "sharrow_flow_hash": "3J2MHTKNW3JQLC7WKZDKAMBMOYKYPYTZ",
+  "terms": 379,
+  "trace_label": "trip_destination.trip_num_2.othmaint.compute_logsums_tripnum_batched",
+  "utility_comparison": {
+    "divergent_alternatives": 21,
+    "exact_alternatives": 0,
+    "exact_cells": 17335,
+    "first_divergence": {
+      "abs_difference": 6.103515625e-05,
+      "alternative": "BIKE",
+      "alternative_position": 7,
+      "explanation": "Sharrow's dot reduction does not implement separate source-ordered float32 multiply/add operations",
+      "row_label": 21997222,
+      "row_position": 0,
+      "sharrow": -1018.6337280273438,
+      "stage": "ordered_float32_utility_accumulation",
+      "strict": -1018.6337890625,
+      "strict_from_sharrow_features": -1018.6337890625
+    },
+    "max_abs": 0.00048828125,
+    "strict_accumulator_from_sharrow_features_max_abs": 0.00048828125,
+    "total_cells": 27006
+  }
+}

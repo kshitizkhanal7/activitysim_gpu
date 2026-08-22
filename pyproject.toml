@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "choiceforge"
+version = "0.1.0"
+description = "GPU choice and logsum kernels for activity-based travel demand models"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "BSD-3-Clause"}
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+gpu = ["cupy-cuda12x[ctk]>=14,<15"]
+cpu = ["numba>=0.60"]
+test = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

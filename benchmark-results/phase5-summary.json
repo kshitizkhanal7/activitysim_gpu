@@ -1,0 +1,158 @@
+{
+  "phase": 5,
+  "date": "2026-08-11",
+  "hardware": "NVIDIA RTX A4000 16 GB",
+  "software": {
+    "activitysim": "1.4.0",
+    "backend": "ChoiceForge compact CUDA"
+  },
+  "boundary": "sum of four complete ActivitySim tour-scheduling workflow components",
+  "trials": 3,
+  "components": {
+    "mandatory_tour_scheduling": {
+      "cached_sharrow_seconds": [
+        5.775,
+        5.502,
+        5.515
+      ],
+      "choiceforge_seconds": [
+        5.077,
+        5.096,
+        5.032
+      ],
+      "cached_sharrow_median_seconds": 5.515,
+      "choiceforge_median_seconds": 5.077,
+      "speedup": 1.0862714201299979,
+      "all_choiceforge_trials_faster_than_all_baseline_trials": true
+    },
+    "joint_tour_scheduling": {
+      "cached_sharrow_seconds": [
+        0.7,
+        0.663,
+        0.671
+      ],
+      "choiceforge_seconds": [
+        0.506,
+        0.504,
+        0.492
+      ],
+      "cached_sharrow_median_seconds": 0.671,
+      "choiceforge_median_seconds": 0.504,
+      "speedup": 1.3313492063492065,
+      "all_choiceforge_trials_faster_than_all_baseline_trials": true
+    },
+    "non_mandatory_tour_scheduling": {
+      "cached_sharrow_seconds": [
+        1.56,
+        1.584,
+        1.51
+      ],
+      "choiceforge_seconds": [
+        0.54,
+        0.55,
+        0.567
+      ],
+      "cached_sharrow_median_seconds": 1.56,
+      "choiceforge_median_seconds": 0.55,
+      "speedup": 2.8363636363636364,
+      "all_choiceforge_trials_faster_than_all_baseline_trials": true
+    },
+    "atwork_subtour_scheduling": {
+      "cached_sharrow_seconds": [
+        0.353,
+        0.296,
+        0.309
+      ],
+      "choiceforge_seconds": [
+        0.202,
+        0.191,
+        0.206
+      ],
+      "cached_sharrow_median_seconds": 0.309,
+      "choiceforge_median_seconds": 0.202,
+      "speedup": 1.5297029702970295,
+      "all_choiceforge_trials_faster_than_all_baseline_trials": true
+    }
+  },
+  "scheduling_suite": {
+    "cached_sharrow_seconds": [
+      8.388,
+      8.045,
+      8.005
+    ],
+    "choiceforge_seconds": [
+      6.325,
+      6.341,
+      6.297
+    ],
+    "cached_sharrow_median_seconds": 8.045,
+    "choiceforge_median_seconds": 6.325,
+    "speedup": 1.2719367588932806,
+    "median_seconds_saved": 1.7199999999999998,
+    "all_choiceforge_trials_faster_than_all_baseline_trials": true,
+    "worst_choiceforge_vs_best_baseline_speedup": 1.262419176785996
+  },
+  "all_models_context": {
+    "cached_sharrow_seconds": [
+      61.65,
+      59.119,
+      61.79
+    ],
+    "choiceforge_seconds": [
+      63.546,
+      63.056,
+      63.653
+    ],
+    "cached_sharrow_median_seconds": 61.65,
+    "choiceforge_median_seconds": 63.546,
+    "note": "Context only; most model stages are unchanged and environmental variation dominates this boundary."
+  },
+  "correctness": {
+    "reference": "output_sharrow_warm3",
+    "choiceforge_trials": [
+      "output_phase5_final1",
+      "output_phase5_final2",
+      "output_phase5_final3"
+    ],
+    "byte_identical_substantive_files": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv",
+      "final_trips.csv"
+    ],
+    "file_count": 7,
+    "final_tour_rows": 9806,
+    "final_trip_rows": 23583,
+    "sha256": {
+      "final_accessibility.csv": "8803cb6ee7e1125c054577ea6bb72123a1624c49f88269cb1b2f1777df413e5a",
+      "final_households.csv": "ec766a1f268fe0087156997400588bfe88f1f4be0a3ea9da47a61cc5b1574f6c",
+      "final_joint_tour_participants.csv": "34f30ca0cd262e6737aefc002aa3cbd3f4702c25cec344ac48302b59b4c1bbcc",
+      "final_land_use.csv": "c43eaaa761f463df152af2e3d3aa3bea8b60d20f091ac9028b07c273bac6a80b",
+      "final_persons.csv": "6d816032223d1c1c477e58655d897428929b379dbc525c36d4343e2cae07ec96",
+      "final_tours.csv": "c7a0e08af86358036367bc6533bd4d61104ce25ecaa744965f240319cca07f23",
+      "final_trips.csv": "57f4901aeb674042ad6d6d34e6a6f962c9136fc9fa2cc155a749c323bda5318b"
+    },
+    "checkpoint_csv_excluded_reason": "contains run timestamps and timing metadata"
+  },
+  "largest_batch_median_stage_ms": {
+    "stateful_ms": 321.004,
+    "pack_ms": 14.448,
+    "rng_ms": 14.734,
+    "gpu_ms": 368.193,
+    "map_ms": 0.179,
+    "total_ms": 725.277
+  },
+  "largest_batch": {
+    "interaction_rows": 642390,
+    "choosers": 3381,
+    "compact_mb": 22.033
+  },
+  "notes": [
+    "Every sample comes from ActivitySim's own workflow timer in a fresh process and clean output directory.",
+    "The suite boundary includes logsums where configured, compact state extraction, packing, ActivitySim RNG, host-device transfers, CUDA execution, result mapping, and timetable updates.",
+    "CUDA context and kernel load costs remain inside each process; no timing is subtracted."
+  ]
+}

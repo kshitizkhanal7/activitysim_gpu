@@ -1,0 +1,11 @@
+# Reproduced Windows integration stack. ActivitySim 1.4 requires NumPy <1.26
+# and imports pkg_resources from setuptools, which was removed in version 81.
+activitysim==1.4.0
+sharrow==2.16.2
+numpy==1.25.2
+pandas==2.1.4
+setuptools<81
+pytest==9.1.1
+cupy-cuda12x==13.6.0
+cuda-toolkit[cublas,cudart,cufft,curand,cusolver,cusparse,nvrtc]==12.8.2.0
+

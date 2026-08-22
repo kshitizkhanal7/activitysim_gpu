@@ -1,0 +1,38 @@
+{
+  "phase": "10A",
+  "benchmark": "public Prototype MTC extended full geography",
+  "full_population_households": 2875192,
+  "zones": 1454,
+  "design": "fresh-process baseline then ChoiceForge per repetition; not an interleaved superiority proof unless repetitions are increased",
+  "baseline": "pinned current ActivitySim with Sharrow required",
+  "optimized": "ChoiceForge destination plus shadow-verified scheduling; ActivitySim is returned for any scheduling mismatch",
+  "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+  "runs": [
+    {
+      "name": "phase9-phase10-smoke-baseline-1001-hh-1",
+      "condition": "baseline",
+      "households": 1001,
+      "started": "2026-08-17T08:49:14.7103538-04:00",
+      "finished": "2026-08-17T08:50:49.9930000-04:00",
+      "wall_seconds": 95.2826462,
+      "launcher_peak_working_set_bytes": 5939200,
+      "launcher_peak_private_bytes": 978944,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\output-phase9-phase10-smoke-baseline-1001-hh-1",
+      "stdout": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-phase10-smoke-baseline-1001-hh-1.stdout.log",
+      "stderr": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-phase10-smoke-baseline-1001-hh-1.stderr.log"
+    },
+    {
+      "name": "phase9-phase10-smoke-choiceforge-1001-hh-1",
+      "condition": "choiceforge",
+      "households": 1001,
+      "started": "2026-08-17T08:50:50.0057530-04:00",
+      "finished": "2026-08-17T08:52:18.1722801-04:00",
+      "wall_seconds": 88.1665271,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 995328,
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\output-phase9-phase10-smoke-choiceforge-1001-hh-1",
+      "stdout": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-phase10-smoke-choiceforge-1001-hh-1.stdout.log",
+      "stderr": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\phase9-phase10-smoke-choiceforge-1001-hh-1.stderr.log"
+    }
+  ]
+}

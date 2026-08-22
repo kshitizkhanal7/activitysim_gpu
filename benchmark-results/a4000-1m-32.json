@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "workload": {
+    "choosers": 1000000,
+    "alternatives": 32,
+    "features": 16,
+    "repetitions": 5,
+    "seed": 20260810,
+    "output": "benchmark-results\\a4000-1m-32.json"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13",
+    "numpy": "2.5.2",
+    "cupy": "14.1.1",
+    "gpu": "NVIDIA RTX A4000"
+  },
+  "cpu_materialized_seconds": [
+    0.4940714000258595,
+    0.5119792001787573,
+    0.4949225001037121,
+    0.49937540013343096,
+    0.5034986999817193
+  ],
+  "cpu_median_seconds": 0.49937540013343096,
+  "materialized_utility_bytes": 128000000,
+  "gpu_end_to_end_seconds": [
+    0.03806369984522462,
+    0.03661009995266795,
+    0.03633480006828904,
+    0.0356139000505209,
+    0.03749670018441975
+  ],
+  "gpu_end_to_end_median_seconds": 0.03661009995266795,
+  "gpu_resident_seconds": [
+    0.008003520011901856,
+    0.008416159629821778,
+    0.009254912376403808,
+    0.008027135848999023,
+    0.008118271827697754
+  ],
+  "gpu_resident_median_seconds": 0.008118271827697754,
+  "end_to_end_speedup": 13.640372486801667,
+  "resident_speedup": 61.512525169417486,
+  "choice_mismatches": 0,
+  "max_logsum_absolute_error": 9.5367431640625e-07
+}

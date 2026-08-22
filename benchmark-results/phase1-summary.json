@@ -1,0 +1,694 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 - strong CPU baselines and warm Sharrow profile",
+  "warm_sharrow": {
+    "activitysim": "1.4.0",
+    "sharrow": "2.16.2",
+    "mode": "require, single process, one thread for numerical libraries",
+    "total_seconds": [
+      61.65,
+      59.119,
+      61.79
+    ],
+    "median_total_seconds": 61.65,
+    "components": [
+      {
+        "component": "trip_destination",
+        "seconds": [
+          15.7,
+          15.4,
+          15.6
+        ],
+        "median_seconds": 15.6,
+        "fraction_of_median_total": 0.25304136253041365
+      },
+      {
+        "component": "mandatory_tour_scheduling",
+        "seconds": [
+          5.9,
+          5.6,
+          5.6
+        ],
+        "median_seconds": 5.6,
+        "fraction_of_median_total": 0.0908353609083536
+      },
+      {
+        "component": "trip_scheduling",
+        "seconds": [
+          5.2,
+          5.2,
+          6.5
+        ],
+        "median_seconds": 5.2,
+        "fraction_of_median_total": 0.08434712084347121
+      },
+      {
+        "component": "cdap_simulate",
+        "seconds": [
+          4.7,
+          4.4,
+          4.6
+        ],
+        "median_seconds": 4.6,
+        "fraction_of_median_total": 0.0746147607461476
+      },
+      {
+        "component": "school_location",
+        "seconds": [
+          4.2,
+          4.0,
+          4.2
+        ],
+        "median_seconds": 4.2,
+        "fraction_of_median_total": 0.0681265206812652
+      },
+      {
+        "component": "trip_mode_choice",
+        "seconds": [
+          2.5,
+          2.6,
+          2.8
+        ],
+        "median_seconds": 2.6,
+        "fraction_of_median_total": 0.042173560421735604
+      },
+      {
+        "component": "tour_mode_choice_simulate",
+        "seconds": [
+          2.5,
+          2.5,
+          2.6
+        ],
+        "median_seconds": 2.5,
+        "fraction_of_median_total": 0.04055150040551501
+      },
+      {
+        "component": "initialize_landuse",
+        "seconds": [
+          2.0,
+          1.8,
+          2.0
+        ],
+        "median_seconds": 2.0,
+        "fraction_of_median_total": 0.032441200324412
+      },
+      {
+        "component": "non_mandatory_tour_destination",
+        "seconds": [
+          2.0,
+          2.1,
+          2.0
+        ],
+        "median_seconds": 2.0,
+        "fraction_of_median_total": 0.032441200324412
+      },
+      {
+        "component": "workplace_location",
+        "seconds": [
+          1.9,
+          1.8,
+          1.8
+        ],
+        "median_seconds": 1.8,
+        "fraction_of_median_total": 0.029197080291970805
+      },
+      {
+        "component": "non_mandatory_tour_scheduling",
+        "seconds": [
+          1.7,
+          1.7,
+          1.6
+        ],
+        "median_seconds": 1.7,
+        "fraction_of_median_total": 0.027575020275750203
+      },
+      {
+        "component": "joint_tour_destination",
+        "seconds": [
+          1.8,
+          1.5,
+          1.6
+        ],
+        "median_seconds": 1.6,
+        "fraction_of_median_total": 0.025952960259529603
+      },
+      {
+        "component": "atwork_subtour_destination",
+        "seconds": [
+          1.5,
+          1.4,
+          1.5
+        ],
+        "median_seconds": 1.5,
+        "fraction_of_median_total": 0.024330900243309004
+      },
+      {
+        "component": "non_mandatory_tour_frequency",
+        "seconds": [
+          1.4,
+          1.3,
+          1.4
+        ],
+        "median_seconds": 1.4,
+        "fraction_of_median_total": 0.0227088402270884
+      },
+      {
+        "component": "stop_frequency",
+        "seconds": [
+          1.7,
+          1.3,
+          1.4
+        ],
+        "median_seconds": 1.4,
+        "fraction_of_median_total": 0.0227088402270884
+      },
+      {
+        "component": "joint_tour_scheduling",
+        "seconds": [
+          0.8,
+          0.7,
+          0.8
+        ],
+        "median_seconds": 0.8,
+        "fraction_of_median_total": 0.012976480129764802
+      },
+      {
+        "component": "compute_accessibility",
+        "seconds": [
+          0.6,
+          0.6,
+          0.6
+        ],
+        "median_seconds": 0.6,
+        "fraction_of_median_total": 0.009732360097323601
+      },
+      {
+        "component": "joint_tour_participation",
+        "seconds": [
+          0.6,
+          0.5,
+          0.5
+        ],
+        "median_seconds": 0.5,
+        "fraction_of_median_total": 0.008110300081103
+      },
+      {
+        "component": "atwork_subtour_mode_choice",
+        "seconds": [
+          0.5,
+          0.4,
+          0.5
+        ],
+        "median_seconds": 0.5,
+        "fraction_of_median_total": 0.008110300081103
+      },
+      {
+        "component": "write_data_dictionary",
+        "seconds": [
+          0.6,
+          0.5,
+          0.5
+        ],
+        "median_seconds": 0.5,
+        "fraction_of_median_total": 0.008110300081103
+      },
+      {
+        "component": "summarize",
+        "seconds": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "median_seconds": 0.5,
+        "fraction_of_median_total": 0.008110300081103
+      },
+      {
+        "component": "mandatory_tour_frequency",
+        "seconds": [
+          0.4,
+          0.4,
+          0.4
+        ],
+        "median_seconds": 0.4,
+        "fraction_of_median_total": 0.006488240064882401
+      },
+      {
+        "component": "joint_tour_frequency",
+        "seconds": [
+          0.4,
+          0.3,
+          0.4
+        ],
+        "median_seconds": 0.4,
+        "fraction_of_median_total": 0.006488240064882401
+      },
+      {
+        "component": "atwork_subtour_scheduling",
+        "seconds": [
+          0.4,
+          0.4,
+          0.4
+        ],
+        "median_seconds": 0.4,
+        "fraction_of_median_total": 0.006488240064882401
+      },
+      {
+        "component": "write_tables",
+        "seconds": [
+          0.4,
+          0.4,
+          0.4
+        ],
+        "median_seconds": 0.4,
+        "fraction_of_median_total": 0.006488240064882401
+      },
+      {
+        "component": "initialize_households",
+        "seconds": [
+          0.3,
+          0.2,
+          0.3
+        ],
+        "median_seconds": 0.3,
+        "fraction_of_median_total": 0.004866180048661801
+      },
+      {
+        "component": "atwork_subtour_frequency",
+        "seconds": [
+          0.3,
+          0.3,
+          0.3
+        ],
+        "median_seconds": 0.3,
+        "fraction_of_median_total": 0.004866180048661801
+      },
+      {
+        "component": "write_trip_matrices",
+        "seconds": [
+          0.3,
+          0.3,
+          0.3
+        ],
+        "median_seconds": 0.3,
+        "fraction_of_median_total": 0.004866180048661801
+      },
+      {
+        "component": "auto_ownership_simulate",
+        "seconds": [
+          0.3,
+          0.2,
+          0.2
+        ],
+        "median_seconds": 0.2,
+        "fraction_of_median_total": 0.0032441200324412004
+      },
+      {
+        "component": "free_parking",
+        "seconds": [
+          0.3,
+          0.2,
+          0.2
+        ],
+        "median_seconds": 0.2,
+        "fraction_of_median_total": 0.0032441200324412004
+      },
+      {
+        "component": "joint_tour_composition",
+        "seconds": [
+          0.3,
+          0.2,
+          0.2
+        ],
+        "median_seconds": 0.2,
+        "fraction_of_median_total": 0.0032441200324412004
+      },
+      {
+        "component": "trip_purpose",
+        "seconds": [
+          0.1,
+          0.1,
+          0.2
+        ],
+        "median_seconds": 0.1,
+        "fraction_of_median_total": 0.0016220600162206002
+      },
+      {
+        "component": "trip_purpose_and_destination",
+        "seconds": [
+          0.1,
+          0.1,
+          0.1
+        ],
+        "median_seconds": 0.1,
+        "fraction_of_median_total": 0.0016220600162206002
+      },
+      {
+        "component": "track_skim_usage",
+        "seconds": [
+          0.1,
+          0.1,
+          0.1
+        ],
+        "median_seconds": 0.1,
+        "fraction_of_median_total": 0.0016220600162206002
+      }
+    ],
+    "final_output_hashes": {
+      "final_households.csv": {
+        "identical_across_runs": true,
+        "sha256": "ec766a1f268fe0087156997400588bfe88f1f4be0a3ea9da47a61cc5b1574f6c"
+      },
+      "final_persons.csv": {
+        "identical_across_runs": true,
+        "sha256": "6d816032223d1c1c477e58655d897428929b379dbc525c36d4343e2cae07ec96"
+      },
+      "final_tours.csv": {
+        "identical_across_runs": true,
+        "sha256": "c7a0e08af86358036367bc6533bd4d61104ce25ecaa744965f240319cca07f23"
+      },
+      "final_trips.csv": {
+        "identical_across_runs": true,
+        "sha256": "57f4901aeb674042ad6d6d34e6a6f962c9136fc9fa2cc155a749c323bda5318b"
+      }
+    }
+  },
+  "linear_choice_benchmarks": [
+    {
+      "source": "benchmark-results\\phase1-a4000-32x16.json",
+      "settings": {
+        "sizes": [
+          10000,
+          100000,
+          1000000
+        ],
+        "alternatives": 32,
+        "features": 16,
+        "repetitions": 11,
+        "warmups": 10,
+        "cpu_threads": 24,
+        "seed": 20260810
+      },
+      "environment": {
+        "platform": "Windows-10-10.0.26200-SP0",
+        "processor": "AMD64 Family 25 Model 8 Stepping 2, AuthenticAMD",
+        "python": "3.11.14",
+        "numpy": "1.25.2",
+        "logical_cpu_count": 48,
+        "configured_physical_cpu_threads": 24,
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 24,
+            "prefix": "libopenblas",
+            "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\numpy\\.libs\\libopenblas64__v0.3.23-246-g3d31191b-gcc_10_3_0.dll",
+            "version": "0.3.23.dev",
+            "threading_layer": "pthreads",
+            "architecture": "Zen"
+          },
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 24,
+            "prefix": "libscipy_openblas",
+            "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "Haswell"
+          }
+        ],
+        "numba": "0.66.0",
+        "cupy": "13.6.0",
+        "gpu": "NVIDIA RTX A4000"
+      },
+      "comparisons": [
+        {
+          "choosers": 10000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 0.391,
+          "gpu_method": "gpu_transfer_inclusive",
+          "gpu_median_ms": 1.2627000000000002,
+          "speedup_vs_best_cpu": 0.30965391621129323,
+          "speedup_bootstrap_95_percent_interval": [
+            0.2543603664743807,
+            0.432608487403008
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": false,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 10000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 0.391,
+          "gpu_method": "gpu_resident",
+          "gpu_median_ms": 0.8112,
+          "speedup_vs_best_cpu": 0.4820019723865878,
+          "speedup_bootstrap_95_percent_interval": [
+            0.45685404339250496,
+            0.5567061143984221
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": false,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 100000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 5.5602,
+          "gpu_method": "gpu_transfer_inclusive",
+          "gpu_median_ms": 4.1656,
+          "speedup_vs_best_cpu": 1.3347897061647782,
+          "speedup_bootstrap_95_percent_interval": [
+            1.2135140443920645,
+            1.3756061355764475
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": false,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 100000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 5.5602,
+          "gpu_method": "gpu_resident",
+          "gpu_median_ms": 1.1927999999999999,
+          "speedup_vs_best_cpu": 4.661468812877264,
+          "speedup_bootstrap_95_percent_interval": [
+            4.334962554197872,
+            4.935818908122504
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 1000000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 59.26349999999999,
+          "gpu_method": "gpu_transfer_inclusive",
+          "gpu_median_ms": 34.5236,
+          "speedup_vs_best_cpu": 1.7166083490713597,
+          "speedup_bootstrap_95_percent_interval": [
+            1.6552969341527255,
+            1.731112320538305
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": false,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 1000000,
+          "alternatives": 32,
+          "features": 16,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 59.26349999999999,
+          "gpu_method": "gpu_resident",
+          "gpu_median_ms": 7.1122,
+          "speedup_vs_best_cpu": 8.332653749894547,
+          "speedup_bootstrap_95_percent_interval": [
+            8.124265924864424,
+            8.3728241613003
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 4.76837158203125e-07,
+          "p999_logsum_absolute_error": 4.76837158203125e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": true
+        }
+      ]
+    },
+    {
+      "source": "benchmark-results\\phase1-a4000-scheduling-shape.json",
+      "settings": {
+        "sizes": [
+          10000,
+          100000
+        ],
+        "alternatives": 190,
+        "features": 69,
+        "repetitions": 11,
+        "warmups": 10,
+        "cpu_threads": 24,
+        "seed": 20260810
+      },
+      "environment": {
+        "platform": "Windows-10-10.0.26200-SP0",
+        "processor": "AMD64 Family 25 Model 8 Stepping 2, AuthenticAMD",
+        "python": "3.11.14",
+        "numpy": "1.25.2",
+        "logical_cpu_count": 48,
+        "configured_physical_cpu_threads": 24,
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 24,
+            "prefix": "libopenblas",
+            "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\numpy\\.libs\\libopenblas64__v0.3.23-246-g3d31191b-gcc_10_3_0.dll",
+            "version": "0.3.23.dev",
+            "threading_layer": "pthreads",
+            "architecture": "Zen"
+          },
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 24,
+            "prefix": "libscipy_openblas",
+            "filepath": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-asim\\Lib\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll",
+            "version": "0.3.30",
+            "threading_layer": "pthreads",
+            "architecture": "Haswell"
+          }
+        ],
+        "numba": "0.66.0",
+        "cupy": "13.6.0",
+        "gpu": "NVIDIA RTX A4000"
+      },
+      "comparisons": [
+        {
+          "choosers": 10000,
+          "alternatives": 190,
+          "features": 69,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 10.755799999999999,
+          "gpu_method": "gpu_transfer_inclusive",
+          "gpu_median_ms": 2.5654,
+          "speedup_vs_best_cpu": 4.19264052389491,
+          "speedup_bootstrap_95_percent_interval": [
+            4.134619820096871,
+            4.229072464907796
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 1.9073486328125e-06,
+          "p999_logsum_absolute_error": 9.5367431640625e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 10000,
+          "alternatives": 190,
+          "features": 69,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 10.755799999999999,
+          "gpu_method": "gpu_resident",
+          "gpu_median_ms": 0.9678,
+          "speedup_vs_best_cpu": 11.11365984707584,
+          "speedup_bootstrap_95_percent_interval": [
+            10.489370001950457,
+            11.180099709181555
+          ],
+          "choice_mismatches": 0,
+          "choice_mismatch_rate": 0.0,
+          "max_logsum_absolute_error": 1.9073486328125e-06,
+          "p999_logsum_absolute_error": 9.5367431640625e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": true
+        },
+        {
+          "choosers": 100000,
+          "alternatives": 190,
+          "features": 69,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 109.66239999999999,
+          "gpu_method": "gpu_transfer_inclusive",
+          "gpu_median_ms": 20.381300000000003,
+          "speedup_vs_best_cpu": 5.380540004808329,
+          "speedup_bootstrap_95_percent_interval": [
+            5.2198316895777,
+            5.418720477498666
+          ],
+          "choice_mismatches": 2,
+          "choice_mismatch_rate": 2e-05,
+          "max_logsum_absolute_error": 1.9073486328125e-06,
+          "p999_logsum_absolute_error": 9.5367431640625e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": false
+        },
+        {
+          "choosers": 100000,
+          "alternatives": 190,
+          "features": 69,
+          "best_cpu_method": "numba_fused_parallel_24t",
+          "best_cpu_median_ms": 109.66239999999999,
+          "gpu_method": "gpu_resident",
+          "gpu_median_ms": 6.7297,
+          "speedup_vs_best_cpu": 16.295288051473317,
+          "speedup_bootstrap_95_percent_interval": [
+            16.1386902133922,
+            16.324560881214648
+          ],
+          "choice_mismatches": 2,
+          "choice_mismatch_rate": 2e-05,
+          "max_logsum_absolute_error": 1.9073486328125e-06,
+          "p999_logsum_absolute_error": 9.5367431640625e-07,
+          "passes_2x_speed_gate": true,
+          "passes_zero_choice_mismatch_gate": false
+        }
+      ]
+    }
+  ],
+  "known_boundary_rows": [
+    {
+      "workload": "100000 choosers, 190 alternatives, 69 features",
+      "row": 53360,
+      "numpy_choice": 130,
+      "numba_and_gpu_choice": 131,
+      "distance_to_numpy_cdf_boundary": 1.1920928955078125e-07
+    },
+    {
+      "workload": "100000 choosers, 190 alternatives, 69 features",
+      "row": 73539,
+      "numpy_choice": 116,
+      "numba_and_gpu_choice": 117,
+      "distance_to_numpy_cdf_boundary": 2.980232238769531e-07
+    }
+  ]
+}

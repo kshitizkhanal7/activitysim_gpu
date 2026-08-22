@@ -1,0 +1,8 @@
+# Reproducible Phase 8A environment (Python 3.11.14 on Windows)
+activitysim @ git+https://github.com/ActivitySim/activitysim.git@16ab11180a26912987eb902daf945e268f3efc11
+cupy-cuda12x[ctk]>=14,<15
+numba>=0.60
+pytest>=8
+
+# Install ChoiceForge itself from this repository after resolving the pins:
+#   uv pip install --python .venv-phase8/Scripts/python.exe -e ".[gpu,test]"

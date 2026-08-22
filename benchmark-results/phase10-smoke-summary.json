@@ -1,0 +1,169 @@
+{
+  "phase": "10A",
+  "manifest": "benchmark-results\\phase9-mtc-full-phase10-smoke-runs.json",
+  "benchmark": {
+    "benchmark": "public Prototype MTC extended full geography",
+    "full_population_households": 2875192,
+    "zones": 1454,
+    "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+    "design": "fresh-process baseline then ChoiceForge per repetition; not an interleaved superiority proof unless repetitions are increased"
+  },
+  "runs": [
+    {
+      "name": "phase9-phase10-smoke-baseline-1001-hh-1",
+      "condition": "baseline",
+      "households": 1001,
+      "started": "2026-08-17T08:49:14.7103538-04:00",
+      "finished": "2026-08-17T08:50:49.9930000-04:00",
+      "wall_seconds": 95.2826462,
+      "launcher_peak_working_set_bytes": 5939200,
+      "launcher_peak_private_bytes": 978944,
+      "all_models": 89.29,
+      "activitysim_high_water_rss_bytes": 7502532608,
+      "activitysim_high_water_uss_bytes": 896933888,
+      "scheduling_suite": 6.9,
+      "mandatory_tour_scheduling": 4.3,
+      "joint_tour_scheduling": 0.9,
+      "non_mandatory_tour_scheduling": 1.0,
+      "atwork_subtour_scheduling": 0.7,
+      "trip_destination": 17.8
+    },
+    {
+      "name": "phase9-phase10-smoke-choiceforge-1001-hh-1",
+      "condition": "choiceforge",
+      "households": 1001,
+      "started": "2026-08-17T08:50:50.0057530-04:00",
+      "finished": "2026-08-17T08:52:18.1722801-04:00",
+      "wall_seconds": 88.1665271,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 995328,
+      "all_models": 82.417,
+      "activitysim_high_water_rss_bytes": 7587532800,
+      "activitysim_high_water_uss_bytes": 969474048,
+      "scheduling_suite": 7.6000000000000005,
+      "mandatory_tour_scheduling": 4.7,
+      "joint_tour_scheduling": 0.9,
+      "non_mandatory_tour_scheduling": 1.2,
+      "atwork_subtour_scheduling": 0.8,
+      "trip_destination": 10.7
+    }
+  ],
+  "metrics": {
+    "all_models": {
+      "baseline_seconds": [
+        89.29
+      ],
+      "optimized_seconds": [
+        82.417
+      ],
+      "baseline_median_seconds": 89.29,
+      "optimized_median_seconds": 82.417,
+      "median_seconds_saved": 6.873000000000005,
+      "speedup": 1.083392989310458
+    },
+    "scheduling_suite": {
+      "baseline_seconds": [
+        6.9
+      ],
+      "optimized_seconds": [
+        7.6000000000000005
+      ],
+      "baseline_median_seconds": 6.9,
+      "optimized_median_seconds": 7.6000000000000005,
+      "median_seconds_saved": -0.7000000000000002,
+      "speedup": 0.9078947368421052
+    },
+    "mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        4.3
+      ],
+      "optimized_seconds": [
+        4.7
+      ],
+      "baseline_median_seconds": 4.3,
+      "optimized_median_seconds": 4.7,
+      "median_seconds_saved": -0.40000000000000036,
+      "speedup": 0.9148936170212765
+    },
+    "joint_tour_scheduling": {
+      "baseline_seconds": [
+        0.9
+      ],
+      "optimized_seconds": [
+        0.9
+      ],
+      "baseline_median_seconds": 0.9,
+      "optimized_median_seconds": 0.9,
+      "median_seconds_saved": 0.0,
+      "speedup": 1.0
+    },
+    "non_mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        1.0
+      ],
+      "optimized_seconds": [
+        1.2
+      ],
+      "baseline_median_seconds": 1.0,
+      "optimized_median_seconds": 1.2,
+      "median_seconds_saved": -0.19999999999999996,
+      "speedup": 0.8333333333333334
+    },
+    "atwork_subtour_scheduling": {
+      "baseline_seconds": [
+        0.7
+      ],
+      "optimized_seconds": [
+        0.8
+      ],
+      "baseline_median_seconds": 0.7,
+      "optimized_median_seconds": 0.8,
+      "median_seconds_saved": -0.10000000000000009,
+      "speedup": 0.8749999999999999
+    },
+    "trip_destination": {
+      "baseline_seconds": [
+        17.8
+      ],
+      "optimized_seconds": [
+        10.7
+      ],
+      "baseline_median_seconds": 17.8,
+      "optimized_median_seconds": 10.7,
+      "median_seconds_saved": 7.100000000000001,
+      "speedup": 1.663551401869159
+    }
+  },
+  "correctness": {
+    "reference": "phase9-phase10-smoke-baseline-1001-hh-1",
+    "checked_runs": [
+      "phase9-phase10-smoke-baseline-1001-hh-1",
+      "phase9-phase10-smoke-choiceforge-1001-hh-1"
+    ],
+    "byte_identical_substantive_files": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv",
+      "final_trips.csv"
+    ],
+    "sha256": {
+      "final_accessibility.csv": "ef2658d714e80e25a10638ae7ccd58c402e6cde7227eed811d5acd6e43077b22",
+      "final_households.csv": "29ea5567cc48120ef83da53c4be26970951fe5e27caab51d0f3d54dfa12af5d5",
+      "final_joint_tour_participants.csv": "6bdca088e57e4429c6c05472a3b4660df74b17d84ad428f5da650fe22408424f",
+      "final_land_use.csv": "608933cd2e3ce17ab19a17cfd6be7b780cad3206dcf85a664c9fbd3b7f33c192",
+      "final_persons.csv": "8919b4bf818a3b4eb8b1806bb8e841b2c2b81db55806bb00d638f415a92a8f87",
+      "final_tours.csv": "cfd21fe9eb753904033a08611fe59884e26bb1b5bedbfa9cd03eefce64569b37",
+      "final_trips.csv": "c5fabf2d7d4e1473c02a119f40ae092b2bcf9069f33d3c679b90d369386a5905"
+    },
+    "rows": {
+      "final_households.csv": 1001,
+      "final_persons.csv": 2620,
+      "final_tours.csv": 3527,
+      "final_trips.csv": 8931
+    },
+    "checkpoint_csv_excluded_reason": "contains run timing metadata"
+  }
+}
