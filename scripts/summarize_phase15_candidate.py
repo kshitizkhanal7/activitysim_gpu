@@ -24,6 +24,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reports", type=Path, required=True)
     parser.add_argument("--exact-reports", type=Path, required=True)
+    parser.add_argument("--mode-reports", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--households", type=int, required=True)
     parser.add_argument("--phase", type=int, default=15)
@@ -39,6 +40,19 @@ def main() -> None:
         raise RuntimeError(f"Phase {args.phase} strict CPU/CUDA exact gate failed")
     if len(records) != len(exact):
         raise RuntimeError("candidate and exact report counts differ")
+    mode_records = []
+    if args.mode_reports:
+        mode_records = [
+            json.loads(path.read_text())
+            for path in sorted(args.mode_reports.glob("*.json"))
+        ]
+        if not mode_records:
+            raise RuntimeError("mode report directory is empty")
+        if any(
+            not record.get("candidate_used") or record.get("fallback_used")
+            for record in mode_records
+        ):
+            raise RuntimeError("trip-mode generated utility candidate used a fallback")
 
     summary = {
         "phase": args.phase,
@@ -67,12 +81,21 @@ def main() -> None:
             "host_pack": median(records, "host_pack_ms"),
             "input_upload": median(records, "input_upload_ms"),
             "coefficient_upload": median(records, "coefficient_upload_ms"),
+            "plan_build": median(records, "plan_build_ms") if "plan_build_ms" in records[0] else None,
             "generated_utility_kernel": median(records, "kernel_ms"),
             "nested_kernel": median(records, "nested_kernel_ms"),
             "nested_download": median(records, "nested_download_ms"),
         },
         "compiled_calls": sum(bool(record["compiled_this_call"]) for record in records),
         "coefficient_cache_hits": sum(bool(record["coefficient_cache_hit"]) for record in records),
+        "persistent_plan": all(bool(record.get("persistent_plan")) for record in records),
+        "plan_cache_hits": sum(bool(record.get("plan_cache_hit")) for record in records),
+        "reusable_workspace": all(
+            bool(record.get("reusable_workspace")) for record in records
+        ),
+        "workspace_cache_hits": sum(
+            bool(record.get("workspace_cache_hit")) for record in records
+        ),
         "tile_rows": sorted({int(record.get("tile_rows", 1)) for record in records}),
         "dense_row_inputs": sorted(
             {int(record.get("dense_row_inputs", 0)) for record in records}
@@ -120,6 +143,25 @@ def main() -> None:
         "source_sha256": sorted({record["source_sha256"] for record in records}),
         "candidate_report_tree_sha256": tree_sha256(args.reports),
         "exact_report_tree_sha256": tree_sha256(args.exact_reports),
+        "mode_candidate": (
+            {
+                "reports": len(mode_records),
+                "rows": sum(int(record["rows"]) for record in mode_records),
+                "fallbacks": 0,
+                "plan_cache_hits": sum(
+                    bool(record.get("plan_cache_hit")) for record in mode_records
+                ),
+                "workspace_cache_hits": sum(
+                    bool(record.get("workspace_cache_hit"))
+                    for record in mode_records
+                ),
+                "source_sha256": sorted(
+                    {record["source_sha256"] for record in mode_records}
+                ),
+                "report_tree_sha256": tree_sha256(args.mode_reports),
+            }
+            if mode_records else None
+        ),
         "success": True,
         "claim_boundary": "correctness and device-residency gate; full-model superiority requires repeated interleaved A/B trials",
     }

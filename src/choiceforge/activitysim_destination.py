@@ -525,15 +525,31 @@ def _simple_simulate_mtc21_logsums_cuda(
     strict_cuda_expression_float32 = (
         os.environ.get("CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32", "0") == "1"
     )
-    candidate_phase = 16 if strict_cuda_locality else 15
+    strict_cuda_persistent_plan = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_PERSISTENT_PLAN", "0") == "1"
+    )
+    strict_cuda_reuse_buffers = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS", "0") == "1"
+    )
+    candidate_phase = (
+        17 if strict_cuda_persistent_plan else (16 if strict_cuda_locality else 15)
+    )
     phase15_report_dir = os.environ.get("CHOICEFORGE_PHASE15_REPORT_DIR")
     phase15_run_id = os.environ.get("CHOICEFORGE_PHASE15_RUN_ID", "")
     phase16_report_dir = os.environ.get("CHOICEFORGE_PHASE16_REPORT_DIR")
     phase16_run_id = os.environ.get("CHOICEFORGE_PHASE16_RUN_ID", "")
-    candidate_report_dir = (
-        phase16_report_dir if candidate_phase == 16 else phase15_report_dir
-    )
-    candidate_run_id = phase16_run_id if candidate_phase == 16 else phase15_run_id
+    phase17_report_dir = os.environ.get("CHOICEFORGE_PHASE17_REPORT_DIR")
+    phase17_run_id = os.environ.get("CHOICEFORGE_PHASE17_RUN_ID", "")
+    candidate_report_dir = {
+        15: phase15_report_dir,
+        16: phase16_report_dir,
+        17: phase17_report_dir,
+    }[candidate_phase]
+    candidate_run_id = {
+        15: phase15_run_id,
+        16: phase16_run_id,
+        17: phase17_run_id,
+    }[candidate_phase]
     phase15_report_sequence = 0
     candidate_queue = []
     captured_flow = {}
@@ -576,14 +592,20 @@ def _simple_simulate_mtc21_logsums_cuda(
             raise ValueError("strict CUDA candidate found no targeted skim wrapper")
         strict_locals = state.get_global_constants().copy()
         strict_locals.update(call_locals or {})
-        environment = {"df": dataframe, **strict_locals}
+        # The GPU binder needs array identity and dtype, not pandas indexing.
+        # Materialize each zero-copy view once so a compiled plan can validate
+        # its ABI without repeatedly constructing Series objects.
+        column_arrays = {
+            column: dataframe[column].to_numpy(copy=False)
+            for column in dataframe.columns
+        }
+        environment = {"df": column_arrays, **strict_locals}
         environment.update({
             name: cuda_wrapper_from_activitysim(value)
             for name, value in skims.items()
             if name in {"od_skims", "odt_skims", "dot_skims"}
         })
-        for column in dataframe.columns:
-            environment[column] = dataframe[column].to_numpy(copy=False)
+        environment.update(column_arrays)
         document, ir_cache_hit, ir_compile_ms = _cached_strict_ir(spec_frame)
         return document, environment, ir_cache_hit, ir_compile_ms
 
@@ -641,6 +663,8 @@ def _simple_simulate_mtc21_logsums_cuda(
             group_skim_indices=strict_cuda_grouped_indices,
             sparse_zero_coefficients=strict_cuda_sparse_coefficients,
             expression_float32=strict_cuda_expression_float32,
+            persistent_plan=strict_cuda_persistent_plan,
+            reuse_buffers=strict_cuda_reuse_buffers,
         )
         report = compare_strict_cpu_cuda(
             cpu, cuda, row_labels=raw_utilities.index.to_numpy(copy=False)
@@ -910,6 +934,11 @@ def _simple_simulate_mtc21_logsums_cuda(
                     ),
                     "sparse_zero_coefficients": telemetry.sparse_zero_coefficients,
                     "expression_dtype": telemetry.expression_dtype,
+                    "persistent_plan": telemetry.persistent_plan,
+                    "plan_cache_hit": telemetry.plan_cache_hit,
+                    "plan_build_ms": telemetry.plan_build_ms,
+                    "reusable_workspace": telemetry.reusable_workspace,
+                    "workspace_cache_hit": telemetry.workspace_cache_hit,
                     "ir_cache_hit": entry["ir_cache_hit"],
                     "ir_compile_ms": entry["ir_compile_ms"],
                     "skim_binding_cache_hits": entry["skim_cache_delta"]["binding_hits"],
@@ -919,7 +948,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                 logger.info(
                     "%s ChoiceForge strict candidate phase=%d tile_rows=%d rows=%d "
                     "resolve=%.3fms pack=%.3fms "
-                    "upload=%.3fms coefficient=%.3fms utility=%.3fms "
+                    "upload=%.3fms plan=%.3fms coefficient=%.3fms utility=%.3fms "
                     "nested=%.3fms download=%.3fms",
                     trace_label,
                     candidate_phase,
@@ -928,6 +957,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                     telemetry.binding_resolve_ms,
                     telemetry.host_pack_ms,
                     telemetry.input_upload_ms,
+                    telemetry.plan_build_ms,
                     telemetry.coefficient_upload_ms,
                     telemetry.kernel_ms,
                     nested.kernel_ms,
@@ -1056,6 +1086,8 @@ def _simple_simulate_mtc21_logsums_cuda(
                         group_skim_indices=strict_cuda_grouped_indices,
                         sparse_zero_coefficients=strict_cuda_sparse_coefficients,
                         expression_float32=strict_cuda_expression_float32,
+                        persistent_plan=strict_cuda_persistent_plan,
+                        reuse_buffers=strict_cuda_reuse_buffers,
                     )
                     cache_after = cuda_dataset_cache_stats()
                     cache_delta = {
@@ -1295,8 +1327,19 @@ def choose_trip_destinations_batched(
         trip_num = int(nth_trips["trip_num"].iloc[0])
         final_intermediate_trip_num = int(nth_trips["trip_count"].max()) - 1
         if trip_num >= final_intermediate_trip_num:
-            from choiceforge.cuda_skims import clear_cuda_dataset_cache
+            if os.environ.get("CHOICEFORGE_STRICT_CUDA_MODE_CHOICE", "0") == "1":
+                from choiceforge.activitysim_mode_choice import (
+                    install_activitysim_trip_mode_candidate,
+                )
 
-            clear_cuda_dataset_cache()
-            logger.info("%s released strict CUDA skim cache", trace_label)
+                install_activitysim_trip_mode_candidate()
+                logger.info(
+                    "%s retained strict CUDA skim cache for trip mode choice",
+                    trace_label,
+                )
+            else:
+                from choiceforge.cuda_skims import clear_cuda_dataset_cache
+
+                clear_cuda_dataset_cache()
+                logger.info("%s released strict CUDA skim cache", trace_label)
     return results + empty_results

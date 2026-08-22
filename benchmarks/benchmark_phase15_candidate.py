@@ -20,6 +20,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--candidate-reports", type=Path)
+    parser.add_argument("--mode-reports", type=Path)
     parser.add_argument("--require-promotion", action="store_true")
     parser.add_argument("--require-component-promotion", action="store_true")
     parser.add_argument("--phase", type=int, default=15)
@@ -120,6 +121,18 @@ def main() -> None:
             "expression_dtypes": sorted(
                 {record.get("expression_dtype", "float64") for record in used}
             ),
+            "persistent_plan": all(
+                bool(record.get("persistent_plan")) for record in used
+            ),
+            "plan_cache_hits": sum(
+                bool(record.get("plan_cache_hit")) for record in used
+            ),
+            "reusable_workspace": all(
+                bool(record.get("reusable_workspace")) for record in used
+            ),
+            "workspace_cache_hits": sum(
+                bool(record.get("workspace_cache_hit")) for record in used
+            ),
             "active_coefficients": sorted(
                 {int(record.get("active_coefficients", 0)) for record in used}
             ),
@@ -147,11 +160,46 @@ def main() -> None:
                 key: sum(float(record.get(key, 0.0)) for record in used)
                 for key in (
                     "ir_compile_ms", "binding_resolve_ms", "host_pack_ms",
-                    "input_upload_ms", "kernel_ms", "nested_kernel_ms",
+                    "input_upload_ms", "plan_build_ms", "kernel_ms", "nested_kernel_ms",
                     "nested_download_ms",
                 )
             },
         }
+    mode_telemetry = None
+    if args.mode_reports:
+        mode_records = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted(args.mode_reports.glob("*.json"))
+        ]
+        if mode_records:
+            if any(
+                not record.get("candidate_used") or record.get("fallback_used")
+                for record in mode_records
+            ):
+                raise RuntimeError("trip-mode generated utility candidate used a fallback")
+            mode_telemetry = {
+                "reports": len(mode_records),
+                "rows": sum(int(record["rows"]) for record in mode_records),
+                "fallbacks": 0,
+                "plan_cache_hits": sum(
+                    bool(record.get("plan_cache_hit")) for record in mode_records
+                ),
+                "workspace_cache_hits": sum(
+                    bool(record.get("workspace_cache_hit"))
+                    for record in mode_records
+                ),
+                "source_sha256": sorted({
+                    record.get("source_sha256") for record in mode_records
+                }),
+                "timing_totals_ms": {
+                    key: sum(float(record.get(key, 0.0)) for record in mode_records)
+                    for key in (
+                        "ir_compile_ms", "binding_resolve_ms", "host_pack_ms",
+                        "input_upload_ms", "plan_build_ms", "kernel_ms",
+                        "utility_download_ms", "elapsed_ms",
+                    )
+                },
+            }
     summary = {
         "phase": args.phase,
         "manifest": str(args.manifest),
@@ -170,15 +218,20 @@ def main() -> None:
         "correctness": {
             "policy": (
                 "exact modeled decisions and byte-identical non-trip outputs; "
-                "destination_logsum diagnostic max absolute difference <= 1e-4"
+                "declared logsum diagnostics remain within explicit gates"
             ),
             "candidate_runs": correctness,
             "all_decisions_exact": exact_decisions,
             "maximum_destination_logsum_abs": max(
                 result["diagnostic_max_abs"] for result in correctness.values()
             ),
+            "maximum_mode_choice_logsum_abs": max(
+                result.get("mode_choice_logsum_max_abs", 0.0)
+                for result in correctness.values()
+            ),
         },
         "candidate_telemetry": telemetry,
+        "mode_candidate_telemetry": mode_telemetry,
         "component_promotion_gate": component_promotion_gate,
         "promotion_gate": promotion_gate,
     }

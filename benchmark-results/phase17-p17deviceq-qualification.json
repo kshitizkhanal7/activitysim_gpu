@@ -1,0 +1,90 @@
+{
+  "phase": 17,
+  "benchmark": "public Prototype MTC Extended device-resident generated strict-CUDA candidate",
+  "households": 1001,
+  "batches": 30,
+  "rows": 85126,
+  "terms_per_batch": [
+    379
+  ],
+  "alternatives_per_batch": [
+    21
+  ],
+  "candidate_batches": 30,
+  "fallback_batches": 0,
+  "exact_cpu_cuda_batches": 30,
+  "exact_feature_cells": 32262754,
+  "feature_cells": 32262754,
+  "exact_utility_cells": 1787646,
+  "utility_cells": 1787646,
+  "max_feature_abs": 0.0,
+  "max_utility_abs": 0.0,
+  "device_resident_utility_batches": 30,
+  "utility_device_to_host_bytes": 0,
+  "nested_host_to_device_bytes": 0,
+  "timing_medians_ms": {
+    "binding_resolve": 2.862700028344989,
+    "host_pack": 0.3895499976351857,
+    "input_upload": 1.7375499592162669,
+    "coefficient_upload": 0.0,
+    "plan_build": 0.0,
+    "generated_utility_kernel": 1.9473000429570675,
+    "nested_kernel": 1.284550002310425,
+    "nested_download": 0.3257999778725207
+  },
+  "compiled_calls": 10,
+  "coefficient_cache_hits": 20,
+  "persistent_plan": true,
+  "plan_cache_hits": 20,
+  "reusable_workspace": true,
+  "workspace_cache_hits": 20,
+  "tile_rows": [
+    1
+  ],
+  "dense_row_inputs": [
+    56
+  ],
+  "scalar_inputs": [
+    53
+  ],
+  "unique_skim_bindings": [
+    149
+  ],
+  "skim_index_groups": [
+    3
+  ],
+  "grouped_skim_indices": true,
+  "sparse_zero_coefficients": false,
+  "expression_dtypes": [
+    "float32"
+  ],
+  "active_coefficients": [
+    419,
+    427,
+    465
+  ],
+  "zero_coefficient_ops_skipped": 0,
+  "skim_loads_avoided": 0,
+  "ir_cache_hits": 20,
+  "skim_binding_cache_hits": 4026,
+  "skim_binding_cache_misses": 444,
+  "skim_array_uploads": 148,
+  "source_sha256": [
+    "40b79642f954b07fa21088df897d1f89926d7b44e377f0108246d2bf35986c5c"
+  ],
+  "candidate_report_tree_sha256": "45e579bb403d8af0d92256f56391eeca7023cbc03084a8feaee4ebec1b45607c",
+  "exact_report_tree_sha256": "2ef02b51d255d46e09881f039aea85d25db0a017ae7687f13f2d88d7637d2019",
+  "mode_candidate": {
+    "reports": 10,
+    "rows": 8931,
+    "fallbacks": 0,
+    "plan_cache_hits": 10,
+    "workspace_cache_hits": 10,
+    "source_sha256": [
+      "40b79642f954b07fa21088df897d1f89926d7b44e377f0108246d2bf35986c5c"
+    ],
+    "report_tree_sha256": "76a8c9f0f2b83e46e5dd5b70575f7b315a30ef8cc53203cd6cd2e5ba785b869c"
+  },
+  "success": true,
+  "claim_boundary": "correctness and device-residency gate; full-model superiority requires repeated interleaved A/B trials"
+}

@@ -165,6 +165,114 @@ def test_strict_cuda_reuses_device_coefficients_and_reports_split_transfer_timin
     assert second.telemetry.host_pack_ms >= 0
 
 
+def test_persistent_plan_reuses_compiled_schema_and_reports_build_cost_once():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(_spec())
+    first = evaluate_strict_cuda(
+        document, _environment(), persistent_plan=True, compact_inputs=True
+    )
+    second = evaluate_strict_cuda(
+        document, _environment(), persistent_plan=True, compact_inputs=True
+    )
+    assert first.telemetry.persistent_plan
+    assert not first.telemetry.plan_cache_hit
+    assert first.telemetry.plan_build_ms > 0
+    assert second.telemetry.plan_cache_hit
+    assert second.telemetry.plan_build_ms == 0
+    assert first.telemetry.cache_key == second.telemetry.cache_key
+
+
+def test_persistent_plan_refuses_changed_compact_alias_layout():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(pd.DataFrame({
+        "Expression": ["df.x + df.y"],
+        "A": [1.0],
+    }))
+    shared = np.arange(8, dtype=np.float32)
+    shared_environment = {"df": {"x": shared, "y": shared}}
+    split_environment = {
+        "df": {
+            "x": np.arange(8, dtype=np.float32),
+            "y": np.arange(8, dtype=np.float32) + 10,
+        }
+    }
+    first = evaluate_strict_cuda(
+        document, shared_environment, compact_inputs=True, persistent_plan=True
+    )
+    second = evaluate_strict_cuda(
+        document, split_environment, compact_inputs=True, persistent_plan=True
+    )
+    third = evaluate_strict_cuda(
+        document, split_environment, compact_inputs=True, persistent_plan=True
+    )
+    assert not first.telemetry.plan_cache_hit
+    assert not second.telemetry.plan_cache_hit
+    assert third.telemetry.plan_cache_hit
+    assert first.telemetry.dense_row_inputs == 1
+    assert second.telemetry.dense_row_inputs == 2
+    expected = evaluate_strict_cpu(document, split_environment)
+    assert compare_strict_cpu_cuda(expected, third)["exact_gate_passed"]
+
+
+def test_persistent_plan_uses_stable_slots_when_scalar_values_change():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(pd.DataFrame({
+        "Expression": ["df.x * scale + offset"],
+        "A": [1.0],
+    }))
+    first_environment = {
+        "df": {"x": np.arange(8, dtype=np.float32)},
+        "scale": 2.0,
+        "offset": 2.0,
+    }
+    second_environment = {
+        "df": {"x": np.arange(8, dtype=np.float32)},
+        "scale": 3.0,
+        "offset": 7.0,
+    }
+    first = evaluate_strict_cuda(
+        document, first_environment, compact_inputs=True, persistent_plan=True
+    )
+    second = evaluate_strict_cuda(
+        document, second_environment, compact_inputs=True, persistent_plan=True
+    )
+    assert not first.telemetry.plan_cache_hit
+    assert second.telemetry.plan_cache_hit
+    assert first.telemetry.scalar_inputs == second.telemetry.scalar_inputs == 2
+    expected = evaluate_strict_cpu(document, second_environment)
+    assert compare_strict_cpu_cuda(expected, second)["exact_gate_passed"]
+
+
+def test_persistent_plan_reuses_device_workspace_without_changing_results():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(_spec())
+    first = evaluate_strict_cuda(
+        document,
+        _environment(),
+        compact_inputs=True,
+        persistent_plan=True,
+        reuse_buffers=True,
+    )
+    expected_first = first.utilities.copy()
+    second = evaluate_strict_cuda(
+        document,
+        _environment(),
+        compact_inputs=True,
+        persistent_plan=True,
+        reuse_buffers=True,
+    )
+    assert first.telemetry.reusable_workspace
+    assert not first.telemetry.workspace_cache_hit
+    assert second.telemetry.workspace_cache_hit
+    np.testing.assert_array_equal(expected_first, second.utilities)
+    expected = evaluate_strict_cpu(document, _environment())
+    assert compare_strict_cpu_cuda(expected, second)["exact_gate_passed"]
+
+
 def test_canonical_generator_parallelizes_features_without_reordering_utilities():
     path = Path("benchmark-data/phase9-mtc-full/prototype_mtc_extended/configs/trip_mode_choice.csv")
     spec = pd.read_csv(path, comment="#")

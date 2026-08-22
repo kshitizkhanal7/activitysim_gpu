@@ -231,3 +231,31 @@ passes. Whole-model median time is 194.312 versus 193.014 seconds (0.993x), so
 the separate whole-model gate remains failed. Cooperative tiles and two sparse
 coefficient lowerings were exact but slower and remain disabled experiments.
 See [Phase 16 locality and FP32 compiler](docs/phase16-locality-and-fp32-compiler.md).
+
+## Phase 17 persistent execution and trip-mode continuation
+
+Phase 17 turns the generated kernel into a reusable execution backend. A
+schema-checked compiled plan retains the generated source, CUDA kernel,
+coefficients, and ABI. Changed scalar values are allowed, but changed input
+roles, types, aliases, or skim ranks fail closed and build a different plan.
+The destination candidate now continues into trip mode choice so bypassing
+Sharrow does not merely move its cold compilation cost to a later model step.
+
+The 1,001-household qualification is exact on all 30 real batches:
+32,262,754/32,262,754 feature cells and 1,787,646/1,787,646 utility cells.
+All trip decisions match the frozen reference; destination and mode-choice
+logsums differ by at most 0.000008 and 0.00000191, below their declared gates.
+
+Five fresh interleaved 50,000-household pairs improve median trip destination
+from 28.4 to 27.3 seconds (1.040x). Every candidate destination run beats every
+baseline, the bootstrap median saving interval is 0.8 to 1.9 seconds, and the
+component gate passes. Whole-model median improves from 191.474 to 190.307
+seconds (1.006x), but two pairs are slower by 0.042 and 0.038 seconds and the
+95% bootstrap interval includes -0.042 seconds. This is encouraging evidence,
+not the repository's strict whole-model superiority claim.
+
+Reusable device/output workspaces are implemented behind an opt-in switch and
+exactly qualified. A diagnostic 50,000-household run reduced measured
+destination pack-plus-upload work by about 107 ms, but did not establish an
+independent whole-model win, so reuse remains experimental. See
+[Phase 17 persistent execution](docs/phase17-persistent-execution.md).

@@ -8,7 +8,7 @@ float32 multiply and add operations for every alternative.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import math
@@ -22,7 +22,9 @@ from .sharrow_ir import _resolved_coefficients, _validate_document
 
 _KERNEL_CACHE: dict[str, Any] = {}
 _COEFFICIENT_CACHE: dict[str, Any] = {}
+_HOST_COEFFICIENT_CACHE: dict[str, np.ndarray] = {}
 _SOURCE_BINDING_CACHE: dict[str, tuple[tuple[str, ...], ...]] = {}
+_COMPILED_PLAN_CACHE: dict[str, list[Any]] = {}
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,64 @@ class StrictCudaTelemetry:
     zero_coefficient_ops_skipped_per_row: int
     sparse_zero_coefficients: bool
     expression_dtype: str
+    persistent_plan: bool
+    plan_cache_hit: bool
+    plan_build_ms: float
+    reusable_workspace: bool
+    workspace_cache_hit: bool
+
+
+@dataclass(frozen=True)
+class CompiledStrictCudaPlan:
+    """Reusable, schema-checked CUDA executable for one strict IR policy.
+
+    Row arrays may change between calls, but their semantic types, scalar/row
+    roles, compact alias layout, and skim ranks must still match ``bindings``.
+    A mismatching environment cannot silently reuse this plan.
+    """
+
+    base_key: str
+    bindings: tuple[InputBinding, ...]
+    kernel: Any
+    coefficients: Any
+    cache_key: str
+    source_sha256: str
+    workspace: Any = field(default_factory=lambda: _StrictCudaWorkspace())
+
+
+class _PlanSchemaMismatch(ValueError):
+    """Internal signal that a cached plan cannot accept a new environment."""
+
+
+class _StrictCudaWorkspace:
+    """Plan-local device buffers borrowed by sequential calls."""
+
+    def __init__(self):
+        self.groups = {}
+        self.outputs = {}
+
+    def group(self, cp, name, rows, columns, dtype):
+        dtype = np.dtype(dtype)
+        key = (name, int(columns), dtype.str)
+        item = self.groups.get(key)
+        hit = item is not None and item.shape[0] >= rows
+        if not hit:
+            item = cp.empty(
+                (_workspace_capacity(rows), int(columns)), dtype=dtype
+            )
+            self.groups[key] = item
+        return item[:rows], hit
+
+    def output(self, cp, name, rows, columns):
+        key = (name, int(columns))
+        array = self.outputs.get(key)
+        hit = array is not None and array.shape[0] >= rows
+        if not hit:
+            array = cp.empty(
+                (_workspace_capacity(rows), int(columns)), dtype=cp.float32
+            )
+            self.outputs[key] = array
+        return array[:rows], hit
 
 
 @dataclass(frozen=True)
@@ -94,6 +154,8 @@ def evaluate_strict_cuda(
     group_skim_indices: bool = False,
     sparse_zero_coefficients: bool = False,
     expression_float32: bool = False,
+    persistent_plan: bool = False,
+    reuse_buffers: bool = False,
 ) -> StrictCudaResult:
     """Generate, cache, and execute a strict CUDA evaluator.
 
@@ -115,50 +177,121 @@ def evaluate_strict_cuda(
     locality_optimized = bool(locality_optimized or locality_tile_rows > 1)
     compact_inputs = bool(compact_inputs or locality_optimized)
     group_skim_indices = bool(group_skim_indices or locality_optimized)
-    binding_started = time.perf_counter()
-    bindings, values = _bindings(
-        document, environment, scalar_inputs=compact_inputs
-    )
-    binding_resolve_ms = (time.perf_counter() - binding_started) * 1000
-    coefficient_values = np.ascontiguousarray(
-        _resolved_coefficients(
-            document, coefficient_environment or {}, dtype=np.float32
-        )
-    )
+    reuse_buffers = bool(reuse_buffers and persistent_plan)
     if not capture_features and not return_device:
         raise ValueError("capture_features=False is only valid with return_device=True")
-    source, source_sha256 = generate_cuda_source(
-        document,
-        bindings,
-        capture_features=capture_features,
-        locality_tile_rows=locality_tile_rows,
-        locality_optimized=locality_optimized,
-        group_skim_indices=group_skim_indices,
-        coefficient_values=coefficient_values,
-        sparse_zero_coefficients=sparse_zero_coefficients,
-        expression_float32=expression_float32,
+    coefficient_values = _host_coefficients(
+        document, coefficient_environment or {}
     )
-    schema = [
-        {"source": binding.source, "kind": binding.value_kind,
-         "storage": binding.storage_kind, "slot": binding.slot,
-         "skim_rank": binding.skim_rank, "skim_group": binding.skim_group}
-        for binding in bindings
-    ]
-    cache_payload = json.dumps(
-        {"ir": document["sha256"], "schema": schema, "source": source_sha256},
+    coefficient_digest = hashlib.sha256(coefficient_values.tobytes()).hexdigest()
+    base_payload = json.dumps(
+        {
+            "device": int(cp.cuda.Device().id),
+            "ir": document["sha256"],
+            "coefficient": coefficient_digest,
+            "capture_features": bool(capture_features),
+            "tile_rows": locality_tile_rows,
+            "locality": locality_optimized,
+            "compact_inputs": compact_inputs,
+            "group_skim_indices": group_skim_indices,
+            "sparse_zero_coefficients": bool(sparse_zero_coefficients),
+            "expression_float32": bool(expression_float32),
+        },
         sort_keys=True, separators=(",", ":"),
     )
-    cache_key = f"{document['sha256']}:{hashlib.sha256(cache_payload.encode()).hexdigest()}"
-    compiled_this_call = cache_key not in _KERNEL_CACHE
-    if compiled_this_call:
-        kernel = cp.RawKernel(
-            source,
-            "choiceforge_strict_ir_v3",
-            options=("--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=true"),
+    base_key = hashlib.sha256(base_payload.encode()).hexdigest()
+    binding_started = time.perf_counter()
+    plan = None
+    values = None
+    for candidate in (
+        _COMPILED_PLAN_CACHE.get(base_key, ()) if persistent_plan else ()
+    ):
+        try:
+            values = _values_for_compiled_plan(candidate.bindings, environment)
+        except _PlanSchemaMismatch:
+            continue
+        plan = candidate
+        break
+    plan_cache_hit = plan is not None
+    if plan is None:
+        bindings, values = _bindings(
+            document,
+            environment,
+            scalar_inputs=compact_inputs,
+            stable_scalar_slots=bool(persistent_plan),
         )
-        kernel.compile()
-        _KERNEL_CACHE[cache_key] = kernel
-    kernel = _KERNEL_CACHE[cache_key]
+    else:
+        bindings = plan.bindings
+    binding_resolve_ms = (time.perf_counter() - binding_started) * 1000
+
+    plan_build_ms = 0.0
+    coefficient_upload_ms = 0.0
+    coefficient_cache_hit = True
+    compiled_this_call = False
+    if plan is None:
+        plan_started = time.perf_counter()
+        source, source_sha256 = generate_cuda_source(
+            document,
+            bindings,
+            capture_features=capture_features,
+            locality_tile_rows=locality_tile_rows,
+            locality_optimized=locality_optimized,
+            group_skim_indices=group_skim_indices,
+            coefficient_values=coefficient_values,
+            sparse_zero_coefficients=sparse_zero_coefficients,
+            expression_float32=expression_float32,
+        )
+        schema = _binding_schema(bindings)
+        cache_payload = json.dumps(
+            {"ir": document["sha256"], "schema": schema, "source": source_sha256},
+            sort_keys=True, separators=(",", ":"),
+        )
+        cache_key = (
+            f"{document['sha256']}:"
+            f"{hashlib.sha256(cache_payload.encode()).hexdigest()}"
+        )
+        compiled_this_call = cache_key not in _KERNEL_CACHE
+        if compiled_this_call:
+            kernel = cp.RawKernel(
+                source,
+                "choiceforge_strict_ir_v3",
+                options=(
+                    "--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=true"
+                ),
+            )
+            kernel.compile()
+            _KERNEL_CACHE[cache_key] = kernel
+        kernel = _KERNEL_CACHE[cache_key]
+        coefficient_key = (
+            f"{cp.cuda.Device().id}:{document['sha256']}:{coefficient_digest}"
+        )
+        coefficient_cache_hit = coefficient_key in _COEFFICIENT_CACHE
+        coefficient_started = time.perf_counter()
+        if coefficient_cache_hit:
+            coefficients = _COEFFICIENT_CACHE[coefficient_key]
+        else:
+            coefficients = cp.asarray(coefficient_values)
+            _COEFFICIENT_CACHE[coefficient_key] = coefficients
+            cp.cuda.Stream.null.synchronize()
+            coefficient_upload_ms = (
+                time.perf_counter() - coefficient_started
+            ) * 1000
+        plan = CompiledStrictCudaPlan(
+            base_key=base_key,
+            bindings=tuple(bindings),
+            kernel=kernel,
+            coefficients=coefficients,
+            cache_key=cache_key,
+            source_sha256=source_sha256,
+        )
+        if persistent_plan:
+            _COMPILED_PLAN_CACHE.setdefault(base_key, []).append(plan)
+        plan_build_ms = (time.perf_counter() - plan_started) * 1000
+    else:
+        kernel = plan.kernel
+        coefficients = plan.coefficients
+        cache_key = plan.cache_key
+        source_sha256 = plan.source_sha256
 
     dense_bindings = [binding for binding in bindings if binding.storage_kind != "skim"]
     (
@@ -168,36 +301,36 @@ def evaluate_strict_cuda(
         int_scalars,
         host_pack_ms,
         input_upload_ms,
+        input_workspace_hit,
     ) = _pack_inputs(
         cp,
         dense_bindings,
         values,
         rows,
         float_dtype=np.float32 if expression_float32 else np.float64,
+        workspace=plan.workspace if reuse_buffers else None,
     )
     skim_arguments = _skim_kernel_arguments(
         bindings, values, grouped_indices=group_skim_indices and not locality_optimized
     )
-    coefficient_digest = hashlib.sha256(coefficient_values.tobytes()).hexdigest()
-    coefficient_key = f"{cp.cuda.Device().id}:{document['sha256']}:{coefficient_digest}"
-    coefficient_cache_hit = coefficient_key in _COEFFICIENT_CACHE
-    coefficient_started = time.perf_counter()
-    if coefficient_cache_hit:
-        coefficients = _COEFFICIENT_CACHE[coefficient_key]
+    output_workspace_hit = False
+    if reuse_buffers:
+        utilities, output_workspace_hit = plan.workspace.output(
+            cp, "utilities", rows, len(document["alternatives"])
+        )
+        if capture_features:
+            features, feature_hit = plan.workspace.output(
+                cp, "features", rows, len(document["terms"])
+            )
+            output_workspace_hit = output_workspace_hit and feature_hit
+        else:
+            features = cp.empty((1,), dtype=cp.float32)
     else:
-        coefficients = cp.asarray(coefficient_values)
-        _COEFFICIENT_CACHE[coefficient_key] = coefficients
-    if not coefficient_cache_hit:
-        cp.cuda.Stream.null.synchronize()
-    coefficient_upload_ms = (
-        0.0 if coefficient_cache_hit
-        else (time.perf_counter() - coefficient_started) * 1000
-    )
-    features = (
-        cp.empty((rows, len(document["terms"])), dtype=cp.float32)
-        if capture_features else cp.empty((1,), dtype=cp.float32)
-    )
-    utilities = cp.empty((rows, len(document["alternatives"])), dtype=cp.float32)
+        features = (
+            cp.empty((rows, len(document["terms"])), dtype=cp.float32)
+            if capture_features else cp.empty((1,), dtype=cp.float32)
+        )
+        utilities = cp.empty((rows, len(document["alternatives"])), dtype=cp.float32)
     cp.cuda.Stream.null.synchronize()
     uploaded = time.perf_counter()
     if rows:
@@ -308,6 +441,11 @@ def evaluate_strict_cuda(
                 sparse_zero_coefficients and not locality_optimized
             ),
             expression_dtype="float32" if expression_float32 else "float64",
+            persistent_plan=bool(persistent_plan),
+            plan_cache_hit=plan_cache_hit,
+            plan_build_ms=plan_build_ms,
+            reusable_workspace=reuse_buffers,
+            workspace_cache_hit=bool(input_workspace_hit and output_workspace_hit),
         ),
     )
 
@@ -713,6 +851,11 @@ def compare_strict_cpu_cuda(strict, cuda: StrictCudaResult, *, row_labels=None) 
             ),
             "sparse_zero_coefficients": cuda.telemetry.sparse_zero_coefficients,
             "expression_dtype": cuda.telemetry.expression_dtype,
+            "persistent_plan": cuda.telemetry.persistent_plan,
+            "plan_cache_hit": cuda.telemetry.plan_cache_hit,
+            "plan_build_ms": cuda.telemetry.plan_build_ms,
+            "reusable_workspace": cuda.telemetry.reusable_workspace,
+            "workspace_cache_hit": cuda.telemetry.workspace_cache_hit,
         },
     }
 
@@ -731,6 +874,8 @@ def mtc21_logsums_from_strict_ir_cuda(
     group_skim_indices=False,
     sparse_zero_coefficients=False,
     expression_float32=False,
+    persistent_plan=False,
+    reuse_buffers=False,
 ):
     """Keep generated strict utilities on-device through MTC-21 reduction."""
     from .nested_logit import mtc21_nested_logsums_cuda
@@ -748,6 +893,8 @@ def mtc21_logsums_from_strict_ir_cuda(
         group_skim_indices=group_skim_indices,
         sparse_zero_coefficients=sparse_zero_coefficients,
         expression_float32=expression_float32,
+        persistent_plan=persistent_plan,
+        reuse_buffers=reuse_buffers,
     )
     logsums, nested = mtc21_nested_logsums_cuda(
         generated.utilities,
@@ -761,12 +908,92 @@ def mtc21_logsums_from_strict_ir_cuda(
 
 
 def clear_strict_cuda_cache() -> None:
-    """Clear only ChoiceForge's in-process RawKernel handle cache (for tests)."""
+    """Clear ChoiceForge's in-process compiled plans and device constants."""
     _KERNEL_CACHE.clear()
     _COEFFICIENT_CACHE.clear()
+    _HOST_COEFFICIENT_CACHE.clear()
+    _COMPILED_PLAN_CACHE.clear()
 
 
-def _bindings(document, environment, *, scalar_inputs=False):
+def _host_coefficients(document, coefficient_environment):
+    """Resolve immutable coefficient matrices once when no symbols can vary."""
+    if coefficient_environment:
+        return np.ascontiguousarray(
+            _resolved_coefficients(
+                document, coefficient_environment, dtype=np.float32
+            )
+        )
+    key = str(document["sha256"])
+    cached = _HOST_COEFFICIENT_CACHE.get(key)
+    if cached is None:
+        cached = np.ascontiguousarray(
+            _resolved_coefficients(document, {}, dtype=np.float32)
+        )
+        cached.flags.writeable = False
+        _HOST_COEFFICIENT_CACHE[key] = cached
+    return cached
+
+
+def _binding_schema(bindings):
+    return [
+        {
+            "source": binding.source,
+            "kind": binding.value_kind,
+            "storage": binding.storage_kind,
+            "slot": binding.slot,
+            "skim_rank": binding.skim_rank,
+            "skim_group": binding.skim_group,
+        }
+        for binding in bindings
+    ]
+
+
+def _values_for_compiled_plan(bindings, environment):
+    """Resolve values while proving that a cached ABI still describes them."""
+    values = {}
+    slot_identities = {}
+    for binding in bindings:
+        try:
+            value = _source_value(binding.source, environment)
+        except (KeyError, AttributeError, TypeError) as exc:
+            raise _PlanSchemaMismatch(
+                f"cached strict CUDA source {binding.source!r} is unavailable"
+            ) from exc
+        if binding.storage_kind == "skim":
+            if not getattr(value, "choiceforge_device_skim_binding", False):
+                raise _PlanSchemaMismatch(
+                    f"cached skim source {binding.source!r} is no longer device-bound"
+                )
+            rank = 3 if value.time is not None else 2
+            if rank != binding.skim_rank:
+                raise _PlanSchemaMismatch(
+                    f"cached skim source {binding.source!r} changed rank"
+                )
+        else:
+            kind = _value_kind(value)
+            if kind != binding.value_kind:
+                raise _PlanSchemaMismatch(
+                    f"cached source {binding.source!r} changed kind"
+                )
+            scalar = _is_scalar_value(value)
+            if scalar != binding.storage_kind.startswith("scalar_"):
+                raise _PlanSchemaMismatch(
+                    f"cached source {binding.source!r} changed scalar/row role"
+                )
+            identity = _input_storage_identity(value, binding.storage_kind)
+            slot_key = (binding.storage_kind, binding.slot)
+            prior = slot_identities.setdefault(slot_key, identity)
+            if prior != identity:
+                raise _PlanSchemaMismatch(
+                    f"cached compact slot {slot_key!r} changed alias layout"
+                )
+        values[binding.source] = value
+    return values
+
+
+def _bindings(
+    document, environment, *, scalar_inputs=False, stable_scalar_slots=False
+):
     source_key = str(document["sha256"])
     if source_key in _SOURCE_BINDING_CACHE:
         sources = _SOURCE_BINDING_CACHE[source_key]
@@ -808,7 +1035,10 @@ def _bindings(document, environment, *, scalar_inputs=False):
             scalar = bool(scalar_inputs and _is_scalar_value(value))
             if kind == "float" and scalar:
                 storage = "scalar_float64"
-                identity = _input_storage_identity(value, storage)
+                identity = (
+                    source if stable_scalar_slots
+                    else _input_storage_identity(value, storage)
+                )
                 slot = compact_slot_maps[storage].get(identity)
                 if slot is None:
                     slot = scalar_float_slot
@@ -832,7 +1062,10 @@ def _bindings(document, environment, *, scalar_inputs=False):
                 binding = InputBinding(source, kind, storage, slot)
             elif kind in {"int", "bool"} and scalar:
                 storage = "scalar_int64"
-                identity = _input_storage_identity(value, storage)
+                identity = (
+                    source if stable_scalar_slots
+                    else _input_storage_identity(value, storage)
+                )
                 slot = compact_slot_maps[storage].get(identity)
                 if slot is None:
                     slot = scalar_int_slot
@@ -957,7 +1190,9 @@ def _value_kind(value):
     return "unsupported"
 
 
-def _pack_inputs(cp, bindings, values, rows, *, float_dtype=np.float64):
+def _pack_inputs(
+    cp, bindings, values, rows, *, float_dtype=np.float64, workspace=None
+):
     """Pack on the host and perform one upload per semantic storage type.
 
     Phase 14 uploaded every leaf separately and then launched device-side
@@ -1016,8 +1251,22 @@ def _pack_inputs(cp, bindings, values, rows, *, float_dtype=np.float64):
     host_int_scalars = np.ascontiguousarray(int_scalars, dtype=np.int64)
     host_pack_ms = (time.perf_counter() - pack_started) * 1000
     upload_started = time.perf_counter()
-    float_matrix = cp.asarray(host_float_matrix)
-    int_matrix = cp.asarray(host_int_matrix)
+    if workspace is not None:
+        float_matrix, float_hit = workspace.group(
+            cp, "float_inputs", rows, len(floats), float_dtype
+        )
+        int_matrix, int_hit = workspace.group(
+            cp, "int_inputs", rows, len(ints), np.int64
+        )
+        if floats:
+            float_matrix.set(host_float_matrix)
+        if ints:
+            int_matrix.set(host_int_matrix)
+        workspace_hit = bool(float_hit and int_hit)
+    else:
+        float_matrix = cp.asarray(host_float_matrix)
+        int_matrix = cp.asarray(host_int_matrix)
+        workspace_hit = False
     device_float_scalars = cp.asarray(host_float_scalars)
     device_int_scalars = cp.asarray(host_int_scalars)
     cp.cuda.Stream.null.synchronize()
@@ -1029,6 +1278,7 @@ def _pack_inputs(cp, bindings, values, rows, *, float_dtype=np.float64):
         device_int_scalars,
         host_pack_ms,
         input_upload_ms,
+        workspace_hit,
     )
 
 
@@ -1123,7 +1373,14 @@ def _pack_mixed_device_inputs(
         scalar_arrays["scalar_int64"],
         host_pack_ms,
         input_upload_ms,
+        False,
     )
+
+
+def _workspace_capacity(rows):
+    """Grow geometrically while keeping zero-row calls valid."""
+    rows = max(1, int(rows))
+    return 1 << (rows - 1).bit_length()
 
 
 def _binding_reference(binding, *, tiled=False, grouped_indices=False):

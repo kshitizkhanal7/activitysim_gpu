@@ -307,12 +307,12 @@ def cover_story():
         [
             [
                 Paragraph("1.064x", STYLES["metric_num"]),
-                Paragraph("1.025x", STYLES["metric_num"]),
+                Paragraph("1.040x", STYLES["metric_num"]),
                 Paragraph("0.0", STYLES["metric_num"]),
             ],
             [
                 Paragraph("supported complete model<br/>50k households", STYLES["metric_label"]),
-                Paragraph("Phase 16 destination<br/>repeated 50k proof", STYLES["metric_label"]),
+                Paragraph("Phase 17 destination<br/>five-pair 50k proof", STYLES["metric_label"]),
                 Paragraph("FP32 CPU/GPU maximum<br/>exact-gate difference", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the supported Phase 11 whole-model result, the promoted Phase 16 target-component result, and exact agreement between the published FP32 CPU and GPU recipes.",
+            "Read left to right: the supported Phase 11 whole-model result, the stronger Phase 17 target-component result, and exact agreement between the published FP32 CPU and GPU recipes.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -445,7 +445,6 @@ def markdown_story(text: str):
                 stripped.startswith("### Phase 5:")
                 or stripped.startswith("### Phase 7:")
                 or stripped.startswith("### Phase 8:")
-                or stripped.startswith("### What should happen in Phase 17?")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[4:]), STYLES["h3"]))

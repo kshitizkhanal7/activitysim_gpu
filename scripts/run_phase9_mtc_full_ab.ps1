@@ -12,7 +12,9 @@ param(
     [Int64]$ChunkSizeBytes = 0,
     [ValidateSet("", "training", "adaptive", "production", "disabled", "explicit")]
     [string]$ChunkTrainingMode = "",
-    [string]$SharedConfigOverlay = ""
+    [string]$SharedConfigOverlay = "",
+    [ValidateRange(1, 24)]
+    [int]$BlasThreads = 24
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,8 +68,8 @@ if (-not (Test-Path -LiteralPath $integrationPatch) -or -not (Test-Path -Literal
 
 $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
-$env:OPENBLAS_NUM_THREADS = "24"
-$env:OMP_NUM_THREADS = "24"
+$env:OPENBLAS_NUM_THREADS = "$BlasThreads"
+$env:OMP_NUM_THREADS = "$BlasThreads"
 $env:PATH = (Join-Path $repo ".venv-phase8\Scripts") + ";" + $env:PATH
 
 $runs = @()
@@ -126,6 +128,11 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
             $env:CHOICEFORGE_PHASE16_RUN_ID = $name
         } else {
             Remove-Item Env:CHOICEFORGE_PHASE16_RUN_ID -ErrorAction SilentlyContinue
+        }
+        if ($condition -eq "choiceforge" -and $env:CHOICEFORGE_PHASE17_REPORT_DIR) {
+            $env:CHOICEFORGE_PHASE17_RUN_ID = $name
+        } else {
+            Remove-Item Env:CHOICEFORGE_PHASE17_RUN_ID -ErrorAction SilentlyContinue
         }
         $started = Get-Date
         $process = Start-Process `
@@ -218,6 +225,10 @@ $manifest = [pscustomobject]@{
         choiceforge_strict_cuda_grouped_indices = $env:CHOICEFORGE_STRICT_CUDA_GROUPED_INDICES
         choiceforge_strict_cuda_sparse_coefficients = $env:CHOICEFORGE_STRICT_CUDA_SPARSE_COEFFICIENTS
         choiceforge_strict_cuda_expression_float32 = $env:CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32
+        choiceforge_strict_cuda_persistent_plan = $env:CHOICEFORGE_STRICT_CUDA_PERSISTENT_PLAN
+        choiceforge_strict_cuda_reuse_buffers = $env:CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS
+        choiceforge_strict_cuda_mode_choice = $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE
+        blas_threads = $BlasThreads
     }
     runs = $runs
 }

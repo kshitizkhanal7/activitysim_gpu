@@ -1,0 +1,302 @@
+{
+  "phase": 17,
+  "manifest": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase9-mtc-full-p17device50-runs.json",
+  "benchmark": {
+    "benchmark": "public Prototype MTC extended full geography",
+    "full_population_households": 2875192,
+    "zones": 1454,
+    "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+    "design": "one fresh-process baseline/ChoiceForge pair; not a superiority proof without repeated interleaved trials",
+    "reproducibility": {
+      "activitysim_commit": "16ab11180a26912987eb902daf945e268f3efc11",
+      "activitysim_patch_sha256": "aa2eed95d99fe4853365b9ed49427722ac467ef928013ccf7944fd9eda0e04e2",
+      "environment_lock_sha256": "84b97738100cd4b8c405af50ff823cdddf4a33f5f203deab7839e4a8739a3adc",
+      "python": "Python 3.11.14 (main, Dec  9 2025, 18:59:10) [MSC v.1944 64 bit (AMD64)]",
+      "gpu": "NVIDIA RTX A4000, 571.59, 16376 MiB",
+      "base_config_sha256": "38f0b343f569bd69d51ef4595a4441115524f4f13bc0e20fde1b855e56d18c2c",
+      "shared_config_sha256": null,
+      "choiceforge_overlay_sha256": "e036373ae155455994d3ce9f73aa62c6344057b12f9b645af1cbd556b2da4506",
+      "additional_choiceforge_overlay_sha256": null,
+      "choiceforge_strict_cuda_candidate": "1",
+      "choiceforge_strict_cuda_max_rows": "2000000",
+      "choiceforge_strict_cuda_tile_rows": "1",
+      "choiceforge_strict_cuda_locality": "1",
+      "choiceforge_strict_cuda_compact_inputs": "1",
+      "choiceforge_strict_cuda_grouped_indices": "1",
+      "choiceforge_strict_cuda_sparse_coefficients": "0",
+      "choiceforge_strict_cuda_expression_float32": "1",
+      "choiceforge_strict_cuda_persistent_plan": "1",
+      "choiceforge_strict_cuda_reuse_buffers": "1",
+      "choiceforge_strict_cuda_mode_choice": "1",
+      "blas_threads": 16
+    }
+  },
+  "runs": [
+    {
+      "name": "phase9-p17device50-baseline-50000-hh-1",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-22T16:48:38.9703200-04:00",
+      "finished": "2026-08-22T16:51:55.6149337-04:00",
+      "wall_seconds": 196.6446137,
+      "launcher_peak_working_set_bytes": 5951488,
+      "launcher_peak_private_bytes": 1007616,
+      "gpu_samples": 181,
+      "gpu_peak_utilization_percent": 87.0,
+      "gpu_mean_utilization_percent": 2.5303867403314917,
+      "gpu_peak_memory_mib": 1739.0,
+      "all_models": 190.637,
+      "activitysim_high_water_rss_bytes": 8898289664,
+      "activitysim_high_water_uss_bytes": 2314997760,
+      "scheduling_suite": 36.2,
+      "mandatory_tour_scheduling": 23.9,
+      "joint_tour_scheduling": 1.3,
+      "non_mandatory_tour_scheduling": 9.4,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 29.1
+    },
+    {
+      "name": "phase9-p17device50-choiceforge-50000-hh-1",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-22T16:51:55.6563843-04:00",
+      "finished": "2026-08-22T16:55:15.4766546-04:00",
+      "wall_seconds": 199.8202703,
+      "launcher_peak_working_set_bytes": 5955584,
+      "launcher_peak_private_bytes": 1007616,
+      "gpu_samples": 184,
+      "gpu_peak_utilization_percent": 100.0,
+      "gpu_mean_utilization_percent": 1.483695652173913,
+      "gpu_peak_memory_mib": 10005.0,
+      "all_models": 192.472,
+      "activitysim_high_water_rss_bytes": 8654053376,
+      "activitysim_high_water_uss_bytes": 2070765568,
+      "scheduling_suite": 36.300000000000004,
+      "mandatory_tour_scheduling": 23.8,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 27.0
+    }
+  ],
+  "metrics": {
+    "all_models": {
+      "baseline_seconds": [
+        190.637
+      ],
+      "optimized_seconds": [
+        192.472
+      ],
+      "baseline_median_seconds": 190.637,
+      "optimized_median_seconds": 192.472,
+      "median_seconds_saved": -1.835000000000008,
+      "speedup": 0.9904661457250924
+    },
+    "scheduling_suite": {
+      "baseline_seconds": [
+        36.2
+      ],
+      "optimized_seconds": [
+        36.300000000000004
+      ],
+      "baseline_median_seconds": 36.2,
+      "optimized_median_seconds": 36.300000000000004,
+      "median_seconds_saved": -0.10000000000000142,
+      "speedup": 0.9972451790633609
+    },
+    "mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        23.9
+      ],
+      "optimized_seconds": [
+        23.8
+      ],
+      "baseline_median_seconds": 23.9,
+      "optimized_median_seconds": 23.8,
+      "median_seconds_saved": 0.09999999999999787,
+      "speedup": 1.004201680672269
+    },
+    "joint_tour_scheduling": {
+      "baseline_seconds": [
+        1.3
+      ],
+      "optimized_seconds": [
+        1.4
+      ],
+      "baseline_median_seconds": 1.3,
+      "optimized_median_seconds": 1.4,
+      "median_seconds_saved": -0.09999999999999987,
+      "speedup": 0.9285714285714287
+    },
+    "non_mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        9.4
+      ],
+      "optimized_seconds": [
+        9.5
+      ],
+      "baseline_median_seconds": 9.4,
+      "optimized_median_seconds": 9.5,
+      "median_seconds_saved": -0.09999999999999964,
+      "speedup": 0.9894736842105264
+    },
+    "atwork_subtour_scheduling": {
+      "baseline_seconds": [
+        1.6
+      ],
+      "optimized_seconds": [
+        1.6
+      ],
+      "baseline_median_seconds": 1.6,
+      "optimized_median_seconds": 1.6,
+      "median_seconds_saved": 0.0,
+      "speedup": 1.0
+    },
+    "trip_destination": {
+      "baseline_seconds": [
+        29.1
+      ],
+      "optimized_seconds": [
+        27.0
+      ],
+      "baseline_median_seconds": 29.1,
+      "optimized_median_seconds": 27.0,
+      "median_seconds_saved": 2.1000000000000014,
+      "speedup": 1.0777777777777777
+    }
+  },
+  "correctness": {
+    "policy": "exact modeled decisions and byte-identical non-trip outputs; declared logsum diagnostics remain within explicit gates",
+    "candidate_runs": {
+      "phase9-p17device50-choiceforge-50000-hh-1": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv",
+          "final_persons.csv",
+          "final_tours.csv"
+        ],
+        "diagnostic_columns": {
+          "destination_logsum": {
+            "text_cells_different": 17704,
+            "max_abs": 1.0000000003174137e-05,
+            "mean_abs": 1.9730623705144022e-07,
+            "gate": 0.0001
+          },
+          "mode_choice_logsum": {
+            "text_cells_different": 402157,
+            "max_abs": 2.8958556210767483e-06,
+            "mean_abs": 6.630725596470127e-08,
+            "gate": 1e-05
+          }
+        },
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 17704,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.9730623705144022e-07,
+        "diagnostic_gate": 0.0001,
+        "mode_choice_logsum_max_abs": 2.8958556210767483e-06,
+        "mode_choice_logsum_gate": 1e-05,
+        "success": true,
+        "claim_boundary": "all modeled decisions and non-trip substantive files are exact; declared logsum diagnostics are bounded, not byte-identical"
+      }
+    },
+    "all_decisions_exact": true,
+    "maximum_destination_logsum_abs": 1.0000000003174137e-05,
+    "maximum_mode_choice_logsum_abs": 2.8958556210767483e-06
+  },
+  "candidate_telemetry": {
+    "reports": 30,
+    "candidate_batches": 30,
+    "fallback_batches": 0,
+    "device_resident_utility_batches": 30,
+    "utility_device_to_host_bytes": 0,
+    "nested_host_to_device_bytes": 0,
+    "rows": 4188312,
+    "tile_rows": [
+      1
+    ],
+    "dense_row_inputs": [
+      56
+    ],
+    "scalar_inputs": [
+      53
+    ],
+    "unique_skim_bindings": [
+      149
+    ],
+    "skim_index_groups": [
+      3
+    ],
+    "grouped_skim_indices": true,
+    "sparse_zero_coefficients": false,
+    "expression_dtypes": [
+      "float32"
+    ],
+    "persistent_plan": true,
+    "plan_cache_hits": 20,
+    "reusable_workspace": true,
+    "workspace_cache_hits": 20,
+    "active_coefficients": [
+      419,
+      427,
+      465
+    ],
+    "zero_coefficient_ops_skipped": 0,
+    "skim_loads_avoided": 0,
+    "ir_cache_hits": 20,
+    "skim_binding_cache_hits": 4026,
+    "skim_binding_cache_misses": 444,
+    "skim_array_uploads": 148,
+    "timing_totals_ms": {
+      "ir_compile_ms": 336.9492997881025,
+      "binding_resolve_ms": 954.2540005641058,
+      "host_pack_ms": 1035.888799931854,
+      "input_upload_ms": 328.19280039984733,
+      "plan_build_ms": 79.18619981501251,
+      "kernel_ms": 1499.3297999026254,
+      "nested_kernel_ms": 99.43639987614006,
+      "nested_download_ms": 13.98579974193126
+    }
+  },
+  "mode_candidate_telemetry": {
+    "reports": 10,
+    "rows": 442682,
+    "fallbacks": 0,
+    "plan_cache_hits": 10,
+    "workspace_cache_hits": 10,
+    "source_sha256": [
+      "40b79642f954b07fa21088df897d1f89926d7b44e377f0108246d2bf35986c5c"
+    ],
+    "timing_totals_ms": {
+      "ir_compile_ms": 13.390999985858798,
+      "binding_resolve_ms": 43.2312999619171,
+      "host_pack_ms": 94.44280015304685,
+      "input_upload_ms": 115.54040014743805,
+      "plan_build_ms": 0.0,
+      "kernel_ms": 603.9513999130577,
+      "utility_download_ms": 21.28980017732829,
+      "elapsed_ms": 1045.5288001103327
+    }
+  },
+  "component_promotion_gate": {
+    "requires_at_least_three_interleaved_pairs": false,
+    "all_modeled_decisions_exact": true,
+    "all_candidate_destination_times_below_all_baselines": false,
+    "destination_median_speedup_above_one": true,
+    "passed": false
+  },
+  "promotion_gate": {
+    "requires_at_least_three_interleaved_pairs": false,
+    "all_modeled_decisions_exact": true,
+    "all_candidate_model_times_below_all_baselines": false,
+    "all_candidate_destination_times_below_all_baselines": false,
+    "whole_model_median_speedup_above_one": false,
+    "destination_median_speedup_above_one": true,
+    "passed": false
+  }
+}
