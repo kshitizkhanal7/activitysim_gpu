@@ -122,6 +122,11 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         } else {
             Remove-Item Env:CHOICEFORGE_PHASE15_RUN_ID -ErrorAction SilentlyContinue
         }
+        if ($condition -eq "choiceforge" -and $env:CHOICEFORGE_PHASE16_REPORT_DIR) {
+            $env:CHOICEFORGE_PHASE16_RUN_ID = $name
+        } else {
+            Remove-Item Env:CHOICEFORGE_PHASE16_RUN_ID -ErrorAction SilentlyContinue
+        }
         $started = Get-Date
         $process = Start-Process `
             -FilePath $activitysim `
@@ -207,6 +212,12 @@ $manifest = [pscustomobject]@{
         additional_choiceforge_overlay_sha256 = (Get-TreeSha256 $AdditionalChoiceForgeOverlay)
         choiceforge_strict_cuda_candidate = $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE
         choiceforge_strict_cuda_max_rows = $env:CHOICEFORGE_STRICT_CUDA_MAX_ROWS
+        choiceforge_strict_cuda_tile_rows = $env:CHOICEFORGE_STRICT_CUDA_TILE_ROWS
+        choiceforge_strict_cuda_locality = $env:CHOICEFORGE_STRICT_CUDA_LOCALITY
+        choiceforge_strict_cuda_compact_inputs = $env:CHOICEFORGE_STRICT_CUDA_COMPACT_INPUTS
+        choiceforge_strict_cuda_grouped_indices = $env:CHOICEFORGE_STRICT_CUDA_GROUPED_INDICES
+        choiceforge_strict_cuda_sparse_coefficients = $env:CHOICEFORGE_STRICT_CUDA_SPARSE_COEFFICIENTS
+        choiceforge_strict_cuda_expression_float32 = $env:CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32
     }
     runs = $runs
 }

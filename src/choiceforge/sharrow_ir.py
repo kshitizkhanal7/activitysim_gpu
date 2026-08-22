@@ -174,6 +174,7 @@ def evaluate_strict_cpu(
     *,
     rows: int | None = None,
     coefficient_environment: Mapping[str, Any] | None = None,
+    expression_dtype: str = "float64",
 ) -> StrictCpuResult:
     """Evaluate a strict IR document using its explicit numeric contract.
 
@@ -189,11 +190,18 @@ def evaluate_strict_cpu(
         raise ValueError("rows must be nonnegative")
     terms = document["terms"]
     alternatives = tuple(document["alternatives"])
+    if expression_dtype not in {"float32", "float64"}:
+        raise ValueError("expression_dtype must be 'float32' or 'float64'")
+    expression_np_dtype = np.dtype(expression_dtype)
     features = np.empty((rows, len(terms)), dtype=np.float32)
     with np.errstate(all="ignore"):
         for column, term in enumerate(terms):
-            value = _strict_node(term["tree"], environment)
-            features[:, column] = _row_array(value, rows, np.float32)
+            value = _strict_node(
+                term["tree"], environment, expression_np_dtype
+            )
+            features[:, column] = _row_array(
+                value, rows, np.float32, expression_np_dtype
+            )
     coefficients = _resolved_coefficients(
         document, coefficient_environment or {}, dtype=np.float32
     )
@@ -206,7 +214,10 @@ def evaluate_strict_cpu(
         coefficients=coefficients,
         utilities=utilities,
         ir_sha256=document["sha256"],
-        numeric_policy=dict(document["numeric_policy"]),
+        numeric_policy={
+            **document["numeric_policy"],
+            "expression_dtype": expression_dtype,
+        },
     )
 
 
@@ -333,40 +344,46 @@ def _validate_document(document: Mapping[str, Any]) -> None:
         raise ValueError("IR terms must be a list")
 
 
-def _strict_node(tree: Mapping[str, Any], environment: Mapping[str, Any]):
+def _strict_node(
+    tree: Mapping[str, Any], environment: Mapping[str, Any],
+    expression_dtype=np.dtype(np.float64),
+):
     op = tree["op"]
     if op == "const":
-        return _strict_leaf(tree["value"])
+        return _strict_leaf(tree["value"], expression_dtype)
     if op == "name":
-        return _strict_leaf(environment[tree["name"]])
+        return _strict_leaf(environment[tree["name"]], expression_dtype)
     if op == "column":
-        return _strict_leaf(environment["df"][tree["name"]])
+        return _strict_leaf(environment["df"][tree["name"]], expression_dtype)
     if op == "skim":
         key = tree["key"]["value"]
-        return _strict_leaf(environment[tree["direction"]][key])
+        return _strict_leaf(environment[tree["direction"]][key], expression_dtype)
     if op in {"neg", "pos", "not"}:
-        value = _strict_node(tree["arg"], environment)
+        value = _strict_node(tree["arg"], environment, expression_dtype)
         if op == "not":
             return ~value
-        value = _numeric64(value)
+        value = _numeric(value, expression_dtype)
         return -value if op == "neg" else +value
     if op in {"add", "sub", "mul", "div", "and", "or"}:
         if "args" in tree:
-            values = [_strict_node(item, environment) for item in tree["args"]]
+            values = [
+                _strict_node(item, environment, expression_dtype)
+                for item in tree["args"]
+            ]
             result = values[0]
             for value in values[1:]:
                 result = result & value if op == "and" else result | value
             return result
-        left = _strict_node(tree["left"], environment)
-        right = _strict_node(tree["right"], environment)
+        left = _strict_node(tree["left"], environment, expression_dtype)
+        right = _strict_node(tree["right"], environment, expression_dtype)
         if op == "add":
-            return np.add(_numeric64(left), _numeric64(right))
+            return np.add(_numeric(left, expression_dtype), _numeric(right, expression_dtype))
         if op == "sub":
-            return np.subtract(_numeric64(left), _numeric64(right))
+            return np.subtract(_numeric(left, expression_dtype), _numeric(right, expression_dtype))
         if op == "mul":
-            return np.multiply(_numeric64(left), _numeric64(right))
+            return np.multiply(_numeric(left, expression_dtype), _numeric(right, expression_dtype))
         if op == "div":
-            return np.divide(_numeric64(left), _numeric64(right))
+            return np.divide(_numeric(left, expression_dtype), _numeric(right, expression_dtype))
         if op == "and":
             return np.bitwise_and(left, right)
         return np.bitwise_or(left, right)
@@ -376,37 +393,43 @@ def _strict_node(tree: Mapping[str, Any], environment: Mapping[str, Any]):
         if tree["args"]:
             lower = tree["args"][0]
         return np.clip(
-            _numeric64(_strict_node(tree["value"], environment)),
-            None if lower is None else _numeric64(_strict_node(lower, environment)),
-            None if upper is None else _numeric64(_strict_node(upper, environment)),
+            _numeric(_strict_node(tree["value"], environment, expression_dtype), expression_dtype),
+            None if lower is None else _numeric(_strict_node(lower, environment, expression_dtype), expression_dtype),
+            None if upper is None else _numeric(_strict_node(upper, environment, expression_dtype), expression_dtype),
         )
     if op == "maximum":
-        values = [_strict_node(item, environment) for item in tree["args"]]
-        result = _numeric64(values[0])
+        values = [
+            _strict_node(item, environment, expression_dtype)
+            for item in tree["args"]
+        ]
+        result = _numeric(values[0], expression_dtype)
         for value in values[1:]:
-            result = np.maximum(result, _numeric64(value))
+            result = np.maximum(result, _numeric(value, expression_dtype))
         return result
     if op == "compare":
-        left = _strict_node(tree["left"], environment)
+        left = _strict_node(tree["left"], environment, expression_dtype)
         result = True
         for operator_name, right_tree in zip(tree["operators"], tree["rights"]):
-            right = _strict_node(right_tree, environment)
+            right = _strict_node(right_tree, environment, expression_dtype)
             comparison = {
                 "eq": np.equal, "ne": np.not_equal, "lt": np.less,
                 "le": np.less_equal, "gt": np.greater, "ge": np.greater_equal,
-            }[operator_name](left, right)
+            }[operator_name](
+                _numeric(left, expression_dtype),
+                _numeric(right, expression_dtype),
+            )
             result = np.bitwise_and(result, comparison)
             left = right
         return result
     raise ExpressionUnsupported(f"strict IR execution for {op!r} is not implemented")
 
 
-def _strict_leaf(value):
+def _strict_leaf(value, expression_dtype=np.dtype(np.float64)):
     if hasattr(value, "to_numpy"):
         value = value.to_numpy(copy=False)
     array = np.asarray(value)
     if array.dtype.kind in "ufc":
-        return array.astype(np.float64, copy=False)
+        return array.astype(expression_dtype, copy=False)
     if array.ndim == 0:
         return array.item()
     return array
@@ -420,6 +443,10 @@ def _numeric64(value):
     the policy's float64 expression dtype.
     """
     return np.asarray(value, dtype=np.float64)
+
+
+def _numeric(value, expression_dtype):
+    return np.asarray(value, dtype=expression_dtype)
 
 
 def _infer_rows(environment: Mapping[str, Any]) -> int:
@@ -437,7 +464,9 @@ def _infer_rows(environment: Mapping[str, Any]) -> int:
     raise ValueError("environment needs at least one row-array value")
 
 
-def _row_array(value, rows: int, dtype) -> np.ndarray:
+def _row_array(
+    value, rows: int, dtype, expression_dtype=np.dtype(np.float64)
+) -> np.ndarray:
     array = np.asarray(value)
     if array.ndim == 0:
         array = np.full(rows, array.item())
@@ -445,7 +474,7 @@ def _row_array(value, rows: int, dtype) -> np.ndarray:
         raise ValueError(f"expression produced shape {array.shape}, expected ({rows},)")
     # The strict contract routes every completed numeric expression through
     # float64 before feature storage, including bare integer/Boolean terms.
-    result = array.astype(np.float64, copy=False).astype(dtype, copy=False)
+    result = array.astype(expression_dtype, copy=False).astype(dtype, copy=False)
     if np.dtype(dtype) == np.dtype(np.float32):
         _flush_subnormals_f32(result)
     return result

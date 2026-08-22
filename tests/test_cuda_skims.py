@@ -3,7 +3,8 @@ import pytest
 
 from choiceforge.cuda_skims import (
     CudaChooserColumns, CudaDatasetWrapper, CudaSkimDictionary, CudaSkimWrapper,
-    activitysim_cuda_environment,
+    activitysim_cuda_environment, clear_cuda_dataset_cache,
+    cuda_dataset_cache_stats,
 )
 
 
@@ -69,3 +70,29 @@ def test_dataset_wrapper_uses_sharrow_precomputed_positions():
     wrapper.positions = pd.DataFrame({"otaz": [0, 2], "dtaz": [2, 1], "time_period": [1, 0]})
     actual = CudaDatasetWrapper(wrapper)["SOV_TIME"]
     np.testing.assert_allclose(cp.asnumpy(actual), [cube[1, 0, 2], cube[0, 2, 1]])
+
+
+def test_strict_dataset_binding_reuses_semantic_metadata_and_device_cube():
+    xr = pytest.importorskip("xarray")
+    cp = pytest.importorskip("cupy")
+    pd = pytest.importorskip("pandas")
+    clear_cuda_dataset_cache()
+    cube = np.arange(2 * 3 * 3, dtype=np.float32).reshape(3, 3, 2)
+    dataset = xr.Dataset({"TIME": (("otaz", "dtaz", "time_period"), cube)})
+    wrapper = type("DatasetWrapper", (), {})()
+    wrapper.dataset, wrapper.df = dataset, pd.DataFrame({"x": [1, 2]})
+    wrapper.odim, wrapper.ddim = "otaz", "dtaz"
+    wrapper.positions = pd.DataFrame(
+        {"otaz": [0, 2], "dtaz": [2, 1], "time_period": [1, 0]}
+    )
+    first = CudaDatasetWrapper(wrapper).strict_binding("TIME")
+    second = CudaDatasetWrapper(wrapper).strict_binding("TIME")
+    assert first.data.data.ptr == second.data.data.ptr
+    assert cp.asnumpy(first.orig).tolist() == [0, 2]
+    assert cuda_dataset_cache_stats() == {
+        "binding_hits": 1,
+        "binding_misses": 1,
+        "array_uploads": 1,
+        "binding_entries": 1,
+        "array_entries": 1,
+    }

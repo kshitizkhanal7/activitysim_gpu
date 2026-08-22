@@ -22,7 +22,7 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 75 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 83 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -215,3 +215,19 @@ exact but slower: trip destination is 33.3 versus 28.4 seconds and the whole
 model is 197.871 versus 192.519 seconds. Phase 11 remains the supported result;
 Phase 15 is opt-in research code with Sharrow fallback. See
 [Phase 15 device-resident candidate](docs/phase15-device-resident-candidate.md).
+
+## Phase 16 locality and FP32 compiler
+
+Phase 16 recovers the large public benchmark at the GPU-kernel/component
+boundary. Scalar and dense-input compaction, grouped skim indices, and cached
+IR/skim bindings reduce setup and transfer work. An explicit FP32 expression
+policy then reduces the generated utility kernel from 4.107 seconds for the
+strict-locality FP64 candidate to 1.2-1.6 seconds across 4,188,312 utility rows.
+
+Three fresh interleaved 50,000-household pairs improve median trip destination
+from 28.5 to 27.8 seconds (1.025x); all three candidates beat all three
+baselines, and every modeled decision matches. The component promotion gate
+passes. Whole-model median time is 194.312 versus 193.014 seconds (0.993x), so
+the separate whole-model gate remains failed. Cooperative tiles and two sparse
+coefficient lowerings were exact but slower and remain disabled experiments.
+See [Phase 16 locality and FP32 compiler](docs/phase16-locality-and-fp32-compiler.md).

@@ -17,6 +17,8 @@ import numpy as np
 NOT_IN_SKIM_ZONE_ID = -1
 _SKIM_CACHE = {}
 _DATASET_ARRAY_CACHE = {}
+_DATASET_BINDING_CACHE = {}
+_DATASET_CACHE_STATS = {"binding_hits": 0, "binding_misses": 0, "array_uploads": 0}
 
 
 @dataclass(frozen=True)
@@ -37,9 +39,21 @@ def clear_cuda_dataset_cache():
     from .cuda_backend import _cupy
 
     _DATASET_ARRAY_CACHE.clear()
+    _DATASET_BINDING_CACHE.clear()
+    for key in _DATASET_CACHE_STATS:
+        _DATASET_CACHE_STATS[key] = 0
     cp = _cupy()
     cp.get_default_memory_pool().free_all_blocks()
     cp.get_default_pinned_memory_pool().free_all_blocks()
+
+
+def cuda_dataset_cache_stats():
+    """Return monotonic in-process metadata/gather-cache counters."""
+    return {
+        **_DATASET_CACHE_STATS,
+        "binding_entries": len(_DATASET_BINDING_CACHE),
+        "array_entries": len(_DATASET_ARRAY_CACHE),
+    }
 
 
 class CudaChooserColumns:
@@ -156,36 +170,53 @@ class CudaDatasetWrapper:
         from .cuda_backend import _cupy
 
         cp = _cupy()
-        array = self.wrapper.dataset[key]
         odim, ddim = self.wrapper.odim, self.wrapper.ddim
-        required = (odim, ddim)
-        if not all(dim in array.dims for dim in required):
-            raise ValueError(f"skim {key!r} does not have expected OD dimensions")
-        has_time = "time_period" in array.dims
-        order = required + (("time_period",) if has_time else ())
-        if set(array.dims) != set(order):
-            raise ValueError(f"skim {key!r} has unsupported dimensions {array.dims!r}")
-        host_values = np.asarray(array.transpose(*order).values)
-        if host_values.dtype != np.float32:
-            raise ValueError(
-                f"strict compact skim {key!r} requires float32, got {host_values.dtype}"
+        binding_key = (id(self.wrapper.dataset), key, odim, ddim)
+        cached = _DATASET_BINDING_CACHE.get(binding_key)
+        if cached is None:
+            _DATASET_CACHE_STATS["binding_misses"] += 1
+            array = self.wrapper.dataset[key]
+            required = (odim, ddim)
+            if not all(dim in array.dims for dim in required):
+                raise ValueError(f"skim {key!r} does not have expected OD dimensions")
+            has_time = "time_period" in array.dims
+            order = required + (("time_period",) if has_time else ())
+            if set(array.dims) != set(order):
+                raise ValueError(f"skim {key!r} has unsupported dimensions {array.dims!r}")
+            host_values = np.asarray(array.transpose(*order).values)
+            if host_values.dtype != np.float32:
+                raise ValueError(
+                    f"strict compact skim {key!r} requires float32, got {host_values.dtype}"
+                )
+            interface = host_values.__array_interface__
+            device_key = (
+                int(interface["data"][0]),
+                host_values.shape,
+                host_values.strides,
+                host_values.dtype.str,
             )
-        interface = host_values.__array_interface__
-        device_key = (
-            int(interface["data"][0]),
-            host_values.shape,
-            host_values.strides,
-            host_values.dtype.str,
-        )
-        if device_key not in _DATASET_ARRAY_CACHE:
-            _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(cp.asarray(host_values))
+            if device_key not in _DATASET_ARRAY_CACHE:
+                _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(
+                    cp.asarray(host_values)
+                )
+                _DATASET_CACHE_STATS["array_uploads"] += 1
+            cached = (
+                _DATASET_ARRAY_CACHE[device_key],
+                has_time,
+                int(host_values.shape[1]),
+                int(host_values.shape[2]) if has_time else 1,
+            )
+            _DATASET_BINDING_CACHE[binding_key] = cached
+        else:
+            _DATASET_CACHE_STATS["binding_hits"] += 1
+        data, has_time, dest_count, time_count = cached
         return CudaDatasetSkimBinding(
-            data=_DATASET_ARRAY_CACHE[device_key],
+            data=data,
             orig=self._device_position(odim),
             dest=self._device_position(ddim),
             time=self._device_position("time_period") if has_time else None,
-            dest_count=int(host_values.shape[1]),
-            time_count=int(host_values.shape[2]) if has_time else 1,
+            dest_count=dest_count,
+            time_count=time_count,
         )
 
 

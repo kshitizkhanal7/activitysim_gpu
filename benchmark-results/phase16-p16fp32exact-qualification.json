@@ -1,0 +1,78 @@
+{
+  "phase": 16,
+  "benchmark": "public Prototype MTC Extended device-resident generated strict-CUDA candidate",
+  "households": 1001,
+  "batches": 30,
+  "rows": 85126,
+  "terms_per_batch": [
+    379
+  ],
+  "alternatives_per_batch": [
+    21
+  ],
+  "candidate_batches": 30,
+  "fallback_batches": 0,
+  "exact_cpu_cuda_batches": 30,
+  "exact_feature_cells": 32262754,
+  "feature_cells": 32262754,
+  "exact_utility_cells": 1787646,
+  "utility_cells": 1787646,
+  "max_feature_abs": 0.0,
+  "max_utility_abs": 0.0,
+  "device_resident_utility_batches": 30,
+  "utility_device_to_host_bytes": 0,
+  "nested_host_to_device_bytes": 0,
+  "timing_medians_ms": {
+    "binding_resolve": 5.323499965015799,
+    "host_pack": 0.305649999063462,
+    "input_upload": 1.2375499354675412,
+    "coefficient_upload": 0.0,
+    "generated_utility_kernel": 2.4480000138282776,
+    "nested_kernel": 1.3050499837845564,
+    "nested_download": 0.3400499699637294
+  },
+  "compiled_calls": 10,
+  "coefficient_cache_hits": 20,
+  "tile_rows": [
+    1
+  ],
+  "dense_row_inputs": [
+    56
+  ],
+  "scalar_inputs": [
+    32,
+    33,
+    34
+  ],
+  "unique_skim_bindings": [
+    149
+  ],
+  "skim_index_groups": [
+    3
+  ],
+  "grouped_skim_indices": true,
+  "sparse_zero_coefficients": false,
+  "expression_dtypes": [
+    "float32"
+  ],
+  "active_coefficients": [
+    419,
+    427,
+    465
+  ],
+  "zero_coefficient_ops_skipped": 0,
+  "skim_loads_avoided": 0,
+  "ir_cache_hits": 20,
+  "skim_binding_cache_hits": 4026,
+  "skim_binding_cache_misses": 444,
+  "skim_array_uploads": 148,
+  "source_sha256": [
+    "58bab772213bfd395cf871d881b526a77c8c5c883bcebde738d1034eb9168385",
+    "9bf2666ff77038c9b82ba9ca95deca586d769fc46107c701bdae2d511d124f79",
+    "d1cb86a4951cfc4744ecc12faf2238b85ce01c0d817bdfa49ffa484471fb167c"
+  ],
+  "candidate_report_tree_sha256": "004af44a97088712e1af91605417224211194bf1c680b713db937b53220aed11",
+  "exact_report_tree_sha256": "f9f439dc96aec5922dfc9a00d583d773c32cdc9502c8399a268c14d5ee512f48",
+  "success": true,
+  "claim_boundary": "correctness and device-residency gate; full-model superiority requires repeated interleaved A/B trials"
+}

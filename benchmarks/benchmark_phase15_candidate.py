@@ -1,4 +1,4 @@
-"""Summarize Phase 15 A/B runs with exact-decision replication gates."""
+"""Summarize strict-CUDA candidate A/B runs with replication gates."""
 
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--candidate-reports", type=Path)
     parser.add_argument("--require-promotion", action="store_true")
+    parser.add_argument("--require-component-promotion", action="store_true")
+    parser.add_argument("--phase", type=int, default=15)
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding="utf-8-sig"))
     runs = [parse_run(run) for run in manifest["runs"]]
@@ -59,6 +61,20 @@ def main() -> None:
         "destination_median_speedup_above_one": metrics["trip_destination"]["speedup"] > 1.0,
     }
     promotion_gate["passed"] = all(promotion_gate.values())
+    component_promotion_gate = {
+        "requires_at_least_three_interleaved_pairs": repeated,
+        "all_modeled_decisions_exact": exact_decisions,
+        "all_candidate_destination_times_below_all_baselines": bool(
+            repeated
+            and metrics["trip_destination"].get(
+                "all_optimized_faster_than_all_baseline"
+            )
+        ),
+        "destination_median_speedup_above_one": (
+            metrics["trip_destination"]["speedup"] > 1.0
+        ),
+    }
+    component_promotion_gate["passed"] = all(component_promotion_gate.values())
     telemetry = None
     if args.candidate_reports:
         records = [
@@ -82,9 +98,62 @@ def main() -> None:
                 int(record.get("nested_host_to_device_bytes", 0)) for record in used
             ),
             "rows": sum(int(record["rows"]) for record in used),
+            "tile_rows": sorted({int(record.get("tile_rows", 1)) for record in used}),
+            "dense_row_inputs": sorted(
+                {int(record.get("dense_row_inputs", 0)) for record in used}
+            ),
+            "scalar_inputs": sorted(
+                {int(record.get("scalar_inputs", 0)) for record in used}
+            ),
+            "unique_skim_bindings": sorted(
+                {int(record.get("unique_skim_bindings", 0)) for record in used}
+            ),
+            "skim_index_groups": sorted(
+                {int(record.get("skim_index_groups", 0)) for record in used}
+            ),
+            "grouped_skim_indices": all(
+                bool(record.get("grouped_skim_indices")) for record in used
+            ),
+            "sparse_zero_coefficients": all(
+                bool(record.get("sparse_zero_coefficients")) for record in used
+            ),
+            "expression_dtypes": sorted(
+                {record.get("expression_dtype", "float64") for record in used}
+            ),
+            "active_coefficients": sorted(
+                {int(record.get("active_coefficients", 0)) for record in used}
+            ),
+            "zero_coefficient_ops_skipped": sum(
+                int(record.get("zero_coefficient_ops_skipped_per_row", 0))
+                * int(record["rows"])
+                for record in used
+            ),
+            "skim_loads_avoided": sum(
+                int(record.get("skim_loads_avoided_per_row", 0))
+                * int(record["rows"])
+                for record in used
+            ),
+            "ir_cache_hits": sum(bool(record.get("ir_cache_hit")) for record in used),
+            "skim_binding_cache_hits": sum(
+                int(record.get("skim_binding_cache_hits", 0)) for record in used
+            ),
+            "skim_binding_cache_misses": sum(
+                int(record.get("skim_binding_cache_misses", 0)) for record in used
+            ),
+            "skim_array_uploads": sum(
+                int(record.get("skim_array_uploads", 0)) for record in used
+            ),
+            "timing_totals_ms": {
+                key: sum(float(record.get(key, 0.0)) for record in used)
+                for key in (
+                    "ir_compile_ms", "binding_resolve_ms", "host_pack_ms",
+                    "input_upload_ms", "kernel_ms", "nested_kernel_ms",
+                    "nested_download_ms",
+                )
+            },
         }
     summary = {
-        "phase": 15,
+        "phase": args.phase,
         "manifest": str(args.manifest),
         "benchmark": {
             key: manifest[key]
@@ -110,13 +179,16 @@ def main() -> None:
             ),
         },
         "candidate_telemetry": telemetry,
+        "component_promotion_gate": component_promotion_gate,
         "promotion_gate": promotion_gate,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))
     if args.require_promotion and not promotion_gate["passed"]:
-        raise SystemExit("Phase 15 promotion gate failed")
+        raise SystemExit(f"Phase {args.phase} promotion gate failed")
+    if args.require_component_promotion and not component_promotion_gate["passed"]:
+        raise SystemExit(f"Phase {args.phase} component promotion gate failed")
 
 
 if __name__ == "__main__":

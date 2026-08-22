@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("8.114x", STYLES["metric_num"]),
-                Paragraph("1.388x", STYLES["metric_num"]),
                 Paragraph("1.064x", STYLES["metric_num"]),
+                Paragraph("1.025x", STYLES["metric_num"]),
+                Paragraph("0.0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("utility-pipeline<br/>microbenchmark", STYLES["metric_label"]),
-                Paragraph("complete trip-destination<br/>component", STYLES["metric_label"]),
-                Paragraph("complete 34-step<br/>50k-household model", STYLES["metric_label"]),
+                Paragraph("supported complete model<br/>50k households", STYLES["metric_label"]),
+                Paragraph("Phase 16 destination<br/>repeated 50k proof", STYLES["metric_label"]),
+                Paragraph("FP32 CPU/GPU maximum<br/>exact-gate difference", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Phase 15 update: compact generated CUDA is exact and 1.097x faster for the qualified destination component, but the 50,000-household scale candidate is not promoted.",
+            "Read left to right: the supported Phase 11 whole-model result, the promoted Phase 16 target-component result, and exact agreement between the published FP32 CPU and GPU recipes.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -429,14 +429,24 @@ def markdown_story(text: str):
             continue
         if stripped.startswith("## "):
             flush_paragraph()
-            if stripped.startswith("## 8. A negative result"):
+            if (
+                stripped.startswith("## 8. A negative result")
+                or stripped.startswith("## 22. Three different meanings")
+                or stripped.startswith("## 26. What must be done next")
+                or stripped.startswith("## 27. Phase 16")
+            ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))
             i += 1
             continue
         if stripped.startswith("### "):
             flush_paragraph()
-            if stripped.startswith("### Phase 5:") or stripped.startswith("### Phase 7:") or stripped.startswith("### Phase 8:"):
+            if (
+                stripped.startswith("### Phase 5:")
+                or stripped.startswith("### Phase 7:")
+                or stripped.startswith("### Phase 8:")
+                or stripped.startswith("### What should happen in Phase 17?")
+            ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[4:]), STYLES["h3"]))
             i += 1

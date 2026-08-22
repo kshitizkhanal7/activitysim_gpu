@@ -9,6 +9,7 @@ stacks those two directions and evaluates the mode-choice model once.
 from __future__ import annotations
 
 import logging
+import hashlib
 import os
 import re
 import time
@@ -18,6 +19,29 @@ import pandas as pd
 
 
 logger = logging.getLogger(__name__)
+_STRICT_IR_CACHE = {}
+
+
+def _cached_strict_ir(spec_frame):
+    """Compile an immutable model specification once per process."""
+    from choiceforge.sharrow_ir import specification_ir
+
+    started = time.perf_counter()
+    row_hash = pd.util.hash_pandas_object(spec_frame, index=True).values.tobytes()
+    column_bytes = "\0".join(map(str, spec_frame.columns)).encode("utf-8")
+    key = hashlib.sha256(column_bytes + row_hash).hexdigest()
+    cache_hit = key in _STRICT_IR_CACHE
+    if cache_hit:
+        document = _STRICT_IR_CACHE[key]
+    else:
+        document = specification_ir(spec_frame)
+        # The public trip-mode workflow has ten purpose-specific coefficient
+        # documents. Keep enough entries for all purposes across trip-number
+        # batches instead of evicting them in a ten-item cycle.
+        if len(_STRICT_IR_CACHE) >= 32:
+            _STRICT_IR_CACHE.pop(next(iter(_STRICT_IR_CACHE)))
+        _STRICT_IR_CACHE[key] = document
+    return document, cache_hit, (time.perf_counter() - started) * 1000
 
 
 class DestinationBatchUnsupported(RuntimeError):
@@ -469,15 +493,54 @@ def _simple_simulate_mtc21_logsums_cuda(
     strict_cuda_candidate_max_rows = int(
         os.environ.get("CHOICEFORGE_STRICT_CUDA_MAX_ROWS", "100000")
     )
+    strict_cuda_tile_rows = int(
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_TILE_ROWS", "1")
+    )
+    strict_cuda_locality = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_LOCALITY", "0") == "1"
+        or strict_cuda_tile_rows > 1
+    )
+    strict_cuda_cooperative = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_COOPERATIVE_SKIMS", "0") == "1"
+        or strict_cuda_tile_rows > 1
+    )
+    strict_cuda_compact_inputs = (
+        os.environ.get(
+            "CHOICEFORGE_STRICT_CUDA_COMPACT_INPUTS",
+            "1" if strict_cuda_locality else "0",
+        ) == "1"
+    )
+    strict_cuda_grouped_indices = (
+        os.environ.get(
+            "CHOICEFORGE_STRICT_CUDA_GROUPED_INDICES",
+            "1" if strict_cuda_locality else "0",
+        ) == "1"
+    )
+    strict_cuda_sparse_coefficients = (
+        os.environ.get(
+            "CHOICEFORGE_STRICT_CUDA_SPARSE_COEFFICIENTS",
+            "0",
+        ) == "1"
+    )
+    strict_cuda_expression_float32 = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32", "0") == "1"
+    )
+    candidate_phase = 16 if strict_cuda_locality else 15
     phase15_report_dir = os.environ.get("CHOICEFORGE_PHASE15_REPORT_DIR")
     phase15_run_id = os.environ.get("CHOICEFORGE_PHASE15_RUN_ID", "")
+    phase16_report_dir = os.environ.get("CHOICEFORGE_PHASE16_REPORT_DIR")
+    phase16_run_id = os.environ.get("CHOICEFORGE_PHASE16_RUN_ID", "")
+    candidate_report_dir = (
+        phase16_report_dir if candidate_phase == 16 else phase15_report_dir
+    )
+    candidate_run_id = phase16_run_id if candidate_phase == 16 else phase15_run_id
     phase15_report_sequence = 0
     candidate_queue = []
     captured_flow = {}
 
     def write_phase15_report(payload):
         """Write one deterministic device-resident candidate record."""
-        if not phase15_report_dir:
+        if not candidate_report_dir:
             return
         from pathlib import Path
         import json
@@ -486,10 +549,10 @@ def _simple_simulate_mtc21_logsums_cuda(
         nonlocal phase15_report_sequence
         phase15_report_sequence += 1
         safe_label = re.sub(r"[^A-Za-z0-9_.-]+", "-", trace_label).strip("-")
-        safe_run_id = re.sub(r"[^A-Za-z0-9_.-]+", "-", phase15_run_id).strip("-")
+        safe_run_id = re.sub(r"[^A-Za-z0-9_.-]+", "-", candidate_run_id).strip("-")
         prefix = f"{safe_run_id}_" if safe_run_id else ""
         filename = (
-            Path(phase15_report_dir)
+            Path(candidate_report_dir)
             / f"{prefix}batch_{phase15_report_sequence:03d}_{safe_label}.json"
         )
         filename.parent.mkdir(parents=True, exist_ok=True)
@@ -500,7 +563,6 @@ def _simple_simulate_mtc21_logsums_cuda(
 
     def strict_cuda_inputs(call_spec, dataframe, call_locals):
         """Build the shared strict document and typed real-batch environment."""
-        from choiceforge.sharrow_ir import specification_ir
         from choiceforge.cuda_skims import cuda_wrapper_from_activitysim
 
         spec_frame = call_spec.reset_index()
@@ -522,7 +584,8 @@ def _simple_simulate_mtc21_logsums_cuda(
         })
         for column in dataframe.columns:
             environment[column] = dataframe[column].to_numpy(copy=False)
-        return specification_ir(spec_frame), environment
+        document, ir_cache_hit, ir_compile_ms = _cached_strict_ir(spec_frame)
+        return document, environment, ir_cache_hit, ir_compile_ms
 
     def strict_cuda_comparison(raw_utilities):
         """Require exact shared-IR CPU/CUDA equality on a real batch.
@@ -540,7 +603,6 @@ def _simple_simulate_mtc21_logsums_cuda(
         )
         from choiceforge.sharrow_ir import (
             evaluate_strict_cpu,
-            specification_ir,
             write_comparison_report,
         )
 
@@ -560,15 +622,34 @@ def _simple_simulate_mtc21_logsums_cuda(
         })
         for column in dataframe.columns:
             environment[column] = dataframe[column].to_numpy(copy=False)
-        document = specification_ir(spec_frame)
-        cpu = evaluate_strict_cpu(document, environment, rows=len(dataframe))
-        cuda = evaluate_strict_cuda(document, environment, rows=len(dataframe))
+        document, ir_cache_hit, ir_compile_ms = _cached_strict_ir(spec_frame)
+        cpu = evaluate_strict_cpu(
+            document,
+            environment,
+            rows=len(dataframe),
+            expression_dtype=(
+                "float32" if strict_cuda_expression_float32 else "float64"
+            ),
+        )
+        cuda = evaluate_strict_cuda(
+            document,
+            environment,
+            rows=len(dataframe),
+            locality_tile_rows=strict_cuda_tile_rows,
+            locality_optimized=strict_cuda_cooperative,
+            compact_inputs=strict_cuda_compact_inputs,
+            group_skim_indices=strict_cuda_grouped_indices,
+            sparse_zero_coefficients=strict_cuda_sparse_coefficients,
+            expression_float32=strict_cuda_expression_float32,
+        )
         report = compare_strict_cpu_cuda(
             cpu, cuda, row_labels=raw_utilities.index.to_numpy(copy=False)
         )
         report["trace_label"] = trace_label
         report["activitysim_authoritative"] = True
         report["comparison_mode"] = "require_exact"
+        report["ir_cache_hit"] = ir_cache_hit
+        report["ir_compile_ms"] = ir_compile_ms
         nonlocal strict_cuda_report_sequence
         strict_cuda_report_sequence += 1
         if strict_cuda_report_dir:
@@ -604,7 +685,6 @@ def _simple_simulate_mtc21_logsums_cuda(
         from choiceforge.sharrow_ir import (
             compare_strict_to_sharrow,
             evaluate_strict_cpu,
-            specification_ir,
             write_comparison_report,
         )
 
@@ -626,7 +706,7 @@ def _simple_simulate_mtc21_logsums_cuda(
         })
         for column in dataframe.columns:
             environment[column] = dataframe[column].to_numpy(copy=False)
-        document = specification_ir(spec_frame)
+        document, _, _ = _cached_strict_ir(spec_frame)
         strict = evaluate_strict_cpu(document, environment, rows=len(dataframe))
         sharrow_features = np.asarray(
             captured_flow["flow"].load(
@@ -794,7 +874,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                 )
                 telemetry = entry["telemetry"]
                 write_phase15_report({
-                    "phase": 15,
+                    "phase": candidate_phase,
                     "trace_label": trace_label,
                     "rows": len(raw_utilities),
                     "terms": telemetry.terms,
@@ -816,12 +896,34 @@ def _simple_simulate_mtc21_logsums_cuda(
                     "coefficient_cache_hit": telemetry.coefficient_cache_hit,
                     "cache_key": telemetry.cache_key,
                     "source_sha256": telemetry.source_sha256,
+                    "tile_rows": telemetry.tile_rows,
+                    "dense_row_inputs": telemetry.dense_row_inputs,
+                    "scalar_inputs": telemetry.scalar_inputs,
+                    "unique_skim_bindings": telemetry.unique_skim_bindings,
+                    "skim_reference_uses": telemetry.skim_reference_uses,
+                    "skim_loads_avoided_per_row": telemetry.skim_loads_avoided_per_row,
+                    "skim_index_groups": telemetry.skim_index_groups,
+                    "grouped_skim_indices": telemetry.grouped_skim_indices,
+                    "active_coefficients": telemetry.active_coefficients,
+                    "zero_coefficient_ops_skipped_per_row": (
+                        telemetry.zero_coefficient_ops_skipped_per_row
+                    ),
+                    "sparse_zero_coefficients": telemetry.sparse_zero_coefficients,
+                    "expression_dtype": telemetry.expression_dtype,
+                    "ir_cache_hit": entry["ir_cache_hit"],
+                    "ir_compile_ms": entry["ir_compile_ms"],
+                    "skim_binding_cache_hits": entry["skim_cache_delta"]["binding_hits"],
+                    "skim_binding_cache_misses": entry["skim_cache_delta"]["binding_misses"],
+                    "skim_array_uploads": entry["skim_cache_delta"]["array_uploads"],
                 })
                 logger.info(
-                    "%s ChoiceForge strict candidate rows=%d resolve=%.3fms pack=%.3fms "
+                    "%s ChoiceForge strict candidate phase=%d tile_rows=%d rows=%d "
+                    "resolve=%.3fms pack=%.3fms "
                     "upload=%.3fms coefficient=%.3fms utility=%.3fms "
                     "nested=%.3fms download=%.3fms",
                     trace_label,
+                    candidate_phase,
+                    telemetry.tile_rows,
                     telemetry.rows,
                     telemetry.binding_resolve_ms,
                     telemetry.host_pack_ms,
@@ -872,7 +974,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         columns=raw_utilities.columns,
                     )
                     write_phase15_report({
-                        "phase": 15,
+                        "phase": candidate_phase,
                         "trace_label": trace_label,
                         "rows": len(raw_utilities),
                         "candidate_used": False,
@@ -906,6 +1008,7 @@ def _simple_simulate_mtc21_logsums_cuda(
         def capture_apply_flow(*args, **kwargs):
             if strict_cuda_candidate:
                 from choiceforge.cuda_backend import _cupy
+                from choiceforge.cuda_skims import cuda_dataset_cache_stats
                 from choiceforge.sharrow_cuda import evaluate_strict_cuda
 
                 try:
@@ -919,7 +1022,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         and len(dataframe) > strict_cuda_candidate_max_rows
                     ):
                         write_phase15_report({
-                            "phase": 15,
+                            "phase": candidate_phase,
                             "trace_label": trace_label,
                             "rows": len(dataframe),
                             "candidate_used": False,
@@ -937,7 +1040,8 @@ def _simple_simulate_mtc21_logsums_cuda(
                             strict_cuda_candidate_max_rows,
                         )
                         return original_apply_flow(*args, **kwargs)
-                    document, environment = strict_cuda_inputs(
+                    cache_before = cuda_dataset_cache_stats()
+                    document, environment, ir_cache_hit, ir_compile_ms = strict_cuda_inputs(
                         call_spec, dataframe, call_locals
                     )
                     generated = evaluate_strict_cuda(
@@ -946,12 +1050,26 @@ def _simple_simulate_mtc21_logsums_cuda(
                         rows=len(dataframe),
                         return_device=True,
                         capture_features=False,
+                        locality_tile_rows=strict_cuda_tile_rows,
+                        locality_optimized=strict_cuda_cooperative,
+                        compact_inputs=strict_cuda_compact_inputs,
+                        group_skim_indices=strict_cuda_grouped_indices,
+                        sparse_zero_coefficients=strict_cuda_sparse_coefficients,
+                        expression_float32=strict_cuda_expression_float32,
                     )
+                    cache_after = cuda_dataset_cache_stats()
+                    cache_delta = {
+                        key: cache_after[key] - cache_before[key]
+                        for key in ("binding_hits", "binding_misses", "array_uploads")
+                    }
                     candidate_queue.append({
                         "rows": len(dataframe),
                         "alternatives": tuple(document["alternatives"]),
                         "utilities": generated.utilities,
                         "telemetry": generated.telemetry,
+                        "ir_cache_hit": ir_cache_hit,
+                        "ir_compile_ms": ir_compile_ms,
+                        "skim_cache_delta": cache_delta,
                         "fallback_args": args,
                         "fallback_kwargs": kwargs,
                     })
@@ -970,7 +1088,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         exc_info=True,
                     )
                     write_phase15_report({
-                        "phase": 15,
+                        "phase": candidate_phase,
                         "trace_label": trace_label,
                         "rows": len(dataframe) if "dataframe" in locals() else None,
                         "candidate_used": False,

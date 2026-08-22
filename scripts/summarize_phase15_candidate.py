@@ -1,4 +1,4 @@
-"""Summarize the Phase 15 device-resident strict CUDA candidate gate."""
+"""Summarize a device-resident strict CUDA candidate gate."""
 
 from __future__ import annotations
 
@@ -26,21 +26,22 @@ def main() -> None:
     parser.add_argument("--exact-reports", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--households", type=int, required=True)
+    parser.add_argument("--phase", type=int, default=15)
     args = parser.parse_args()
 
     records = [json.loads(path.read_text()) for path in sorted(args.reports.glob("*.json"))]
     exact = [json.loads(path.read_text()) for path in sorted(args.exact_reports.glob("*.json"))]
     if not records or not exact:
-        raise RuntimeError("Phase 15 needs nonempty candidate and exact report sets")
+        raise RuntimeError(f"Phase {args.phase} needs nonempty candidate and exact report sets")
     if any(not record.get("candidate_used") or record.get("fallback_used") for record in records):
-        raise RuntimeError("Phase 15 candidate used a fallback")
+        raise RuntimeError(f"Phase {args.phase} candidate used a fallback")
     if any(not record.get("exact_gate_passed") for record in exact):
-        raise RuntimeError("Phase 15 strict CPU/CUDA exact gate failed")
+        raise RuntimeError(f"Phase {args.phase} strict CPU/CUDA exact gate failed")
     if len(records) != len(exact):
         raise RuntimeError("candidate and exact report counts differ")
 
     summary = {
-        "phase": 15,
+        "phase": args.phase,
         "benchmark": "public Prototype MTC Extended device-resident generated strict-CUDA candidate",
         "households": args.households,
         "batches": len(records),
@@ -72,6 +73,50 @@ def main() -> None:
         },
         "compiled_calls": sum(bool(record["compiled_this_call"]) for record in records),
         "coefficient_cache_hits": sum(bool(record["coefficient_cache_hit"]) for record in records),
+        "tile_rows": sorted({int(record.get("tile_rows", 1)) for record in records}),
+        "dense_row_inputs": sorted(
+            {int(record.get("dense_row_inputs", 0)) for record in records}
+        ),
+        "scalar_inputs": sorted(
+            {int(record.get("scalar_inputs", 0)) for record in records}
+        ),
+        "unique_skim_bindings": sorted(
+            {int(record.get("unique_skim_bindings", 0)) for record in records}
+        ),
+        "skim_index_groups": sorted(
+            {int(record.get("skim_index_groups", 0)) for record in records}
+        ),
+        "grouped_skim_indices": all(
+            bool(record.get("grouped_skim_indices")) for record in records
+        ),
+        "sparse_zero_coefficients": all(
+            bool(record.get("sparse_zero_coefficients")) for record in records
+        ),
+        "expression_dtypes": sorted(
+            {record.get("expression_dtype", "float64") for record in records}
+        ),
+        "active_coefficients": sorted(
+            {int(record.get("active_coefficients", 0)) for record in records}
+        ),
+        "zero_coefficient_ops_skipped": sum(
+            int(record.get("zero_coefficient_ops_skipped_per_row", 0))
+            * int(record["rows"])
+            for record in records
+        ),
+        "skim_loads_avoided": sum(
+            int(record.get("skim_loads_avoided_per_row", 0)) * int(record["rows"])
+            for record in records
+        ),
+        "ir_cache_hits": sum(bool(record.get("ir_cache_hit")) for record in records),
+        "skim_binding_cache_hits": sum(
+            int(record.get("skim_binding_cache_hits", 0)) for record in records
+        ),
+        "skim_binding_cache_misses": sum(
+            int(record.get("skim_binding_cache_misses", 0)) for record in records
+        ),
+        "skim_array_uploads": sum(
+            int(record.get("skim_array_uploads", 0)) for record in records
+        ),
         "source_sha256": sorted({record["source_sha256"] for record in records}),
         "candidate_report_tree_sha256": tree_sha256(args.reports),
         "exact_report_tree_sha256": tree_sha256(args.exact_reports),

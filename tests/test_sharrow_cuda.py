@@ -17,6 +17,7 @@ from choiceforge.sharrow_cuda import (
 )
 from choiceforge.sharrow_ir import evaluate_strict_cpu, specification_ir
 from choiceforge.nested_logit import MTC21_ALTERNATIVES
+from choiceforge.cuda_skims import CudaDatasetSkimBinding
 from test_nested_logit import NEST
 
 
@@ -82,9 +83,61 @@ def test_generated_cuda_preserves_nonfinite_edge_cases_exactly():
         }
     }
     document = specification_ir(spec)
-    cpu = evaluate_strict_cpu(document, environment)
-    cuda = evaluate_strict_cuda(document, environment)
+    cpu = evaluate_strict_cpu(
+        document, environment, expression_dtype="float32"
+    )
+    cuda = evaluate_strict_cuda(
+        document, environment, sparse_zero_coefficients=True
+    )
     assert compare_strict_cpu_cuda(cpu, cuda)["exact_gate_passed"]
+    assert cuda.telemetry.sparse_zero_coefficients
+    assert cuda.telemetry.zero_coefficient_ops_skipped_per_row == 0
+
+
+def test_float32_expression_policy_compiles_and_reports_explicitly():
+    pytest.importorskip("cupy")
+    spec = pd.DataFrame({
+        "Expression": ["df.x * scale + df.y", "df.x <= df.y"],
+        "A": [0.5, 2.0],
+        "B": [-0.25, 0.0],
+    })
+    environment = {
+        "df": {
+            "x": np.array([1, 2, 3, 4], dtype=np.float32),
+            "y": np.array([8, 6, 4, 2], dtype=np.float32),
+        },
+        "scale": np.float32(2.0),
+    }
+    document = specification_ir(spec)
+    cpu = evaluate_strict_cpu(document, environment)
+    cuda = evaluate_strict_cuda(
+        document, environment, expression_float32=True
+    )
+    assert compare_strict_cpu_cuda(cpu, cuda)["exact_gate_passed"]
+    assert cuda.telemetry.expression_dtype == "float32"
+    assert cuda.telemetry.input_bytes < evaluate_strict_cuda(
+        document, environment
+    ).telemetry.input_bytes
+
+
+def test_float32_expression_policy_has_a_separate_cpu_oracle():
+    pytest.importorskip("cupy")
+    spec = pd.DataFrame({
+        "Expression": ["(df.x + 1.0) - df.x"],
+        "A": [1.0],
+    })
+    environment = {"df": {"x": np.array([1.0e8], dtype=np.float64)}}
+    document = specification_ir(spec)
+    strict64 = evaluate_strict_cpu(document, environment)
+    reference32 = evaluate_strict_cpu(
+        document, environment, expression_dtype="float32"
+    )
+    cuda32 = evaluate_strict_cuda(
+        document, environment, expression_float32=True
+    )
+    assert strict64.features[0, 0] == 1.0
+    assert reference32.features[0, 0] == 0.0
+    assert compare_strict_cpu_cuda(reference32, cuda32)["exact_gate_passed"]
 
 
 def test_strict_cuda_cache_reuses_ir_and_typed_schema():
@@ -163,12 +216,16 @@ def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():
         document, environment, coefficient_environment=symbols
     )
     cuda = evaluate_strict_cuda(
-        document, environment, coefficient_environment=symbols
+        document,
+        environment,
+        coefficient_environment=symbols,
+        sparse_zero_coefficients=True,
     )
     report = compare_strict_cpu_cuda(cpu, cuda)
     assert report["exact_gate_passed"]
     assert report["terms"] == 379
     assert report["alternatives"] == 21
+    assert cuda.telemetry.zero_coefficient_ops_skipped_per_row > 0
 
 
 def test_generated_strict_utilities_stay_on_device_through_nested_logsum():
@@ -201,3 +258,71 @@ def test_generated_strict_utilities_stay_on_device_through_nested_logsum():
     np.testing.assert_array_equal(actual, expected)
     assert telemetry.utility.device_to_host_ms == 0
     assert telemetry.nested_logsum.host_to_device_ms == 0
+
+
+@pytest.mark.parametrize(
+    "tile_rows,cooperative", [(1, False), (1, True), (2, True), (4, True), (8, True)]
+)
+def test_tiled_strict_cuda_cooperatively_reuses_skims_and_scalars_exactly(
+    tile_rows, cooperative
+):
+    cp = pytest.importorskip("cupy")
+    rows = 17
+    cube = np.arange(4 * 5 * 3, dtype=np.float32).reshape(4, 5, 3)
+    orig = np.arange(rows, dtype=np.int64) % 4
+    dest = (np.arange(rows, dtype=np.int64) * 3) % 5
+    period = np.arange(rows, dtype=np.int64) % 3
+    gathered = cube[orig, dest, period]
+    spec = pd.DataFrame({
+        "Expression": [
+            "odt_skims['TIME'] * scale + df.x",
+            "odt_skims['TIME'] / denom",
+            "df.flag & active",
+        ],
+        "A": [0.25, -0.5, 2.0],
+        "B": [-0.75, 0.125, -3.0],
+    })
+    document = specification_ir(spec)
+    common = {
+        "df": {
+            "x": np.linspace(-2, 3, rows),
+            "flag": np.arange(rows) % 2 == 0,
+        },
+        "scale": 2.5,
+        "denom": 3.0,
+        "active": True,
+    }
+    cpu_environment = {**common, "odt_skims": {"TIME": gathered}}
+    cuda_environment = {
+        **common,
+        "odt_skims": {
+            "TIME": CudaDatasetSkimBinding(
+                data=cp.asarray(cube),
+                orig=cp.asarray(orig),
+                dest=cp.asarray(dest),
+                time=cp.asarray(period),
+                dest_count=5,
+                time_count=3,
+            )
+        },
+    }
+    cpu = evaluate_strict_cpu(document, cpu_environment)
+    cuda = evaluate_strict_cuda(
+        document,
+        cuda_environment,
+        locality_tile_rows=tile_rows,
+        locality_optimized=cooperative,
+        compact_inputs=True,
+        group_skim_indices=True,
+        sparse_zero_coefficients=True,
+    )
+    assert compare_strict_cpu_cuda(cpu, cuda)["exact_gate_passed"]
+    assert cuda.telemetry.tile_rows == tile_rows
+    assert cuda.telemetry.dense_row_inputs == 2
+    assert cuda.telemetry.scalar_inputs == 3
+    assert cuda.telemetry.unique_skim_bindings == 1
+    assert cuda.telemetry.skim_reference_uses == 2
+    assert cuda.telemetry.skim_loads_avoided_per_row == (1 if cooperative else 0)
+    assert cuda.telemetry.grouped_skim_indices
+    assert cuda.telemetry.skim_index_groups == 1
+    assert cuda.telemetry.sparse_zero_coefficients == (not cooperative)

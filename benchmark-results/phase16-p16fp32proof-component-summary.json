@@ -1,0 +1,495 @@
+{
+  "phase": 16,
+  "manifest": "benchmark-results\\phase9-mtc-full-p16fp32proof-runs.json",
+  "benchmark": {
+    "benchmark": "public Prototype MTC extended full geography",
+    "full_population_households": 2875192,
+    "zones": 1454,
+    "data_sha256": "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3",
+    "design": "interleaved fresh-process A1/B1/A2/B2... design with repeated baseline and ChoiceForge trials",
+    "reproducibility": {
+      "activitysim_commit": "16ab11180a26912987eb902daf945e268f3efc11",
+      "activitysim_patch_sha256": "aa2eed95d99fe4853365b9ed49427722ac467ef928013ccf7944fd9eda0e04e2",
+      "environment_lock_sha256": "84b97738100cd4b8c405af50ff823cdddf4a33f5f203deab7839e4a8739a3adc",
+      "python": "Python 3.11.14 (main, Dec  9 2025, 18:59:10) [MSC v.1944 64 bit (AMD64)]",
+      "gpu": "NVIDIA RTX A4000, 571.59, 16376 MiB",
+      "base_config_sha256": "38f0b343f569bd69d51ef4595a4441115524f4f13bc0e20fde1b855e56d18c2c",
+      "shared_config_sha256": null,
+      "choiceforge_overlay_sha256": "e036373ae155455994d3ce9f73aa62c6344057b12f9b645af1cbd556b2da4506",
+      "additional_choiceforge_overlay_sha256": null,
+      "choiceforge_strict_cuda_candidate": "1",
+      "choiceforge_strict_cuda_max_rows": "2000000",
+      "choiceforge_strict_cuda_tile_rows": "1",
+      "choiceforge_strict_cuda_locality": "1",
+      "choiceforge_strict_cuda_compact_inputs": "1",
+      "choiceforge_strict_cuda_grouped_indices": "1",
+      "choiceforge_strict_cuda_sparse_coefficients": "0",
+      "choiceforge_strict_cuda_expression_float32": "1"
+    }
+  },
+  "runs": [
+    {
+      "name": "phase9-p16fp32proof-baseline-50000-hh-1",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-22T13:18:29.2759077-04:00",
+      "finished": "2026-08-22T13:21:48.3449695-04:00",
+      "wall_seconds": 199.0690618,
+      "launcher_peak_working_set_bytes": 5947392,
+      "launcher_peak_private_bytes": 995328,
+      "gpu_samples": 183,
+      "gpu_peak_utilization_percent": 35.0,
+      "gpu_mean_utilization_percent": 0.6065573770491803,
+      "gpu_peak_memory_mib": 1733.0,
+      "all_models": 193.014,
+      "activitysim_high_water_rss_bytes": 8854069248,
+      "activitysim_high_water_uss_bytes": 2270752768,
+      "scheduling_suite": 36.6,
+      "mandatory_tour_scheduling": 24.0,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.6,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 28.5
+    },
+    {
+      "name": "phase9-p16fp32proof-choiceforge-50000-hh-1",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-22T13:21:48.3913933-04:00",
+      "finished": "2026-08-22T13:25:12.2567301-04:00",
+      "wall_seconds": 203.8653368,
+      "launcher_peak_working_set_bytes": 5931008,
+      "launcher_peak_private_bytes": 966656,
+      "gpu_samples": 187,
+      "gpu_peak_utilization_percent": 40.0,
+      "gpu_mean_utilization_percent": 1.3957219251336899,
+      "gpu_peak_memory_mib": 8449.0,
+      "all_models": 197.584,
+      "activitysim_high_water_rss_bytes": 8652754944,
+      "activitysim_high_water_uss_bytes": 2069434368,
+      "scheduling_suite": 37.9,
+      "mandatory_tour_scheduling": 24.4,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 10.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 28.4
+    },
+    {
+      "name": "phase9-p16fp32proof-baseline-50000-hh-2",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-22T13:25:12.2872633-04:00",
+      "finished": "2026-08-22T13:28:31.1113709-04:00",
+      "wall_seconds": 198.8241076,
+      "launcher_peak_working_set_bytes": 5947392,
+      "launcher_peak_private_bytes": 999424,
+      "gpu_samples": 183,
+      "gpu_peak_utilization_percent": 24.0,
+      "gpu_mean_utilization_percent": 0.4644808743169399,
+      "gpu_peak_memory_mib": 1795.0,
+      "all_models": 192.619,
+      "activitysim_high_water_rss_bytes": 8838017024,
+      "activitysim_high_water_uss_bytes": 2254721024,
+      "scheduling_suite": 37.0,
+      "mandatory_tour_scheduling": 24.2,
+      "joint_tour_scheduling": 1.6,
+      "non_mandatory_tour_scheduling": 9.6,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 28.5
+    },
+    {
+      "name": "phase9-p16fp32proof-choiceforge-50000-hh-2",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-22T13:28:31.1415562-04:00",
+      "finished": "2026-08-22T13:31:50.1932403-04:00",
+      "wall_seconds": 199.0516841,
+      "launcher_peak_working_set_bytes": 5943296,
+      "launcher_peak_private_bytes": 987136,
+      "gpu_samples": 183,
+      "gpu_peak_utilization_percent": 68.0,
+      "gpu_mean_utilization_percent": 1.6284153005464481,
+      "gpu_peak_memory_mib": 8434.0,
+      "all_models": 193.152,
+      "activitysim_high_water_rss_bytes": 8797597696,
+      "activitysim_high_water_uss_bytes": 2214277120,
+      "scheduling_suite": 36.699999999999996,
+      "mandatory_tour_scheduling": 24.2,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 27.7
+    },
+    {
+      "name": "phase9-p16fp32proof-baseline-50000-hh-3",
+      "condition": "baseline",
+      "households": 50000,
+      "started": "2026-08-22T13:31:50.2202213-04:00",
+      "finished": "2026-08-22T13:35:11.5040230-04:00",
+      "wall_seconds": 201.2838017,
+      "launcher_peak_working_set_bytes": 5947392,
+      "launcher_peak_private_bytes": 991232,
+      "gpu_samples": 185,
+      "gpu_peak_utilization_percent": 42.0,
+      "gpu_mean_utilization_percent": 0.7135135135135136,
+      "gpu_peak_memory_mib": 1792.0,
+      "all_models": 195.189,
+      "activitysim_high_water_rss_bytes": 8838459392,
+      "activitysim_high_water_uss_bytes": 2255159296,
+      "scheduling_suite": 36.9,
+      "mandatory_tour_scheduling": 24.1,
+      "joint_tour_scheduling": 1.7,
+      "non_mandatory_tour_scheduling": 9.5,
+      "atwork_subtour_scheduling": 1.6,
+      "trip_destination": 28.8
+    },
+    {
+      "name": "phase9-p16fp32proof-choiceforge-50000-hh-3",
+      "condition": "choiceforge",
+      "households": 50000,
+      "started": "2026-08-22T13:35:11.5319424-04:00",
+      "finished": "2026-08-22T13:38:40.6036388-04:00",
+      "wall_seconds": 209.0716964,
+      "launcher_peak_working_set_bytes": 5947392,
+      "launcher_peak_private_bytes": 991232,
+      "gpu_samples": 192,
+      "gpu_peak_utilization_percent": 100.0,
+      "gpu_mean_utilization_percent": 1.5729166666666667,
+      "gpu_peak_memory_mib": 8435.0,
+      "all_models": 194.312,
+      "activitysim_high_water_rss_bytes": 8761380864,
+      "activitysim_high_water_uss_bytes": 2178064384,
+      "scheduling_suite": 36.89999999999999,
+      "mandatory_tour_scheduling": 24.0,
+      "joint_tour_scheduling": 1.4,
+      "non_mandatory_tour_scheduling": 9.7,
+      "atwork_subtour_scheduling": 1.8,
+      "trip_destination": 27.8
+    }
+  ],
+  "metrics": {
+    "all_models": {
+      "baseline_seconds": [
+        193.014,
+        192.619,
+        195.189
+      ],
+      "optimized_seconds": [
+        197.584,
+        193.152,
+        194.312
+      ],
+      "baseline_median_seconds": 193.014,
+      "optimized_median_seconds": 194.312,
+      "median_seconds_saved": -1.2980000000000018,
+      "speedup": 0.9933200214088682,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9748714470807353,
+      "paired_seconds_saved": [
+        -4.569999999999993,
+        -0.532999999999987,
+        0.8769999999999811
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -4.569999999999993,
+        0.8769999999999811
+      ]
+    },
+    "scheduling_suite": {
+      "baseline_seconds": [
+        36.6,
+        37.0,
+        36.9
+      ],
+      "optimized_seconds": [
+        37.9,
+        36.699999999999996,
+        36.89999999999999
+      ],
+      "baseline_median_seconds": 36.9,
+      "optimized_median_seconds": 36.89999999999999,
+      "median_seconds_saved": 7.105427357601002e-15,
+      "speedup": 1.0000000000000002,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9656992084432718,
+      "paired_seconds_saved": [
+        -1.2999999999999972,
+        0.30000000000000426,
+        7.105427357601002e-15
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -1.2999999999999972,
+        0.30000000000000426
+      ]
+    },
+    "mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        24.0,
+        24.2,
+        24.1
+      ],
+      "optimized_seconds": [
+        24.4,
+        24.2,
+        24.0
+      ],
+      "baseline_median_seconds": 24.1,
+      "optimized_median_seconds": 24.2,
+      "median_seconds_saved": -0.09999999999999787,
+      "speedup": 0.9958677685950414,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9836065573770493,
+      "paired_seconds_saved": [
+        -0.3999999999999986,
+        0.0,
+        0.10000000000000142
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.3999999999999986,
+        0.10000000000000142
+      ]
+    },
+    "joint_tour_scheduling": {
+      "baseline_seconds": [
+        1.4,
+        1.6,
+        1.7
+      ],
+      "optimized_seconds": [
+        1.4,
+        1.4,
+        1.4
+      ],
+      "baseline_median_seconds": 1.6,
+      "optimized_median_seconds": 1.4,
+      "median_seconds_saved": 0.20000000000000018,
+      "speedup": 1.142857142857143,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 1.0,
+      "paired_seconds_saved": [
+        0.0,
+        0.20000000000000018,
+        0.30000000000000004
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        0.0,
+        0.30000000000000004
+      ]
+    },
+    "non_mandatory_tour_scheduling": {
+      "baseline_seconds": [
+        9.6,
+        9.6,
+        9.5
+      ],
+      "optimized_seconds": [
+        10.5,
+        9.5,
+        9.7
+      ],
+      "baseline_median_seconds": 9.6,
+      "optimized_median_seconds": 9.7,
+      "median_seconds_saved": -0.09999999999999964,
+      "speedup": 0.9896907216494846,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.9047619047619048,
+      "paired_seconds_saved": [
+        -0.9000000000000004,
+        0.09999999999999964,
+        -0.1999999999999993
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.9000000000000004,
+        0.09999999999999964
+      ]
+    },
+    "atwork_subtour_scheduling": {
+      "baseline_seconds": [
+        1.6,
+        1.6,
+        1.6
+      ],
+      "optimized_seconds": [
+        1.6,
+        1.6,
+        1.8
+      ],
+      "baseline_median_seconds": 1.6,
+      "optimized_median_seconds": 1.6,
+      "median_seconds_saved": 0.0,
+      "speedup": 1.0,
+      "all_optimized_faster_than_all_baseline": false,
+      "worst_optimized_vs_best_baseline_speedup": 0.888888888888889,
+      "paired_seconds_saved": [
+        0.0,
+        0.0,
+        -0.19999999999999996
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        -0.19999999999999996,
+        0.0
+      ]
+    },
+    "trip_destination": {
+      "baseline_seconds": [
+        28.5,
+        28.5,
+        28.8
+      ],
+      "optimized_seconds": [
+        28.4,
+        27.7,
+        27.8
+      ],
+      "baseline_median_seconds": 28.5,
+      "optimized_median_seconds": 27.8,
+      "median_seconds_saved": 0.6999999999999993,
+      "speedup": 1.025179856115108,
+      "all_optimized_faster_than_all_baseline": true,
+      "worst_optimized_vs_best_baseline_speedup": 1.0035211267605635,
+      "paired_seconds_saved": [
+        0.10000000000000142,
+        0.8000000000000007,
+        1.0
+      ],
+      "bootstrap_median_seconds_saved_95pct": [
+        0.10000000000000142,
+        1.0
+      ]
+    }
+  },
+  "correctness": {
+    "policy": "exact modeled decisions and byte-identical non-trip outputs; destination_logsum diagnostic max absolute difference <= 1e-4",
+    "candidate_runs": {
+      "phase9-p16fp32proof-choiceforge-50000-hh-1": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv",
+          "final_persons.csv",
+          "final_tours.csv"
+        ],
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 17704,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.9730623705144022e-07,
+        "diagnostic_gate": 0.0001,
+        "success": true,
+        "claim_boundary": "all modeled decisions and non-trip substantive files are exact; destination_logsum is diagnostic and bounded, not byte-identical"
+      },
+      "phase9-p16fp32proof-choiceforge-50000-hh-2": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv",
+          "final_persons.csv",
+          "final_tours.csv"
+        ],
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 17704,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.9730623705144022e-07,
+        "diagnostic_gate": 0.0001,
+        "success": true,
+        "claim_boundary": "all modeled decisions and non-trip substantive files are exact; destination_logsum is diagnostic and bounded, not byte-identical"
+      },
+      "phase9-p16fp32proof-choiceforge-50000-hh-3": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv",
+          "final_persons.csv",
+          "final_tours.csv"
+        ],
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 17704,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.9730623705144022e-07,
+        "diagnostic_gate": 0.0001,
+        "success": true,
+        "claim_boundary": "all modeled decisions and non-trip substantive files are exact; destination_logsum is diagnostic and bounded, not byte-identical"
+      }
+    },
+    "all_decisions_exact": true,
+    "maximum_destination_logsum_abs": 1.0000000003174137e-05
+  },
+  "candidate_telemetry": {
+    "reports": 30,
+    "candidate_batches": 30,
+    "fallback_batches": 0,
+    "device_resident_utility_batches": 30,
+    "utility_device_to_host_bytes": 0,
+    "nested_host_to_device_bytes": 0,
+    "rows": 4188312,
+    "tile_rows": [
+      1
+    ],
+    "dense_row_inputs": [
+      56
+    ],
+    "scalar_inputs": [
+      32,
+      33,
+      34
+    ],
+    "unique_skim_bindings": [
+      149
+    ],
+    "skim_index_groups": [
+      3
+    ],
+    "grouped_skim_indices": true,
+    "sparse_zero_coefficients": false,
+    "expression_dtypes": [
+      "float32"
+    ],
+    "active_coefficients": [
+      419,
+      427,
+      465
+    ],
+    "zero_coefficient_ops_skipped": 0,
+    "skim_loads_avoided": 0,
+    "ir_cache_hits": 20,
+    "skim_binding_cache_hits": 4026,
+    "skim_binding_cache_misses": 444,
+    "skim_array_uploads": 148,
+    "timing_totals_ms": {
+      "ir_compile_ms": 326.3221997767687,
+      "binding_resolve_ms": 998.370599700138,
+      "host_pack_ms": 1252.97320028767,
+      "input_upload_ms": 404.5973998727277,
+      "kernel_ms": 1558.9512998703867,
+      "nested_kernel_ms": 83.42350029852241,
+      "nested_download_ms": 16.02490001823753
+    }
+  },
+  "component_promotion_gate": {
+    "requires_at_least_three_interleaved_pairs": true,
+    "all_modeled_decisions_exact": true,
+    "all_candidate_destination_times_below_all_baselines": true,
+    "destination_median_speedup_above_one": true,
+    "passed": true
+  },
+  "promotion_gate": {
+    "requires_at_least_three_interleaved_pairs": true,
+    "all_modeled_decisions_exact": true,
+    "all_candidate_model_times_below_all_baselines": false,
+    "all_candidate_destination_times_below_all_baselines": true,
+    "whole_model_median_speedup_above_one": false,
+    "destination_median_speedup_above_one": true,
+    "passed": false
+  }
+}
