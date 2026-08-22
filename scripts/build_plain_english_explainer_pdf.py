@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Phase 14 update: generated CUDA now matches the strict CPU answer key exactly on 30 real public-model batches; the 8.114x utility figure remains a promising microbenchmark, not a production claim.",
+            "Phase 15 update: compact generated CUDA is exact and 1.097x faster for the qualified destination component, but the 50,000-household scale candidate is not promoted.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 17, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 22, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

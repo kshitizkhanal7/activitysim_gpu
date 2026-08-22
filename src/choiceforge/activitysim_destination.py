@@ -463,7 +463,66 @@ def _simple_simulate_mtc21_logsums_cuda(
     strict_cuda_remaining = int(os.environ.get("CHOICEFORGE_STRICT_CUDA_BATCHES", "0"))
     strict_cuda_report_dir = os.environ.get("CHOICEFORGE_STRICT_CUDA_REPORT_DIR")
     strict_cuda_report_sequence = 0
+    strict_cuda_candidate = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_CANDIDATE", "0") == "1"
+    )
+    strict_cuda_candidate_max_rows = int(
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_MAX_ROWS", "100000")
+    )
+    phase15_report_dir = os.environ.get("CHOICEFORGE_PHASE15_REPORT_DIR")
+    phase15_run_id = os.environ.get("CHOICEFORGE_PHASE15_RUN_ID", "")
+    phase15_report_sequence = 0
+    candidate_queue = []
     captured_flow = {}
+
+    def write_phase15_report(payload):
+        """Write one deterministic device-resident candidate record."""
+        if not phase15_report_dir:
+            return
+        from pathlib import Path
+        import json
+        import re
+
+        nonlocal phase15_report_sequence
+        phase15_report_sequence += 1
+        safe_label = re.sub(r"[^A-Za-z0-9_.-]+", "-", trace_label).strip("-")
+        safe_run_id = re.sub(r"[^A-Za-z0-9_.-]+", "-", phase15_run_id).strip("-")
+        prefix = f"{safe_run_id}_" if safe_run_id else ""
+        filename = (
+            Path(phase15_report_dir)
+            / f"{prefix}batch_{phase15_report_sequence:03d}_{safe_label}.json"
+        )
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        filename.write_text(
+            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
+
+    def strict_cuda_inputs(call_spec, dataframe, call_locals):
+        """Build the shared strict document and typed real-batch environment."""
+        from choiceforge.sharrow_ir import specification_ir
+        from choiceforge.cuda_skims import cuda_wrapper_from_activitysim
+
+        spec_frame = call_spec.reset_index()
+        if "Expression" not in spec_frame:
+            raise ValueError("ActivitySim spec reset did not expose Expression")
+        targeted = [
+            value for value in skims.values()
+            if getattr(value, "df", None) is not None
+        ]
+        if not targeted:
+            raise ValueError("strict CUDA candidate found no targeted skim wrapper")
+        strict_locals = state.get_global_constants().copy()
+        strict_locals.update(call_locals or {})
+        environment = {"df": dataframe, **strict_locals}
+        environment.update({
+            name: cuda_wrapper_from_activitysim(value)
+            for name, value in skims.items()
+            if name in {"od_skims", "odt_skims", "dot_skims"}
+        })
+        for column in dataframe.columns:
+            environment[column] = dataframe[column].to_numpy(copy=False)
+        return specification_ir(spec_frame), environment
 
     def strict_cuda_comparison(raw_utilities):
         """Require exact shared-IR CPU/CUDA equality on a real batch.
@@ -721,6 +780,60 @@ def _simple_simulate_mtc21_logsums_cuda(
             if shadow_remaining > 0:
                 shadow_remaining -= 1
                 shadow_gpu_utilities(raw_utilities)
+            if strict_cuda_candidate and candidate_queue:
+                entry = candidate_queue.pop(0)
+                if entry["rows"] != len(raw_utilities):
+                    raise ValueError("strict CUDA candidate row queue mismatch")
+                if tuple(entry["alternatives"]) != tuple(raw_utilities.columns):
+                    raise ValueError("strict CUDA candidate alternative queue mismatch")
+                logsums, nested = mtc21_nested_logsums_cuda(
+                    entry["utilities"],
+                    numeric_nest,
+                    raw_utilities.columns,
+                    return_telemetry=True,
+                )
+                telemetry = entry["telemetry"]
+                write_phase15_report({
+                    "phase": 15,
+                    "trace_label": trace_label,
+                    "rows": len(raw_utilities),
+                    "terms": telemetry.terms,
+                    "alternatives": telemetry.alternatives,
+                    "candidate_used": True,
+                    "fallback_used": False,
+                    "device_resident_utility_handoff": True,
+                    "utility_device_to_host_bytes": 0,
+                    "nested_host_to_device_bytes": 0,
+                    "input_bytes": telemetry.input_bytes,
+                    "binding_resolve_ms": telemetry.binding_resolve_ms,
+                    "host_pack_ms": telemetry.host_pack_ms,
+                    "input_upload_ms": telemetry.input_upload_ms,
+                    "coefficient_upload_ms": telemetry.coefficient_upload_ms,
+                    "kernel_ms": telemetry.kernel_ms,
+                    "nested_kernel_ms": nested.kernel_ms,
+                    "nested_download_ms": nested.device_to_host_ms,
+                    "compiled_this_call": telemetry.compiled_this_call,
+                    "coefficient_cache_hit": telemetry.coefficient_cache_hit,
+                    "cache_key": telemetry.cache_key,
+                    "source_sha256": telemetry.source_sha256,
+                })
+                logger.info(
+                    "%s ChoiceForge strict candidate rows=%d resolve=%.3fms pack=%.3fms "
+                    "upload=%.3fms coefficient=%.3fms utility=%.3fms "
+                    "nested=%.3fms download=%.3fms",
+                    trace_label,
+                    telemetry.rows,
+                    telemetry.binding_resolve_ms,
+                    telemetry.host_pack_ms,
+                    telemetry.input_upload_ms,
+                    telemetry.coefficient_upload_ms,
+                    telemetry.kernel_ms,
+                    nested.kernel_ms,
+                    nested.device_to_host_ms,
+                )
+                return pd.DataFrame(
+                    {"root": np.exp(logsums)}, index=raw_utilities.index
+                )
             materialize_started = time.perf_counter()
             utilities = raw_utilities.to_numpy(copy=False)
             materialize_ms = (time.perf_counter() - materialize_started) * 1000
@@ -746,6 +859,38 @@ def _simple_simulate_mtc21_logsums_cuda(
                 {"root": np.exp(logsums)}, index=raw_utilities.index
             )
         except Exception as exc:
+            if strict_cuda_candidate and "entry" in locals():
+                try:
+                    sharrow_values, _, _ = original_apply_flow(
+                        *entry["fallback_args"], **entry["fallback_kwargs"]
+                    )
+                    if sharrow_values is None:
+                        raise RuntimeError("Sharrow fallback returned no utilities")
+                    sharrow_frame = pd.DataFrame(
+                        sharrow_values,
+                        index=raw_utilities.index,
+                        columns=raw_utilities.columns,
+                    )
+                    write_phase15_report({
+                        "phase": 15,
+                        "trace_label": trace_label,
+                        "rows": len(raw_utilities),
+                        "candidate_used": False,
+                        "fallback_used": True,
+                        "fallback_reason": f"{type(exc).__name__}: {exc}",
+                    })
+                    logger.warning(
+                        "%s strict CUDA candidate fell back to Sharrow: %s",
+                        trace_label,
+                        exc,
+                    )
+                    return original_reducer(sharrow_frame, numeric_nest)
+                except Exception:
+                    logger.exception(
+                        "%s strict CUDA candidate Sharrow fallback failed",
+                        trace_label,
+                    )
+                    raise
             logger.warning(
                 "%s ChoiceForge CUDA nested-logit fallback: %s", trace_label, exc,
                 exc_info=bool(os.environ.get("CHOICEFORGE_UTILITY_SHADOW_BATCHES")),
@@ -754,11 +899,85 @@ def _simple_simulate_mtc21_logsums_cuda(
 
     simulate.compute_nested_exp_utilities = cuda_reducer
     original_apply_flow = None
-    if shadow_remaining or strict_remaining:
+    if shadow_remaining or strict_remaining or strict_cuda_candidate:
         from activitysim.core import flow as activitysim_flow
         original_apply_flow = activitysim_flow.apply_flow
 
         def capture_apply_flow(*args, **kwargs):
+            if strict_cuda_candidate:
+                from choiceforge.cuda_backend import _cupy
+                from choiceforge.sharrow_cuda import evaluate_strict_cuda
+
+                try:
+                    call_spec = args[1] if len(args) > 1 else kwargs["spec"]
+                    dataframe = args[2] if len(args) > 2 else kwargs["choosers"]
+                    call_locals = (
+                        args[3] if len(args) > 3 else kwargs.get("locals_d", {})
+                    )
+                    if (
+                        strict_cuda_candidate_max_rows > 0
+                        and len(dataframe) > strict_cuda_candidate_max_rows
+                    ):
+                        write_phase15_report({
+                            "phase": 15,
+                            "trace_label": trace_label,
+                            "rows": len(dataframe),
+                            "candidate_used": False,
+                            "fallback_used": True,
+                            "fallback_reason": (
+                                "row_policy: "
+                                f"rows={len(dataframe)} exceeds "
+                                f"max_rows={strict_cuda_candidate_max_rows}"
+                            ),
+                        })
+                        logger.info(
+                            "%s strict CUDA candidate policy fallback rows=%d max_rows=%d",
+                            trace_label,
+                            len(dataframe),
+                            strict_cuda_candidate_max_rows,
+                        )
+                        return original_apply_flow(*args, **kwargs)
+                    document, environment = strict_cuda_inputs(
+                        call_spec, dataframe, call_locals
+                    )
+                    generated = evaluate_strict_cuda(
+                        document,
+                        environment,
+                        rows=len(dataframe),
+                        return_device=True,
+                        capture_features=False,
+                    )
+                    candidate_queue.append({
+                        "rows": len(dataframe),
+                        "alternatives": tuple(document["alternatives"]),
+                        "utilities": generated.utilities,
+                        "telemetry": generated.telemetry,
+                        "fallback_args": args,
+                        "fallback_kwargs": kwargs,
+                    })
+                    # eval_utilities needs only a correctly shaped host object;
+                    # the reducer consumes the queued device matrix directly.
+                    placeholder = np.zeros(
+                        (len(dataframe), len(document["alternatives"])),
+                        dtype=np.float32,
+                    )
+                    return placeholder, None, None
+                except Exception as exc:
+                    logger.warning(
+                        "%s strict CUDA candidate generation fallback: %s",
+                        trace_label,
+                        exc,
+                        exc_info=True,
+                    )
+                    write_phase15_report({
+                        "phase": 15,
+                        "trace_label": trace_label,
+                        "rows": len(dataframe) if "dataframe" in locals() else None,
+                        "candidate_used": False,
+                        "fallback_used": True,
+                        "fallback_reason": f"{type(exc).__name__}: {exc}",
+                    })
+                    return original_apply_flow(*args, **kwargs)
             result = original_apply_flow(*args, **kwargs)
             if result[0] is not None and result[1] is not None and result[2] is not None:
                 captured_flow["flow"], captured_flow["tree"] = result[1], result[2]
@@ -954,4 +1173,12 @@ def choose_trip_destinations_batched(
         preprocess_ms,
         (time.perf_counter() - started) * 1000,
     )
+    if os.environ.get("CHOICEFORGE_STRICT_CUDA_CANDIDATE", "0") == "1":
+        trip_num = int(nth_trips["trip_num"].iloc[0])
+        final_intermediate_trip_num = int(nth_trips["trip_count"].max()) - 1
+        if trip_num >= final_intermediate_trip_num:
+            from choiceforge.cuda_skims import clear_cuda_dataset_cache
+
+            clear_cuda_dataset_cache()
+            logger.info("%s released strict CUDA skim cache", trace_label)
     return results + empty_results

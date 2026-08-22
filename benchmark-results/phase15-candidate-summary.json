@@ -1,0 +1,43 @@
+{
+  "phase": 15,
+  "benchmark": "public Prototype MTC Extended device-resident generated strict-CUDA candidate",
+  "households": 1001,
+  "batches": 30,
+  "rows": 85126,
+  "terms_per_batch": [
+    379
+  ],
+  "alternatives_per_batch": [
+    21
+  ],
+  "candidate_batches": 30,
+  "fallback_batches": 0,
+  "exact_cpu_cuda_batches": 30,
+  "exact_feature_cells": 32262754,
+  "feature_cells": 32262754,
+  "exact_utility_cells": 1787646,
+  "utility_cells": 1787646,
+  "max_feature_abs": 0.0,
+  "max_utility_abs": 0.0,
+  "device_resident_utility_batches": 30,
+  "utility_device_to_host_bytes": 0,
+  "nested_host_to_device_bytes": 0,
+  "timing_medians_ms": {
+    "binding_resolve": 26.053100009448826,
+    "host_pack": 0.4389500245451927,
+    "input_upload": 1.2174000148661435,
+    "coefficient_upload": 0.0,
+    "generated_utility_kernel": 5.562549980822951,
+    "nested_kernel": 1.2723499676212668,
+    "nested_download": 0.3348500467836857
+  },
+  "compiled_calls": 10,
+  "coefficient_cache_hits": 20,
+  "source_sha256": [
+    "0de20bf70b9ff3dc0f103fe5910ac16ae010f224ab01bb09a7a52ebdb2dd3799"
+  ],
+  "candidate_report_tree_sha256": "a1494668683ae59c420aa0238a1556a59a1633d9403b01cb788a0f4fa008fabe",
+  "exact_report_tree_sha256": "13bc562052f750e5a970ed01336b64721f0ee8fd87ccf3e318e624589ef7731c",
+  "success": true,
+  "claim_boundary": "correctness and device-residency gate; full-model superiority requires repeated interleaved A/B trials"
+}

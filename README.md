@@ -22,7 +22,7 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 69 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 75 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -198,3 +198,20 @@ passes 69 tests, including subnormal and device-resident nested-logsum handoff
 coverage. This closes the cross-device correctness gate but is not a new
 production speed claim. See
 [Phase 14 strict CUDA generator](docs/phase14-strict-cuda-generator.md).
+
+## Phase 15 device-resident candidate
+
+Phase 15 connects strict generated CUDA utilities to the real MTC-21 nested
+logsum path with zero utility download and zero reducer re-upload. A compact
+ABI passes cached skim cubes plus ActivitySim's mapped OD/time indices directly
+to the kernel. On the public 1,001-household full-geography workload, 30/30
+real batches match the strict CPU oracle exactly: 32,262,754 feature cells and
+1,787,646 utility cells. Three direct Phase 11-versus-Phase 15 pairs improve
+trip destination from 11.3 to 10.3 seconds (1.097x), with every candidate below
+every baseline and exact modeled decisions.
+
+The scale gate rejects promotion. At 50,000 households, one diagnostic pair is
+exact but slower: trip destination is 33.3 versus 28.4 seconds and the whole
+model is 197.871 versus 192.519 seconds. Phase 11 remains the supported result;
+Phase 15 is opt-in research code with Sharrow fallback. See
+[Phase 15 device-resident candidate](docs/phase15-device-resident-candidate.md).

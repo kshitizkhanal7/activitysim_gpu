@@ -16,6 +16,30 @@ import numpy as np
 
 NOT_IN_SKIM_ZONE_ID = -1
 _SKIM_CACHE = {}
+_DATASET_ARRAY_CACHE = {}
+
+
+@dataclass(frozen=True)
+class CudaDatasetSkimBinding:
+    """Compact kernel ABI for one skim cube and its mapped row positions."""
+
+    data: object
+    orig: object
+    dest: object
+    time: object | None
+    dest_count: int
+    time_count: int
+    choiceforge_device_skim_binding: bool = True
+
+
+def clear_cuda_dataset_cache():
+    """Release immutable skim cubes and unused CuPy pool blocks after a model step."""
+    from .cuda_backend import _cupy
+
+    _DATASET_ARRAY_CACHE.clear()
+    cp = _cupy()
+    cp.get_default_memory_pool().free_all_blocks()
+    cp.get_default_pinned_memory_pool().free_all_blocks()
 
 
 class CudaChooserColumns:
@@ -71,11 +95,19 @@ class CudaDatasetWrapper:
         self.dataframe = wrapper.df
         self._cache = {}
         self._device_arrays = {}
+        self._device_positions = {}
 
     def _position(self, name):
         positions = self.wrapper.positions
         value = positions[name] if isinstance(positions, dict) else positions[name].to_numpy(copy=False)
         return np.asarray(value, dtype=np.int64)
+
+    def _device_position(self, name):
+        from .cuda_backend import _cupy
+
+        if name not in self._device_positions:
+            self._device_positions[name] = _cupy().asarray(self._position(name))
+        return self._device_positions[name]
 
     def __getitem__(self, key):
         from .cuda_backend import _cupy
@@ -92,18 +124,69 @@ class CudaDatasetWrapper:
         order = required + (("time_period",) if has_time else ())
         if set(array.dims) != set(order):
             raise ValueError(f"skim {key!r} has unsupported dimensions {array.dims!r}")
-        if key not in self._device_arrays:
-            self._device_arrays[key] = cp.ascontiguousarray(cp.asarray(array.transpose(*order).values))
-        data = self._device_arrays[key]
-        orig, dest = cp.asarray(self._position(odim)), cp.asarray(self._position(ddim))
+        host_values = np.asarray(array.transpose(*order).values)
+        interface = host_values.__array_interface__
+        # Directional DatasetWrapper objects are recreated for each batch, but
+        # their xarray variables share the same underlying NumPy allocation.
+        # Key by that allocation/view, not by the ephemeral Dataset identity,
+        # so OD/DOT/ODT wrappers upload each immutable skim array only once.
+        device_key = (
+            int(interface["data"][0]),
+            host_values.shape,
+            host_values.strides,
+            host_values.dtype.str,
+        )
+        if device_key not in _DATASET_ARRAY_CACHE:
+            _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(
+                cp.asarray(host_values)
+            )
+        data = _DATASET_ARRAY_CACHE[device_key]
+        orig, dest = self._device_position(odim), self._device_position(ddim)
         if has_time:
             if "time_period" not in self.wrapper.positions:
                 raise ValueError(f"time-dependent skim {key!r} has no mapped period positions")
-            result = data[orig, dest, cp.asarray(self._position("time_period"))]
+            result = data[orig, dest, self._device_position("time_period")]
         else:
             result = data[orig, dest]
         self._cache[key] = result
         return result
+
+    def strict_binding(self, key):
+        """Return cube-plus-index inputs without materializing a gathered vector."""
+        from .cuda_backend import _cupy
+
+        cp = _cupy()
+        array = self.wrapper.dataset[key]
+        odim, ddim = self.wrapper.odim, self.wrapper.ddim
+        required = (odim, ddim)
+        if not all(dim in array.dims for dim in required):
+            raise ValueError(f"skim {key!r} does not have expected OD dimensions")
+        has_time = "time_period" in array.dims
+        order = required + (("time_period",) if has_time else ())
+        if set(array.dims) != set(order):
+            raise ValueError(f"skim {key!r} has unsupported dimensions {array.dims!r}")
+        host_values = np.asarray(array.transpose(*order).values)
+        if host_values.dtype != np.float32:
+            raise ValueError(
+                f"strict compact skim {key!r} requires float32, got {host_values.dtype}"
+            )
+        interface = host_values.__array_interface__
+        device_key = (
+            int(interface["data"][0]),
+            host_values.shape,
+            host_values.strides,
+            host_values.dtype.str,
+        )
+        if device_key not in _DATASET_ARRAY_CACHE:
+            _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(cp.asarray(host_values))
+        return CudaDatasetSkimBinding(
+            data=_DATASET_ARRAY_CACHE[device_key],
+            orig=self._device_position(odim),
+            dest=self._device_position(ddim),
+            time=self._device_position("time_period") if has_time else None,
+            dest_count=int(host_values.shape[1]),
+            time_count=int(host_values.shape[2]) if has_time else 1,
+        )
 
 
 def cuda_wrapper_from_activitysim(wrapper):

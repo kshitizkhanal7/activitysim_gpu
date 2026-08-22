@@ -8,9 +8,11 @@ import pytest
 
 from choiceforge.activitysim_expression import parse_activitysim_expression
 from choiceforge.sharrow_cuda import (
+    _bindings,
     clear_strict_cuda_cache,
     compare_strict_cpu_cuda,
     evaluate_strict_cuda,
+    generate_cuda_source,
     mtc21_logsums_from_strict_ir_cuda,
 )
 from choiceforge.sharrow_ir import evaluate_strict_cpu, specification_ir
@@ -95,6 +97,43 @@ def test_strict_cuda_cache_reuses_ir_and_typed_schema():
     assert not second.telemetry.compiled_this_call
     assert first.telemetry.cache_key == second.telemetry.cache_key
     assert first.telemetry.cache_key.startswith(document["sha256"])
+
+
+def test_strict_cuda_reuses_device_coefficients_and_reports_split_transfer_timing():
+    pytest.importorskip("cupy")
+    clear_strict_cuda_cache()
+    document = specification_ir(_spec())
+    first = evaluate_strict_cuda(document, _environment())
+    second = evaluate_strict_cuda(document, _environment())
+    assert not first.telemetry.coefficient_cache_hit
+    assert second.telemetry.coefficient_cache_hit
+    assert second.telemetry.coefficient_upload_ms == 0
+    assert second.telemetry.host_to_device_ms == second.telemetry.input_upload_ms
+    assert second.telemetry.host_pack_ms >= 0
+
+
+def test_canonical_generator_parallelizes_features_without_reordering_utilities():
+    path = Path("benchmark-data/phase9-mtc-full/prototype_mtc_extended/configs/trip_mode_choice.csv")
+    spec = pd.read_csv(path, comment="#")
+    document = specification_ir(spec)
+    rows = 2
+    values = lambda: np.full(rows, 2, dtype=np.int64)
+    names = set()
+    for term in document["terms"]:
+        names.update(
+            node.id
+            for node in ast.walk(parse_activitysim_expression(term["expression"]))
+            if isinstance(node, ast.Name)
+        )
+    mappings = {"df", "od_skims", "odt_skims", "dot_skims"}
+    environment = {name: values() for name in names - mappings - {"np"}}
+    environment.update({name: defaultdict(values) for name in mappings})
+    bindings, _ = _bindings(document, environment)
+    source, _ = generate_cuda_source(document, bindings, capture_features=False)
+    assert "if (threadIdx.x < 256)" in source
+    assert "case 255:" in source
+    assert "#pragma unroll 1" in source
+    assert "__fmul_rn" in source and "__fadd_rn" in source
 
 
 def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():

@@ -21,6 +21,7 @@ from .sharrow_ir import _resolved_coefficients, _validate_document
 
 
 _KERNEL_CACHE: dict[str, Any] = {}
+_COEFFICIENT_CACHE: dict[str, Any] = {}
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class InputBinding:
     value_kind: str
     storage_kind: str
     slot: int
+    skim_rank: int = 0
 
 
 @dataclass(frozen=True)
@@ -37,12 +39,18 @@ class StrictCudaTelemetry:
     terms: int
     alternatives: int
     input_bytes: int
+    binding_resolve_ms: float
+    host_pack_ms: float
+    input_upload_ms: float
+    coefficient_upload_ms: float
     host_to_device_ms: float
     kernel_ms: float
     device_to_host_ms: float
     cache_key: str
     source_sha256: str
     compiled_this_call: bool
+    coefficient_cache_hit: bool
+    feature_threads: int
 
 
 @dataclass(frozen=True)
@@ -81,7 +89,9 @@ def evaluate_strict_cuda(
     rows = _infer_rows(environment) if rows is None else int(rows)
     if rows < 0:
         raise ValueError("rows must be nonnegative")
+    binding_started = time.perf_counter()
     bindings, values = _bindings(document, environment)
+    binding_resolve_ms = (time.perf_counter() - binding_started) * 1000
     if not capture_features and not return_device:
         raise ValueError("capture_features=False is only valid with return_device=True")
     source, source_sha256 = generate_cuda_source(
@@ -89,7 +99,8 @@ def evaluate_strict_cuda(
     )
     schema = [
         {"source": binding.source, "kind": binding.value_kind,
-         "storage": binding.storage_kind, "slot": binding.slot}
+         "storage": binding.storage_kind, "slot": binding.slot,
+         "skim_rank": binding.skim_rank}
         for binding in bindings
     ]
     cache_payload = json.dumps(
@@ -108,12 +119,29 @@ def evaluate_strict_cuda(
         _KERNEL_CACHE[cache_key] = kernel
     kernel = _KERNEL_CACHE[cache_key]
 
-    started = time.perf_counter()
-    float_inputs, int_inputs = _pack_inputs(cp, bindings, values, rows)
-    coefficients = cp.asarray(
+    dense_bindings = [binding for binding in bindings if binding.storage_kind != "skim"]
+    float_inputs, int_inputs, host_pack_ms, input_upload_ms = _pack_inputs(
+        cp, dense_bindings, values, rows
+    )
+    skim_arguments = _skim_kernel_arguments(bindings, values)
+    coefficient_values = np.ascontiguousarray(
         _resolved_coefficients(
             document, coefficient_environment or {}, dtype=np.float32
         )
+    )
+    coefficient_digest = hashlib.sha256(coefficient_values.tobytes()).hexdigest()
+    coefficient_key = f"{cp.cuda.Device().id}:{document['sha256']}:{coefficient_digest}"
+    coefficient_cache_hit = coefficient_key in _COEFFICIENT_CACHE
+    coefficient_started = time.perf_counter()
+    if coefficient_cache_hit:
+        coefficients = _COEFFICIENT_CACHE[coefficient_key]
+    else:
+        coefficients = cp.asarray(coefficient_values)
+        cp.cuda.Stream.null.synchronize()
+        _COEFFICIENT_CACHE[coefficient_key] = coefficients
+    coefficient_upload_ms = (
+        0.0 if coefficient_cache_hit
+        else (time.perf_counter() - coefficient_started) * 1000
     )
     features = (
         cp.empty((rows, len(document["terms"])), dtype=cp.float32)
@@ -123,7 +151,11 @@ def evaluate_strict_cuda(
     cp.cuda.Stream.null.synchronize()
     uploaded = time.perf_counter()
     if rows:
-        threads = min(1024, max(32, _round_up_warp(len(document["alternatives"]))))
+        feature_threads = min(256, max(32, _round_up_warp(len(document["terms"]))))
+        threads = max(
+            feature_threads,
+            min(1024, max(32, _round_up_warp(len(document["alternatives"])))),
+        )
         kernel(
             (rows,),
             (threads,),
@@ -134,7 +166,7 @@ def evaluate_strict_cuda(
                 features,
                 utilities,
                 np.int64(rows),
-            ),
+            ) + skim_arguments,
             shared_mem=len(document["terms"]) * np.dtype(np.float32).itemsize,
         )
         cp.cuda.Stream.null.synchronize()
@@ -153,13 +185,30 @@ def evaluate_strict_cuda(
             rows=rows,
             terms=len(document["terms"]),
             alternatives=len(document["alternatives"]),
-            input_bytes=int(float_inputs.nbytes + int_inputs.nbytes + coefficients.nbytes),
-            host_to_device_ms=(uploaded - started) * 1000,
+            input_bytes=int(
+                float_inputs.nbytes + int_inputs.nbytes + coefficients.nbytes
+                + sum(
+                    values[binding.source].orig.nbytes
+                    + values[binding.source].dest.nbytes
+                    + (values[binding.source].time.nbytes
+                       if values[binding.source].time is not None else 0)
+                    for binding in bindings if binding.storage_kind == "skim"
+                )
+            ),
+            binding_resolve_ms=binding_resolve_ms,
+            host_pack_ms=host_pack_ms,
+            input_upload_ms=input_upload_ms,
+            coefficient_upload_ms=coefficient_upload_ms,
+            host_to_device_ms=input_upload_ms + coefficient_upload_ms,
             kernel_ms=(calculated - uploaded) * 1000,
             device_to_host_ms=0.0 if return_device else (downloaded - calculated) * 1000,
             cache_key=cache_key,
             source_sha256=source_sha256,
             compiled_this_call=compiled_this_call,
+            coefficient_cache_hit=coefficient_cache_hit,
+            feature_threads=min(
+                256, max(32, _round_up_warp(len(document["terms"])))
+            ),
         ),
     )
 
@@ -171,28 +220,54 @@ def generate_cuda_source(
     _validate_document(document)
     refs = {binding.source: _binding_reference(binding) for binding in bindings}
     types = {binding.source: binding.value_kind for binding in bindings}
-    terms = []
+    feature_threads = min(256, max(32, _round_up_warp(len(document["terms"]))))
+    terms_by_thread = [[] for _ in range(feature_threads)]
     float_input_count = sum(binding.storage_kind == "float64" for binding in bindings)
     int_input_count = sum(binding.storage_kind == "int64" for binding in bindings)
+    skim_parameters = []
+    for binding in bindings:
+        if binding.storage_kind != "skim":
+            continue
+        prefix = f"skim_{binding.slot}"
+        skim_parameters.extend((
+            f"    const float* {prefix}_data",
+            f"    const long long* {prefix}_orig",
+            f"    const long long* {prefix}_dest",
+        ))
+        if binding.skim_rank == 3:
+            skim_parameters.append(f"    const long long* {prefix}_time")
+        skim_parameters.append(f"    long long {prefix}_dest_count")
+        if binding.skim_rank == 3:
+            skim_parameters.append(f"    long long {prefix}_time_count")
+    skim_signature = (",\n" + ",\n".join(skim_parameters)) if skim_parameters else ""
     for index, term in enumerate(document["terms"]):
         code, _ = _emit_node(term["tree"], refs, types)
         output_line = (
             f"        output_features[row * TERM_COUNT + {index}] = term_{index}_f32;"
             if capture_features else ""
         )
-        terms.append(
-            f"        const double term_{index}_f64 = (double)({code});\n"
-            f"        const float term_{index}_f32 = __double2float_rn(term_{index}_f64);\n"
-            f"        shared_features[{index}] = term_{index}_f32;\n"
+        terms_by_thread[index % feature_threads].append(
+            f"            const double term_{index}_f64 = (double)({code});\n"
+            f"            const float term_{index}_f32 = __double2float_rn(term_{index}_f64);\n"
+            f"            shared_features[{index}] = term_{index}_f32;\n"
             f"{output_line}"
         )
+    cases = []
+    for thread, thread_terms in enumerate(terms_by_thread):
+        if thread_terms:
+            cases.append(
+                f"        case {thread}: {{\n"
+                f"{chr(10).join(thread_terms)}\n"
+                f"            break;\n"
+                f"        }}"
+            )
     source = f'''extern "C" __global__ void choiceforge_strict_ir_v3(
     const double* float_inputs,
     const long long* int_inputs,
     const float* coefficients,
     float* output_features,
     float* output_utilities,
-    long long rows) {{
+    long long rows{skim_signature}) {{
     constexpr int TERM_COUNT = {len(document["terms"])};
     constexpr int ALTERNATIVE_COUNT = {len(document["alternatives"])};
     constexpr int FLOAT_INPUT_COUNT = {float_input_count};
@@ -200,8 +275,10 @@ def generate_cuda_source(
     const long long row = (long long)blockIdx.x;
     if (row >= rows) return;
     extern __shared__ float shared_features[];
-    if (threadIdx.x == 0) {{
-{chr(10).join(terms)}
+    if (threadIdx.x < {feature_threads}) {{
+        switch ((int)threadIdx.x) {{
+{chr(10).join(cases)}
+        }}
     }}
     __syncthreads();
     const int alternative = (int)threadIdx.x;
@@ -260,9 +337,15 @@ def compare_strict_cpu_cuda(strict, cuda: StrictCudaResult, *, row_labels=None) 
             "source_sha256": cuda.telemetry.source_sha256,
             "compiled_this_call": cuda.telemetry.compiled_this_call,
             "input_bytes": cuda.telemetry.input_bytes,
+            "binding_resolve_ms": cuda.telemetry.binding_resolve_ms,
+            "host_pack_ms": cuda.telemetry.host_pack_ms,
+            "input_upload_ms": cuda.telemetry.input_upload_ms,
+            "coefficient_upload_ms": cuda.telemetry.coefficient_upload_ms,
             "host_to_device_ms": cuda.telemetry.host_to_device_ms,
             "kernel_ms": cuda.telemetry.kernel_ms,
             "device_to_host_ms": cuda.telemetry.device_to_host_ms,
+            "coefficient_cache_hit": cuda.telemetry.coefficient_cache_hit,
+            "feature_threads": cuda.telemetry.feature_threads,
         },
     }
 
@@ -301,6 +384,7 @@ def mtc21_logsums_from_strict_ir_cuda(
 def clear_strict_cuda_cache() -> None:
     """Clear only ChoiceForge's in-process RawKernel handle cache (for tests)."""
     _KERNEL_CACHE.clear()
+    _COEFFICIENT_CACHE.clear()
 
 
 def _bindings(document, environment):
@@ -313,19 +397,27 @@ def _bindings(document, environment):
                 sources.append(source)
     float_slot = 0
     int_slot = 0
+    skim_slot = 0
     bindings = []
     values = {}
     for source in sources:
         value = _source_value(source, environment)
-        kind = _value_kind(value)
-        if kind == "float":
-            binding = InputBinding(source, kind, "float64", float_slot)
-            float_slot += 1
-        elif kind in {"int", "bool"}:
-            binding = InputBinding(source, kind, "int64", int_slot)
-            int_slot += 1
+        if getattr(value, "choiceforge_device_skim_binding", False):
+            binding = InputBinding(
+                source, "float", "skim", skim_slot,
+                3 if value.time is not None else 2,
+            )
+            skim_slot += 1
         else:
-            raise ValueError(f"strict CUDA input {source!r} has unsupported kind {kind!r}")
+            kind = _value_kind(value)
+            if kind == "float":
+                binding = InputBinding(source, kind, "float64", float_slot)
+                float_slot += 1
+            elif kind in {"int", "bool"}:
+                binding = InputBinding(source, kind, "int64", int_slot)
+                int_slot += 1
+            else:
+                raise ValueError(f"strict CUDA input {source!r} has unsupported kind {kind!r}")
         bindings.append(binding)
         values[source] = value
     return bindings, values
@@ -355,7 +447,10 @@ def _source_value(source, environment):
         return environment[source[1]]
     if source[0] == "column":
         return environment["df"][source[1]]
-    return environment[source[1]][source[2]]
+    wrapper = environment[source[1]]
+    if hasattr(wrapper, "strict_binding"):
+        return wrapper.strict_binding(source[2])
+    return wrapper[source[2]]
 
 
 def _value_kind(value):
@@ -375,36 +470,132 @@ def _value_kind(value):
 
 
 def _pack_inputs(cp, bindings, values, rows):
+    """Pack on the host and perform one upload per semantic storage type.
+
+    Phase 14 uploaded every leaf separately and then launched device-side
+    column stacking. Real batches have many leaves, so launch/allocation
+    overhead dominated the generated kernel. Two contiguous transfers retain
+    the identical row-major ABI without changing arithmetic semantics.
+    """
+    if any(hasattr(values[binding.source], "__cuda_array_interface__") for binding in bindings):
+        return _pack_mixed_device_inputs(cp, bindings, values, rows)
+    pack_started = time.perf_counter()
     floats = []
     ints = []
     for binding in bindings:
-        dtype = cp.float64 if binding.storage_kind == "float64" else cp.int64
+        dtype = np.float64 if binding.storage_kind == "float64" else np.int64
         value = values[binding.source]
         if hasattr(value, "to_numpy"):
             value = value.to_numpy(copy=False)
-        array = cp.asarray(value, dtype=dtype)
+        if hasattr(value, "__cuda_array_interface__"):
+            value = cp.asnumpy(value)
+        array = np.asarray(value, dtype=dtype)
         if array.ndim == 0:
-            array = cp.full(rows, array, dtype=dtype)
+            array = np.full(rows, array, dtype=dtype)
         if array.ndim != 1 or int(array.shape[0]) != rows:
             raise ValueError(
                 f"strict CUDA input {binding.source!r} produced shape {array.shape}, expected ({rows},)"
             )
         (floats if binding.storage_kind == "float64" else ints).append(array)
-    float_matrix = (
-        cp.ascontiguousarray(cp.column_stack(floats))
-        if floats else cp.empty((rows, 0), dtype=cp.float64)
+    host_float_matrix = (
+        np.ascontiguousarray(np.column_stack(floats), dtype=np.float64)
+        if floats else np.empty((rows, 0), dtype=np.float64)
     )
-    int_matrix = (
-        cp.ascontiguousarray(cp.column_stack(ints))
-        if ints else cp.empty((rows, 0), dtype=cp.int64)
+    host_int_matrix = (
+        np.ascontiguousarray(np.column_stack(ints), dtype=np.int64)
+        if ints else np.empty((rows, 0), dtype=np.int64)
     )
-    return float_matrix, int_matrix
+    host_pack_ms = (time.perf_counter() - pack_started) * 1000
+    upload_started = time.perf_counter()
+    float_matrix = cp.asarray(host_float_matrix)
+    int_matrix = cp.asarray(host_int_matrix)
+    cp.cuda.Stream.null.synchronize()
+    input_upload_ms = (time.perf_counter() - upload_started) * 1000
+    return float_matrix, int_matrix, host_pack_ms, input_upload_ms
+
+
+def _pack_mixed_device_inputs(cp, bindings, values, rows):
+    """Pack host columns and device skim gathers without a device-to-host copy."""
+    pack_started = time.perf_counter()
+    groups = {}
+    for storage_kind, dtype in (("float64", np.float64), ("int64", np.int64)):
+        selected = [binding for binding in bindings if binding.storage_kind == storage_kind]
+        host_values, host_slots, device_values, device_slots = [], [], [], []
+        for binding in selected:
+            value = values[binding.source]
+            if hasattr(value, "__cuda_array_interface__"):
+                array = value
+                if array.ndim != 1 or int(array.shape[0]) != rows:
+                    raise ValueError(
+                        f"strict CUDA input {binding.source!r} produced shape {array.shape}, expected ({rows},)"
+                    )
+                device_values.append(array)
+                device_slots.append(binding.slot)
+            else:
+                if hasattr(value, "to_numpy"):
+                    value = value.to_numpy(copy=False)
+                array = np.asarray(value, dtype=dtype)
+                if array.ndim == 0:
+                    array = np.full(rows, array, dtype=dtype)
+                if array.ndim != 1 or int(array.shape[0]) != rows:
+                    raise ValueError(
+                        f"strict CUDA input {binding.source!r} produced shape {array.shape}, expected ({rows},)"
+                    )
+                host_values.append(array)
+                host_slots.append(binding.slot)
+        host_matrix = (
+            np.ascontiguousarray(np.column_stack(host_values), dtype=dtype)
+            if host_values else None
+        )
+        groups[storage_kind] = (
+            len(selected), dtype, host_matrix, host_slots, device_values, device_slots
+        )
+    host_pack_ms = (time.perf_counter() - pack_started) * 1000
+    upload_started = time.perf_counter()
+    matrices = {}
+    for storage_kind, (count, dtype, host, host_slots, device, device_slots) in groups.items():
+        matrix = cp.empty((rows, count), dtype=dtype)
+        if host is not None:
+            matrix[:, host_slots] = cp.asarray(host)
+        if device:
+            matrix[:, device_slots] = cp.column_stack(
+                [cp.asarray(value, dtype=dtype) for value in device]
+            )
+        matrices[storage_kind] = matrix
+    cp.cuda.Stream.null.synchronize()
+    input_upload_ms = (time.perf_counter() - upload_started) * 1000
+    return matrices["float64"], matrices["int64"], host_pack_ms, input_upload_ms
 
 
 def _binding_reference(binding):
+    if binding.storage_kind == "skim":
+        prefix = f"skim_{binding.slot}"
+        if binding.skim_rank == 3:
+            index = (
+                f"(({prefix}_orig[row] * {prefix}_dest_count + {prefix}_dest[row]) "
+                f"* {prefix}_time_count + {prefix}_time[row])"
+            )
+        else:
+            index = f"({prefix}_orig[row] * {prefix}_dest_count + {prefix}_dest[row])"
+        return f"{prefix}_data[{index}]"
     matrix = "float_inputs" if binding.storage_kind == "float64" else "int_inputs"
     count_name = "FLOAT_INPUT_COUNT" if binding.storage_kind == "float64" else "INT_INPUT_COUNT"
     return f"{matrix}[row * {count_name} + {binding.slot}]"
+
+
+def _skim_kernel_arguments(bindings, values):
+    arguments = []
+    for binding in bindings:
+        if binding.storage_kind != "skim":
+            continue
+        value = values[binding.source]
+        arguments.extend((value.data, value.orig, value.dest))
+        if binding.skim_rank == 3:
+            arguments.append(value.time)
+        arguments.append(np.int64(value.dest_count))
+        if binding.skim_rank == 3:
+            arguments.append(np.int64(value.time_count))
+    return tuple(arguments)
 
 
 def _emit_node(tree, refs, types):

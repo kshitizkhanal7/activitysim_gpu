@@ -22,7 +22,7 @@ A normal processor, called a **CPU**, is very flexible but has a modest number o
 
 ChoiceForge is an open-source experiment that moves a particularly repetitive travel-choice calculation to an NVIDIA GPU. Its most important idea is **fusion**: calculate utility scores, apply availability rules, compute a logsum, and make the choice in one GPU operation, without first storing an enormous table of intermediate scores.
 
-The first synthetic test compared the GPU with a readable NumPy reference. Phase 1 added a much stronger 24-core CPU competitor. Phase 2 captured 4,477 real mandatory-tour scheduling decisions from ActivitySim, and every GPU choice matched. It also found a problem: transferring a 151.6-megabyte table made the GPU slower. Phase 3 replaced that table with 22.0 megabytes of compact ingredients and made the captured calculation 3.83 times faster than a purpose-built 48-thread CPU version. Phases 4 and 5 installed and reused the GPU path in real scheduling. Phase 6 handled real destination work. Phase 7 batched repeated setup and added nested logit on the GPU. Phase 8 moved the work to pinned current ActivitySim and a public 50,000-household run. Phase 9 then used the much larger public MTC geography. It confirmed an exact GPU destination result and also caught a scheduling mismatch before that path could be claimed as correct. Phase 11 repeated the full-geography destination experiment three times and established the current production result: the complete 50,000-household model was 1.064 times faster with byte-for-byte identical outputs. Phase 12 built the foundation for moving the large utility equations themselves onto the GPU. Phase 13 completed the strict CPU answer key. Phase 14 now generates GPU code from that same recipe and matched the CPU exactly on 30 real public-model batches.
+The first synthetic test compared the GPU with a readable NumPy reference. Phase 1 added a much stronger 24-core CPU competitor. Phase 2 captured 4,477 real mandatory-tour scheduling decisions from ActivitySim, and every GPU choice matched. It also found a problem: transferring a 151.6-megabyte table made the GPU slower. Phase 3 replaced that table with 22.0 megabytes of compact ingredients and made the captured calculation 3.83 times faster than a purpose-built 48-thread CPU version. Phases 4 and 5 installed and reused the GPU path in real scheduling. Phase 6 handled real destination work. Phase 7 batched repeated setup and added nested logit on the GPU. Phase 8 moved the work to pinned current ActivitySim and a public 50,000-household run. Phase 9 then used the much larger public MTC geography. It confirmed an exact GPU destination result and also caught a scheduling mismatch before that path could be claimed as correct. Phase 11 repeated the full-geography destination experiment three times and established the current production result: the complete 50,000-household model was 1.064 times faster with byte-for-byte identical outputs. Phase 12 built the foundation for moving the large utility equations themselves onto the GPU. Phase 13 completed the strict CPU answer key. Phase 14 generated GPU code from that same recipe and matched the CPU exactly on 30 real public-model batches. Phase 15 connected it to the real model, removed the giant intermediate table, proved a destination-component win, and found an honest scale limit.
 
 ## 1. What is travel demand modeling?
 
@@ -202,7 +202,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-The Python 3.11 ActivitySim and CUDA integration environment now passes 69 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, and the generated strict CUDA evaluator.
+The Python 3.11 ActivitySim and CUDA integration environment now passes 75 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, and the generated strict CUDA evaluator.
 
 ## 7. What was benchmarked?
 
@@ -779,9 +779,9 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. The project test suite now passes 69 tests, including exact cross-device edge cases and a device-resident handoff to the nested-logsum reducer.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. The project test suite now passes 75 tests, including exact cross-device edge cases, compact skim gathering, and a device-resident handoff to the nested-logsum reducer.
 
-This remains a project implementation, not a completed upstream Sharrow feature. The first proof is now complete: the generated GPU evaluator agrees exactly with the strict CPU evaluator on all 30 captured public-model batches. The next proof is to remove qualification-only transfers, connect those device utilities to the real logsum and choice path, and rerun the Phase 11 public benchmark. Only then can this device-side utility work support a new production speedup claim.
+This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer, connected generated utilities to the real logsum path, and ran direct A/B trials. It proved a repeated destination-component gain at 1,001 households, but the 50,000-household candidate was slower than Phase 11. The strict path therefore remains opt-in instead of becoming the production default.
 
 ### How to read the project status today
 
@@ -789,9 +789,9 @@ This remains a project implementation, not a completed upstream Sharrow feature.
 |---|---|
 | Is there a real, repeated, exact speedup? | Yes. Phase 11 achieved 1.064x for the complete 50k-household, 1,454-zone public run, with byte-identical outputs in three pairs. |
 | Is the destination component itself faster? | Yes. Its Phase 11 median was 1.388x faster. |
-| Has the large utility equation been safely moved into production GPU code? | Not yet. Generated GPU code now matches the strict CPU answer key exactly, but it still runs as a shadow. CPU/Sharrow remains authoritative. |
+| Has the large utility equation been connected to the real GPU path? | Yes, as an opt-in Phase 15 candidate with Sharrow fallback. It is not the production default because the 50k gate is slower. |
 | Is the compact GPU utility approach promising? | Yes. It was 8.114x faster in a controlled microbenchmark with a tight numerical gate. |
-| What prevents a bigger claim today? | The semantics now match. The remaining work is production integration and repeated full-model timing with byte-identical outputs. |
+| What prevents a bigger claim today? | At 50k, the compact kernel performs too many scattered skim reads and uses one GPU block per row. It is exact but slower than Sharrow. |
 
 ## 18. Phase 13: building the exact CPU answer key
 
@@ -810,7 +810,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The complete repository now passes 69 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The complete repository now passes 75 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -902,8 +902,100 @@ nested-logsum reducer with no utility download and no reducer re-upload.
 
 Before Phase 14, different arithmetic rules blocked the more ambitious GPU
 utility path. That obstacle is now resolved for this IR and hardware stack.
-The remaining problem is engineering and measurement: remove shadow-only
-feature downloads and repeated packing, connect the generated utilities to the
-real choice path, require zero shadow mismatches, and repeat complete public
-model A/B runs. Only byte-identical outputs and repeated faster whole-model
-times will justify a new production-performance headline.
+That was the remaining Phase 15 problem: remove shadow-only transfers, connect
+generated utilities to the real path, and repeat public-model A/B runs. The
+next section explains what happened when those tests were completed.
+
+## 20. Phase 15: putting the exact GPU recipe into the real model
+
+Phase 14 proved that the CPU and GPU could follow the same recipe. Phase 15
+asked a harder question: can the GPU's answer actually replace Sharrow's answer
+inside ActivitySim, stay on the graphics card for the next calculation, and
+make the real model faster?
+
+### The first connection worked, but exposed a data problem
+
+The first candidate made all 379 ingredients as ordinary columns before the
+GPU kernel ran. Imagine copying every number from a library of road-time maps
+onto one enormous worksheet, sending the worksheet to a calculator, and then
+throwing it away. The arithmetic was fast, but preparing the worksheet was not.
+
+At 1,001 households, the first repeated combined test looked faster than plain
+ActivitySim. A fairer test then compared Phase 15 directly with Phase 11, so
+both sides received the same destination batching and GPU nested-logsum work.
+That test showed the first strict utility path itself was slower. Measuring the
+parts found the cause: looking up and materializing skim columns took about
+15.35 seconds across three candidate runs, while the useful GPU work took much
+less time.
+
+### The compact skim design
+
+ChoiceForge was changed so the generated kernel receives:
+
+- the shared road-time and cost map cubes;
+- the already-checked origin, destination, and time positions for each row;
+- the smaller ordinary chooser columns; and
+- the strict coefficients and recipe.
+
+The kernel now looks up a needed map value directly. It does not build a giant
+379-column feature table. Identical map cubes are uploaded only once, even when
+ActivitySim creates new temporary wrapper objects. After trip destination is
+finished, the cache is released so later model steps do not pay for unused GPU
+memory. If any part fails, ChoiceForge uses Sharrow instead.
+
+### Did compact GPU gathering stay exact?
+
+Yes. The final qualification covered 30 real public-model batches:
+
+| Check | Exact result |
+|---|---:|
+| Rows | 85,126 |
+| Feature values | 32,262,754 of 32,262,754 |
+| Utility values | 1,787,646 of 1,787,646 |
+| Largest strict CPU/GPU difference | 0.0 |
+| Utility downloads before nested logsum | 0 bytes |
+| Nested-logsum utility re-uploads | 0 bytes |
+
+Every modeled trip decision also matched. A printed diagnostic called
+`destination_logsum` differed by at most 0.000008 at this scale. That field is
+not used as a later decision in this output check. The difference comes from
+the published strict arithmetic versus current Sharrow arithmetic; the strict
+CPU and GPU answers still match bit for bit.
+
+### The direct repeated speed result
+
+Three fresh pairs compared Phase 11 with compact Phase 15 at 1,001 households.
+The destination component improved from a median 11.3 seconds to 10.3 seconds,
+or **1.097 times faster**. Every Phase 15 destination run was faster than every
+Phase 11 destination run. All 90 strict utility batches stayed on the GPU for
+the nested calculation, and all modeled decisions matched.
+
+The complete model did not pass the stricter promotion rule. Its median was
+84.631 seconds for Phase 11 and 85.445 seconds for Phase 15. Other small model
+steps varied enough to hide the one-second destination gain. ChoiceForge
+therefore claims component superiority at this qualification scale, not a new
+whole-model record.
+
+### What happened at the large scale?
+
+The final diagnostic used 50,000 households, all 1,454 zones, and 4,188,312
+utility rows. Decisions still matched, but compact Phase 15 took 33.3 seconds
+for trip destination versus 28.4 seconds for Phase 11. The complete model took
+197.871 versus 192.519 seconds. This is a clear rejection, so running three
+more expensive pairs would not create a responsible speed claim.
+
+The reason is now narrower and useful. The GPU kernel gives one block to each
+row and makes many scattered reads from large skim cubes. At 50,000 households,
+that access pattern is slower than Sharrow's compiled expression path. The
+next compiler should process tiles of nearby rows, combine repeated map reads,
+reuse a gathered value across multiple terms, and keep the exact ordered
+arithmetic rules.
+
+### What should a high-school reader conclude?
+
+An experiment can succeed even when the final answer is "do not deploy this
+version." Phase 15 produced working, exact, fail-safe GPU integration and a
+repeated component win. It also used a public large benchmark to prove where
+the design stops winning. The production headline therefore remains Phase 11's
+repeated 50,000-household result. Phase 15 is the tested bridge to a better
+future compiler, not an excuse to replace a faster working system today.

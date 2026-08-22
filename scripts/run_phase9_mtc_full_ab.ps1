@@ -7,6 +7,8 @@ param(
     [string]$AdditionalChoiceForgeOverlay = "",
     [string]$PhaseLabel = "9A",
     [string]$OptimizationDescription = "baseline plus explicit ChoiceForge trip-destination overlay; scheduling remains on ActivitySim",
+    [switch]$BaselineUsesChoiceForge,
+    [string]$BaselineDescription = "pinned current ActivitySim with Sharrow required",
     [Int64]$ChunkSizeBytes = 0,
     [ValidateSet("", "training", "adaptive", "production", "disabled", "explicit")]
     [string]$ChunkTrainingMode = "",
@@ -69,6 +71,7 @@ $env:OMP_NUM_THREADS = "24"
 $env:PATH = (Join-Path $repo ".venv-phase8\Scripts") + ";" + $env:PATH
 
 $runs = @()
+$strictCudaCandidateSetting = $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE
 for ($trial = 1; $trial -le $Repetitions; $trial++) {
     foreach ($condition in @("baseline", "choiceforge")) {
         $name = "phase9-$RunTag-$condition-$Households-hh-$trial"
@@ -85,9 +88,9 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($SharedConfigOverlay) {
             $arguments += @("-c", $SharedConfigOverlay)
         }
-        if ($condition -eq "choiceforge") {
+        if ($condition -eq "choiceforge" -or $BaselineUsesChoiceForge) {
             $arguments += @("-c", $overlay)
-            if ($AdditionalChoiceForgeOverlay) {
+            if ($AdditionalChoiceForgeOverlay -and $condition -eq "choiceforge") {
                 $arguments += @("-c", $AdditionalChoiceForgeOverlay)
             }
         }
@@ -107,6 +110,18 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
 
         $stdout = Join-Path $project "$name.stdout.log"
         $stderr = Join-Path $project "$name.stderr.log"
+        if ($BaselineUsesChoiceForge -and $condition -eq "baseline") {
+            $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "0"
+        } elseif ($null -ne $strictCudaCandidateSetting) {
+            $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = $strictCudaCandidateSetting
+        } else {
+            Remove-Item Env:CHOICEFORGE_STRICT_CUDA_CANDIDATE -ErrorAction SilentlyContinue
+        }
+        if ($condition -eq "choiceforge" -and $env:CHOICEFORGE_PHASE15_REPORT_DIR) {
+            $env:CHOICEFORGE_PHASE15_RUN_ID = $name
+        } else {
+            Remove-Item Env:CHOICEFORGE_PHASE15_RUN_ID -ErrorAction SilentlyContinue
+        }
         $started = Get-Date
         $process = Start-Process `
             -FilePath $activitysim `
@@ -177,7 +192,7 @@ $manifest = [pscustomobject]@{
     } else {
         "one fresh-process baseline/ChoiceForge pair; not a superiority proof without repeated interleaved trials"
     }
-    baseline = "pinned current ActivitySim with Sharrow required"
+    baseline = $BaselineDescription
     optimized = $OptimizationDescription
     data_sha256 = "b402506a61055e2d38621416dd9a5c7e3cf7517c0a9ae5869f6d760c03284ef3"
     reproducibility = [pscustomobject]@{
@@ -190,6 +205,8 @@ $manifest = [pscustomobject]@{
         shared_config_sha256 = (Get-TreeSha256 $SharedConfigOverlay)
         choiceforge_overlay_sha256 = (Get-TreeSha256 $overlay)
         additional_choiceforge_overlay_sha256 = (Get-TreeSha256 $AdditionalChoiceForgeOverlay)
+        choiceforge_strict_cuda_candidate = $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE
+        choiceforge_strict_cuda_max_rows = $env:CHOICEFORGE_STRICT_CUDA_MAX_ROWS
     }
     runs = $runs
 }

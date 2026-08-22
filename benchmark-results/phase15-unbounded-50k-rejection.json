@@ -1,0 +1,40 @@
+{
+  "phase": 15,
+  "benchmark": "public Prototype MTC Extended, 50,000 households, 1,454 zones",
+  "design": "one fresh-process diagnostic pair; sufficient to reject, not to claim superiority",
+  "policy": "unbounded strict candidate on all destination utility batches",
+  "baseline": {
+    "all_models_seconds": 202.781,
+    "trip_destination_seconds": 39.3
+  },
+  "candidate": {
+    "all_models_seconds": 223.385,
+    "trip_destination_seconds": 58.2
+  },
+  "all_models_speedup": 0.9077646216173871,
+  "trip_destination_speedup": 0.6752577319587628,
+  "candidate_policy_fallbacks": 0,
+  "candidate_batches": 30,
+  "correctness": {
+    "decision_columns_exact": true,
+    "decision_cells_different": 0,
+    "decision_rows_different": 0,
+    "byte_identical_non_trip_outputs": [
+      "final_accessibility.csv",
+      "final_households.csv",
+      "final_joint_tour_participants.csv",
+      "final_land_use.csv",
+      "final_persons.csv",
+      "final_tours.csv"
+    ],
+    "diagnostic_column": "destination_logsum",
+    "diagnostic_text_cells_different": 11332,
+    "diagnostic_max_abs": 1.0000000003174137e-05,
+    "diagnostic_mean_abs": 1.30394947335056e-07,
+    "diagnostic_gate": 0.0001,
+    "success": true,
+    "claim_boundary": "all modeled decisions and non-trip substantive files are exact; destination_logsum is diagnostic and bounded, not byte-identical"
+  },
+  "promotion_gate_passed": false,
+  "decision": "reject unbounded Phase 15 at 50k; retain Phase 11 production path until skim gathers and compact inputs are device-native"
+}
