@@ -599,7 +599,10 @@ def _node(node):
             return {"op": "function", "name": f"np.{node.attr}"}
         raise ExpressionUnsupported(f"unsupported attribute {ast.unparse(node)!r}")
     if isinstance(node, ast.Subscript):
-        if isinstance(node.value, ast.Name) and node.value.id in {"od_skims", "odt_skims", "dot_skims"}:
+        if isinstance(node.value, ast.Name) and node.value.id in {
+            "od_skims", "odt_skims", "dot_skims", "odr_skims", "dor_skims",
+            "od_skims_reverse",
+        }:
             return {"op": "skim", "direction": node.value.id, "key": _node(node.slice)}
         raise ExpressionUnsupported(f"unsupported subscript {ast.unparse(node)!r}")
     if isinstance(node, ast.UnaryOp):
@@ -622,6 +625,23 @@ def _node(node):
             "rights": [_node(x) for x in node.comparators],
         }
     if isinstance(node, ast.Call):
+        if (
+            isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "od_skims"
+            and node.func.attr in {"reverse", "max"}
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            forward = {"op": "skim", "direction": "od_skims", "key": _node(node.args[0])}
+            reverse = {
+                "op": "skim",
+                "direction": "od_skims_reverse",
+                "key": _node(node.args[0]),
+            }
+            if node.func.attr == "reverse":
+                return reverse
+            return {"op": "maximum", "args": [forward, reverse]}
         if isinstance(node.func, ast.Attribute) and node.func.attr == "clip":
             return {
                 "op": "clip", "value": _node(node.func.value),

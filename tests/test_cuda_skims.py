@@ -96,3 +96,25 @@ def test_strict_dataset_binding_reuses_semantic_metadata_and_device_cube():
         "binding_entries": 1,
         "array_entries": 1,
     }
+
+
+def test_strict_dataset_binding_reverses_only_od_positions():
+    xr = pytest.importorskip("xarray")
+    cp = pytest.importorskip("cupy")
+    pd = pytest.importorskip("pandas")
+    clear_cuda_dataset_cache()
+    cube = np.arange(3 * 3, dtype=np.float32).reshape(3, 3)
+    dataset = xr.Dataset({"DIST": (("otaz", "dtaz"), cube)})
+    wrapper = type("DatasetWrapper", (), {})()
+    wrapper.dataset, wrapper.df = dataset, pd.DataFrame({"x": [1, 2]})
+    wrapper.odim, wrapper.ddim = "otaz", "dtaz"
+    wrapper.positions = pd.DataFrame({"otaz": [0, 2], "dtaz": [2, 1]})
+
+    forward = CudaDatasetWrapper(wrapper).strict_binding("DIST")
+    reverse = CudaDatasetWrapper(wrapper, reverse=True).strict_binding("DIST")
+
+    np.testing.assert_array_equal(cp.asnumpy(forward.orig), [0, 2])
+    np.testing.assert_array_equal(cp.asnumpy(forward.dest), [2, 1])
+    np.testing.assert_array_equal(cp.asnumpy(reverse.orig), [2, 1])
+    np.testing.assert_array_equal(cp.asnumpy(reverse.dest), [0, 2])
+    assert forward.data.data.ptr == reverse.data.data.ptr

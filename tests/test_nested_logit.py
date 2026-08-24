@@ -64,6 +64,55 @@ def test_mtc21_cuda_accepts_device_utilities_without_upload():
     assert telemetry.host_to_device_ms == 0.0
 
 
+@pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
+def test_mtc21_sharrow_float32_policy_matches_sharrow_reference_choices():
+    from sharrow.nested_logit import (
+        _utility_to_logsums_array,
+        construct_nesting_tree,
+    )
+
+    rng = np.random.default_rng(75)
+    utilities = rng.normal(size=(257, 21)).astype(np.float32)
+    utilities[::7, 9:18] = np.float32(-999.0)
+    tree = construct_nesting_tree(MTC21_ALTERNATIVES, NEST)
+    edges_up, edges_dn, _, _ = tree.edge_slot_arrays()
+    mu_params = np.asarray(
+        [
+            1.0 if tree.nodes[node].get("root") else tree.nodes[node].get("parameter", 1.0)
+            for node in tree.standard_sort
+        ],
+        dtype=np.float32,
+    )
+    starts = np.zeros(len(tree.standard_sort), dtype=np.int32)
+    lengths = np.zeros(len(tree.standard_sort), dtype=np.int32)
+    for edge, parent in enumerate(edges_up):
+        if lengths[parent] == 0:
+            starts[parent] = edge
+        lengths[parent] += 1
+    expected = _utility_to_logsums_array(
+        edges_up, edges_dn, mu_params, starts, lengths, utilities
+    )
+    actual = mtc21_nested_logsums_cuda(
+        utilities, NEST, numeric_policy="sharrow_float32"
+    )
+    np.testing.assert_allclose(actual, expected, rtol=2e-6, atol=2e-6)
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
+def test_mtc21_activitysim_pandas_policy_matches_legacy_nest_reducer():
+    rng = np.random.default_rng(76)
+    utilities = rng.normal(size=(257, 21)).astype(np.float32)
+    utilities[::7, 9:18] = np.float32(-999.0)
+    frame = pd.DataFrame(utilities, columns=MTC21_ALTERNATIVES)
+    expected = np.log(
+        simulate.compute_nested_exp_utilities(frame, NEST)["root"].to_numpy()
+    )
+    actual = mtc21_nested_logsums_cuda(
+        utilities, NEST, numeric_policy="activitysim_pandas_float64"
+    )
+    np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-13)
+
+
 def test_mtc21_rejects_wrong_column_order():
     with pytest.raises(ValueError, match="canonical MTC order"):
         mtc21_nested_logsums_cuda(np.zeros((1, 21)), NEST, tuple(reversed(MTC21_ALTERNATIVES)))

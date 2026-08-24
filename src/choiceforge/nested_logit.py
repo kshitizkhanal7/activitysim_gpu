@@ -54,7 +54,126 @@ extern "C" __global__ void mtc21_nested_logsum(
 }
 """
 
+# Sharrow's generated nested-logit flow uses float32 storage and updates nests
+# in a fixed bottom-up order.  This kernel deliberately mirrors that algorithm
+# instead of algebraically regrouping log-sum-exp terms.  The distinction is
+# observable for random draws very near a scheduling probability boundary.
+_SHARROW_FLOAT32_SOURCE = r"""
+extern "C" __device__ void sharrow_nest(
+    float* utility, int up, int begin, int end, float mu) {
+    float shifter = -3.402823466e38F;
+    int shifter_position = -1;
+    for (int child = begin; child < end; ++child) {
+        if (utility[child] > -3.402823466e38F) {
+            float z = utility[child] / mu;
+            if (z > shifter) {
+                shifter = z;
+                shifter_position = child;
+            }
+        }
+    }
+    for (int child = begin; child < end; ++child) {
+        if (utility[child] > -3.402823466e38F) {
+            if (child == shifter_position) utility[up] += 1.0f;
+            else utility[up] += expf(utility[child] / mu - shifter);
+        }
+    }
+    utility[up] = (logf(utility[up]) + shifter) * mu;
+}
+
+extern "C" __device__ void sharrow_root(float* utility) {
+    const int children[4] = {24, 25, 28, 29};
+    float shifter = -3.402823466e38F;
+    int shifter_position = -1;
+    for (int n = 0; n < 4; ++n) {
+        int child = children[n];
+        float z = utility[child];
+        if (z > shifter) {
+            shifter = z;
+            shifter_position = child;
+        }
+    }
+    for (int n = 0; n < 4; ++n) {
+        int child = children[n];
+        if (child == shifter_position) utility[30] += 1.0f;
+        else utility[30] += expf(utility[child] - shifter);
+    }
+    utility[30] = logf(utility[30]) + shifter;
+}
+
+extern "C" __global__ void mtc21_sharrow_nested_logsum(
+    const float* input, float* result, long long rows,
+    float auto_c, float auto_sub_c, float nm_c,
+    float transit_c, float transit_sub_c, float ridehail_c) {
+    long long row = (long long)blockDim.x * blockIdx.x + threadIdx.x;
+    if (row >= rows) return;
+    float utility[31] = {0.0f};
+    for (int alternative = 0; alternative < 21; ++alternative)
+        utility[alternative] = input[row * 21 + alternative];
+    sharrow_nest(utility, 21, 0, 2, auto_sub_c);
+    sharrow_nest(utility, 22, 2, 4, auto_sub_c);
+    sharrow_nest(utility, 23, 4, 6, auto_sub_c);
+    sharrow_nest(utility, 24, 21, 24, auto_c);
+    sharrow_nest(utility, 25, 6, 8, nm_c);
+    sharrow_nest(utility, 26, 8, 13, transit_sub_c);
+    sharrow_nest(utility, 27, 13, 18, transit_sub_c);
+    sharrow_nest(utility, 28, 26, 28, transit_c);
+    sharrow_nest(utility, 29, 18, 21, ridehail_c);
+    sharrow_root(utility);
+    result[row] = utility[30];
+}
+"""
+
+# ActivitySim's public-model logsum path uses Sharrow for float32 utilities,
+# then its pandas reducer promotes those utilities to float64 before applying
+# exp, ordered child sums, log, and exp for each nest.  Preserve those exact
+# algebraic boundaries here; the stable LSE kernel above remains the default
+# for callers that do not require legacy scheduling replay semantics.
+_ACTIVITYSIM_PANDAS_SOURCE = r"""
+extern "C" __device__ double pandas_nest(
+    const double* utility, int begin, int end, double coefficient) {
+    double total = 0.0;
+    for (int child = begin; child < end; ++child) total += utility[child];
+    return exp(coefficient * log(total));
+}
+
+extern "C" __global__ void mtc21_activitysim_pandas_logsum(
+    const double* input, double* result, long long rows,
+    double auto_c, double auto_sub_c, double nm_c,
+    double transit_c, double transit_sub_c, double ridehail_c) {
+    long long row = (long long)blockDim.x * blockIdx.x + threadIdx.x;
+    if (row >= rows) return;
+    double utility[31] = {0.0};
+    const double* raw = input + row * 21;
+    double auto_leaf = auto_c * auto_sub_c;
+    double transit_leaf = transit_c * transit_sub_c;
+    for (int alternative = 0; alternative < 6; ++alternative)
+        utility[alternative] = exp(raw[alternative] / auto_leaf);
+    for (int alternative = 6; alternative < 8; ++alternative)
+        utility[alternative] = exp(raw[alternative] / nm_c);
+    for (int alternative = 8; alternative < 18; ++alternative)
+        utility[alternative] = exp(raw[alternative] / transit_leaf);
+    for (int alternative = 18; alternative < 21; ++alternative)
+        utility[alternative] = exp(raw[alternative] / ridehail_c);
+
+    utility[21] = pandas_nest(utility, 0, 2, auto_sub_c);
+    utility[22] = pandas_nest(utility, 2, 4, auto_sub_c);
+    utility[23] = pandas_nest(utility, 4, 6, auto_sub_c);
+    utility[24] = pandas_nest(utility, 21, 24, auto_c);
+    utility[25] = pandas_nest(utility, 6, 8, nm_c);
+    utility[26] = pandas_nest(utility, 8, 13, transit_sub_c);
+    utility[27] = pandas_nest(utility, 13, 18, transit_sub_c);
+    utility[28] = pandas_nest(utility, 26, 28, transit_c);
+    utility[29] = pandas_nest(utility, 18, 21, ridehail_c);
+    double root_total = utility[24] + utility[25] + utility[28] + utility[29];
+    utility[30] = exp(log(root_total));
+    result[row] = log(utility[30]);
+}
+"""
+
 _KERNEL = None
+_SHARROW_FLOAT32_KERNEL = None
+_ACTIVITYSIM_PANDAS_KERNEL = None
 
 
 @dataclass(frozen=True)
@@ -102,38 +221,67 @@ def mtc21_coefficients(nest_spec) -> tuple[float, ...]:
 
 
 def mtc21_nested_logsums_cuda(
-    utilities, nest_spec, alternatives=MTC21_ALTERNATIVES, *, return_telemetry=False
+    utilities,
+    nest_spec,
+    alternatives=MTC21_ALTERNATIVES,
+    *,
+    return_telemetry=False,
+    numeric_policy="activitysim_float64",
 ):
-    """Return transfer-inclusive float64 logsums on the host.
+    """Return transfer-inclusive logsums on the host under a named policy.
 
     ``return_telemetry`` exposes the unavoidable host/device transfers while
     ActivitySim/Sharrow still produces its utility matrix on the CPU.  This is
     intentionally measured separately from kernel execution so a future fused
-    utility evaluator has a concrete before/after target.
+    utility evaluator has a concrete before/after target. The ActivitySim
+    policies return float64; ``sharrow_float32`` preserves float32 throughout.
     """
     if tuple(alternatives) != MTC21_ALTERNATIVES:
         raise ValueError("mode columns are not in canonical MTC order")
     from .cuda_backend import _cupy
 
+    if numeric_policy not in {
+        "activitysim_float64",
+        "activitysim_pandas_float64",
+        "sharrow_float32",
+    }:
+        raise ValueError(f"unknown nested-logit numeric policy {numeric_policy!r}")
     cp = _cupy()
+    dtype = cp.float32 if numeric_policy == "sharrow_float32" else cp.float64
     device_input = hasattr(utilities, "__cuda_array_interface__")
     if device_input:
-        device_values = cp.ascontiguousarray(utilities, dtype=cp.float64)
+        device_values = cp.ascontiguousarray(utilities, dtype=dtype)
         if device_values.ndim != 2:
             raise ValueError("expected a row-by-21 utility matrix")
         rows, columns = device_values.shape
         input_bytes = int(device_values.nbytes)
     else:
-        values = np.ascontiguousarray(utilities, dtype=np.float64)
+        host_dtype = np.float32 if numeric_policy == "sharrow_float32" else np.float64
+        values = np.ascontiguousarray(utilities, dtype=host_dtype)
         rows, columns = values.shape if values.ndim == 2 else (0, 0)
         input_bytes = int(values.nbytes)
     if columns != 21:
         raise ValueError("expected a row-by-21 utility matrix")
     coefficients = mtc21_coefficients(nest_spec)
 
-    global _KERNEL
-    if _KERNEL is None:
-        _KERNEL = cp.RawKernel(_SOURCE, "mtc21_nested_logsum")
+    global _KERNEL, _SHARROW_FLOAT32_KERNEL, _ACTIVITYSIM_PANDAS_KERNEL
+    if numeric_policy == "sharrow_float32":
+        if _SHARROW_FLOAT32_KERNEL is None:
+            _SHARROW_FLOAT32_KERNEL = cp.RawKernel(
+                _SHARROW_FLOAT32_SOURCE, "mtc21_sharrow_nested_logsum"
+            )
+        kernel = _SHARROW_FLOAT32_KERNEL
+    elif numeric_policy == "activitysim_pandas_float64":
+        if _ACTIVITYSIM_PANDAS_KERNEL is None:
+            _ACTIVITYSIM_PANDAS_KERNEL = cp.RawKernel(
+                _ACTIVITYSIM_PANDAS_SOURCE,
+                "mtc21_activitysim_pandas_logsum",
+            )
+        kernel = _ACTIVITYSIM_PANDAS_KERNEL
+    else:
+        if _KERNEL is None:
+            _KERNEL = cp.RawKernel(_SOURCE, "mtc21_nested_logsum")
+        kernel = _KERNEL
     start = time.perf_counter()
     if not device_input:
         device_values = cp.asarray(values)
@@ -143,12 +291,17 @@ def mtc21_nested_logsums_cuda(
         # Device coercion occurred before the transfer timer; it is not a
         # host-to-device transfer and must not be charged as one.
         after_upload = start
-    device_result = cp.empty(rows, dtype=cp.float64)
+    device_result = cp.empty(rows, dtype=dtype)
     threads = 256
-    _KERNEL(
+    kernel_coefficients = (
+        tuple(np.float32(x) for x in coefficients)
+        if numeric_policy == "sharrow_float32"
+        else coefficients
+    )
+    kernel(
         ((rows + threads - 1) // threads,),
         (threads,),
-        (device_values, device_result, np.int64(rows), *coefficients),
+        (device_values, device_result, np.int64(rows), *kernel_coefficients),
     )
     cp.cuda.Stream.null.synchronize()
     after_kernel = time.perf_counter()

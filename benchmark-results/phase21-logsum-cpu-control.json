@@ -1,0 +1,21 @@
+{
+  "phase": 21,
+  "engine": "cpu",
+  "scope": "live ActivitySim mandatory-scheduling mode-choice logsums from raw network skims",
+  "elapsed_seconds_including_resume_overhead": 42.35776239994448,
+  "exit_code": 0,
+  "mandatory_tours": 81983,
+  "tdd_mismatches": 0,
+  "start_mismatches": 0,
+  "end_mismatches": 0,
+  "candidate_calls": 0,
+  "fallback_calls": 0,
+  "candidate_rows": 0,
+  "utility_device_to_host_bytes": 0,
+  "nested_host_to_device_bytes": 0,
+  "kernel_reports": [],
+  "proof_gates": {
+    "activitysim_completed": true,
+    "frozen_reference_exact": true
+  }
+}

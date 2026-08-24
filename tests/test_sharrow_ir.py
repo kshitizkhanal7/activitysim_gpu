@@ -73,6 +73,38 @@ def test_ir_evaluator_runs_source_order_expression():
     np.testing.assert_allclose(evaluate_ir(tree, env, np), [0.0, 2.0])
 
 
+def test_ir_supports_activitysim_reverse_and_bidirectional_max_skims():
+    import numpy as np
+
+    reverse_tree = expression_ir("od_skims.reverse('DIST')")
+    maximum_tree = expression_ir("od_skims.max('DIST')")
+    env = {
+        "od_skims": {"DIST": np.array([1.0, 5.0], dtype=np.float32)},
+        "od_skims_reverse": {
+            "DIST": np.array([3.0, 2.0], dtype=np.float32)
+        },
+    }
+    np.testing.assert_array_equal(
+        evaluate_ir(reverse_tree, env, np), np.array([3.0, 2.0], dtype=np.float32)
+    )
+    np.testing.assert_array_equal(
+        evaluate_ir(maximum_tree, env, np), np.array([3.0, 5.0], dtype=np.float32)
+    )
+
+
+def test_ir_supports_round_trip_skim_names_used_by_tour_mode_choice():
+    import numpy as np
+
+    tree = expression_ir("odr_skims['BRIDGETOLL'] + dor_skims['BRIDGETOLL']")
+    env = {
+        "odr_skims": {"BRIDGETOLL": np.array([1.25], dtype=np.float32)},
+        "dor_skims": {"BRIDGETOLL": np.array([2.50], dtype=np.float32)},
+    }
+    np.testing.assert_array_equal(
+        evaluate_ir(tree, env, np), np.array([3.75], dtype=np.float32)
+    )
+
+
 def _strict_spec():
     return pd.DataFrame({
         "Label": ["scaled", "available", "constant"],

@@ -2,8 +2,10 @@
 
 Both this backend and :func:`choiceforge.sharrow_ir.evaluate_strict_cpu` consume
 the same hashed document. The generated kernel evaluates every expression in
-source order, stores one float32 feature value, then performs separate ordered
-float32 multiply and add operations for every alternative.
+source order and stores one float32 feature value. Its default arithmetic uses
+separate ordered float32 multiplication and addition. An explicit compatibility
+policy can instead use fused multiply-add to reproduce Sharrow's live utility
+accumulation without weakening the strict default.
 """
 
 from __future__ import annotations
@@ -72,6 +74,7 @@ class StrictCudaTelemetry:
     plan_build_ms: float
     reusable_workspace: bool
     workspace_cache_hit: bool
+    fused_utility_accumulation: bool
 
 
 @dataclass(frozen=True)
@@ -156,6 +159,7 @@ def evaluate_strict_cuda(
     expression_float32: bool = False,
     persistent_plan: bool = False,
     reuse_buffers: bool = False,
+    fused_utility_accumulation: bool = False,
 ) -> StrictCudaResult:
     """Generate, cache, and execute a strict CUDA evaluator.
 
@@ -196,6 +200,7 @@ def evaluate_strict_cuda(
             "group_skim_indices": group_skim_indices,
             "sparse_zero_coefficients": bool(sparse_zero_coefficients),
             "expression_float32": bool(expression_float32),
+            "fused_utility_accumulation": bool(fused_utility_accumulation),
         },
         sort_keys=True, separators=(",", ":"),
     )
@@ -240,6 +245,7 @@ def evaluate_strict_cuda(
             coefficient_values=coefficient_values,
             sparse_zero_coefficients=sparse_zero_coefficients,
             expression_float32=expression_float32,
+            fused_utility_accumulation=fused_utility_accumulation,
         )
         schema = _binding_schema(bindings)
         cache_payload = json.dumps(
@@ -256,7 +262,10 @@ def evaluate_strict_cuda(
                 source,
                 "choiceforge_strict_ir_v3",
                 options=(
-                    "--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=true"
+                    "--std=c++11",
+                    "--fmad=true" if fused_utility_accumulation else "--fmad=false",
+                    "--prec-div=true",
+                    "--ftz=true",
                 ),
             )
             kernel.compile()
@@ -446,6 +455,7 @@ def evaluate_strict_cuda(
             plan_build_ms=plan_build_ms,
             reusable_workspace=reuse_buffers,
             workspace_cache_hit=bool(input_workspace_hit and output_workspace_hit),
+            fused_utility_accumulation=bool(fused_utility_accumulation),
         ),
     )
 
@@ -461,6 +471,7 @@ def generate_cuda_source(
     coefficient_values=None,
     sparse_zero_coefficients: bool = False,
     expression_float32: bool = False,
+    fused_utility_accumulation: bool = False,
 ) -> tuple[str, str]:
     """Emit inspectable CUDA C++ from a strict IR document and typed schema."""
     _validate_document(document)
@@ -734,14 +745,18 @@ def generate_cuda_source(
             }}
         }}'''
         else:
-            utility_body = '''        #pragma unroll 1
-        for (int term = 0; term < TERM_COUNT; ++term) {
-            const float product = __fmul_rn(
-                shared_features[term],
-                coefficients[term * ALTERNATIVE_COUNT + alternative]
-            );
-            utility = __fadd_rn(utility, product);
-        }'''
+            accumulation = (
+                "utility = fmaf(shared_features[term], "
+                "coefficients[term * ALTERNATIVE_COUNT + alternative], utility);"
+                if fused_utility_accumulation
+                else "const float product = __fmul_rn(shared_features[term], "
+                "coefficients[term * ALTERNATIVE_COUNT + alternative]);\n"
+                "            utility = __fadd_rn(utility, product);"
+            )
+            utility_body = f'''        #pragma unroll 1
+        for (int term = 0; term < TERM_COUNT; ++term) {{
+            {accumulation}
+        }}'''
         thread_nonfinite_declaration = (
             "    bool thread_nonfinite = false;" if sparse_direct else ""
         )

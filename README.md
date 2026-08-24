@@ -341,3 +341,32 @@ arbitrary MT19937 offsets and a hash-complete device checkpoint/audit manifest.
 See [Phase 20 variable tours and scheduling](docs/phase20-variable-tours-and-scheduling.md),
 the [qualification artifact](benchmark-results/phase20-tour-chain.json), and
 the [checkpoint manifest](benchmark-results/phase20-device-checkpoint.json).
+
+## Phase 21 GPU scheduling preparation
+
+Phase 21 moves mandatory-scheduling preparation onto the GPU. A device-resident
+21-period timetable now filters all 190 TDD alternatives, builds exact CSR
+rows, generates all seven stateful timetable primitives, gathers a compact
+5-by-5 skim-period logsum cache, makes each calibrated choice, and mutates the
+timetable before the next of six sequential batches.
+
+On the public 50,000-household checkpoint, both CPU and GPU regenerate all
+15,242,743 captured feasible rows exactly and select all 81,983 saved TDDs with
+zero mismatches. Nine runs give a **10.199x** resident speedup and an **8.680x**
+primitive-transfer-inclusive speedup versus compiled parallel Numba. The
+primitive ABI is 12,688,620 bytes, **40.896x smaller** than the captured
+prepared-row arrays.
+
+A separate live ActivitySim gate reads real raw network skims and executes all
+six mode-logsum batches on generated CUDA: 1,210,124 rows, zero fallbacks, zero
+utility-to-nest host handoff bytes, and zero changed TDD/start/end outputs. A
+Sharrow-compatible fused float32 utility policy and an ActivitySim-compatible
+mixed-precision nest reducer were required to close one real random-boundary
+case; the strict no-FMA compiler default remains unchanged.
+
+The 8.680x-to-10.199x claim starts from the compact logsum cache. The live
+raw-skim run is a correctness/integration proof, not a repeated speed claim,
+and ActivitySim still owns pandas orchestration. See
+[Phase 21 GPU scheduling preparation](docs/phase21-gpu-scheduling-preparation.md),
+the [nine-run qualification](benchmark-results/phase21-scheduling-pipeline.json),
+and the [live proof](benchmark-results/phase21-logsum-live2.json).

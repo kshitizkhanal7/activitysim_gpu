@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("18.097x", STYLES["metric_num"]),
-                Paragraph("2.935x", STYLES["metric_num"]),
+                Paragraph("10.199x", STYLES["metric_num"]),
+                Paragraph("8.680x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 20 scheduling<br/>resident compact inputs", STYLES["metric_label"]),
-                Paragraph("scheduling including<br/>compact transfers", STYLES["metric_label"]),
-                Paragraph("tour or schedule<br/>choice mismatches", STYLES["metric_label"]),
+                Paragraph("Phase 21 full preparation<br/>resident compact inputs", STYLES["metric_label"]),
+                Paragraph("preparation including<br/>primitive transfers", STYLES["metric_label"]),
+                Paragraph("live TDD, start, or end<br/>mismatches", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -338,7 +338,7 @@ def cover_story():
         Paragraph("BEGINNER EXPLAINER", STYLES["cover_kicker"]),
         Paragraph("ChoiceForge", STYLES["cover_title"]),
         Paragraph(
-            "How a GPU kernel can accelerate a real travel demand modeling component - from the first idea through complete ActivitySim results.",
+            "How a GPU kernel can accelerate a real travel demand modeling component - from the first idea through a public ActivitySim proof.",
             STYLES["cover_sub"],
         ),
         HRFlowable(width="100%", thickness=3, color=GOLD, spaceBefore=4, spaceAfter=20),
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 20 calibrated scheduling-kernel speedup with resident compact inputs, its transfer-inclusive speedup, and exact public-checkpoint choices. Scheduling preparation is still outside the GPU boundary.",
+            "Read left to right: the Phase 21 scheduling preparation-to-choice speedup with resident compact inputs, its primitive-transfer-inclusive speedup, and the exact live raw-skim ActivitySim result. The 8.680x-to-10.199x timer begins at the compact logsum-cache boundary.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

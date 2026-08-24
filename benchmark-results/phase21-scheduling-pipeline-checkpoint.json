@@ -1,0 +1,18 @@
+{
+  "format_version": 1,
+  "phase": 21,
+  "checkpoint_name": "mandatory_tour_scheduling_prepared_on_device",
+  "completed_components": [
+    "mandatory_tour_frequency",
+    "mandatory_tour_row_expansion",
+    "mandatory_scheduling_feasibility",
+    "mandatory_scheduling_timetable_primitives",
+    "mandatory_scheduling_choice",
+    "mandatory_scheduling_timetable_mutation"
+  ],
+  "rows": 81983,
+  "tdd_sha256": "105870a0785c9f58d6892b69da3f18a1971a6e0580f568a9c2b3b1f066b72dae",
+  "timetable_sha256": "4142d5c9ef45bacf27a297b207e6c7014314b5884af5e3234b9268e0eaf832e6",
+  "source_input_manifest_sha256": "46d091c06d7b227a3ea9535e8dc709dc6860c9fcd52f28d8fa68eb95086cca57",
+  "restart_limit": "exact device scheduling restart from compact mode-logsum cache; raw network-skim-to-logsum cache construction remains a named upstream boundary"
+}

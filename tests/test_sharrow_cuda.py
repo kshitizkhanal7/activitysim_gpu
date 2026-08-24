@@ -295,6 +295,14 @@ def test_canonical_generator_parallelizes_features_without_reordering_utilities(
     assert "case 255:" in source
     assert "#pragma unroll 1" in source
     assert "__fmul_rn" in source and "__fadd_rn" in source
+    fused_source, _ = generate_cuda_source(
+        document,
+        bindings,
+        capture_features=False,
+        fused_utility_accumulation=True,
+    )
+    assert "fmaf(shared_features[term]" in fused_source
+    assert "__fmul_rn(shared_features[term]" not in fused_source
 
 
 def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():

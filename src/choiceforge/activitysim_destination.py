@@ -531,6 +531,9 @@ def _simple_simulate_mtc21_logsums_cuda(
     strict_cuda_reuse_buffers = (
         os.environ.get("CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS", "0") == "1"
     )
+    strict_cuda_sharrow_fma = (
+        os.environ.get("CHOICEFORGE_STRICT_CUDA_SHARROW_FMA", "0") == "1"
+    )
     candidate_phase = (
         17 if strict_cuda_persistent_plan else (16 if strict_cuda_locality else 15)
     )
@@ -603,8 +606,12 @@ def _simple_simulate_mtc21_logsums_cuda(
         environment.update({
             name: cuda_wrapper_from_activitysim(value)
             for name, value in skims.items()
-            if name in {"od_skims", "odt_skims", "dot_skims"}
+            if name in {"od_skims", "odt_skims", "dot_skims", "odr_skims", "dor_skims"}
         })
+        if "od_skims" in skims:
+            environment["od_skims_reverse"] = cuda_wrapper_from_activitysim(
+                skims["od_skims"], reverse=True
+            )
         environment.update(column_arrays)
         document, ir_cache_hit, ir_compile_ms = _cached_strict_ir(spec_frame)
         return document, environment, ir_cache_hit, ir_compile_ms
@@ -665,6 +672,7 @@ def _simple_simulate_mtc21_logsums_cuda(
             expression_float32=strict_cuda_expression_float32,
             persistent_plan=strict_cuda_persistent_plan,
             reuse_buffers=strict_cuda_reuse_buffers,
+            fused_utility_accumulation=strict_cuda_sharrow_fma,
         )
         report = compare_strict_cpu_cuda(
             cpu, cuda, row_labels=raw_utilities.index.to_numpy(copy=False)
@@ -895,6 +903,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                     numeric_nest,
                     raw_utilities.columns,
                     return_telemetry=True,
+                    numeric_policy="activitysim_pandas_float64",
                 )
                 telemetry = entry["telemetry"]
                 write_phase15_report({
@@ -939,6 +948,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                     "plan_build_ms": telemetry.plan_build_ms,
                     "reusable_workspace": telemetry.reusable_workspace,
                     "workspace_cache_hit": telemetry.workspace_cache_hit,
+                    "fused_utility_accumulation": telemetry.fused_utility_accumulation,
                     "ir_cache_hit": entry["ir_cache_hit"],
                     "ir_compile_ms": entry["ir_compile_ms"],
                     "skim_binding_cache_hits": entry["skim_cache_delta"]["binding_hits"],
@@ -1088,6 +1098,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         expression_float32=strict_cuda_expression_float32,
                         persistent_plan=strict_cuda_persistent_plan,
                         reuse_buffers=strict_cuda_reuse_buffers,
+                        fused_utility_accumulation=strict_cuda_sharrow_fma,
                     )
                     cache_after = cuda_dataset_cache_stats()
                     cache_delta = {

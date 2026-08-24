@@ -1,0 +1,201 @@
+{
+  "phase": 21,
+  "claim_scope": "six-batch mandatory scheduling from compact per-tour skim-period logsum cache through feasibility, timetable primitives, choice, and timetable mutation",
+  "named_upstream_boundary": "construction of each tour's 5-by-5 mode-choice-logsum cache from raw network skims",
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.14",
+    "gpu": "NVIDIA RTX A4000",
+    "cupy": "14.1.1"
+  },
+  "workload": {
+    "households": 50000,
+    "tours": 81983,
+    "batches": 6,
+    "tdd_alternatives": 190,
+    "generated_interaction_rows": 15242743,
+    "timetable_person_rows": 78900,
+    "timetable_periods": 21,
+    "source_prepared_bytes": 518909174,
+    "phase21_primitive_bytes": 12688620,
+    "input_reduction": 40.895635143932125
+  },
+  "correctness": {
+    "preparation_mismatches": {
+      "cpu_offsets": 0,
+      "gpu_offsets": 0,
+      "cpu_alternative_ids": 0,
+      "gpu_alternative_ids": 0,
+      "cpu_row_values": 0,
+      "gpu_row_values": 0,
+      "cpu_chooser_values": 0,
+      "gpu_chooser_values": 0
+    },
+    "cpu_tdd_mismatches": 0,
+    "gpu_tdd_mismatches": 0,
+    "cpu_gpu_tdd_mismatches": 0,
+    "gpu_repeat_mismatches": 0
+  },
+  "batch_validation": [
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.work.interaction_sample_simulate",
+      "choosers": 54483,
+      "generated_interaction_rows": 10351770,
+      "expected_interaction_rows": 10351770,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    },
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.school.interaction_sample_simulate",
+      "choosers": 21271,
+      "generated_interaction_rows": 4041490,
+      "expected_interaction_rows": 4041490,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    },
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.univ.interaction_sample_simulate",
+      "choosers": 3146,
+      "generated_interaction_rows": 597740,
+      "expected_interaction_rows": 597740,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    },
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.work.interaction_sample_simulate",
+      "choosers": 1748,
+      "generated_interaction_rows": 130605,
+      "expected_interaction_rows": 130605,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    },
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.school.interaction_sample_simulate",
+      "choosers": 562,
+      "generated_interaction_rows": 49989,
+      "expected_interaction_rows": 49989,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    },
+    {
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.univ.interaction_sample_simulate",
+      "choosers": 773,
+      "generated_interaction_rows": 71149,
+      "expected_interaction_rows": 71149,
+      "mismatches": {
+        "cpu_offsets": 0,
+        "gpu_offsets": 0,
+        "cpu_alternative_ids": 0,
+        "gpu_alternative_ids": 0,
+        "cpu_row_values": 0,
+        "gpu_row_values": 0,
+        "cpu_chooser_values": 0,
+        "gpu_chooser_values": 0
+      }
+    }
+  ],
+  "timings_seconds": {
+    "compiled_cpu_samples": [
+      0.19447109999600798,
+      0.19948299997486174,
+      0.20308060001116246,
+      0.21031320001929998,
+      0.21568120003212243,
+      0.21487849997356534,
+      0.21869600005447865,
+      0.215026400052011,
+      0.22259939997456968
+    ],
+    "gpu_resident_samples": [
+      0.023507399950176477,
+      0.023551400052383542,
+      0.023307299939915538,
+      0.0232661000918597,
+      0.021069099893793464,
+      0.020562899997457862,
+      0.020469100098125637,
+      0.020461399923078716,
+      0.020575999980792403
+    ],
+    "gpu_transfer_inclusive_samples": [
+      0.025187699939124286,
+      0.025109500042162836,
+      0.024790699942968786,
+      0.024705299991182983,
+      0.02470569999422878,
+      0.024755000020377338,
+      0.024743300047703087,
+      0.024747699964791536,
+      0.024776199948973954
+    ],
+    "compiled_cpu_median": 0.21487849997356534,
+    "gpu_resident_median": 0.021069099893793464,
+    "gpu_transfer_inclusive_median": 0.024755000020377338
+  },
+  "context_only": {
+    "activitysim_component_seconds": 23.338,
+    "comparison_warning": "Not a speedup denominator: the ActivitySim component includes upstream raw-skim logsum and pandas work outside this benchmark."
+  },
+  "speedup": {
+    "resident_gpu_vs_compiled_cpu": 10.198750827360415,
+    "transfer_inclusive_gpu_vs_compiled_cpu": 8.68020601077301
+  },
+  "proof_gates": {
+    "all_cpu_preparation_exact": true,
+    "all_gpu_preparation_exact": true,
+    "all_cpu_choices_exact": true,
+    "all_gpu_choices_exact": true,
+    "cpu_gpu_choices_exact": true,
+    "gpu_repeatable": true,
+    "resident_gpu_faster_than_compiled_cpu": true,
+    "transfer_inclusive_gpu_faster_than_compiled_cpu": true,
+    "primitive_boundary_smaller_than_prepared_rows": true
+  },
+  "hashes": {
+    "phase21_input_manifest_sha256": "46d091c06d7b227a3ea9535e8dc709dc6860c9fcd52f28d8fa68eb95086cca57",
+    "phase20_source_manifest_sha256": "01abac58cf62de0b7c5dc90e54423dc9b97a1944fe68731af83d74ea426513ff",
+    "pipeline_source_sha256": "a0731fc13e795c7cf5e31d1e2ac60846dedefa46e00c206a2d319300443d835a",
+    "scheduling_compiler_source_sha256": "f028e1da20a0bc2e0c3f132ef3a9c779406d8da0146cb1abb83e702f733a8d0f",
+    "checkpoint_sha256": "a4153c85054026ab5419ded75cbee1221a66c2f2a60ee3912064a3b4deb2cf60"
+  }
+}

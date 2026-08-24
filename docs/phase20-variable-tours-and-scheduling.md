@@ -216,7 +216,7 @@ tour columns match, all generated IDs link to scheduling, every CPU/GPU
 schedule choice matches ActivitySim, repeated GPU choices are bit-identical,
 and both resident and transfer-inclusive scheduling timings beat the CPU.
 
-## What Phase 20 changes, and what comes next
+## What Phase 20 changed, and what Phase 21 completed
 
 Phase 20 removes two major blockers:
 
@@ -224,12 +224,20 @@ Phase 20 removes two major blockers:
 - a full-population calibrated scheduling kernel is exact and materially
   faster, including compact transfers.
 
-The next decisive phase is **not** another scheduling replay. It is moving the
-preparation boundary onto the GPU: read cached skim tensors, compute all
-time-dependent mode-choice logsums, generate feasible alternatives from the
-live timetable, update that timetable after each `tour_num` group, and feed the
-result directly to the already-qualified kernel. Once that is exact, measure
-the whole mandatory-scheduling component and the expanded Phase 19-20 chain.
+Phase 21 implemented the next decisive step. It generates feasible
+alternatives, all seven timetable primitives, the previous-tour field, choice,
+and timetable mutation on the GPU from a compact per-tour skim-period logsum
+cache. It regenerates every one of the 15,242,743 captured rows exactly and is
+8.680x to 10.199x faster than compiled parallel Numba at that boundary. A
+separate live ActivitySim proof also generates the scheduling mode logsums from
+raw skims on CUDA with zero fallbacks and preserves all 81,983 schedules.
+
+The remaining seam is architectural: ActivitySim's live pandas API still
+materializes the compact logsum cache between the raw-skim CUDA engine and the
+standalone device-resident scheduler. The next phase should join those already
+qualified halves in one production integration and measure the complete
+mandatory-scheduling component repeatedly. See
+[`phase21-gpu-scheduling-preparation.md`](phase21-gpu-scheduling-preparation.md).
 
 After that, the same proof must be repeated on another NVIDIA architecture and
 a second public model before making a portable superiority claim.

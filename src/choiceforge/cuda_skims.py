@@ -102,10 +102,11 @@ class CudaDatasetWrapper:
     identical to the Sharrow wrapper under comparison.
     """
 
-    def __init__(self, wrapper):
+    def __init__(self, wrapper, *, reverse=False):
         if getattr(wrapper, "df", None) is None or not hasattr(wrapper, "positions"):
             raise ValueError("DatasetWrapper has no currently targeted chooser frame")
         self.wrapper = wrapper
+        self.reverse = bool(reverse)
         self.dataframe = wrapper.df
         self._cache = {}
         self._device_arrays = {}
@@ -129,6 +130,9 @@ class CudaDatasetWrapper:
         if key in self._cache:
             return self._cache[key]
         cp = _cupy()
+        if self.reverse:
+            self._cache[key] = cp.asarray(np.asarray(self.wrapper.reverse(key)))
+            return self._cache[key]
         array = self.wrapper.dataset[key]
         odim, ddim = self.wrapper.odim, self.wrapper.ddim
         required = (odim, ddim)
@@ -171,7 +175,7 @@ class CudaDatasetWrapper:
 
         cp = _cupy()
         odim, ddim = self.wrapper.odim, self.wrapper.ddim
-        binding_key = (id(self.wrapper.dataset), key, odim, ddim)
+        binding_key = (id(self.wrapper.dataset), key, odim, ddim, self.reverse)
         cached = _DATASET_BINDING_CACHE.get(binding_key)
         if cached is None:
             _DATASET_CACHE_STATS["binding_misses"] += 1
@@ -210,17 +214,18 @@ class CudaDatasetWrapper:
         else:
             _DATASET_CACHE_STATS["binding_hits"] += 1
         data, has_time, dest_count, time_count = cached
+        orig_name, dest_name = (ddim, odim) if self.reverse else (odim, ddim)
         return CudaDatasetSkimBinding(
             data=data,
-            orig=self._device_position(odim),
-            dest=self._device_position(ddim),
+            orig=self._device_position(orig_name),
+            dest=self._device_position(dest_name),
             time=self._device_position("time_period") if has_time else None,
             dest_count=dest_count,
             time_count=time_count,
         )
 
 
-def cuda_wrapper_from_activitysim(wrapper):
+def cuda_wrapper_from_activitysim(wrapper, *, reverse=False):
     """Adapt a currently-targeted ActivitySim SkimWrapper or Skim3dWrapper.
 
     ActivitySim sets ``wrapper.df`` immediately before evaluating a chunk; this
@@ -229,13 +234,15 @@ def cuda_wrapper_from_activitysim(wrapper):
     if not hasattr(wrapper, "df") or wrapper.df is None:
         raise ValueError("ActivitySim skim wrapper has no currently targeted chooser frame")
     if hasattr(wrapper, "dataset") and not hasattr(wrapper, "skim_dict"):
-        return CudaDatasetWrapper(wrapper)
+        return CudaDatasetWrapper(wrapper, reverse=reverse)
     skim_dict = wrapper.skim_dict
     cache_key = id(skim_dict)
     if cache_key not in _SKIM_CACHE:
         _SKIM_CACHE[cache_key] = CudaSkimDictionary.from_activitysim(skim_dict)
+    origin_key = wrapper.dest_key if reverse else wrapper.orig_key
+    destination_key = wrapper.orig_key if reverse else wrapper.dest_key
     return CudaSkimWrapper(
-        _SKIM_CACHE[cache_key], wrapper.df, wrapper.orig_key, wrapper.dest_key,
+        _SKIM_CACHE[cache_key], wrapper.df, origin_key, destination_key,
         getattr(wrapper, "dim3_key", None),
     )
 

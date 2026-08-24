@@ -9,7 +9,8 @@ This guide is for a curious high school student. You do not need to know transpo
 - why the same calculation must be repeated millions of times;
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
-- what the early benchmark results do and do not prove; and
+- how correctness and speed are proven on a public benchmark;
+- what the completed Phase 21 result does and does not prove; and
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -44,6 +45,24 @@ scheduling kernel was 18.097 times faster with resident compact inputs and
 2.935 times faster including compact transfers. ActivitySim still prepares
 the scheduling logsums, feasible time choices, and timetable facts on the CPU,
 so this is not yet a whole scheduling-component speed claim.
+
+Phase 21 moved that missing scheduling preparation onto the GPU. It gave every
+person a small timetable on the graphics card, tested all 190 time choices,
+kept only the choices that did not collide, rebuilt the seven timetable facts
+used by ActivitySim, made the choice, and updated the timetable before a later
+tour was scheduled. Across nine measurements, this complete compact-cache
+boundary was 8.680 to 10.199 times faster than a compiled parallel CPU version,
+depending on whether primitive transfers were included. Every
+one of 15.24 million regenerated rows and all 81,983 time choices matched.
+
+Phase 21 also connected the real raw network skims to the CUDA mode-logsum
+engine inside ActivitySim. All six live calls used the GPU with no fallback,
+and the final tour times were unchanged. This required matching Sharrow's
+fused 32-bit utility arithmetic and ActivitySim's later 64-bit nest arithmetic,
+because one random draw was close enough to a probability boundary to expose
+the difference. The 8.680-to-10.199-times result begins after a compact logsum cache
+exists; the raw-skim integration is a separate correctness proof, not a hidden
+whole-component speed claim.
 
 ## 1. What is travel demand modeling?
 
@@ -2282,4 +2301,239 @@ The difficult and valuable work is preserving identities, table growth,
 random streams, time state, maps, arithmetic rules, restart evidence, and exact
 behavior while data crosses a chain of decisions. Phase 20 closes the table-
 growth and downstream-kernel parts of that problem. Scheduling preparation is
-now the clearest next frontier.
+now the clearest next frontier. Phase 21, explained next, completes that
+frontier at an honest compact-cache boundary and proves the raw-skim CUDA side
+separately.
+
+## 43. Phase 21: prepare real schedules on the GPU
+
+Phase 20 began with a prepared list of possible times. That was useful, but it
+left a fair question: what if preparing the list takes much longer than choosing
+from it?
+
+Phase 21 moves that preparation work. For each person, the GPU stores a small
+21-slot timetable. Think of it as a row of boxes, one box for each modeled hour.
+A box can be empty, mark the start of a tour, mark its end, or mark time in the
+middle of a tour.
+
+For every tour, the GPU considers 190 possible combinations of leaving and
+returning. It asks whether each combination collides with something already on
+the person's timetable. It keeps the feasible combinations and throws away the
+colliding ones. This creates a list of different length for every tour.
+
+The compact computer format for those different-length lists is called
+**CSR**, short for compressed sparse row. You do not need to memorize the name.
+It is simply:
+
+```text
+one long list of all feasible time choices
++ a small list saying where each person's part begins and ends
+```
+
+CSR matters because the GPU does not need to reserve 190 output rows for every
+tour after it knows many choices are impossible.
+
+### Why tours must be scheduled in order
+
+A person may have two mandatory tours. The second tour cannot be checked until
+the first tour has occupied part of the timetable. Phase 21 therefore uses a
+careful mixture of parallel and sequential work:
+
+- thousands of people and alternatives are processed together inside a batch;
+- the first-tour batch finishes and updates the timetable; and
+- only then does a later-tour batch begin.
+
+This is not a weakness. It is the causal rule of the model. Running later tours
+too early would be fast but scientifically wrong.
+
+## 44. How 190 time choices become a 25-number cache
+
+Network travel times do not change separately for every modeled hour. The
+public MTC model groups hours into five broad skim periods, such as early,
+morning, midday, afternoon, and evening.
+
+A tour has an outbound period and an inbound period. Five possibilities in
+each direction make a 5-by-5 table, or 25 slots. Because a tour cannot return
+before it leaves, only 15 slots are used for a first tour.
+
+This lets Phase 21 replace millions of repeated mode-logsum values with one
+small cache per tour. A **logsum** is a single number summarizing how attractive
+all the travel modes are for that outbound and inbound period pair. It is not a
+simple average: attractive modes contribute more, and related modes are grouped
+by a nested-logit formula.
+
+The cache builder does not assume repeated values are equal. It checks their
+32-bit patterns. If two hourly alternatives mapped to the same slot contain
+different values, the build stops with an error.
+
+The original captured prepared arrays used 518,909,174 bytes in memory. The
+Phase 21 primitive arrays use 12,688,620 bytes, **40.896 times smaller**. The
+six compressed files on disk total about 6.3 megabytes.
+
+## 45. What exactly the Phase 21 speed test includes
+
+The stopwatch begins with the compact 5-by-5 cache and per-tour facts. It
+includes all six real scheduling batches and all of these operations:
+
+1. checking the timetable for collisions;
+2. counting feasible alternatives;
+3. building the CSR list;
+4. deriving the previous tour's end time;
+5. calculating all seven timetable-dependent ActivitySim facts;
+6. gathering the right mode logsum;
+7. calculating calibrated scheduling utilities and probabilities;
+8. using ActivitySim's original 64-bit random draw;
+9. selecting the TDD; and
+10. updating the timetable before the next batch.
+
+Here, **TDD** means a tour departure-and-duration alternative. It identifies a
+start time and end time from the public 190-row alternative table.
+
+Nine measurements on the RTX A4000 produced:
+
+| Qualified work | Compiled CPU median | GPU median | GPU advantage |
+|---|---:|---:|---:|
+| Data already resident | 0.214878 s | 0.021069 s | **10.199x** |
+| Primitive transfer included | 0.214878 s | 0.024755 s | **8.680x** |
+
+Including primitive transfers added about 3.7 milliseconds to the GPU median
+and reduced its advantage from 10.199x to 8.680x. This is why the report keeps
+resident and transfer-inclusive boundaries separate instead of hiding data
+movement. Both measured GPU boundaries were much faster than the same compiled
+CPU reference.
+
+The benchmark also lists ActivitySim's 23.338-second scheduling-component time
+for context. It does **not** divide that number by 0.021 seconds to claim a
+thousand-fold improvement. ActivitySim's timer includes raw mode-logsum work,
+pandas tables, and workflow management that are outside this stopwatch.
+
+## 46. How Phase 21 proves the answer is the same
+
+Speed is accepted only after the answer passes independent checks.
+
+The public workload contains:
+
+| Item | Count |
+|---|---:|
+| Households | 50,000 |
+| Persons with timetable rows | 78,900 |
+| Mandatory tours | 81,983 |
+| Sequential scheduling batches | 6 |
+| Possible TDD alternatives | 190 per tour |
+| Feasible rows actually regenerated | 15,242,743 |
+
+A readable CPU version and a compiled parallel CPU version serve as answer
+keys. The GPU must match the captured ActivitySim CSR offsets, feasible TDD
+IDs, eight row values, and adjusted chooser values. It then must match every
+selected TDD. A second GPU run must produce the same result again.
+
+The final counts are simple:
+
+- CPU preparation mismatches: **0**;
+- GPU preparation mismatches: **0**;
+- CPU TDD mismatches: **0 of 81,983**;
+- GPU TDD mismatches: **0 of 81,983**;
+- CPU-versus-GPU TDD mismatches: **0**; and
+- differences on the repeated GPU run: **0**.
+
+The evidence file also stores the machine and software versions, all nine raw
+timing samples, source fingerprints, input fingerprints, per-batch counts, and
+a restart/checkpoint fingerprint. A fingerprint is a SHA-256 hash: a long label
+that changes if the bytes change.
+
+The GPU-only method rejects a NumPy or pandas modeled array. This prevents a
+hidden CPU fallback from accidentally being timed and described as GPU work.
+
+## 47. The live raw-skim gate and the one-choice mystery
+
+The compact-cache benchmark is the strongest speed result, but where does the
+cache come from? Phase 21 also answers that question with a real ActivitySim
+integration run.
+
+The live path reads the public network skim tensors. A **tensor** is a
+multi-dimensional array. Here its coordinates can include origin zone,
+destination zone, and time period. The generated GPU program evaluates the
+public tour-mode specification for 21 travel alternatives and then performs
+the nested-logit reduction.
+
+Six live calls processed 1,210,124 rows. Every call used CUDA, none fell back
+to the CPU, and the utility matrix stayed on the GPU when it entered the nest
+reducer.
+
+The gate did not pass on the first try.
+
+First, the compiler did not understand expressions asking for a reverse trip,
+the maximum of forward and reverse distance, and special round-trip skim
+directions. It stopped safely instead of guessing. Phase 21 added those exact
+operations and tests that prove a reverse lookup swaps origin and destination
+without uploading a second copy of the network.
+
+Next, all GPU calls ran, but one of 81,983 schedules changed. A fresh CPU-only
+control matched the frozen reference, so the GPU arithmetic needed more work.
+
+The cause was a tiny but real recipe difference:
+
+- Sharrow's utility calculation uses 32-bit numbers and permits a fused
+  multiply-add operation.
+- The strict ChoiceForge proof compiler used separate multiplication and
+  addition and deliberately forbade fusion.
+- ActivitySim then promotes the utilities to 64-bit numbers for a particular
+  sequence of nested exponent, sum, and logarithm operations.
+
+A **fused multiply-add**, often written FMA, calculates `a x b + c` as one
+hardware instruction with one final rounding step. Separate multiplication and
+addition round twice. Usually the difference is far too small to matter. This
+one tour had a random draw extremely close to a probability boundary, so it
+did matter.
+
+Phase 21 did not weaken the old strict contract. It added a separate,
+explicitly named Sharrow-compatible fused policy for this live path. It also
+added a CUDA nest reducer that follows ActivitySim's real mixed-precision tree.
+An attempted all-32-bit nest policy changed 1,203 schedules and was rejected.
+
+After the correct policies were combined, the live result was:
+
+| Live proof check | Result |
+|---|---:|
+| CUDA calls | 6 |
+| CUDA mode-logsum rows | 1,210,124 |
+| CPU fallbacks | 0 |
+| Utility download/re-upload before nesting | 0 bytes |
+| TDD differences | **0 of 81,983** |
+| Start-time differences | **0** |
+| End-time differences | **0** |
+
+This failed-first history is part of the evidence. It shows why "almost every
+choice" was never treated as enough.
+
+## 48. What Phase 21 means, and what still needs to be done
+
+Phase 21 proves two major facts:
+
+- from a compact time-period logsum cache, the GPU can regenerate the complete
+  calibrated mandatory-scheduling preparation and choice boundary exactly and
+  about ten times faster than compiled parallel CPU code; and
+- from real public raw skims, the generated CUDA utility and nest engine can
+  feed ActivitySim without changing any mandatory schedule.
+
+These are complementary proofs, not yet one continuous production timer. The
+live ActivitySim API still creates pandas tables and materializes the compact
+cache between the raw-skim GPU work and the standalone device-resident
+scheduler. Joining those two already qualified halves is the next major step.
+
+After that, a larger program of work remains:
+
+1. checkpoint the live GPU timetable so a stopped run can restart exactly;
+2. port non-mandatory, joint, and at-work scheduling;
+3. build a managed hot cache for the 13.389-GiB public skim collection;
+4. partition the population without changing identities or random draws;
+5. repeat the proof on another NVIDIA GPU;
+6. repeat it on a second public activity-based model; and
+7. run repeated complete-model CPU/GPU pairs before claiming whole-model
+   superiority.
+
+Phase 21 does not make Phases 1 through 20 unnecessary. Those phases created
+the public captures, independent CPU answers, random-number rules, stable tour
+IDs, expression compiler, device handoff, precision tests, and fail-closed
+habits that made Phase 21 provable. A large success that cannot be reproduced
+would be a demonstration. This project is trying to build evidence.

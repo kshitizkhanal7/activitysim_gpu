@@ -1,0 +1,32 @@
+{
+  "phase": 21,
+  "engine": "cuda",
+  "scope": "live ActivitySim mandatory-scheduling mode-choice logsums from raw network skims",
+  "elapsed_seconds_including_resume_overhead": 41.661776500055566,
+  "exit_code": 0,
+  "mandatory_tours": 81983,
+  "tdd_mismatches": 0,
+  "start_mismatches": 0,
+  "end_mismatches": 0,
+  "candidate_calls": 6,
+  "fallback_calls": 0,
+  "candidate_rows": 1210124,
+  "utility_device_to_host_bytes": 0,
+  "nested_host_to_device_bytes": 0,
+  "kernel_reports": [
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.school.compute_logsums.logsums.json",
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.univ.compute_logsums.logsums.json",
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.work.compute_logsums.logsums.json",
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.school.compute_logsums.logsums.json",
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.univ.compute_logsums.logsums.json",
+    "phase21-scheduling-logsum_batch_001_mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.work.compute_logsums.logsums.json"
+  ],
+  "proof_gates": {
+    "activitysim_completed": true,
+    "all_tdds_exact": true,
+    "all_start_end_exact": true,
+    "cuda_candidate_used": true,
+    "no_cuda_fallbacks": true,
+    "device_resident_utility_handoff": true
+  }
+}
