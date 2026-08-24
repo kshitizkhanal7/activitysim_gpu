@@ -370,3 +370,25 @@ and ActivitySim still owns pandas orchestration. See
 [Phase 21 GPU scheduling preparation](docs/phase21-gpu-scheduling-preparation.md),
 the [nine-run qualification](benchmark-results/phase21-scheduling-pipeline.json),
 and the [live proof](benchmark-results/phase21-logsum-live2.json).
+
+## Phase 22 continuous raw-skim-to-schedule path
+
+Phase 22 joins the raw-skim CUDA logsum engine to the GPU timetable scheduler
+without materializing the bulk modeled-logsum cache on the host. All six
+sequential mandatory-tour batches now run as one live path: raw skims,
+generated utility, nested logit, device cache scatter, feasible-alternative
+preparation, random choice, and timetable mutation.
+
+Three paired runs on the public 50,000-household checkpoint were exact and GPU
+won every pair. CPU times were 42.358, 40.389, and 40.250 seconds; GPU times
+were 36.599, 31.963, and 32.030 seconds. The median paired speedup is **1.257x**
+(ratio of medians: **1.261x**) with zero differences across 81,983 TDD, start,
+or end outputs.
+
+This is not falsely labeled CPU-free. CUDA detected 57 numerically ambiguous
+draws per run (0.0695%) without consulting saved answers. The real
+ActivitySim/Sharrow arithmetic adjudicated only those rows, transferring
+11,400 bytes of logsums; the remaining bulk logsums stayed on the GPU. See
+[Phase 22 continuous GPU scheduling](docs/phase22-continuous-gpu-scheduling.md),
+the [three-pair proof](benchmark-results/phase22-live-paired-summary.json), and
+the [restart checkpoint](benchmark-results/phase22-integrated-checkpoint.json).

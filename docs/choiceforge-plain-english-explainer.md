@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 21 result does and does not prove; and
+- what the completed Phase 22 result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -63,6 +63,14 @@ because one random draw was close enough to a probability boundary to expose
 the difference. The 8.680-to-10.199-times result begins after a compact logsum cache
 exists; the raw-skim integration is a separate correctness proof, not a hidden
 whole-component speed claim.
+
+Phase 22 joined those two halves. Three paired public runs ended with all
+81,983 mandatory schedules unchanged, and the connected GPU path was faster in
+all three pairs. The middle paired speedup was 1.257 times. The GPU also found
+57 choices whose random draws were so close to a probability boundary that
+CPU and GPU rounding could disagree. The real Sharrow arithmetic resolved only
+those 57 rows, using 11,400 bytes of transferred logsum data. This makes Phase
+22 an exact, mostly-GPU component result - not an absolutely CPU-free model.
 
 ## 1. What is travel demand modeling?
 
@@ -2537,3 +2545,130 @@ the public captures, independent CPU answers, random-number rules, stable tour
 IDs, expression compiler, device handoff, precision tests, and fail-closed
 habits that made Phase 21 provable. A large success that cannot be reproduced
 would be a demonstration. This project is trying to build evidence.
+
+## 49. Phase 22: join the two fast halves
+
+Phase 21 ended with two strong but separate results. One result started with
+raw road and transit data and calculated mode-choice logsums on the GPU. The
+other started with a small logsum cache and prepared and chose schedules on the
+GPU. Phase 22 connects them.
+
+The connected path now works like this:
+
+1. ActivitySim supplies a batch of tours, their stable IDs, and network skim
+   lookups.
+2. Generated CUDA code calculates 21 mode utilities for each representative
+   time combination.
+3. A CUDA nested-logit reducer turns those utilities into one logsum per
+   combination.
+4. The logsum stays on the graphics card and is placed into a small cache for
+   its tour.
+5. The GPU timetable rejects schedule choices that collide with an earlier
+   tour.
+6. The GPU evaluates the scheduling rules, uses ActivitySim's exact random
+   draw, chooses a departure-and-duration alternative, and marks those hours
+   busy before the next batch begins.
+7. Only final schedule labels return to ActivitySim for the normal path.
+
+There are six ordered batches because first tours must be scheduled before
+second tours. Phase 22 completed all six for 81,983 mandatory tours.
+
+## 50. Why one answer was still incredibly hard
+
+The first connected GPU run was wrong for exactly one tour. The reference chose
+TDD 169, while the GPU chose 168. This was not ignored as a harmless rounding
+difference.
+
+That tour's random number was only about **0.00000000085** beyond a probability
+boundary. Imagine drawing a line with a thick marker and asking whether a dust
+speck is on the left or right edge. Several mathematically reasonable computer
+recipes can round the line by a few billionths and put the speck on different
+sides.
+
+The investigation found several hidden parts of ActivitySim's recipe:
+
+- Sharrow builds 65 32-bit features, including two temporary features whose
+  coefficients are zero.
+- It performs a 32-bit dot product. A **dot product** multiplies matching pairs
+  and adds all the products.
+- Because of one ActivitySim safety setting, it exponentiates the utilities
+  without first subtracting the largest utility.
+- NumPy's CPU exponential and sum do not promise the same final bits as CUDA's
+  GPU exponential and parallel sum.
+
+All of those methods are numerically sensible. But “sensible” is not the same
+as “guaranteed to make the identical simulated choice.” A simulation is a chain:
+one changed schedule can change a person's later availability and then change
+more decisions.
+
+Hard-coding 169 would have been cheating. It would only memorize the test. The
+solution instead asks the GPU how close every random draw is to the nearest
+choice boundary. If the distance clears the guard tested on this public model,
+the GPU result is accepted. If it is very small, the row is marked ambiguous
+and the exact ActivitySim/Sharrow recipe decides it. A different model or GPU
+must test the guard again; it is not a universal law of floating-point math.
+
+## 51. Is Phase 22 completely GPU-only?
+
+No - and that distinction matters.
+
+Most of the expensive work is on the GPU, and the bulk modeled logsums are not
+downloaded. But 57 of 81,983 tours were close enough to a probability boundary
+to use the exact CPU/Sharrow adjudicator. That is **0.0695%** of the tours. The
+adjudicator downloaded 11,400 bytes, about eleven kilobytes, per full run.
+
+This is a hybrid with a tiny, measured correctness exception. Calling it
+“absolutely no CPU” would be inaccurate because ActivitySim still organizes
+the workflow, owns the random numbers, writes output tables, and resolves those
+57 ambiguous choices.
+
+Why keep this exception? Because removing it before CUDA and Sharrow share an
+identical definition for dot products, exponentials, sums, and rounding would
+trade a true exact result for a marketing slogan. A future Sharrow GPU backend
+or a dedicated expression compiler can remove the resolver, but only after it
+passes this boundary test and every other saved proof gate.
+
+## 52. The final Phase 22 evidence
+
+The team ran three fresh CPU/GPU pairs from the same public 50,000-household
+checkpoint. Each run included raw network skim setup, ActivitySim orchestration,
+all six scheduling batches, and output writing for the resumed component.
+
+| Pair | CPU time | GPU-connected time | CPU / GPU |
+|---:|---:|---:|---:|
+| 1 | 42.358 seconds | 36.599 seconds | 1.157x |
+| 2 | 40.389 seconds | 31.963 seconds | 1.264x |
+| 3 | 40.250 seconds | 32.030 seconds | 1.257x |
+
+The GPU path was faster in every pair. The middle paired speedup was **1.257x**.
+Comparing the middle CPU and GPU times gives **1.261x**. These are smaller than
+the 8.680x-to-10.199x compact-kernel results because the live timer includes
+shared setup and ActivitySim work that still runs on the CPU. Both measurements
+are useful; they answer different questions.
+
+Every live GPU run produced the same proof facts:
+
+- 6 of 6 batches joined;
+- 1,210,124 raw-skim rows used generated CUDA;
+- 0 CUDA fallbacks;
+- 57 exact boundary checks;
+- 11,400 boundary-transfer bytes;
+- 0 changed random draws;
+- 0 changed TDD choices out of 81,983;
+- 0 changed start times;
+- 0 changed end times; and
+- a restart record containing fingerprints of the selected TDDs and final
+  timetable.
+
+The result means this machine can make the complete resumed mandatory-tour
+scheduling component faster, starting from raw public skims and ending with
+exact schedules. It does not yet mean the whole ActivitySim model is faster or
+GPU-only. Non-mandatory, joint, at-work, trip, and destination components still
+need the same connected proof. A second GPU and a second public model are also
+needed before claiming that the result is portable.
+
+Most importantly, Phase 22 shows why the earlier phases were not wasted. The
+one-in-81,983 boundary problem was found because the project preserved random
+draws, stable identities, CPU references, public checkpoints, arithmetic
+policies, and fail-closed tests. Those are the pieces that turn “the GPU looked
+fast” into a result another reviewer can challenge and reproduce.

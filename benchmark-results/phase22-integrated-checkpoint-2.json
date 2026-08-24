@@ -1,0 +1,12 @@
+{
+  "format_version": 2,
+  "phase": 22,
+  "checkpoint_name": "raw_skim_logsums_to_mandatory_tdd_on_device",
+  "completed_batches": 6,
+  "rows": 81983,
+  "tdd_sha256": "105870a0785c9f58d6892b69da3f18a1971a6e0580f568a9c2b3b1f066b72dae",
+  "timetable_sha256": "4142d5c9ef45bacf27a297b207e6c7014314b5884af5e3234b9268e0eaf832e6",
+  "bulk_modeled_logsum_device_to_host_bytes": 0,
+  "exact_boundary_logsum_device_to_host_bytes": 11400,
+  "final_tdd_device_to_host_bytes": 163966
+}

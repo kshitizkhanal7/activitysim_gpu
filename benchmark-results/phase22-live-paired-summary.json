@@ -1,0 +1,74 @@
+{
+  "phase": 22,
+  "benchmark": "paired live mandatory-tour scheduling from raw public MTC skims",
+  "pairs": 3,
+  "mandatory_tours_per_run": 81983,
+  "cpu_seconds": [
+    42.35776239994448,
+    40.38888029998634,
+    40.25003100000322
+  ],
+  "gpu_seconds": [
+    36.59853179997299,
+    31.962940099998377,
+    32.030476399930194
+  ],
+  "paired_speedups": [
+    1.15736233987331,
+    1.263615930625493,
+    1.2566166827319165
+  ],
+  "cpu_median_seconds": 40.38888029998634,
+  "gpu_median_seconds": 32.030476399930194,
+  "median_of_paired_speedups": 1.2566166827319165,
+  "ratio_of_medians": 1.260951594840293,
+  "gpu_faster_in_every_pair": true,
+  "exact_boundary_rows_per_run": [
+    57,
+    57,
+    57
+  ],
+  "exact_boundary_fraction": 0.0006952660917507288,
+  "boundary_logsum_download_bytes_per_run": [
+    11400,
+    11400,
+    11400
+  ],
+  "proof_gates": {
+    "three_or_more_pairs": true,
+    "all_cpu_controls_exact": true,
+    "all_gpu_runs_exact": true,
+    "gpu_faster_in_every_pair": true,
+    "boundary_population_deterministic": true
+  },
+  "inputs": {
+    "cpu": [
+      {
+        "path": "benchmark-results\\phase21-logsum-cpu-control.json",
+        "sha256": "cc6d046028598053827e1d9dd20906d45d6bbe876996cb0ba6f3deb933f5f9f6"
+      },
+      {
+        "path": "benchmark-results\\phase22-cpu-control-2.json",
+        "sha256": "319d9553f10c946e75f00833ec733ffc08b04b3ce5f9e94087ed0b3a61f60400"
+      },
+      {
+        "path": "benchmark-results\\phase22-cpu-control-3.json",
+        "sha256": "db03b9695a47465adff6d190530473daaa81ef3b6a1ec58165e42999b835ffbf"
+      }
+    ],
+    "gpu": [
+      {
+        "path": "benchmark-results\\phase22-integrated-live.json",
+        "sha256": "51f4d89bbc85bc190c112efce999ff262f06a8a1b4c4faca1630aca9886386be"
+      },
+      {
+        "path": "benchmark-results\\phase22-integrated-live-2.json",
+        "sha256": "5640915f7f4839dc69f602e56c435083e17b6c53efb82ffff8fcef35335b3569"
+      },
+      {
+        "path": "benchmark-results\\phase22-integrated-live-3.json",
+        "sha256": "75c086aff862f1983b6d57e5220be7eece46cc8322c57cac83eaffe7e64d71de"
+      }
+    ]
+  }
+}

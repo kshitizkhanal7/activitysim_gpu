@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("10.199x", STYLES["metric_num"]),
-                Paragraph("8.680x", STYLES["metric_num"]),
+                Paragraph("1.257x", STYLES["metric_num"]),
+                Paragraph("57", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 21 full preparation<br/>resident compact inputs", STYLES["metric_label"]),
-                Paragraph("preparation including<br/>primitive transfers", STYLES["metric_label"]),
-                Paragraph("live TDD, start, or end<br/>mismatches", STYLES["metric_label"]),
+                Paragraph("Phase 22 median paired<br/>live component speedup", STYLES["metric_label"]),
+                Paragraph("near-boundary rows<br/>resolved exactly", STYLES["metric_label"]),
+                Paragraph("TDD, start, or end<br/>mismatches", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 21 scheduling preparation-to-choice speedup with resident compact inputs, its primitive-transfer-inclusive speedup, and the exact live raw-skim ActivitySim result. The 8.680x-to-10.199x timer begins at the compact logsum-cache boundary.",
+            "Read left to right: the Phase 22 median speedup across three paired live raw-skim scheduling runs, the tiny deterministic set sent to exact Sharrow boundary adjudication, and the frozen-reference result. Earlier compact-kernel speedups remain explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

@@ -473,8 +473,17 @@ def _simple_simulate_mtc21_logsums_cuda(
     locals_dict,
     trace_label,
     explicit_chunk_size,
+    *,
+    device_logsum_sink=None,
+    materialize_device_sink_result=False,
 ):
-    """Keep ActivitySim's evaluator intact and replace only its nest reduction."""
+    """Run generated CUDA utility and nesting with an optional device sink.
+
+    The default preserves the ActivitySim dataframe return contract.  When a
+    sink is supplied, the modeled logsum vector is delivered on-device and the
+    dataframe path receives a neutral placeholder; a downstream GPU scheduler
+    must then become authoritative for the choice.
+    """
     from activitysim.core import simulate
     from choiceforge.nested_logit import mtc21_nested_logsums_cuda
 
@@ -903,8 +912,21 @@ def _simple_simulate_mtc21_logsums_cuda(
                     numeric_nest,
                     raw_utilities.columns,
                     return_telemetry=True,
+                    return_device=device_logsum_sink is not None,
                     numeric_policy="activitysim_pandas_float64",
                 )
+                if device_logsum_sink is not None:
+                    device_logsum_sink(
+                        logsums,
+                        {
+                            "trace_label": trace_label,
+                            "chooser_ids": entry["chooser_ids"],
+                            "start": entry["start"],
+                            "end": entry["end"],
+                            "out_period": entry["out_period"],
+                            "in_period": entry["in_period"],
+                        },
+                    )
                 telemetry = entry["telemetry"]
                 write_phase15_report({
                     "phase": candidate_phase,
@@ -917,6 +939,10 @@ def _simple_simulate_mtc21_logsums_cuda(
                     "device_resident_utility_handoff": True,
                     "utility_device_to_host_bytes": 0,
                     "nested_host_to_device_bytes": 0,
+                    "logsum_device_sink_used": device_logsum_sink is not None,
+                    "logsum_device_to_host_bytes": (
+                        0 if device_logsum_sink is not None else int(logsums.nbytes)
+                    ),
                     "input_bytes": telemetry.input_bytes,
                     "binding_resolve_ms": telemetry.binding_resolve_ms,
                     "host_pack_ms": telemetry.host_pack_ms,
@@ -973,8 +999,22 @@ def _simple_simulate_mtc21_logsums_cuda(
                     nested.kernel_ms,
                     nested.device_to_host_ms,
                 )
+                if device_logsum_sink is not None and materialize_device_sink_result:
+                    from choiceforge.cuda_backend import _cupy
+
+                    dataframe_logsums = _cupy().asnumpy(logsums)
+                else:
+                    dataframe_logsums = logsums
                 return pd.DataFrame(
-                    {"root": np.exp(logsums)}, index=raw_utilities.index
+                    {
+                        "root": (
+                            np.ones(len(raw_utilities), dtype=np.float64)
+                            if device_logsum_sink is not None
+                            and not materialize_device_sink_result
+                            else np.exp(dataframe_logsums)
+                        )
+                    },
+                    index=raw_utilities.index,
                 )
             materialize_started = time.perf_counter()
             utilities = raw_utilities.to_numpy(copy=False)
@@ -1115,6 +1155,15 @@ def _simple_simulate_mtc21_logsums_cuda(
                         "skim_cache_delta": cache_delta,
                         "fallback_args": args,
                         "fallback_kwargs": kwargs,
+                        # Sharrow may lower ``dataframe`` to only referenced
+                        # utility leaves. The authoritative scheduling row
+                        # identity and representative TDD times remain on the
+                        # outer ActivitySim chooser frame in the same order.
+                        "chooser_ids": np.asarray(choosers.index, dtype=np.int64),
+                        "start": np.asarray(choosers["start"], dtype=np.int16),
+                        "end": np.asarray(choosers["end"], dtype=np.int16),
+                        "out_period": np.asarray(choosers["out_period"].astype(str)),
+                        "in_period": np.asarray(choosers["in_period"].astype(str)),
                     })
                     # eval_utilities needs only a correctly shaped host object;
                     # the reducer consumes the queued device matrix directly.

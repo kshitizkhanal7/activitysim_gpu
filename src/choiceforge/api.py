@@ -24,4 +24,4 @@ class ChoiceResult(Generic[ArrayT]):
 
     choices: ArrayT
     logsums: ArrayT
-
+    boundary_distances: ArrayT | None = None

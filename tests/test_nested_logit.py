@@ -65,6 +65,28 @@ def test_mtc21_cuda_accepts_device_utilities_without_upload():
 
 
 @pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
+def test_mtc21_cuda_can_keep_logsum_result_on_device():
+    from choiceforge.cuda_backend import _cupy
+
+    cp = _cupy()
+    utilities = np.random.default_rng(741).normal(size=(19, 21)).astype(np.float32)
+    expected = mtc21_nested_logsums_cuda(
+        utilities, NEST, numeric_policy="activitysim_pandas_float64"
+    )
+    actual, telemetry = mtc21_nested_logsums_cuda(
+        cp.asarray(utilities),
+        NEST,
+        numeric_policy="activitysim_pandas_float64",
+        return_device=True,
+        return_telemetry=True,
+    )
+    assert hasattr(actual, "__cuda_array_interface__")
+    assert telemetry.host_to_device_ms == 0.0
+    assert telemetry.device_to_host_ms == 0.0
+    np.testing.assert_array_equal(cp.asnumpy(actual), expected)
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
 def test_mtc21_sharrow_float32_policy_matches_sharrow_reference_choices():
     from sharrow.nested_logit import (
         _utility_to_logsums_array,

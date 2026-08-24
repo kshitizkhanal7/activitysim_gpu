@@ -1,0 +1,394 @@
+"""Continuous raw-logsum-to-scheduling CUDA handoff for Phase 22.
+
+The upstream utility compiler and nested-logit reducer produce one logsum for
+each unique tour/skim-period pair.  This module scatters those device values
+into the compact 5-by-5 cache and immediately consumes the cache with the
+qualified timetable, scheduling-expression, probability, and mutation path.
+No modeled logsum is materialized on the host.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+from pathlib import Path
+import time
+from typing import Any, Mapping
+
+import numpy as np
+
+from .cuda_backend import _cupy
+from .gpu_native import GpuOnlyViolation, _is_cuda_array
+from .gpu_scheduling_pipeline import GpuSchedulingPreparer, skim_period_code
+from .scheduling_compiler import CompiledCudaSchedulingModel, SchedulingSchema
+
+
+@dataclass(frozen=True)
+class DeviceLogsumBatch:
+    chooser_ids: np.ndarray
+    cache: Any
+    present: Any
+    raw_cache: Any
+    source_rows: int
+    cache_build_ms: float
+
+
+@dataclass(frozen=True)
+class IntegratedBatchTelemetry:
+    batch: int
+    trace_label: str
+    choosers: int
+    logsum_rows: int
+    cache_build_ms: float
+    scheduling_ms: float
+    cache_value_mismatches: int
+    cache_max_abs_difference: float
+    cache_presence_mismatches: int
+    random_draw_mismatches: int
+    tdd_mismatches: int
+    boundary_rows: int
+    boundary_logsum_download_bytes: int
+
+
+def array_sha256(value: Any) -> str:
+    """Hash dtype, shape, and contiguous bytes for restart evidence."""
+
+    array = np.ascontiguousarray(value)
+    digest = hashlib.sha256()
+    digest.update(str(array.dtype).encode())
+    digest.update(np.asarray(array.shape, dtype=np.int64).tobytes())
+    digest.update(array.view(np.uint8))
+    return digest.hexdigest()
+
+
+def assemble_device_logsum_cache(
+    device_logsums: Any,
+    metadata: Mapping[str, Any],
+    expected_chooser_ids: Any,
+) -> DeviceLogsumBatch:
+    """Scatter deduplicated CUDA logsums into an ordered per-tour cache.
+
+    Only identities and time labels are inspected on the host. The modeled
+    logsum values remain on CUDA and are converted to the scheduling ABI's
+    float32 representation there.
+    """
+
+    if not _is_cuda_array(device_logsums):
+        raise GpuOnlyViolation("raw-skim logsums must reside on the GPU")
+    cp = _cupy()
+    chooser_ids = np.asarray(metadata["chooser_ids"], dtype=np.int64)
+    starts = np.asarray(metadata["start"], dtype=np.int16)
+    ends = np.asarray(metadata["end"], dtype=np.int16)
+    expected = np.asarray(expected_chooser_ids, dtype=np.int64)
+    if chooser_ids.ndim != 1 or starts.shape != chooser_ids.shape or ends.shape != chooser_ids.shape:
+        raise ValueError("logsum metadata arrays must be equal one-dimensional vectors")
+    if int(device_logsums.size) != chooser_ids.size:
+        raise ValueError("device logsum count differs from its row metadata")
+    if chooser_ids.size == 0:
+        raise ValueError("a scheduling logsum batch cannot be empty")
+
+    first = np.r_[True, chooser_ids[1:] != chooser_ids[:-1]]
+    observed = chooser_ids[first]
+    if not np.array_equal(observed, expected):
+        raise ValueError("live raw-skim chooser order differs from the scheduling batch")
+    owners = np.cumsum(first, dtype=np.int32) - 1
+    if "out_period" in metadata and "in_period" in metadata:
+        period_codes = {"EA": 0, "AM": 1, "MD": 2, "PM": 3, "EV": 4}
+        try:
+            outbound = np.asarray(
+                [period_codes[str(value)] for value in metadata["out_period"]],
+                dtype=np.int32,
+            )
+            inbound = np.asarray(
+                [period_codes[str(value)] for value in metadata["in_period"]],
+                dtype=np.int32,
+            )
+        except KeyError as exc:
+            raise ValueError(f"unknown raw-skim period label {exc.args[0]!r}") from exc
+        slots = outbound * np.int32(5) + inbound
+    else:
+        slots = (
+            skim_period_code(starts).astype(np.int32) * np.int32(5)
+            + skim_period_code(ends).astype(np.int32)
+        )
+    flat = owners.astype(np.int64) * np.int64(25) + slots.astype(np.int64)
+    unique_flat, first_positions, inverse = np.unique(
+        flat, return_index=True, return_inverse=True
+    )
+
+    started = time.perf_counter()
+    cache = cp.zeros((expected.size, 25), dtype=cp.float32)
+    raw_cache = cp.zeros((expected.size, 25), dtype=cp.float64)
+    present = cp.zeros((expected.size, 25), dtype=cp.bool_)
+    device_values = cp.asarray(device_logsums)
+    device_first = cp.asarray(first_positions)
+    if first_positions.size != flat.size:
+        repeated_reference = device_values[device_first][cp.asarray(inverse)]
+        if bool(cp.any(device_values != repeated_reference).item()):
+            raise ValueError(
+                "raw-skim logsum values differ within a duplicate tour/period slot"
+            )
+    device_flat = cp.asarray(unique_flat)
+    unique_values = device_values[device_first]
+    cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float32)
+    raw_cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float64)
+    present.reshape(-1)[device_flat] = True
+    cp.cuda.Stream.null.synchronize()
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    return DeviceLogsumBatch(
+        expected.copy(), cache, present, raw_cache, chooser_ids.size, elapsed_ms
+    )
+
+
+class IntegratedGpuMandatoryScheduler:
+    """Six-batch GPU scheduler fed directly by device logsum vectors."""
+
+    def __init__(
+        self,
+        artifact: Path | str,
+        *,
+        qualify_against_artifact: bool = True,
+        cache_absolute_tolerance: float = 1.0e-5,
+    ):
+        cp = _cupy()
+        self.artifact = Path(artifact)
+        self.manifest = json.loads((self.artifact / "manifest.json").read_text())
+        with np.load(self.artifact / self.manifest["common_file"]) as loaded:
+            self.person_ids = loaded["person_ids"]
+            self.alternative_values_host = loaded["alternative_values"]
+        self.alternative_values = cp.asarray(self.alternative_values_host)
+        self.preparer = GpuSchedulingPreparer(
+            int(self.manifest["person_count"]), self.alternative_values
+        )
+        self.qualify_against_artifact = bool(qualify_against_artifact)
+        self.cache_absolute_tolerance = float(cache_absolute_tolerance)
+        self.boundary_tolerance = 2.0e-6
+        self.batches = []
+        for meta in self.manifest["batches"]:
+            with np.load(self.artifact / meta["file"]) as loaded:
+                host = {name: loaded[name] for name in loaded.files}
+            schema = SchedulingSchema(
+                tuple(meta["chooser_columns"]),
+                tuple(meta["row_columns"]),
+                tuple(meta["alternative_columns"]),
+            )
+            self.batches.append(
+                {
+                    "meta": meta,
+                    "host": host,
+                    "model": CompiledCudaSchedulingModel(
+                        meta["expressions"],
+                        host["coefficients"],
+                        schema,
+                        # The public MTC settings enable skip_failed_choices.
+                        # ActivitySim therefore disables max-shift overflow
+                        # protection before exponentiation. Near a cumulative
+                        # probability boundary this rounding policy is part of
+                        # the reproducible answer, not an optional optimization.
+                        overflow_protection=False,
+                        chooser_float64=True,
+                        dot_policy="sharrow65_lane4",
+                    ),
+                    "device": {
+                        name: cp.asarray(host[name])
+                        for name in (
+                            "person_rows",
+                            "chooser_values",
+                            "draws",
+                            "mode_logsum_cache",
+                            "mode_logsum_present",
+                            "expected_tdd",
+                        )
+                    },
+                }
+            )
+        self.cursor = 0
+        self.pending: DeviceLogsumBatch | None = None
+        self.telemetry: list[IntegratedBatchTelemetry] = []
+        self.selected_batches = []
+        self.preparer.reset()
+
+    @staticmethod
+    def _columns(meta):
+        names = meta["chooser_columns"]
+        return {
+            "end_previous_column": names.index("end_previous"),
+            "tour_count_column": names.index("tour_count"),
+            "tour_num_column": names.index("tour_num"),
+        }
+
+    def accept_device_logsums(self, device_logsums: Any, metadata: Mapping[str, Any]) -> None:
+        """Accept exactly one upstream logsum batch before its choice call."""
+
+        if self.pending is not None:
+            raise RuntimeError("the previous device logsum batch has not been consumed")
+        if self.cursor >= len(self.batches):
+            raise RuntimeError("received more raw-skim batches than the manifest defines")
+        expected = self.batches[self.cursor]["host"]["chooser_ids"]
+        self.pending = assemble_device_logsum_cache(device_logsums, metadata, expected)
+
+    def choose(
+        self,
+        live_chooser_ids: Any,
+        live_draws: Any | None = None,
+        live_chooser_values: Any | None = None,
+        boundary_resolver=None,
+    ) -> np.ndarray:
+        """Consume the pending cache and return only final TDD labels to host."""
+
+        if self.pending is None:
+            raise RuntimeError("scheduling choice arrived before its device logsum batch")
+        cp = _cupy()
+        batch_number = self.cursor
+        batch = self.batches[batch_number]
+        data = batch["device"]
+        meta = batch["meta"]
+        observed = np.asarray(live_chooser_ids, dtype=np.int64)
+        expected_ids = batch["host"]["chooser_ids"]
+        if not np.array_equal(observed, expected_ids):
+            raise ValueError("live scheduling chooser order differs from the qualified artifact")
+        random_errors = 0
+        draws = data["draws"]
+        if live_draws is not None:
+            host_draws = np.asarray(live_draws, dtype=np.float64).reshape(-1)
+            expected_draws = batch["host"]["draws"]
+            if host_draws.shape != expected_draws.shape:
+                raise ValueError("live random draw shape differs from the qualified artifact")
+            random_errors = int(np.count_nonzero(host_draws != expected_draws))
+            if random_errors:
+                raise AssertionError(
+                    f"live ActivitySim random stream changed {random_errors} draws"
+                )
+            draws = cp.asarray(host_draws)
+
+        cache_errors = 0
+        cache_max_abs = 0.0
+        presence_errors = 0
+        if self.qualify_against_artifact:
+            expected_present = data["mode_logsum_present"]
+            presence_errors = int(cp.count_nonzero(self.pending.present != expected_present).item())
+            expected_cache = data["mode_logsum_cache"]
+            cache_errors = int(
+                cp.count_nonzero(
+                    self.pending.present
+                    & (self.pending.cache.view(cp.uint32) != expected_cache.view(cp.uint32))
+                ).item()
+            )
+            if bool(cp.any(self.pending.present).item()):
+                cache_max_abs = float(
+                    cp.max(
+                        cp.abs(self.pending.cache - expected_cache)[self.pending.present]
+                    ).item()
+                )
+            if presence_errors or cache_max_abs > self.cache_absolute_tolerance:
+                raise AssertionError(
+                    "live raw-skim cache differs from the qualified scheduling cache: "
+                    f"values={cache_errors} max_abs={cache_max_abs:.9g} "
+                    f"presence={presence_errors} tolerance={self.cache_absolute_tolerance:.9g}"
+                )
+
+        started = time.perf_counter()
+        prepared = self.preparer.prepare(
+            data["person_rows"],
+            data["chooser_values"],
+            self.pending.cache,
+            **self._columns(meta),
+        )
+        chooser_for_model = prepared.chooser_values
+        if live_chooser_values is not None:
+            chooser_for_model = cp.ascontiguousarray(
+                cp.asarray(live_chooser_values, dtype=cp.float64)
+            )
+            if chooser_for_model.shape != prepared.chooser_values.shape:
+                raise ValueError("live scheduling chooser values have the wrong shape")
+            columns = self._columns(meta)
+            people = data["person_rows"]
+            chooser_for_model[:, columns["end_previous_column"]] = (
+                self.alternative_values[
+                    self.preparer.previous_tdd[people], 1
+                ]
+            )
+        result = batch["model"].choose(
+            chooser_for_model,
+            prepared.row_values,
+            self.alternative_values,
+            prepared.alternative_ids,
+            prepared.offsets,
+            draws,
+            return_device=True,
+        )
+        selected = prepared.alternative_ids[prepared.offsets[:-1] + result.choices]
+        boundary_rows = cp.flatnonzero(
+            result.boundary_distances <= self.boundary_tolerance
+        )
+        boundary_download_bytes = 0
+        if int(boundary_rows.size):
+            if boundary_resolver is None:
+                raise RuntimeError(
+                    "an exact boundary resolver is required for near-boundary choices"
+                )
+            boundary_rows_host = cp.asnumpy(boundary_rows)
+            raw_cache_host = cp.asnumpy(self.pending.raw_cache[boundary_rows])
+            boundary_download_bytes = int(raw_cache_host.nbytes)
+            resolved = np.asarray(
+                boundary_resolver(boundary_rows_host, raw_cache_host),
+                dtype=np.int16,
+            )
+            if resolved.shape != boundary_rows_host.shape:
+                raise ValueError("boundary resolver returned the wrong number of TDDs")
+            selected[boundary_rows] = cp.asarray(resolved)
+        self.preparer.assign(data["person_rows"], selected)
+        cp.cuda.Stream.null.synchronize()
+        scheduling_ms = (time.perf_counter() - started) * 1000
+        tdd_errors = int(cp.count_nonzero(selected != data["expected_tdd"]).item())
+        if tdd_errors:
+            raise AssertionError(f"integrated GPU scheduling changed {tdd_errors} TDD choices")
+        selected_host = cp.asnumpy(selected)
+        self.selected_batches.append(selected)
+        self.telemetry.append(
+            IntegratedBatchTelemetry(
+                batch=batch_number,
+                trace_label=str(meta["trace_label"]),
+                choosers=int(selected.size),
+                logsum_rows=self.pending.source_rows,
+                cache_build_ms=self.pending.cache_build_ms,
+                scheduling_ms=scheduling_ms,
+                cache_value_mismatches=cache_errors,
+                cache_max_abs_difference=cache_max_abs,
+                cache_presence_mismatches=presence_errors,
+                random_draw_mismatches=random_errors,
+                tdd_mismatches=tdd_errors,
+                boundary_rows=int(boundary_rows.size),
+                boundary_logsum_download_bytes=boundary_download_bytes,
+            )
+        )
+        self.pending = None
+        self.cursor += 1
+        return selected_host
+
+    @property
+    def complete(self) -> bool:
+        return self.cursor == len(self.batches) and self.pending is None
+
+    def checkpoint(self) -> dict[str, Any]:
+        """Return a restart/audit record after all six batches complete."""
+
+        if not self.complete:
+            raise RuntimeError("cannot checkpoint an incomplete integrated schedule")
+        cp = _cupy()
+        selected = cp.concatenate(self.selected_batches)
+        return {
+            "format_version": 2,
+            "phase": 22,
+            "checkpoint_name": "raw_skim_logsums_to_mandatory_tdd_on_device",
+            "completed_batches": self.cursor,
+            "rows": int(selected.size),
+            "tdd_sha256": array_sha256(cp.asnumpy(selected)),
+            "timetable_sha256": array_sha256(cp.asnumpy(self.preparer.windows)),
+            "bulk_modeled_logsum_device_to_host_bytes": 0,
+            "exact_boundary_logsum_device_to_host_bytes": int(
+                sum(x.boundary_logsum_download_bytes for x in self.telemetry)
+            ),
+            "final_tdd_device_to_host_bytes": int(selected.nbytes),
+        }

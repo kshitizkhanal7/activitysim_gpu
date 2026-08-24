@@ -164,33 +164,96 @@ def _validate_schema(schema: SchedulingSchema) -> None:
         raise ValueError(f"invalid generated-source column names: {invalid}")
 
 
-def _cuda_source(expressions, coefficients, schema: SchedulingSchema) -> str:
+def _cuda_source(
+    expressions,
+    coefficients,
+    schema: SchedulingSchema,
+    overflow_protection: bool = True,
+    chooser_float64: bool = False,
+    dot_policy: str = "fma_sequential",
+) -> str:
     _validate_schema(schema)
     valid = set(schema.chooser_columns + schema.row_columns + schema.alternative_columns)
     _validate_names(expressions, valid)
     assignments = []
+    chooser_scalar = "double" if chooser_float64 else "float"
     for i, name in enumerate(schema.chooser_columns):
-        assignments.append(f"const float {name} = chooser_values[chooser * {len(schema.chooser_columns)} + {i}];")
+        assignments.append(f"const {chooser_scalar} {name} = chooser_values[chooser * {len(schema.chooser_columns)} + {i}];")
     for i, name in enumerate(schema.row_columns):
         assignments.append(f"const float {name} = row_values[row * {len(schema.row_columns)} + {i}];")
     for i, name in enumerate(schema.alternative_columns):
         assignments.append(f"const float {name} = alternative_values[alt_id * {len(schema.alternative_columns)} + {i}];")
+    if dot_policy not in {"fma_sequential", "sharrow65_lane4"}:
+        raise ValueError(f"unknown scheduling dot policy {dot_policy!r}")
     sums = []
-    for expression, coefficient in zip(expressions, coefficients):
+    for position, (expression, coefficient) in enumerate(zip(expressions, coefficients)):
         c_expr = compile_cuda_expression(expression)
         literal = f"{float(np.float32(coefficient)):.9g}"
         if "." not in literal and "e" not in literal.lower():
             literal += ".0"
         literal += "f"
-        sums.append(f"acc = fmaf((float)({c_expr}), {literal}, acc);")
+        if dot_policy == "sharrow65_lane4":
+            # Sharrow materializes two zero-coefficient temporary expressions
+            # at positions 27 and 28, then performs a float32 np.dot over 65
+            # terms. Preserve those positions in the four-lane reduction.
+            original_position = position if position < 27 else position + 2
+            lane = original_position % 4
+            sums.append(f"acc{lane} += (float)({c_expr}) * {literal};")
+        else:
+            sums.append(f"acc = fmaf((float)({c_expr}), {literal}, acc);")
 
-    body = "\n        ".join(assignments + ["float acc = 0.0f;"] + sums + ["utility = acc;"])
-    return f'''extern "C" __global__
+    if dot_policy == "sharrow65_lane4":
+        accumulator_lines = [
+            "float acc0 = 0.0f, acc1 = 0.0f, acc2 = 0.0f, acc3 = 0.0f;"
+        ]
+        finish_lines = ["utility = (acc0 + acc1) + (acc2 + acc3);"]
+    else:
+        accumulator_lines = ["float acc = 0.0f;"]
+        finish_lines = ["utility = acc;"]
+    body = "\n        ".join(assignments + accumulator_lines + sums + finish_lines)
+    weight_expression = (
+        "expf(values[lane]-row_max)" if overflow_protection else "expf(values[lane])"
+    )
+    logsum_expression = (
+        "row_max+logf(total)" if overflow_protection else "logf(total)"
+    )
+    pairwise_helper = "" if overflow_protection else r'''
+__device__ __forceinline__ float numpy_pairwise_small(
+ const float* values, int start, int count)
+{
+ if(count < 8) {
+  float total = 0.0f;
+  for(int i=0;i<count;++i) total += values[start+i];
+  return total;
+ }
+ float r0=values[start], r1=values[start+1], r2=values[start+2], r3=values[start+3];
+ float r4=values[start+4], r5=values[start+5], r6=values[start+6], r7=values[start+7];
+ int i=8;
+ for(;i<=count-8;i+=8) {
+  r0+=values[start+i]; r1+=values[start+i+1];
+  r2+=values[start+i+2]; r3+=values[start+i+3];
+  r4+=values[start+i+4]; r5+=values[start+i+5];
+  r6+=values[start+i+6]; r7+=values[start+i+7];
+ }
+ float total=((r0+r1)+(r2+r3))+((r4+r5)+(r6+r7));
+ for(;i<count;++i) total+=values[start+i];
+ return total;
+}
+__device__ __forceinline__ float numpy_pairwise_sum(const float* values, int count)
+{
+ if(count <= 128) return numpy_pairwise_small(values, 0, count);
+ int split=(count/2)&~7;
+ return numpy_pairwise_small(values,0,split)
+       +numpy_pairwise_small(values,split,count-split);
+}
+'''
+    total_expression = "scratch[0]" if overflow_protection else "numpy_pairwise_sum(values,count)"
+    return f'''{pairwise_helper}extern "C" __global__
 void compact_scheduling_choice(
- const float* chooser_values, const float* row_values,
+ const {chooser_scalar}* chooser_values, const float* row_values,
  const float* alternative_values, const short* alternative_ids,
  const long long* offsets, const double* uniforms, int n_choosers,
- int* choices, float* logsums)
+ int* choices, float* logsums, double* boundary_distances)
 {{
  const int chooser = blockIdx.x; const int lane = threadIdx.x;
  if (chooser >= n_choosers) return;
@@ -205,21 +268,38 @@ void compact_scheduling_choice(
  values[lane] = utility; scratch[lane] = utility; __syncthreads();
  for (int stride=blockDim.x/2; stride>0; stride>>=1) {{ if(lane<stride) scratch[lane]=fmaxf(scratch[lane],scratch[lane+stride]); __syncthreads(); }}
  const float row_max=scratch[0]; __syncthreads();
- const float weight=lane<count?expf(values[lane]-row_max):0.0f;
+ const float weight=lane<count?{weight_expression}:0.0f;
  values[lane]=weight; scratch[lane]=weight; __syncthreads();
  for (int stride=blockDim.x/2; stride>0; stride>>=1) {{ if(lane<stride) scratch[lane]+=scratch[lane+stride]; __syncthreads(); }}
- if(lane==0) {{ const float total=scratch[0]; double remainder=uniforms[chooser]; int selected=-1;
-  for(int alt=0;alt<count;++alt) {{ const float probability=values[alt]/total; remainder-=(double)probability; if(selected<0 && remainder<=0.0) selected=alt; }}
-  if(selected<0) selected=count-1; choices[chooser]=selected; logsums[chooser]=row_max+logf(total); }}
+ if(lane==0) {{ const float total={total_expression}; double remainder=uniforms[chooser]; double nearest=1.0; int selected=-1;
+  for(int alt=0;alt<count;++alt) {{ const float probability=values[alt]/total; remainder-=(double)probability; nearest=fmin(nearest,fabs(remainder)); if(selected<0 && remainder<=0.0) selected=alt; }}
+  if(selected<0) selected=count-1; choices[chooser]=selected; logsums[chooser]={logsum_expression}; boundary_distances[chooser]=nearest; }}
 }}
 '''
 
 
-@lru_cache(maxsize=8)
-def _raw_kernel(expressions, coefficients, schema):
+@lru_cache(maxsize=16)
+def _raw_kernel(
+    expressions,
+    coefficients,
+    schema,
+    overflow_protection=True,
+    chooser_float64=False,
+    dot_policy="fma_sequential",
+):
     cp = _cupy()
-    source = _cuda_source(expressions, coefficients, schema)
-    return cp.RawKernel(source, "compact_scheduling_choice", options=("--std=c++11",))
+    source = _cuda_source(
+        expressions,
+        coefficients,
+        schema,
+        overflow_protection,
+        chooser_float64,
+        dot_policy,
+    )
+    options = ["--std=c++11"]
+    if dot_policy == "sharrow65_lane4":
+        options.append("--fmad=false")
+    return cp.RawKernel(source, "compact_scheduling_choice", options=tuple(options))
 
 
 def _threads_for_offsets(offsets) -> int:
@@ -231,14 +311,33 @@ def _threads_for_offsets(offsets) -> int:
 
 
 class CompiledCudaSchedulingModel:
-    def __init__(self, expressions, coefficients, schema: SchedulingSchema):
+    def __init__(
+        self,
+        expressions,
+        coefficients,
+        schema: SchedulingSchema,
+        *,
+        overflow_protection: bool = True,
+        chooser_float64: bool = False,
+        dot_policy: str = "fma_sequential",
+    ):
         _register_pip_cuda_dlls()
         if not expressions or len(expressions) != len(coefficients):
             raise ValueError("expressions and coefficients must be non-empty and equal length")
         self.expressions = tuple(expressions)
         self.coefficients = tuple(float(np.float32(x)) for x in coefficients)
         self.schema = schema
-        self.kernel = _raw_kernel(self.expressions, self.coefficients, schema)
+        self.overflow_protection = bool(overflow_protection)
+        self.chooser_float64 = bool(chooser_float64)
+        self.dot_policy = str(dot_policy)
+        self.kernel = _raw_kernel(
+            self.expressions,
+            self.coefficients,
+            schema,
+            self.overflow_protection,
+            self.chooser_float64,
+            self.dot_policy,
+        )
         self._threads: int | None = None
 
     def choose(self, chooser_values, row_values, alternative_values, alternative_ids,
@@ -251,7 +350,8 @@ class CompiledCudaSchedulingModel:
                 raise ValueError("offsets must be a one-dimensional CSR pointer starting at zero")
             if self._threads is None:
                 self._threads = _threads_for_offsets(host_offsets)
-        chooser = cp.ascontiguousarray(cp.asarray(chooser_values, dtype=cp.float32))
+        chooser_dtype = cp.float64 if self.chooser_float64 else cp.float32
+        chooser = cp.ascontiguousarray(cp.asarray(chooser_values, dtype=chooser_dtype))
         rows = cp.ascontiguousarray(cp.asarray(row_values, dtype=cp.float32))
         alternatives = cp.ascontiguousarray(cp.asarray(alternative_values, dtype=cp.float32))
         alt_ids = cp.ascontiguousarray(cp.asarray(alternative_ids, dtype=cp.int16))
@@ -268,11 +368,16 @@ class CompiledCudaSchedulingModel:
             self._threads = max(32, 1 << (maximum - 1).bit_length())
         threads = self._threads
         choices = cp.empty(n, dtype=cp.int32); logsums = cp.empty(n, dtype=cp.float32)
-        self.kernel((n,), (threads,), (chooser, rows, alternatives, alt_ids, ptr, draws, np.int32(n), choices, logsums),
+        boundary_distances = cp.empty(n, dtype=cp.float64)
+        self.kernel((n,), (threads,), (chooser, rows, alternatives, alt_ids, ptr, draws, np.int32(n), choices, logsums, boundary_distances),
                     shared_mem=2 * threads * np.dtype(np.float32).itemsize)
         if return_device:
-            return ChoiceResult(choices, logsums)
-        return ChoiceResult(cp.asnumpy(choices), cp.asnumpy(logsums))
+            return ChoiceResult(choices, logsums, boundary_distances)
+        return ChoiceResult(
+            cp.asnumpy(choices),
+            cp.asnumpy(logsums),
+            cp.asnumpy(boundary_distances),
+        )
 
 
 def _python_utility_source(expressions, coefficients, schema):

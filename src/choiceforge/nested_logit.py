@@ -226,6 +226,7 @@ def mtc21_nested_logsums_cuda(
     alternatives=MTC21_ALTERNATIVES,
     *,
     return_telemetry=False,
+    return_device=False,
     numeric_policy="activitysim_float64",
 ):
     """Return transfer-inclusive logsums on the host under a named policy.
@@ -235,6 +236,8 @@ def mtc21_nested_logsums_cuda(
     intentionally measured separately from kernel execution so a future fused
     utility evaluator has a concrete before/after target. The ActivitySim
     policies return float64; ``sharrow_float32`` preserves float32 throughout.
+    ``return_device`` keeps the modeled logsum vector on CUDA so a downstream
+    GPU component can consume it without a host materialization.
     """
     if tuple(alternatives) != MTC21_ALTERNATIVES:
         raise ValueError("mode columns are not in canonical MTC order")
@@ -305,7 +308,7 @@ def mtc21_nested_logsums_cuda(
     )
     cp.cuda.Stream.null.synchronize()
     after_kernel = time.perf_counter()
-    result = cp.asnumpy(device_result)
+    result = device_result if return_device else cp.asnumpy(device_result)
     after_download = time.perf_counter()
     if not return_telemetry:
         return result
@@ -314,5 +317,7 @@ def mtc21_nested_logsums_cuda(
         input_bytes=input_bytes,
         host_to_device_ms=(after_upload - start) * 1000,
         kernel_ms=(after_kernel - after_upload) * 1000,
-        device_to_host_ms=(after_download - after_kernel) * 1000,
+        device_to_host_ms=(
+            0.0 if return_device else (after_download - after_kernel) * 1000
+        ),
     )
