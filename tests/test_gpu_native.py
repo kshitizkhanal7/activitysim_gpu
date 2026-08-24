@@ -5,6 +5,7 @@ import pytest
 
 from choiceforge.cuda_backend import _cupy, cuda_available
 from choiceforge.gpu_native import (
+    ActivitySimRandomLedger,
     DeviceTable,
     GpuMemoryBudget,
     GpuNativeRuntime,
@@ -14,6 +15,17 @@ from choiceforge.gpu_native import (
     plan_household_partitions,
     segmented_sum_sorted_gpu,
 )
+
+
+def test_activitysim_random_ledger_round_trips_offsets():
+    ledger = ActivitySimRandomLedger()
+    assert ledger.reserve("tours", "schedule") == 0
+    assert ledger.reserve("tours", "schedule", 3) == 1
+    assert ledger.reserve("persons", "frequency", 2) == 0
+    restored = ActivitySimRandomLedger.restore(ledger.snapshot())
+    assert restored.reserve("tours", "schedule") == 4
+    with pytest.raises(ValueError):
+        ledger.reserve("tours", "schedule", 0)
 
 
 def test_memory_budget_and_capacity_are_explicit():

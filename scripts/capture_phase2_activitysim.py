@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 
-def _expression_values(spec, df, locals_d):
+def _expression_values(spec, df, locals_d, *, retain_terms=True):
     """Evaluate the spec once, retaining terms instead of immediately summing."""
     from activitysim.core.fast_eval import fast_eval
     from activitysim.core import simulate
@@ -48,17 +48,31 @@ def _expression_values(spec, df, locals_d):
             target, rhs = expr.split("@", 1)
             local[target] = pd.Series(as_array(eval(rhs, globals(), local)), index=df.index)
             continue
-        if expr.startswith("@"):
-            value = eval(expr[1:], globals(), local)
+        stateful = "tt." in expr or "_adjacent_window" in expr or expr.startswith("@")
+        if retain_terms or stateful:
+            if expr.startswith("@"):
+                value = eval(expr[1:], globals(), local)
+            else:
+                value = fast_eval(df, expr, resolvers=[local])
+            values = as_array(value).astype(np.float32, copy=False)
         else:
-            value = fast_eval(df, expr, resolvers=[local])
-        columns.append(as_array(value).astype(np.float32, copy=False))
+            values = None
+        if retain_terms:
+            columns.append(values)
         kept_exprs.append(str(expr))
         kept_labels.append(str(label))
         kept_coefficients.append(float(coefficient))
+        # The compact packer needs only stateful row primitives. Pure
+        # expressions remain syntax and are evaluated later by generated code.
+        if not retain_terms:
+            columns.append(values if stateful else None)
 
     return (
-        np.ascontiguousarray(np.column_stack(columns), dtype=np.float32),
+        (
+            np.ascontiguousarray(np.column_stack(columns), dtype=np.float32)
+            if retain_terms
+            else None
+        ),
         kept_exprs,
         kept_labels,
         np.asarray(kept_coefficients, dtype=np.float32),
@@ -77,6 +91,8 @@ def _compact_inputs(df, expressions, expression_columns):
     stateful_columns = []
     for expr, values in zip(expressions, expression_columns):
         if "tt." in expr or "_adjacent_window" in expr or expr.startswith("@"):
+            if values is None:
+                raise RuntimeError(f"stateful expression was not captured: {expr}")
             name = f"stateful_{len(stateful_columns)}"
             lowered.append(name)
             stateful_columns.append(np.asarray(values, dtype=np.float32))
@@ -137,10 +153,30 @@ def _compact_inputs(df, expressions, expression_columns):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", type=Path, required=True)
+    parser.add_argument(
+        "--data",
+        type=Path,
+        help="input-data directory (defaults to PROJECT/data)",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--capture", type=Path, required=True)
     parser.add_argument("--config-overlay", type=Path)
     parser.add_argument("--resume", default=None)
+    parser.add_argument(
+        "--compact-only",
+        action="store_true",
+        help="omit the expanded term, utility, and probability matrices",
+    )
+    parser.add_argument(
+        "--include-probabilities",
+        action="store_true",
+        help="retain ActivitySim probability matrices for precision diagnostics",
+    )
+    parser.add_argument(
+        "--only-next-model",
+        action="store_true",
+        help="when resuming, stop after the single model following the checkpoint",
+    )
     args = parser.parse_args()
 
     args.capture.mkdir(parents=True, exist_ok=True)
@@ -161,17 +197,26 @@ def main() -> int:
         elapsed = time.perf_counter() - start
         if str(trace_label).startswith("mandatory_tour_scheduling") and "logsums" not in str(trace_label):
             terms, expressions, labels, coefficients, expression_columns = _expression_values(
-                spec, df, locals_d
+                spec, df, locals_d, retain_terms=not args.compact_only
             )
             compact = _compact_inputs(df, expressions, expression_columns)
+            chooser_ids = np.asarray(df.index)
+            starts = np.flatnonzero(
+                np.r_[True, chooser_ids[1:] != chooser_ids[:-1]]
+            )
             record = {
                 "trace_label": str(trace_label),
-                "terms": terms,
+                "terms": None if args.compact_only else terms,
                 "coefficients": coefficients,
                 "expressions": expressions,
                 "labels": labels,
-                "utilities": np.asarray(result[0].utility, dtype=np.float64),
-                "chooser_ids": np.asarray(df.index),
+                "utilities": (
+                    None
+                    if args.compact_only
+                    else np.asarray(result[0].utility, dtype=np.float64)
+                ),
+                "chooser_ids": chooser_ids[starts],
+                "offsets": np.r_[starts, chooser_ids.size].astype(np.int64),
                 "eval_seconds": elapsed,
                 "compact": compact,
             }
@@ -193,12 +238,37 @@ def main() -> int:
             record = pending[key].pop(0)
             record["positions"] = np.asarray(result[0], dtype=np.int32)
             record["draws"] = np.asarray(result[1], dtype=np.float64)
-            record["probabilities"] = np.asarray(probs, dtype=np.float64)
+            record["probabilities"] = (
+                np.asarray(probs)
+                if (args.include_probabilities or not args.compact_only)
+                else None
+            )
             batches.append(record)
         return result
 
     interaction_simulate.eval_interaction_utilities = capture_eval
     logit.make_choices = capture_choices
+
+    original_runner_call = None
+    if args.only_next_model:
+        if not args.resume:
+            raise ValueError("--only-next-model requires --resume")
+        from activitysim.core.workflow.runner import Runner
+
+        original_runner_call = Runner.__call__
+
+        def run_one_model(self, models, resume_after=None, memory_sidecar_process=None):
+            if isinstance(models, list) and resume_after in models:
+                checkpoint = models.index(resume_after)
+                models = models[: checkpoint + 2]
+            return original_runner_call(
+                self,
+                models,
+                resume_after=resume_after,
+                memory_sidecar_process=memory_sidecar_process,
+            )
+
+        Runner.__call__ = run_one_model
 
     from activitysim.cli import main as activitysim_main
 
@@ -210,7 +280,7 @@ def main() -> int:
             "-c",
             str((args.project / "configs").resolve()),
             "-d",
-            str((args.project / "data").resolve()),
+            str((args.data or (args.project / "data")).resolve()),
             "-o",
             str(args.output.resolve()),
         ]
@@ -231,30 +301,41 @@ def main() -> int:
         sys.argv = old_argv
         interaction_simulate.eval_interaction_utilities = original_eval
         logit.make_choices = original_make_choices
+        if original_runner_call is not None:
+            Runner.__call__ = original_runner_call
 
-    manifest = {"format_version": 2, "batches": []}
+    manifest = {
+        "format_version": 3 if args.compact_only else 2,
+        "compact_only": bool(args.compact_only),
+        "batches": [],
+    }
     for number, batch in enumerate(batches):
         stem = f"batch_{number:03d}"
-        np.savez_compressed(
-            args.capture / f"{stem}.npz",
-            terms=batch["terms"],
-            coefficients=batch["coefficients"],
-            utilities=batch["utilities"],
-            chooser_ids=batch["chooser_ids"],
-            positions=batch["positions"],
-            draws=batch["draws"],
-            probabilities=batch["probabilities"],
-            chooser_values=batch["compact"]["chooser_values"],
-            row_values=batch["compact"]["row_values"],
-            alternative_values=batch["compact"]["alternative_values"],
-            alternative_ids=batch["compact"]["alternative_ids"],
-        )
+        arrays = {
+            "coefficients": batch["coefficients"],
+            "chooser_ids": batch["chooser_ids"],
+            "offsets": batch["offsets"],
+            "positions": batch["positions"],
+            "draws": batch["draws"],
+            "chooser_values": batch["compact"]["chooser_values"],
+            "row_values": batch["compact"]["row_values"],
+            "alternative_values": batch["compact"]["alternative_values"],
+            "alternative_ids": batch["compact"]["alternative_ids"],
+        }
+        if not args.compact_only:
+            arrays.update(
+                terms=batch["terms"],
+                utilities=batch["utilities"],
+            )
+        if batch["probabilities"] is not None:
+            arrays["probabilities"] = batch["probabilities"]
+        np.savez_compressed(args.capture / f"{stem}.npz", **arrays)
         manifest["batches"].append(
             {
                 "file": f"{stem}.npz",
                 "trace_label": batch["trace_label"],
-                "interaction_rows": int(batch["terms"].shape[0]),
-                "terms": int(batch["terms"].shape[1]),
+                "interaction_rows": int(batch["compact"]["row_values"].shape[0]),
+                "terms": int(batch["coefficients"].size),
                 "choosers": int(batch["positions"].size),
                 "eval_seconds": batch["eval_seconds"],
                 "expressions": batch["expressions"],

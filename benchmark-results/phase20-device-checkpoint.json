@@ -1,0 +1,80 @@
+{
+  "format_version": 1,
+  "phase": 20,
+  "checkpoint_name": "mandatory_tour_scheduling",
+  "completed_components": [
+    "auto_ownership_simulate",
+    "mandatory_tour_frequency",
+    "mandatory_tour_row_expansion",
+    "mandatory_tour_scheduling_kernel_replay"
+  ],
+  "device_tables": {
+    "mandatory_tours": {
+      "rows": 81983,
+      "columns": {
+        "tour_id": {
+          "dtype": "int64",
+          "sha256": "fabcde8dfb242671cc0dd32f645c24514e593b94a15a7311482ecb67ef5285ca"
+        },
+        "person_id": {
+          "dtype": "int64",
+          "sha256": "d7a65623fbea84ca337917eb366300b280568770327208f60970286acb6e6962"
+        },
+        "tour_type": {
+          "dtype": "int8",
+          "sha256": "b343399133a55f8cd33382ef28efdfa6200fac5fab4f151520efa3c13c414c56"
+        },
+        "tour_type_count": {
+          "dtype": "int8",
+          "sha256": "6a4d6c6bd88148385e5f84d458756969657b3c0fe30c1d3c021ab136501661ef"
+        },
+        "tour_type_num": {
+          "dtype": "int8",
+          "sha256": "e5eff7a9ca1fb4b199d5be37cc0a6082854bfb2f84f7ccbd5385e009a42bc540"
+        },
+        "tour_num": {
+          "dtype": "int8",
+          "sha256": "6558ebbefac04e7c6340fb6a581f19d386bf929257a8091a94707bcdcf82011b"
+        },
+        "tour_count": {
+          "dtype": "int8",
+          "sha256": "9e567e4649987fd0a4de27f5d474ee63f18b996a7f9d4bd05d3c5ac6900bc47f"
+        },
+        "tour_category": {
+          "dtype": "int8",
+          "sha256": "26f80c70400c39604329430607798ca7245b19af79849aa1e05d4745f9e6c494"
+        },
+        "number_of_participants": {
+          "dtype": "int8",
+          "sha256": "aed14dba7efae8b0ccc5cf767abe26e6586bf077c12925012b32df5c21aeb77b"
+        },
+        "destination": {
+          "dtype": "int64",
+          "sha256": "a88181970e2b59bce77a91a9ca034249c5e882ecdf7c48126f76b0099b3b4ccd"
+        },
+        "origin": {
+          "dtype": "int64",
+          "sha256": "580dafe9349f9ee605999ab399bb6b826e3b6aac46d1249647b5a9871f04cb38"
+        },
+        "household_id": {
+          "dtype": "int64",
+          "sha256": "d4f5439629ffce61bac115474ae7b7c27ed47042f856df857b4554296a9d0512"
+        }
+      }
+    },
+    "mandatory_schedule": {
+      "rows": 81983,
+      "columns": {
+        "tdd": {
+          "dtype": "int16",
+          "sha256": "8b4bdd19951bf8497beb2584f20ff7c406dbdb1593b749536ed38e780abe546a"
+        }
+      }
+    }
+  },
+  "random_offsets": {
+    "tours:mandatory_tour_scheduling": 1
+  },
+  "source_capture_manifest_sha256": "01abac58cf62de0b7c5dc90e54423dc9b97a1944fe68731af83d74ea426513ff",
+  "restart_limit": "hash-complete proof manifest; the compact scheduling preparation arrays remain external captured inputs, not a self-contained whole-model restart"
+}

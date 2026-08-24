@@ -311,8 +311,33 @@ bit-exact; maximum utility and probability errors are `1.776e-15` and
 **17.840x faster**. Including one ingress and final egress, the GPU median is
 0.037997 seconds, **12.073x faster**.
 
-This is the strongest current calibrated result, but its scope is precise:
-upstream school/work location and CDAP state are frozen public checkpoint
-inputs, and mandatory-tour row creation is not yet ported. See
+This result's scope is precise: upstream school/work location and CDAP state
+are frozen public checkpoint inputs. Phase 20 has now ported its downstream
+mandatory-tour row creation. See
 [Phase 19 calibrated chain](docs/phase19-calibrated-chain.md) and the
 [qualification artifact](benchmark-results/phase19-calibrated-chain.json).
+
+## Phase 20 variable-length tours and calibrated scheduling
+
+Phase 20 turns the 78,900 exact mandatory-frequency choices into 81,983 real
+tour rows on the GPU. Every value in all 12 ActivitySim tour columns, including
+stable 41-channel tour IDs, work/school ordering, destinations, and the
+non-worker scheduling swap, matches the public checkpoint. The fused row builder
+is **11.496x faster** with resident inputs and **6.272x faster** including input
+upload and `tour_id` download.
+
+Those IDs link exactly to a fresh full-population capture of calibrated
+mandatory-tour scheduling: six batches and 15,242,743 real feasible
+tour-time rows. A precision gate exposed and fixed float32 random-draw rounding
+in the older scheduling kernel. The corrected GPU reproduces all 81,983 saved
+TDD choices with zero mismatches and bit-repeatable results. It is **18.097x
+faster** than the independent CPU compiler with resident compact inputs and
+**2.935x faster** including compact upload and choice/logsum download.
+
+This is a scheduling-kernel replay, not yet a whole scheduling-component claim:
+ActivitySim still prepares time-dependent mode-choice logsums, timetable
+primitives, and feasible alternatives on the CPU. Phase 20 also adds exact
+arbitrary MT19937 offsets and a hash-complete device checkpoint/audit manifest.
+See [Phase 20 variable tours and scheduling](docs/phase20-variable-tours-and-scheduling.md),
+the [qualification artifact](benchmark-results/phase20-tour-chain.json), and
+the [checkpoint manifest](benchmark-results/phase20-device-checkpoint.json).

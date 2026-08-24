@@ -31,8 +31,19 @@ auto-ownership and mandatory-tour-frequency equations. It exactly reproduced
 50,000 saved household choices and 78,900 saved person choices. Median GPU
 modeled work was 17.840 times faster than the independent CPU replay and 12.073
 times faster after including one input upload and final download. That is the
-strongest current calibrated result, although upstream location/CDAP work and
-downstream tour creation are still outside its boundary.
+strong calibrated result, although upstream location/CDAP work remained
+outside its boundary.
+
+Phase 20 then solved the next structural problem. The GPU turned those 78,900
+person choices into 81,983 variable-length tour rows, and every value in all 12
+tour columns matched ActivitySim. It fed those exact tour IDs into six real
+mandatory-scheduling batches containing 15.24 million possible tour-time rows.
+All 81,983 GPU time choices matched ActivitySim. Tour creation was 11.496 times
+faster with resident data and 6.272 times faster including transfers. The
+scheduling kernel was 18.097 times faster with resident compact inputs and
+2.935 times faster including compact transfers. ActivitySim still prepares
+the scheduling logsums, feasible time choices, and timetable facts on the CPU,
+so this is not yet a whole scheduling-component speed claim.
 
 ## 1. What is travel demand modeling?
 
@@ -1940,10 +1951,9 @@ It then uses an algorithm called **MT19937**, from NumPy's older
 MT19937 directly in a CUDA kernel. The GPU produces the exact same 64-bit
 floating-point draw as NumPy for every tested household and person.
 
-This kernel currently supports the first draw in a model step, called offset
-zero. These two public components need exactly that. If a future component asks
-for a later draw, the system stops until that behavior is implemented and
-proved.
+Phase 19's kernel supported the first draw in a model step, called offset zero.
+These two public components need exactly that. Phase 20, explained below, has
+since implemented and proved later offsets as well.
 
 ### How does a person find the right household answer?
 
@@ -2041,31 +2051,235 @@ The right summary is:
   other component types.
 - Phase 19 still does not replace a full fresh ActivitySim CPU/GPU comparison.
 
-### What should happen next?
+## 36. Phase 20: make a real tour table on the GPU
 
-The next major challenge is not another fixed-size five-answer choice. It is
-creating new tour rows on the GPU.
+Phase 19 ended with one frequency answer per mandatory person. Phase 20 asks a
+different kind of computer question: how do we create a table when different
+input rows create different numbers of output rows?
 
-If one person chooses two work tours, the model must create two rows. If another
-chooses one school tour, it creates one row. This is called **variable-length
-table expansion**. It needs counts, prefix sums, stable new IDs, repeated person
-fields, category codes, and deterministic ordering.
+One person may choose one work tour. Another may choose two school tours. A
+third may choose one work tour and one school tour. This is called
+**variable-length table expansion**.
 
-The practical Phase 20 sequence is:
+Imagine students lining up for a school photo. Some need one chair and some
+need two. Before assigning chairs, the organizer counts how many each student
+needs. A **prefix sum** adds the counts from left to right:
 
-1. Turn each mandatory-tour-frequency choice into the correct number and type
-   of GPU tour rows.
-2. Give every tour a deterministic ID and verify the complete table against
-   ActivitySim.
-3. Run one downstream tour model that uses those rows and travel-time maps.
-4. Add general random-channel offsets before a component needs multiple draws.
-5. Save a restart manifest containing table hashes, schemas, random offsets,
-   and completed steps.
-6. Repeat the chain on a larger public population and a second NVIDIA GPU.
+```text
+chairs needed:        1  2  1  2
+starting chair:       0  1  3  4
+total chairs needed:              6
+```
 
-Phase 19 is a major success because it combines real calibrated behavior,
-exact public choices, a genuine household-to-person dependency, a fail-closed
-GPU boundary, and a double-digit measured speedup. The remaining distance to a
-whole model is mostly the hard state-management work: creating rows, managing
-skims, scheduling time, checkpointing, and covering the rest of the component
-graph without breaking exactness.
+The GPU uses the same idea. It counts each person's tours, calculates the
+starting output position, allocates exactly 81,983 rows, and runs one fused
+kernel that writes all columns.
+
+### What is in a tour row?
+
+A tour row needs much more than “work” or “school.” It contains:
+
+- the tour's own stable ID;
+- the owner person's and household's IDs;
+- whether it is a work or school tour;
+- which tour of that type it is;
+- which mandatory tour should be scheduled first;
+- how many mandatory tours that person has;
+- the home origin and work or school destination;
+- its category; and
+- its participant count.
+
+That is 12 columns. Phase 20 compared every generated value, not just a sample
+or the row count, with ActivitySim's public saved table. Every column had zero
+mismatches across all 81,983 rows.
+
+### A subtle work-and-school rule
+
+ActivitySim physically stores work rows before school rows. But for a person
+who is not classified as a worker and has both tours, school must be scheduled
+first. The row order stays the same while the schedule number is swapped.
+
+This distinction sounds tiny, but getting it wrong changes the person's
+timetable and can affect later choices. ChoiceForge has a focused test for the
+rule and also checks it across the complete public table.
+
+## 37. Why IDs must be boring and predictable
+
+A random-looking but stable tour ID lets later model steps find the same tour,
+attach a repeatable random stream, and compare two runs.
+
+The public model has 41 possible tour labels when mandatory, optional, joint,
+and at-work tours are considered together. The mandatory labels occupy fixed
+positions:
+
+| Tour label | Position among 41 labels | ID rule |
+|---|---:|---|
+| First school tour | 31 | person ID × 41 + 31 |
+| Second school tour | 32 | person ID × 41 + 32 |
+| First work tour | 39 | person ID × 41 + 39 |
+| Second work tour | 40 | person ID × 41 + 40 |
+
+For example, if person 100 has a first work tour, its ID is
+`100 × 41 + 39 = 4,139`.
+
+ChoiceForge checked the formula against every public mandatory tour. More
+importantly, the generated ID set exactly equaled the set of tour IDs consumed
+by the next scheduling component. That proves the two stages connect, instead
+of merely producing two separately correct-looking results.
+
+## 38. What mandatory-tour scheduling decides
+
+After making a work or school tour, the model must decide when it starts and
+ends. A **tour departure-and-duration alternative**, shortened to **TDD**, is
+one possible time window. Examples might be “leave at 7, return at 17” or
+“leave at 9, return at 15.” The public model has 190 base TDD alternatives.
+
+Not every window is possible for every tour. A later tour cannot overlap a
+time already occupied by an earlier tour. Its scores can depend on:
+
+- the person's worker or student type;
+- income and household size;
+- travel time to work or school;
+- whether the destination is downtown;
+- the start, end, and duration of the proposed window;
+- how attractive the available travel modes are at those times;
+- the previous tour's end time; and
+- open blocks in the person's timetable.
+
+This is why scheduling is a harder downstream test than another five-answer
+frequency model.
+
+### The full public capture
+
+Phase 20 resumed the preserved 50,000-household ActivitySim pipeline exactly
+after mandatory-tour frequency, ran only mandatory scheduling, and captured:
+
+- 81,983 real tour choosers;
+- six first/second work, school, and university groups;
+- 15,242,743 feasible chooser-time rows;
+- published coefficients and expressions;
+- real time-dependent mode-choice logsums;
+- real timetable facts;
+- ActivitySim's random draws; and
+- ActivitySim's selected time positions.
+
+The compact format does not save a huge table with every expression already
+calculated. It saves shared ingredients once and lets the generated CPU and GPU
+programs evaluate the expressions. The six compressed files total about 12
+megabytes.
+
+## 39. The gate failed first, and that was success
+
+The first full run did **not** pass. Three GPU scheduling choices and one CPU
+reference choice differed among 81,983 tours.
+
+This was not dismissed as “only a few.” Every mismatch occurred where the
+random draw was extraordinarily close to the boundary between two cumulative
+probabilities. The investigation found that the older kernel changed the
+arithmetic recipe:
+
+- ActivitySim keeps its random draw as a 64-bit floating-point number.
+- The old kernel rounded that draw to 32 bits.
+- ActivitySim normalizes its 32-bit probability weights before subtracting
+  them from the draw.
+- The old kernel compared the rounded draw with unnormalized weights.
+
+The corrected kernel keeps the draw at 64 bits, creates normalized 32-bit
+probabilities, and subtracts them in the same alternative order as ActivitySim.
+The independent CPU answer key was corrected to use NumPy's exact 32-bit
+probability-reduction behavior too.
+
+A new regression test places a draw just one 64-bit step above `0.5`. Rounding
+it to 32 bits changes the answer, so the old bug cannot quietly return.
+
+After the correction:
+
+| Proof check | Result |
+|---|---:|
+| CPU schedule choices different from ActivitySim | **0 of 81,983** |
+| GPU schedule choices different from ActivitySim | **0 of 81,983** |
+| CPU choices different from GPU choices | **0 of 81,983** |
+| GPU TDD values different from public checkpoint | **0 of 81,983** |
+| Largest CPU/GPU logsum difference | about `0.00000381` |
+| Choice differences across nine GPU repeats | **0** |
+
+The small logsum difference is reported honestly. The CPU and GPU add many
+32-bit weights using different reduction trees, so their last few bits need
+not match. The behavioral choice output is exact.
+
+## 40. Phase 20 speed results
+
+Compilation was warmed before nine measurements on the RTX A4000.
+
+| Work measured | CPU median | GPU median | Speedup |
+|---|---:|---:|---:|
+| Create tour table, data already on GPU | 0.006904 s | 0.000601 s | **11.496×** |
+| Create tours including upload and ID download | 0.006904 s | 0.001101 s | **6.272×** |
+| Schedule kernel, compact data already on GPU | 0.173748 s | 0.009601 s | **18.097×** |
+| Schedule kernel including compact transfers | 0.173748 s | 0.059196 s | **2.935×** |
+
+These are meaningful wins at their named boundaries. They do not mean that the
+complete travel model is now 17.8 times faster.
+
+The scheduling timer starts after ActivitySim has prepared the mode-choice
+logsums, feasible time alternatives, and timetable facts. Those preparation
+steps remain on the CPU. In simple language, the GPU now cooks the scheduling
+recipe very quickly, but ActivitySim still gathers and measures several major
+ingredients.
+
+## 41. Random streams can now continue and restart
+
+A repeatable simulation sometimes needs the first random number for an entity,
+then the second or the 313th. Phase 19 implemented only the first number and
+correctly refused anything else.
+
+Phase 20 implements any nonnegative **random offset** for ActivitySim's MT19937
+generator. Tests check offsets 311, 312, and 313 because that crosses an
+internal state-refresh boundary where a careless implementation often fails.
+Every tested GPU double matches NumPy bit for bit. The common first-draw case
+still uses its faster specialized kernel.
+
+A **random ledger** records how many draws each table and model step has used.
+Saving that ledger prevents a restarted model from accidentally reusing the
+first random number and changing its scientific result.
+
+Phase 20 also writes an audit manifest. For each tour column it records the row
+count, data type, and SHA-256 fingerprint. It records completed components, the
+selected TDD fingerprint, the random offset, and the capture fingerprint. This
+makes silent changes detectable.
+
+It is not yet a fully self-contained restart file because the compact
+scheduling-preparation arrays live beside it rather than inside it.
+
+## 42. What did Phase 20 prove, and what remains?
+
+Phase 20 proves that a calibrated GPU choice can create a correctly shaped
+dependent table, give its rows ActivitySim-compatible identities, and feed all
+of them into a real downstream calibrated choice kernel. This is more than a
+standalone arithmetic demonstration.
+
+It still does not prove a complete GPU-only ActivitySim model. The frozen
+upstream location and CDAP inputs from Phase 19 remain. Scheduling preparation
+still uses the CPU. Other tour and trip components remain outside this chain.
+Only one NVIDIA GPU architecture and one public model have been used for this
+new proof.
+
+The next major phase should move scheduling preparation itself:
+
+1. Keep the needed travel-time and travel-cost skim arrays in a managed GPU
+   cache.
+2. Calculate time-dependent mode-choice logsums on the GPU.
+3. Represent each person's timetable as device state.
+4. Construct the feasible TDD alternatives from that timetable.
+5. Schedule first tours, update the timetable, then schedule later tours.
+6. Feed those arrays directly into the already qualified scheduling kernel.
+7. Compare the entire scheduling component, including preparation, with a
+   fresh ActivitySim run.
+8. Repeat on another NVIDIA architecture and a second public model.
+
+The long-term lesson is that raw GPU arithmetic was never the only problem.
+The difficult and valuable work is preserving identities, table growth,
+random streams, time state, maps, arithmetic rules, restart evidence, and exact
+behavior while data crosses a chain of decisions. Phase 20 closes the table-
+growth and downstream-kernel parts of that problem. Scheduling preparation is
+now the clearest next frontier.

@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("17.840x", STYLES["metric_num"]),
-                Paragraph("12.073x", STYLES["metric_num"]),
+                Paragraph("18.097x", STYLES["metric_num"]),
+                Paragraph("2.935x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 19 calibrated<br/>modeled compute", STYLES["metric_label"]),
-                Paragraph("including one ingress<br/>and final egress", STYLES["metric_label"]),
-                Paragraph("modeled CPU fallbacks<br/>after sealed ingress", STYLES["metric_label"]),
+                Paragraph("Phase 20 scheduling<br/>resident compact inputs", STYLES["metric_label"]),
+                Paragraph("scheduling including<br/>compact transfers", STYLES["metric_label"]),
+                Paragraph("tour or schedule<br/>choice mismatches", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 19 calibrated two-component compute speedup, its transfer-inclusive speedup, and the fail-closed boundary result. All public checkpoint choices match, but this is not yet a complete GPU ActivitySim run.",
+            "Read left to right: the Phase 20 calibrated scheduling-kernel speedup with resident compact inputs, its transfer-inclusive speedup, and exact public-checkpoint choices. Scheduling preparation is still outside the GPU boundary.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

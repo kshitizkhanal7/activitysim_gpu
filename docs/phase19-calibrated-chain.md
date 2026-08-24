@@ -118,9 +118,9 @@ two tempered MT19937 words needed by NumPy's 53-bit conversion. Because the
 first twist outputs depend only on initial state words 0, 1, 2, 397, and 398,
 the kernel does not allocate all 624 state words per GPU thread.
 
-The current API deliberately supports only stream offset zero. That is exactly
-what these two components need. Asking for a later offset raises
-`GpuOnlyViolation` until its semantics are implemented and tested.
+Phase 19 originally supported only stream offset zero, which is all these two
+components need. Phase 20 has since added and tested exact arbitrary offsets,
+including draws across an MT19937 twist boundary.
 
 ### ActivitySim-compatible probabilities and choice traversal
 
@@ -198,10 +198,10 @@ workflow is 12 times faster.
   model. The saved auto output is used only as an oracle after execution.
 - Upstream location and CDAP tables are frozen. Their computations are not part
   of the speed measurement or GPU-only claim.
-- Tour-row creation after mandatory-tour frequency is not yet ported. The
-  qualified output is the person's frequency choice and logsum.
-- Random offset zero is supported; general ActivitySim stream advancement is
-  not.
+- Tour-row creation after mandatory-tour frequency was outside this phase. It
+  is now ported and qualified separately in Phase 20.
+- This phase used random offset zero. General ActivitySim stream advancement
+  and a checkpointable offset ledger were added in Phase 20.
 - The benchmark has not yet been replicated on a second GPU or a second public
   model.
 
@@ -238,20 +238,16 @@ random, repeatability, boundary, and performance gate passes. The report hashes
 all checkpoint/specification inputs and the three implementation files that
 define the result.
 
-## Next decisive phase
+## Phase 20 continuation
 
-Phase 20 should extend the calibrated dependency graph in both directions:
+Phase 20 completed the planned variable-length tour postprocessor, exact
+canonical IDs, arbitrary random offsets, device checkpoint manifest, and a
+full-population calibrated scheduling-kernel replay. See
+[`phase20-variable-tours-and-scheduling.md`](phase20-variable-tours-and-scheduling.md).
 
-1. Port the mandatory-tour postprocessor that creates variable-length tour
-   rows, including deterministic IDs and category codes.
-2. Add one downstream tour model that consumes those rows, preferably a model
-   with skim access, so the chain tests dynamic table growth and the cache.
-3. Implement general ActivitySim random offsets or fail-closed channel state
-   advancement before any component requests more than one draw per step.
-4. Add a device-checkpoint manifest containing input hashes, schema hashes,
-   random channel offsets, component completion, and device-table hashes.
-5. Repeat on a larger public population checkpoint and then another NVIDIA GPU.
-
-That phase is harder than Phase 19 because it creates new rows and crosses from
-person state into tour state. It is also the shortest path from a calibrated
-choice replay to a genuinely expanding GPU-native ActivitySim state graph.
+The remaining decisive boundary is scheduling preparation: compute the
+time-dependent mode-choice logsums from cached skims, construct feasible
+alternatives from a device timetable, update the timetable after each tour
+group, and feed those device arrays directly to the qualified scheduling
+kernel. A second GPU architecture and second public model are still required
+for portable replication.

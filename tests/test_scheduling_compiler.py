@@ -45,3 +45,26 @@ def test_compact_cpu_cuda_choices_match():
     )
     assert np.array_equal(cpu.choices, gpu.choices)
     assert np.allclose(cpu.logsums, gpu.logsums, atol=2e-6)
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA device unavailable")
+def test_scheduling_keeps_activitysim_float64_draw_at_float32_probability_boundary():
+    schema = SchedulingSchema(("x",), (), ("start",))
+    expressions = ("x * start",)
+    coefficients = np.asarray([0.0], dtype=np.float32)
+    chooser = np.asarray([[1.0]], dtype=np.float32)
+    rows = np.empty((2, 0), dtype=np.float32)
+    alternatives = np.asarray([[1.0], [2.0]], dtype=np.float32)
+    alt_ids = np.asarray([0, 1], dtype=np.int16)
+    offsets = np.asarray([0, 2], dtype=np.int64)
+    # Rounding this draw to float32 changes it to exactly 0.5 and incorrectly
+    # selects alternative zero. ActivitySim retains the float64 draw.
+    draws = np.asarray([np.nextafter(0.5, 1.0)], dtype=np.float64)
+    cpu = CompiledCpuSchedulingModel(expressions, coefficients, schema).choose(
+        chooser, rows, alternatives, alt_ids, offsets, draws
+    )
+    gpu = CompiledCudaSchedulingModel(expressions, coefficients, schema).choose(
+        chooser, rows, alternatives, alt_ids, offsets, draws
+    )
+    np.testing.assert_array_equal(cpu.choices, [1])
+    np.testing.assert_array_equal(gpu.choices, [1])

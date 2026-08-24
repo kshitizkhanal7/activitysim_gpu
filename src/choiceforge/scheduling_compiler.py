@@ -24,7 +24,29 @@ except ImportError:  # pragma: no cover
     numba = None
 
 if numba is not None:
-    from .interaction_backend import _choose_ragged_utilities
+    @numba.njit(parallel=True, cache=True)
+    def _ragged_to_dense_f32(utilities, offsets, width):
+        dense = np.full((offsets.size - 1, width), -np.inf, dtype=np.float32)
+        for chooser in numba.prange(offsets.size - 1):
+            begin = offsets[chooser]
+            count = offsets[chooser + 1] - begin
+            for position in range(count):
+                dense[chooser, position] = utilities[begin + position]
+        return dense
+
+    @numba.njit(parallel=True, cache=True)
+    def _choose_normalized_f32(probabilities, draws):
+        choices = np.empty(probabilities.shape[0], dtype=np.int32)
+        for chooser in numba.prange(probabilities.shape[0]):
+            remainder = draws[chooser]
+            selected = probabilities.shape[1] - 1
+            for position in range(probabilities.shape[1]):
+                remainder -= probabilities[chooser, position]
+                if remainder <= 0.0:
+                    selected = position
+                    break
+            choices[chooser] = selected
+        return choices
 
 
 _BINOPS = {
@@ -167,7 +189,7 @@ def _cuda_source(expressions, coefficients, schema: SchedulingSchema) -> str:
 void compact_scheduling_choice(
  const float* chooser_values, const float* row_values,
  const float* alternative_values, const short* alternative_ids,
- const long long* offsets, const float* uniforms, int n_choosers,
+ const long long* offsets, const double* uniforms, int n_choosers,
  int* choices, float* logsums)
 {{
  const int chooser = blockIdx.x; const int lane = threadIdx.x;
@@ -186,8 +208,8 @@ void compact_scheduling_choice(
  const float weight=lane<count?expf(values[lane]-row_max):0.0f;
  values[lane]=weight; scratch[lane]=weight; __syncthreads();
  for (int stride=blockDim.x/2; stride>0; stride>>=1) {{ if(lane<stride) scratch[lane]+=scratch[lane+stride]; __syncthreads(); }}
- if(lane==0) {{ const float total=scratch[0], threshold=uniforms[chooser]*total; float cumulative=0.0f; int selected=-1;
-  for(int alt=0;alt<count;++alt) {{ cumulative+=values[alt]; if(selected<0 && cumulative>=threshold) selected=alt; }}
+ if(lane==0) {{ const float total=scratch[0]; double remainder=uniforms[chooser]; int selected=-1;
+  for(int alt=0;alt<count;++alt) {{ const float probability=values[alt]/total; remainder-=(double)probability; if(selected<0 && remainder<=0.0) selected=alt; }}
   if(selected<0) selected=count-1; choices[chooser]=selected; logsums[chooser]=row_max+logf(total); }}
 }}
 '''
@@ -234,7 +256,7 @@ class CompiledCudaSchedulingModel:
         alternatives = cp.ascontiguousarray(cp.asarray(alternative_values, dtype=cp.float32))
         alt_ids = cp.ascontiguousarray(cp.asarray(alternative_ids, dtype=cp.int16))
         ptr = cp.ascontiguousarray(cp.asarray(offsets, dtype=cp.int64))
-        draws = cp.ascontiguousarray(cp.asarray(uniforms, dtype=cp.float32))
+        draws = cp.ascontiguousarray(cp.asarray(uniforms, dtype=cp.float64))
         n = int(chooser.shape[0])
         if ptr.shape != (n + 1,) or draws.shape != (n,) or alt_ids.shape != (rows.shape[0],):
             raise ValueError("compact scheduling inputs have incompatible shapes")
@@ -307,7 +329,17 @@ class CompiledCpuSchedulingModel:
 
     def choose(self, chooser_values, row_values, alternative_values, alternative_ids, offsets, uniforms):
         utilities = self.utilities(chooser_values, row_values, alternative_values, alternative_ids, offsets)
-        choices, logsums = _choose_ragged_utilities(
-            utilities.astype(np.float64), np.asarray(offsets, dtype=np.int64), np.asarray(uniforms, dtype=np.float64)
+        ptr = np.asarray(offsets, dtype=np.int64)
+        dense = _ragged_to_dense_f32(utilities, ptr, np.asarray(alternative_values).shape[0])
+        shifts = dense.max(axis=1, keepdims=True)
+        dense -= shifts
+        np.exp(dense, out=dense)
+        np.putmask(dense, dense <= np.float32(1.0e-300), np.float32(0.0))
+        totals = dense.sum(axis=1)
+        logsums = np.log(totals) + shifts[:, 0]
+        np.divide(dense, totals[:, None], out=dense)
+        np.clip(dense, np.float32(0.0), np.float32(1.0), out=dense)
+        choices = _choose_normalized_f32(
+            dense, np.asarray(uniforms, dtype=np.float64)
         )
         return ChoiceResult(choices, logsums)

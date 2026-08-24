@@ -23,6 +23,39 @@ class GpuOnlyViolation(RuntimeError):
     """Raised when modeled work attempts to cross the GPU-only boundary."""
 
 
+@dataclass
+class ActivitySimRandomLedger:
+    """Track per-step draw offsets so GPU streams can be checkpointed safely."""
+
+    offsets: dict[str, int] = field(default_factory=dict)
+
+    @staticmethod
+    def _key(channel_name: str, step_name: str) -> str:
+        if not channel_name or not step_name:
+            raise ValueError("random channel and step names must be nonempty")
+        return f"{channel_name}:{step_name}"
+
+    def reserve(self, channel_name: str, step_name: str, draws: int = 1) -> int:
+        """Return the current offset and advance it by ``draws``."""
+
+        if draws < 1:
+            raise ValueError("draws must be positive")
+        key = self._key(channel_name, step_name)
+        offset = self.offsets.get(key, 0)
+        self.offsets[key] = offset + int(draws)
+        return offset
+
+    def snapshot(self) -> dict[str, int]:
+        return dict(sorted(self.offsets.items()))
+
+    @classmethod
+    def restore(cls, offsets: Mapping[str, int]) -> "ActivitySimRandomLedger":
+        normalized = {str(key): int(value) for key, value in offsets.items()}
+        if any(value < 0 for value in normalized.values()):
+            raise ValueError("random offsets cannot be negative")
+        return cls(normalized)
+
+
 @dataclass(frozen=True)
 class GpuMemoryBudget:
     """An auditable allocation of device memory, expressed in bytes."""
@@ -305,6 +338,59 @@ extern "C" __global__ void activitysim_uniform_f64_offset0(
     output[row] = (double)numerator * (1.0 / 9007199254740992.0);
 }
 
+extern "C" __device__ unsigned int temper_mt19937(unsigned int value) {
+    value ^= value >> 11;
+    value ^= (value << 7) & 0x9d2c5680U;
+    value ^= (value << 15) & 0xefc60000U;
+    value ^= value >> 18;
+    return value;
+}
+
+// Exact NumPy RandomState.random_sample() at an arbitrary nonnegative draw
+// offset. This deliberately favors a small, auditable implementation over
+// speed; the offset-zero production path above remains the optimized kernel.
+extern "C" __global__ void activitysim_uniform_f64_offsetn(
+    const long long* entity_ids,
+    int n,
+    unsigned int combined_name_seed,
+    unsigned int base_seed,
+    int draw_offset,
+    double* output)
+{
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= n) return;
+    unsigned int mt[624];
+    mt[0] = (unsigned int)(
+        (unsigned long long)base_seed
+        + (unsigned long long)combined_name_seed
+        + (unsigned long long)entity_ids[row]);
+    for (unsigned int i = 1U; i < 624U; ++i)
+        mt[i] = 1812433253U * (mt[i - 1U] ^ (mt[i - 1U] >> 30)) + i;
+
+    int index = 624;
+    double value = 0.0;
+    for (int draw = 0; draw <= draw_offset; ++draw) {
+        if (index + 1 >= 624) {
+            const unsigned int upper = 0x80000000U;
+            const unsigned int lower = 0x7fffffffU;
+            const unsigned int matrix = 0x9908b0dfU;
+            for (int i = 0; i < 624; ++i) {
+                unsigned int y = (mt[i] & upper) | (mt[(i + 1) % 624] & lower);
+                mt[i] = mt[(i + 397) % 624] ^ (y >> 1)
+                    ^ ((y & 1U) ? matrix : 0U);
+            }
+            index = 0;
+        }
+        unsigned int first = temper_mt19937(mt[index++]);
+        unsigned int second = temper_mt19937(mt[index++]);
+        unsigned long long numerator =
+            ((unsigned long long)(first >> 5) << 26)
+            + (unsigned long long)(second >> 6);
+        value = (double)numerator * (1.0 / 9007199254740992.0);
+    }
+    output[row] = value;
+}
+
 extern "C" __global__ void segmented_sum_sorted_f32(
     const long long* group_ids,
     const float* values,
@@ -328,7 +414,7 @@ extern "C" __global__ void segmented_sum_sorted_f32(
 
 
 @lru_cache(maxsize=1)
-def _gpu_native_kernels() -> tuple[Any, Any, Any]:
+def _gpu_native_kernels() -> tuple[Any, Any, Any, Any]:
     cp = _cupy()
     module = cp.RawModule(
         code=GPU_NATIVE_CUDA,
@@ -337,12 +423,14 @@ def _gpu_native_kernels() -> tuple[Any, Any, Any]:
             "entity_uniform_f32",
             "segmented_sum_sorted_f32",
             "activitysim_uniform_f64_offset0",
+            "activitysim_uniform_f64_offsetn",
         ),
     )
     return (
         module.get_function("entity_uniform_f32"),
         module.get_function("segmented_sum_sorted_f32"),
         module.get_function("activitysim_uniform_f64_offset0"),
+        module.get_function("activitysim_uniform_f64_offsetn"),
     )
 
 
@@ -358,7 +446,7 @@ def entity_uniforms_gpu(entity_ids: Any, seed: int, stream: int = 0) -> Any:
         return output
     threads = 256
     blocks = (int(ids.size) + threads - 1) // threads
-    kernel, _, _ = _gpu_native_kernels()
+    kernel, _, _, _ = _gpu_native_kernels()
     kernel(
         (blocks,),
         (threads,),
@@ -393,8 +481,8 @@ def activitysim_uniforms_gpu(
     cp = _cupy()
     if not _is_cuda_array(entity_ids):
         raise GpuOnlyViolation("ActivitySim random entity IDs must reside on the GPU")
-    if offset != 0:
-        raise GpuOnlyViolation("the ActivitySim GPU random kernel currently supports offset zero only")
+    if int(offset) < 0:
+        raise ValueError("offset cannot be negative")
     if not 0 <= int(base_seed) <= 0xFFFFFFFF:
         raise ValueError("base_seed must fit uint32")
     ids = cp.ascontiguousarray(entity_ids, dtype=cp.int64)
@@ -406,12 +494,26 @@ def activitysim_uniforms_gpu(
     ) & 0xFFFFFFFF
     threads = 256
     blocks = (int(ids.size) + threads - 1) // threads
-    _, _, kernel = _gpu_native_kernels()
-    kernel(
-        (blocks,),
-        (threads,),
-        (ids, np.int32(ids.size), np.uint32(combined), np.uint32(base_seed), output),
-    )
+    _, _, offset0_kernel, offsetn_kernel = _gpu_native_kernels()
+    if int(offset) == 0:
+        offset0_kernel(
+            (blocks,),
+            (threads,),
+            (ids, np.int32(ids.size), np.uint32(combined), np.uint32(base_seed), output),
+        )
+    else:
+        offsetn_kernel(
+            (blocks,),
+            (threads,),
+            (
+                ids,
+                np.int32(ids.size),
+                np.uint32(combined),
+                np.uint32(base_seed),
+                np.int32(offset),
+                output,
+            ),
+        )
     return output
 
 
@@ -421,10 +523,13 @@ def activitysim_uniforms_cpu(
     step_name: str,
     *,
     base_seed: int = 0,
+    offset: int = 0,
 ) -> np.ndarray:
-    """Independent NumPy oracle for ActivitySim's first per-entity draw."""
+    """Independent NumPy oracle for an ActivitySim per-entity draw."""
 
     ids = np.asarray(entity_ids, dtype=np.int64)
+    if int(offset) < 0:
+        raise ValueError("offset cannot be negative")
     combined = (
         activitysim_hash32(channel_name) + activitysim_hash32(step_name)
     ) & 0xFFFFFFFF
@@ -433,7 +538,7 @@ def activitysim_uniforms_cpu(
     generator = np.random.RandomState()
     for index, seed in np.ndenumerate(seeds):
         generator.seed(int(seed))
-        result[index] = generator.rand()
+        result[index] = generator.rand(int(offset) + 1)[int(offset)]
     return result
 
 
@@ -474,6 +579,6 @@ def segmented_sum_sorted_gpu(group_ids: Any, values: Any) -> DeviceTable:
         raise ValueError("group_ids must be sorted in nondecreasing order")
     threads = 256
     blocks = (int(groups.size) + threads - 1) // threads
-    _, kernel, _ = _gpu_native_kernels()
+    _, kernel, _, _ = _gpu_native_kernels()
     kernel((blocks,), (threads,), (groups, data, np.int32(groups.size), starts, sums))
     return DeviceTable({"group_id": groups, "is_start": starts, "sum": sums})

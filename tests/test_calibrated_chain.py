@@ -89,10 +89,19 @@ def test_activitysim_mt19937_gpu_draws_are_bit_exact_and_partition_stable():
     )
     np.testing.assert_array_equal(whole, expected)
     np.testing.assert_array_equal(pieces, expected)
-    with pytest.raises(GpuOnlyViolation, match="offset zero"):
-        activitysim_uniforms_gpu(
-            cp.asarray(ids), "households", "auto_ownership_simulate", offset=1
+    for offset in (1, 7, 311, 312, 313):
+        expected_offset = activitysim_uniforms_cpu(
+            ids, "households", "auto_ownership_simulate", offset=offset
         )
+        actual_offset = cp.asnumpy(
+            activitysim_uniforms_gpu(
+                cp.asarray(ids),
+                "households",
+                "auto_ownership_simulate",
+                offset=offset,
+            )
+        )
+        np.testing.assert_array_equal(actual_offset, expected_offset)
 
 
 @pytest.mark.skipif(not cuda_available(), reason="CUDA device unavailable")
