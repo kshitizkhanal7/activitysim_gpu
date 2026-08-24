@@ -1,0 +1,144 @@
+{
+  "phase": 19,
+  "claim_scope": "calibrated public MTC checkpoint replay of auto ownership feeding mandatory tour frequency; upstream location and CDAP state are frozen checkpoint inputs",
+  "public_workload": {
+    "households": 50000,
+    "persons": 132536,
+    "mandatory_person_choosers": 78900,
+    "auto_expressions": 29,
+    "mtf_expressions": 98,
+    "alternatives_per_component": 5,
+    "dependency": "GPU auto-ownership choice is joined by household_id into GPU MTF"
+  },
+  "boundary": {
+    "cpu_allowed": [
+      "read public Parquet/CSV",
+      "decode CDAP M input flag",
+      "resolve configuration coefficients",
+      "one-time ingress",
+      "kernel launch and scalar validation",
+      "final result egress"
+    ],
+    "gpu_required": [
+      "zone lookups",
+      "127 published expression evaluations",
+      "both utility and probability calculations",
+      "ActivitySim-compatible MT19937 draws",
+      "both choices",
+      "household-to-person dependency join"
+    ]
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.14",
+    "gpu": "NVIDIA RTX A4000",
+    "device_total_bytes": 17170956288
+  },
+  "timings_seconds": {
+    "cpu_reference_samples": [
+      0.45563640003092587,
+      0.4576873000478372,
+      0.4718074999982491,
+      0.4587236000224948,
+      0.46023510000668466,
+      0.4655997999943793,
+      0.4625081999693066,
+      0.4587114999303594,
+      0.4579758000327274
+    ],
+    "gpu_compute_samples": [
+      0.024442299967631698,
+      0.025713100098073483,
+      0.02578920009545982,
+      0.02567749994341284,
+      0.025560999987646937,
+      0.025849999976344407,
+      0.026053700014017522,
+      0.02634009998291731,
+      0.0256214999826625
+    ],
+    "gpu_total_with_transfer_samples": [
+      0.036298700026236475,
+      0.03781050001271069,
+      0.03799710003659129,
+      0.0380196999758482,
+      0.037542000063695014,
+      0.03827879996970296,
+      0.03830120002385229,
+      0.038129599997773767,
+      0.037831899942830205
+    ],
+    "cpu_reference_median": 0.4587236000224948,
+    "gpu_compute_median": 0.025713100098073483,
+    "gpu_total_with_transfer_median": 0.03799710003659129
+  },
+  "speedup": {
+    "gpu_compute_vs_cpu_reference": 17.840073669563633,
+    "gpu_total_with_transfer_vs_cpu_reference": 12.072595002796081
+  },
+  "correctness": {
+    "cpu_auto_checkpoint_mismatches": 0,
+    "gpu_auto_checkpoint_mismatches": 0,
+    "cpu_mtf_checkpoint_mismatches": 0,
+    "gpu_mtf_checkpoint_mismatches": 0,
+    "auto_feature_max_abs_error": 0.0,
+    "auto_utility_max_abs_error": 1.7763568394002505e-15,
+    "auto_probability_max_abs_error": 3.885780586188048e-16,
+    "auto_draws_bit_exact": true,
+    "mtf_feature_max_abs_error": 0.0,
+    "mtf_utility_max_abs_error": 0.0,
+    "mtf_probability_max_abs_error": 4.440892098500626e-16,
+    "mtf_draws_bit_exact": true,
+    "gpu_repeat_auto_choice_bit_exact": true,
+    "gpu_repeat_mtf_choice_bit_exact": true
+  },
+  "telemetry": {
+    "input_bytes": 12672216,
+    "output_bytes_in_capture_run": 86978800,
+    "modeled_host_to_device_bytes": 0,
+    "modeled_device_to_host_bytes": 0,
+    "modeled_cpu_fallbacks": 0,
+    "kernel_stages": [
+      "auto_gpu_joins_and_29_expressions",
+      "calibrated_auto_ownership_mnl",
+      "household_to_person_gpu_join_and_98_expressions",
+      "calibrated_mandatory_tour_frequency_mnl"
+    ]
+  },
+  "reproducibility": {
+    "repository_base_commit": "86e135b174df257153209120463ea3bae9f0c151",
+    "input_sha256": {
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline\\households\\workplace_location.parquet": "9478793546628d7ac6a79dbfc1df4f78df681e9d2855a35455447e9261a7be71",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline\\households\\auto_ownership_simulate.parquet": "cd7b9207fcd4d50ef65f6d0a12f7578ab7705eaa67773f5a497818baa8deba1c",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline\\households\\cdap_simulate.parquet": "98750842447c1ebc3d3577a4c3b1a56dbace4c0dabe5720746d3e223bd0f9695",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline\\persons\\cdap_simulate.parquet": "50ecf9c37e4298fb36e55122a7a1e0d7ddd903a7f3d6a3d3eb344fd1faa876ca",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline\\persons\\mandatory_tour_frequency.parquet": "0a28493549c8251e2031020147d076a2dee1f101c5968015035eaf04d76c47f6",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\auto_ownership.csv": "a9c28a59e46a606cb9df617777250d4b8d5a02290ff7d36b4cd861b7c6667de6",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\auto_ownership_coefficients.csv": "b5073579c25c28c605a68c57b9969cfdf2676cf7cf019bd3d6d8e66938c93692",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency.csv": "0079f05ca6fa46608bd86cba4814b8e800a1e550d0b54b407711962e29722cc0",
+      "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency_coefficients.csv": "9c77a887024ca4a255dda99f7c1511c4177e4b7e728b435b48ad02d4a4052e73"
+    },
+    "benchmark_script_sha256": "b51aea3afb32c35ce7fcacf27c9022dc949d6580b3b93b53d42d2da3673c8a8f",
+    "calibrated_runtime_sha256": "f6d845e7e4a2d7008eba671fe55632c7e6961166f284bc609668cbfbbc9b4ed7",
+    "gpu_runtime_sha256": "acb29bfb2f2cb35fc451aaffa9ab3d6dd2a9a4e64ca803269d4980ad9d74001a",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "cupy": "14.1.1",
+    "random_policy": "ActivitySim hash32 channel+step+entity seed; NumPy RandomState MT19937 first random_sample double, generated bit-exactly on CUDA"
+  },
+  "gates": {
+    "independent_cpu_reconstructs_both_checkpoints_exactly": true,
+    "gpu_reconstructs_both_checkpoints_exactly": true,
+    "all_expression_features_bit_exact": true,
+    "activitysim_random_draws_bit_exact": true,
+    "utilities_within_1e_10": true,
+    "probabilities_within_1e_12": true,
+    "repeat_choices_bit_exact": true,
+    "modeled_cpu_fallbacks_zero": true,
+    "modeled_host_to_device_bytes_zero": true,
+    "modeled_device_to_host_bytes_zero": true,
+    "gpu_compute_faster_than_cpu_reference": true,
+    "gpu_total_faster_than_cpu_reference": true
+  },
+  "qualified": true
+}

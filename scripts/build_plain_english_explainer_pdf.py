@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("14.575x", STYLES["metric_num"]),
-                Paragraph("8.260x", STYLES["metric_num"]),
+                Paragraph("17.840x", STYLES["metric_num"]),
+                Paragraph("12.073x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 18 modeled compute<br/>2.875M households", STYLES["metric_label"]),
-                Paragraph("including boundary<br/>input/output transfers", STYLES["metric_label"]),
+                Paragraph("Phase 19 calibrated<br/>modeled compute", STYLES["metric_label"]),
+                Paragraph("including one ingress<br/>and final egress", STYLES["metric_label"]),
                 Paragraph("modeled CPU fallbacks<br/>after sealed ingress", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 18 GPU-native vertical-slice compute speedup, its transfer-inclusive speedup, and the fail-closed boundary result. These are systems measurements, not a complete GPU ActivitySim claim.",
+            "Read left to right: the Phase 19 calibrated two-component compute speedup, its transfer-inclusive speedup, and the fail-closed boundary result. All public checkpoint choices match, but this is not yet a complete GPU ActivitySim run.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -471,8 +471,16 @@ def markdown_story(text: str):
             items = []
             while i < len(lines) and re.match(r"^-\s+", lines[i].strip()):
                 item_text = re.sub(r"^-\s+", "", lines[i].strip())
-                items.append(ListItem(Paragraph(inline_markup(item_text), STYLES["bullet"]), leftIndent=11))
                 i += 1
+                while (
+                    i < len(lines)
+                    and lines[i].strip()
+                    and not re.match(r"^[-\d]+\.?(?:\s+)", lines[i].strip())
+                    and lines[i][:1].isspace()
+                ):
+                    item_text += " " + lines[i].strip()
+                    i += 1
+                items.append(ListItem(Paragraph(inline_markup(item_text), STYLES["bullet"]), leftIndent=11))
             story.append(
                 ListFlowable(
                     items,
@@ -491,8 +499,16 @@ def markdown_story(text: str):
             items = []
             while i < len(lines) and re.match(r"^\d+\.\s+", lines[i].strip()):
                 item_text = re.sub(r"^\d+\.\s+", "", lines[i].strip())
-                items.append(ListItem(Paragraph(inline_markup(item_text), STYLES["bullet"]), leftIndent=16))
                 i += 1
+                while (
+                    i < len(lines)
+                    and lines[i].strip()
+                    and not re.match(r"^\d+\.\s+", lines[i].strip())
+                    and lines[i][:1].isspace()
+                ):
+                    item_text += " " + lines[i].strip()
+                    i += 1
+                items.append(ListItem(Paragraph(inline_markup(item_text), STYLES["bullet"]), leftIndent=16))
             story.append(
                 ListFlowable(
                     items,

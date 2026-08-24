@@ -292,3 +292,27 @@ arrays total 13.389 GiB on a 16,376 MiB RTX A4000. See
 [Phase 18 GPU-native runtime](docs/phase18-gpu-native-runtime.md),
 [full-household qualification](benchmark-results/phase18-gpu-native-full-households.json),
 and [capacity audit](benchmark-results/phase18-capacity-audit.json).
+
+## Phase 19 calibrated household-to-person chain
+
+Phase 19 replaces the synthetic Phase 18 equations with the public Prototype
+MTC Extended auto-ownership and mandatory-tour-frequency specifications. The
+GPU evaluates 127 published expressions, reproduces ActivitySim's per-entity
+MT19937 random draws bit for bit, makes the calibrated household choice, joins
+that new result into person state by `household_id`, and makes the dependent
+person choice without a modeled CPU fallback or intermediate transfer.
+
+On the 50,000-household public checkpoint (132,536 persons; 78,900 mandatory
+choosers), both GPU output columns match the saved ActivitySim checkpoints
+exactly: **zero choice mismatches**. Expression features and random draws are
+bit-exact; maximum utility and probability errors are `1.776e-15` and
+`4.441e-16`. Across nine measured runs on the RTX A4000, median GPU compute is
+0.025713 seconds versus 0.458724 seconds for the independent CPU replay,
+**17.840x faster**. Including one ingress and final egress, the GPU median is
+0.037997 seconds, **12.073x faster**.
+
+This is the strongest current calibrated result, but its scope is precise:
+upstream school/work location and CDAP state are frozen public checkpoint
+inputs, and mandatory-tour row creation is not yet ported. See
+[Phase 19 calibrated chain](docs/phase19-calibrated-chain.md) and the
+[qualification artifact](benchmark-results/phase19-calibrated-chain.json).

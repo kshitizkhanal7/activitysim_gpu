@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import lru_cache
+import hashlib
 from typing import Any, Callable, Mapping
 
 import numpy as np
@@ -252,6 +253,58 @@ extern "C" __global__ void entity_uniform_f32(
     output[row] = ((float)(value >> 40) + 0.5f) * 5.9604644775390625e-8f;
 }
 
+// The first RandomState.random_sample() value for one NumPy MT19937 seed.
+// ActivitySim resets each entity's stream at a model step, so the calibrated
+// Phase 19 components require offset zero only.  The first twist outputs need
+// just state words 0, 1, 2, 397, and 398; generating those words avoids a
+// 624-word per-thread local array while retaining NumPy's exact bit semantics.
+extern "C" __global__ void activitysim_uniform_f64_offset0(
+    const long long* entity_ids,
+    int n,
+    unsigned int combined_name_seed,
+    unsigned int base_seed,
+    double* output)
+{
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= n) return;
+    unsigned int seed = (unsigned int)(
+        (unsigned long long)base_seed
+        + (unsigned long long)combined_name_seed
+        + (unsigned long long)entity_ids[row]);
+
+    unsigned int mt0 = seed;
+    unsigned int mt1 = 0U, mt2 = 0U, mt397 = 0U, mt398 = 0U;
+    unsigned int value = mt0;
+    for (unsigned int i = 1U; i <= 398U; ++i) {
+        value = 1812433253U * (value ^ (value >> 30)) + i;
+        if (i == 1U) mt1 = value;
+        else if (i == 2U) mt2 = value;
+        else if (i == 397U) mt397 = value;
+        else if (i == 398U) mt398 = value;
+    }
+    const unsigned int upper = 0x80000000U;
+    const unsigned int lower = 0x7fffffffU;
+    const unsigned int matrix = 0x9908b0dfU;
+    unsigned int y0 = (mt0 & upper) | (mt1 & lower);
+    unsigned int y1 = (mt1 & upper) | (mt2 & lower);
+    unsigned int first = mt397 ^ (y0 >> 1) ^ ((y0 & 1U) ? matrix : 0U);
+    unsigned int second = mt398 ^ (y1 >> 1) ^ ((y1 & 1U) ? matrix : 0U);
+
+    first ^= first >> 11;
+    first ^= (first << 7) & 0x9d2c5680U;
+    first ^= (first << 15) & 0xefc60000U;
+    first ^= first >> 18;
+    second ^= second >> 11;
+    second ^= (second << 7) & 0x9d2c5680U;
+    second ^= (second << 15) & 0xefc60000U;
+    second ^= second >> 18;
+
+    unsigned long long numerator =
+        ((unsigned long long)(first >> 5) << 26)
+        + (unsigned long long)(second >> 6);
+    output[row] = (double)numerator * (1.0 / 9007199254740992.0);
+}
+
 extern "C" __global__ void segmented_sum_sorted_f32(
     const long long* group_ids,
     const float* values,
@@ -275,15 +328,21 @@ extern "C" __global__ void segmented_sum_sorted_f32(
 
 
 @lru_cache(maxsize=1)
-def _gpu_native_kernels() -> tuple[Any, Any]:
+def _gpu_native_kernels() -> tuple[Any, Any, Any]:
     cp = _cupy()
     module = cp.RawModule(
         code=GPU_NATIVE_CUDA,
         options=("--std=c++11",),
-        name_expressions=("entity_uniform_f32", "segmented_sum_sorted_f32"),
+        name_expressions=(
+            "entity_uniform_f32",
+            "segmented_sum_sorted_f32",
+            "activitysim_uniform_f64_offset0",
+        ),
     )
-    return module.get_function("entity_uniform_f32"), module.get_function(
-        "segmented_sum_sorted_f32"
+    return (
+        module.get_function("entity_uniform_f32"),
+        module.get_function("segmented_sum_sorted_f32"),
+        module.get_function("activitysim_uniform_f64_offset0"),
     )
 
 
@@ -299,13 +358,83 @@ def entity_uniforms_gpu(entity_ids: Any, seed: int, stream: int = 0) -> Any:
         return output
     threads = 256
     blocks = (int(ids.size) + threads - 1) // threads
-    kernel, _ = _gpu_native_kernels()
+    kernel, _, _ = _gpu_native_kernels()
     kernel(
         (blocks,),
         (threads,),
         (ids, np.int32(ids.size), np.uint64(seed), np.uint64(stream), output),
     )
     return output
+
+
+def activitysim_hash32(value: str) -> int:
+    """Return ActivitySim's stable low-32-bit MD5 name hash."""
+
+    if not isinstance(value, str) or not value:
+        raise ValueError("ActivitySim random channel and step names must be nonempty")
+    return int(hashlib.md5(value.encode("utf8")).hexdigest(), 16) & 0xFFFFFFFF
+
+
+def activitysim_uniforms_gpu(
+    entity_ids: Any,
+    channel_name: str,
+    step_name: str,
+    *,
+    base_seed: int = 0,
+    offset: int = 0,
+) -> Any:
+    """Generate ActivitySim/NumPy RandomState draws on the GPU, bit exactly.
+
+    The implemented contract is deliberately narrow: one draw at offset zero,
+    which is the random usage of the calibrated auto-ownership and mandatory-
+    tour-frequency MNL components.  Any later stream offset fails closed.
+    """
+
+    cp = _cupy()
+    if not _is_cuda_array(entity_ids):
+        raise GpuOnlyViolation("ActivitySim random entity IDs must reside on the GPU")
+    if offset != 0:
+        raise GpuOnlyViolation("the ActivitySim GPU random kernel currently supports offset zero only")
+    if not 0 <= int(base_seed) <= 0xFFFFFFFF:
+        raise ValueError("base_seed must fit uint32")
+    ids = cp.ascontiguousarray(entity_ids, dtype=cp.int64)
+    output = cp.empty(ids.shape, dtype=cp.float64)
+    if ids.size == 0:
+        return output
+    combined = (
+        activitysim_hash32(channel_name) + activitysim_hash32(step_name)
+    ) & 0xFFFFFFFF
+    threads = 256
+    blocks = (int(ids.size) + threads - 1) // threads
+    _, _, kernel = _gpu_native_kernels()
+    kernel(
+        (blocks,),
+        (threads,),
+        (ids, np.int32(ids.size), np.uint32(combined), np.uint32(base_seed), output),
+    )
+    return output
+
+
+def activitysim_uniforms_cpu(
+    entity_ids: Any,
+    channel_name: str,
+    step_name: str,
+    *,
+    base_seed: int = 0,
+) -> np.ndarray:
+    """Independent NumPy oracle for ActivitySim's first per-entity draw."""
+
+    ids = np.asarray(entity_ids, dtype=np.int64)
+    combined = (
+        activitysim_hash32(channel_name) + activitysim_hash32(step_name)
+    ) & 0xFFFFFFFF
+    seeds = (ids + int(base_seed) + combined) % (1 << 32)
+    result = np.empty(ids.shape, dtype=np.float64)
+    generator = np.random.RandomState()
+    for index, seed in np.ndenumerate(seeds):
+        generator.seed(int(seed))
+        result[index] = generator.rand()
+    return result
 
 
 def entity_uniforms_cpu(entity_ids: Any, seed: int, stream: int = 0) -> np.ndarray:
@@ -345,6 +474,6 @@ def segmented_sum_sorted_gpu(group_ids: Any, values: Any) -> DeviceTable:
         raise ValueError("group_ids must be sorted in nondecreasing order")
     threads = 256
     blocks = (int(groups.size) + threads - 1) // threads
-    _, kernel = _gpu_native_kernels()
+    _, kernel, _ = _gpu_native_kernels()
     kernel((blocks,), (threads,), (groups, data, np.int32(groups.size), starts, sums))
     return DeviceTable({"group_id": groups, "is_start": starts, "sum": sums})

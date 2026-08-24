@@ -24,6 +24,16 @@ ChoiceForge is an open-source experiment that moves a particularly repetitive tr
 
 The first synthetic test compared the GPU with a readable NumPy reference. Phase 1 added a much stronger 24-core CPU competitor. Phase 2 captured 4,477 real mandatory-tour scheduling decisions from ActivitySim, and every GPU choice matched. It also found a problem: transferring a 151.6-megabyte table made the GPU slower. Phase 3 replaced that table with 22.0 megabytes of compact ingredients and made the captured calculation 3.83 times faster than a purpose-built 48-thread CPU version. Phases 4 and 5 installed and reused the GPU path in real scheduling. Phase 6 handled real destination work. Phase 7 batched repeated setup and added nested logit on the GPU. Phase 8 moved the work to pinned current ActivitySim and a public 50,000-household run. Phase 9 then used the much larger public MTC geography. It confirmed an exact GPU destination result and also caught a scheduling mismatch before that path could be claimed as correct. Phase 11 repeated the full-geography destination experiment three times and established the supported production result: the complete 50,000-household model was 1.064 times faster with byte-for-byte identical outputs. Phase 12 built the foundation for moving the large utility equations themselves onto the GPU. Phase 13 completed the strict CPU answer key. Phase 14 generated GPU code from that same recipe and matched the CPU exactly on 30 real public-model batches. Phase 15 connected it to the real model, removed the giant intermediate table, proved a small destination-component win, and found an honest scale limit. Phase 16 added compact inputs, caches, and a published FP32 policy. Its CPU and GPU matched every checked cell, and three large public pairs proved a repeated 1.025-times trip-destination component speedup with exact modeled decisions. Phase 17 made the compiled GPU work reusable and continued it into trip mode choice. Five large public pairs improved trip destination by 1.040 times with exact modeled decisions; the complete-model median also improved by 1.006 times, although its strict statistical gate still did not pass.
 
+Phase 18 then kept a dependent model-shaped chain on the GPU and processed all
+2.875 million public households, but its behavior equations were synthetic.
+Phase 19 replaced that synthetic boundary with the public calibrated
+auto-ownership and mandatory-tour-frequency equations. It exactly reproduced
+50,000 saved household choices and 78,900 saved person choices. Median GPU
+modeled work was 17.840 times faster than the independent CPU replay and 12.073
+times faster after including one input upload and final download. That is the
+strongest current calibrated result, although upstream location/CDAP work and
+downstream tour creation are still outside its boundary.
+
 ## 1. What is travel demand modeling?
 
 Imagine a region with homes, schools, offices, stores, roads, sidewalks, rail lines, and buses. Transportation planners ask questions such as:
@@ -1771,3 +1781,291 @@ collection plus every future state object without caching and partitioning.
 Success therefore comes from a GPU-native **system** - state, randomness,
 memory, checkpoints, and kernels together - not from writing one spectacular
 kernel.
+
+## 33. Phase 19: replace the invented equations with a real calibrated chain
+
+Phase 18 answered an engineering question: can several dependent calculations
+stay on the GPU and run quickly? Its answer was yes, but its choice equations
+used invented test coefficients. Phase 19 asks the harder scientific question:
+
+> Can the GPU run real published travel-model equations and reproduce the
+> choices that ActivitySim already made?
+
+The answer for the first calibrated household-to-person chain is **yes**.
+
+### What does “calibrated” mean?
+
+A travel-model equation combines facts such as income, household size, age,
+location, and travel time. Each fact gets a number called a **coefficient**.
+A coefficient says how strongly that fact moves a choice up or down.
+
+For example, this made-up equation is only an illustration:
+
+```text
+score for owning two cars
+  = 0.4 × number of workers
+  + 0.2 × income in thousands
+  - 0.3 × transit accessibility
+```
+
+Real modelers estimate coefficients from observed travel and household data.
+When a model uses those estimated numbers, it is **calibrated**. Phase 19 uses
+the real coefficients published with Prototype MTC Extended. It does not invent
+new behavior.
+
+### Which two real decisions run on the GPU?
+
+The first model is **auto ownership**. Each household chooses one of five
+answers: zero, one, two, three, or four-or-more automobiles.
+
+The second model is **mandatory tour frequency**. A *tour* is a journey that
+starts at home, visits one or more places, and returns home. A mandatory tour
+goes to work or school. A person can choose among these five answers:
+
+- one work tour;
+- two work tours;
+- one school tour;
+- two school tours; or
+- both a work and a school tour.
+
+Only people whose earlier daily-activity choice says they have a mandatory
+activity enter the second model. In the public checkpoint, that is 78,900 of
+132,536 people.
+
+The chain is truly connected:
+
+```text
+50,000 households
+        |
+        v
+GPU auto-ownership model
+        |
+        | join each answer to people in that household
+        v
+78,900 mandatory-person choosers
+        |
+        v
+GPU mandatory-tour-frequency model
+```
+
+The second model uses the **new GPU auto answer**. It does not secretly copy
+ActivitySim's saved auto answer into the calculation. The saved answer is used
+only afterward as an answer key.
+
+### What is a checkpoint replay?
+
+A long video game lets you save at a checkpoint instead of starting from the
+beginning after every test. ActivitySim can also save its tables after model
+steps. Phase 19 starts from public saved tables immediately before the chosen
+components.
+
+This is powerful because the input state is fixed. The CPU reference, the GPU,
+and ActivitySim's saved output all begin from the same households, people,
+zones, work locations, school locations, accessibility values, and earlier
+daily-activity answers.
+
+It also limits the claim. Phase 19 does **not** recalculate school location,
+work location, or the earlier daily-activity model on the GPU. Those are frozen
+inputs. This is a two-component calibrated replay, not yet a whole-model run.
+
+## 34. How Phase 19 makes a real choice
+
+Both components use a method called **multinomial logit**, or MNL. The name is
+less important than its four steps.
+
+### Step 1: evaluate expressions
+
+An **expression** turns input columns into a useful model feature. Examples in
+the real auto-ownership file include:
+
+- whether the household has exactly two drivers;
+- household income, capped within a range;
+- retail accessibility by car or transit;
+- whether the home is in San Francisco County; and
+- estimated automobile time savings per worker.
+
+The auto model has 29 active expressions. The mandatory-tour model has 98.
+Together, the GPU evaluates 127 published expressions.
+
+The safe expression reader understands only operations that were reviewed and
+tested, such as addition, comparison, Boolean “and/or,” clipping a value to a
+range, and choosing one of two values with `where`. If an unfamiliar operation
+appears, the run stops. It never sends the expression to unrestricted Python
+code and never quietly falls back to the CPU.
+
+### Step 2: calculate utilities
+
+For every alternative, each expression value is multiplied by its calibrated
+coefficient. The products are added to form a **utility**. Utility is a model
+score, not money or electrical service. A higher utility means the alternative
+is more attractive to the model.
+
+With 50,000 households and five auto alternatives, the first component makes
+250,000 utility values. With 78,900 people and five tour-frequency alternatives,
+the second makes 394,500 utility values.
+
+### Step 3: turn utilities into probabilities
+
+MNL converts the five utilities in a row into five probabilities that add to
+one. A numerically safe version first subtracts the largest utility, then uses
+the exponential function, and finally divides each result by the row total.
+
+Suppose the probabilities were:
+
+```text
+alternative:  A     B     C     D     E
+probability: 0.10  0.25  0.40  0.20  0.05
+```
+
+These probabilities describe ranges on a line from zero to one. A random draw
+of 0.52 lands in C's range, so C is selected.
+
+A **logsum** is the logarithm of the total exponentiated utility. Modelers use
+it as a summary of how attractive the complete choice set is. Phase 19 keeps
+logsums on the GPU and downloads them only as final diagnostic outputs.
+
+### Step 4: use ActivitySim's exact random draw
+
+Matching probabilities is not enough. Two programs can have the same
+probabilities but choose different answers if they use different random draws.
+
+ActivitySim creates a stable seed from four items:
+
+```text
+run seed + channel name + model-step name + household/person ID
+```
+
+It then uses an algorithm called **MT19937**, from NumPy's older
+`RandomState`, to create the draw. Phase 19 implements the needed part of
+MT19937 directly in a CUDA kernel. The GPU produces the exact same 64-bit
+floating-point draw as NumPy for every tested household and person.
+
+This kernel currently supports the first draw in a model step, called offset
+zero. These two public components need exactly that. If a future component asks
+for a later draw, the system stops until that behavior is implemented and
+proved.
+
+### How does a person find the right household answer?
+
+Tables do not always have rows in matching order. A person's row contains a
+`household_id`. The GPU must find the household row with that ID.
+
+Phase 19 adds a GPU **keyed join**. It sorts source IDs, searches for every
+requested ID, checks that no ID is missing, and gathers the matching values.
+The same tool also looks up land-use and accessibility facts by zone ID.
+
+This is a basic database operation performed on the GPU. It is essential for a
+whole travel model because household, person, tour, trip, and zone tables
+constantly refer to one another by IDs.
+
+## 35. How we proved the result and what it means
+
+The proof uses three separate answer layers.
+
+1. A plain NumPy version independently calculates expressions, utilities,
+   probabilities, ActivitySim random draws, and choices.
+2. That CPU version must exactly reproduce ActivitySim's saved checkpoint
+   choices.
+3. The GPU is compared with every important CPU intermediate and separately
+   with ActivitySim's saved final choices.
+
+This avoids circular reasoning. The GPU is not declared correct merely because
+another function that shares all its code agrees with it.
+
+### Correctness results
+
+| Public-checkpoint test | Result |
+|---|---:|
+| Households | 50,000 |
+| All people in input state | 132,536 |
+| Mandatory-person choosers | 78,900 |
+| CPU auto choices different from ActivitySim | **0** |
+| GPU auto choices different from ActivitySim | **0** |
+| CPU tour-frequency choices different from ActivitySim | **0** |
+| GPU tour-frequency choices different from ActivitySim | **0** |
+| Expression feature differences | **0** |
+| Random-draw bit differences | **0** |
+| Largest utility difference | about `0.0000000000000018` |
+| Largest probability difference | about `0.00000000000000044` |
+| Choice differences across nine repeated GPU runs | **0** |
+
+Those tiny utility and probability differences come from low-level
+floating-point library arithmetic. They are many orders of magnitude below
+the written limits and did not change a single choice.
+
+### Speed results
+
+The program first warmed up compilation. It then measured nine complete CPU
+and GPU replays on the RTX A4000.
+
+| Measured boundary | Median time | Relative speed |
+|---|---:|---:|
+| Independent CPU replay | 0.458724 seconds | 1.000× |
+| GPU modeled work | 0.025713 seconds | **17.840× faster** |
+| GPU with input upload and final download | 0.037997 seconds | **12.073× faster** |
+
+The transfer-inclusive number is the most practical result for this checkpoint
+replay. It includes moving the input tables to the GPU once and bringing the
+final choices and logsums back. It does not include reading Parquet files from
+disk or running all the upstream and downstream ActivitySim components.
+
+### Did the GPU secretly use the CPU?
+
+No modeled fallback was recorded. After the GPU boundary closed:
+
+| Forbidden event | Recorded amount |
+|---|---:|
+| CPU modeled fallbacks | 0 |
+| Late host-to-GPU modeled transfers | 0 bytes |
+| Early GPU-to-host modeled transfers | 0 bytes |
+
+The CPU still launches kernels and checks a few true/false error flags. That is
+control work, not a second model calculation.
+
+### Does Phase 19 make the first 18 phases useless?
+
+No. It makes Phase 19 the best **headline**, but it could not stand alone as a
+trustworthy project.
+
+Earlier phases built and tested the choice kernels, strict expression language,
+float rules, ActivitySim adapters, public checkpoints, failure policies,
+device-state runtime, and transfer counters. They also studied destination and
+scheduling components that Phase 19 does not run. Phase 18 proved that a
+dependent GPU state chain could work before real calibrated behavior was added.
+
+The right summary is:
+
+- Phase 19 replaces Phase 18's synthetic behavioral demonstration for this
+  household-to-person boundary.
+- Phases 1-18 remain the engineering foundation, audit trail, and evidence for
+  other component types.
+- Phase 19 still does not replace a full fresh ActivitySim CPU/GPU comparison.
+
+### What should happen next?
+
+The next major challenge is not another fixed-size five-answer choice. It is
+creating new tour rows on the GPU.
+
+If one person chooses two work tours, the model must create two rows. If another
+chooses one school tour, it creates one row. This is called **variable-length
+table expansion**. It needs counts, prefix sums, stable new IDs, repeated person
+fields, category codes, and deterministic ordering.
+
+The practical Phase 20 sequence is:
+
+1. Turn each mandatory-tour-frequency choice into the correct number and type
+   of GPU tour rows.
+2. Give every tour a deterministic ID and verify the complete table against
+   ActivitySim.
+3. Run one downstream tour model that uses those rows and travel-time maps.
+4. Add general random-channel offsets before a component needs multiple draws.
+5. Save a restart manifest containing table hashes, schemas, random offsets,
+   and completed steps.
+6. Repeat the chain on a larger public population and a second NVIDIA GPU.
+
+Phase 19 is a major success because it combines real calibrated behavior,
+exact public choices, a genuine household-to-person dependency, a fail-closed
+GPU boundary, and a double-digit measured speedup. The remaining distance to a
+whole model is mostly the hard state-management work: creating rows, managing
+skims, scheduling time, checkpointing, and covering the rest of the component
+graph without breaking exactness.

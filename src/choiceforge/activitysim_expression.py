@@ -179,10 +179,10 @@ def _evaluate(node, env, xp):
     if isinstance(node, ast.Call):
         if isinstance(node.func, ast.Attribute) and node.func.attr == "clip":
             value = _evaluate(node.func.value, env, xp)
-            if len(node.args) > 1 or any(k.arg not in {"lower", "upper"} for k in node.keywords):
+            if len(node.args) > 2 or any(k.arg not in {"lower", "upper"} for k in node.keywords):
                 raise ExpressionUnsupported("only clip(lower=, upper=) is supported")
             lower = _evaluate(node.args[0], env, xp) if node.args else None
-            upper = None
+            upper = _evaluate(node.args[1], env, xp) if len(node.args) == 2 else None
             for keyword in node.keywords:
                 if keyword.arg == "lower": lower = _evaluate(keyword.value, env, xp)
                 if keyword.arg == "upper": upper = _evaluate(keyword.value, env, xp)
@@ -190,5 +190,11 @@ def _evaluate(node, env, xp):
         func = _evaluate(node.func, env, xp)
         if func == ("numpy_function", "maximum") and len(node.args) == 2 and not node.keywords:
             return xp.maximum(_evaluate(node.args[0], env, xp), _evaluate(node.args[1], env, xp))
-        raise ExpressionUnsupported("only np.maximum and array.clip are supported")
+        if func == ("numpy_function", "where") and len(node.args) == 3 and not node.keywords:
+            return xp.where(
+                _evaluate(node.args[0], env, xp),
+                _evaluate(node.args[1], env, xp),
+                _evaluate(node.args[2], env, xp),
+            )
+        raise ExpressionUnsupported("only np.maximum, np.where, and array.clip are supported")
     raise ExpressionUnsupported(f"AST node {type(node).__name__} is unsupported")

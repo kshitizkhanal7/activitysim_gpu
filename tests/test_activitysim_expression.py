@@ -82,6 +82,25 @@ def test_cpu_expression_semantics_cover_skim_clip_and_availability():
     )
 
 
+def test_calibrated_household_clip_and_where_semantics():
+    env = {
+        "df": {
+            "income": np.asarray([-2.0, 10.0, 50.0]),
+            "workers": np.asarray([0, 1, 2]),
+            "ratio": np.asarray([np.nan, 8.0, 18.0]),
+        }
+    }
+    np.testing.assert_array_equal(
+        evaluate_activitysim_expression("df.income.clip(0, 30)", env, np),
+        [0.0, 10.0, 30.0],
+    )
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = evaluate_activitysim_expression(
+            "np.where(df.workers > 0, df.ratio / df.workers, 0)", env, np
+        )
+    np.testing.assert_array_equal(result, [0.0, 8.0, 9.0])
+
+
 def test_gpu_expression_matches_cpu_for_real_expression():
     cp = pytest.importorskip("cupy")
     expression = "@coef_walktimeshort_multiplier * od_skims['DISTWALK'].clip(upper=walkThresh) * 60/walkSpeed"
