@@ -1,0 +1,69 @@
+{
+  "phase": 24,
+  "independent_processes": 3,
+  "workload": {
+    "valid_rows": 1204594,
+    "logical_skim_bindings": 209,
+    "physical_device_cubes": 149,
+    "logical_skim_reads_per_run": 251760146
+  },
+  "resident_float32_bytes": 6378932500,
+  "cpu_medians_seconds": [
+    5.691373300040141,
+    5.66161509999074,
+    5.669019500026479
+  ],
+  "gpu_medians_seconds": [
+    0.029471499961800873,
+    0.06877350003924221,
+    0.027567800018005073
+  ],
+  "process_resident_speedups": [
+    193.11447694949172,
+    82.32262567355477,
+    205.63916947757642
+  ],
+  "replicated_median_resident_speedup": 193.11447694949172,
+  "replicated_minimum_resident_speedup": 82.32262567355477,
+  "process_upload_inclusive_single_run_speedups": [
+    1.8129171515056168,
+    1.8511243369041057,
+    1.801951122137327
+  ],
+  "replicated_median_upload_inclusive_single_run_speedup": 1.8129171515056168,
+  "process_ten_run_amortized_speedups": [
+    16.71677051743013,
+    15.39555367102295,
+    16.702298501484602
+  ],
+  "replicated_median_ten_run_amortized_speedup": 16.702298501484602,
+  "cpu_gpu_hash_word_mismatches": 0,
+  "repeat_hash_word_mismatches": 0,
+  "postseal_modeled_transfer_bytes": 0,
+  "modeled_cpu_fallbacks": 0,
+  "published_hash_sha256": "16085b61aad7f46395681d313921c0d9c93db8fd1073478d68aeec1fcc6423b5",
+  "source_reports": [
+    {
+      "path": "benchmark-results\\phase24-resident-skim-cache.json",
+      "sha256": "54cbeeddcee55b14ddab81d40c23f0062003dc828b832f8801d677734335f684"
+    },
+    {
+      "path": "benchmark-results\\phase24-resident-skim-cache-2.json",
+      "sha256": "36cb5567fa94fa79e5188acb6041e28033cfe175b8023feadefd0be8d69fd14a"
+    },
+    {
+      "path": "benchmark-results\\phase24-resident-skim-cache-3.json",
+      "sha256": "6e496dbf5957fc8200735badc938256504c6864724de52c0266538e1bf0cf075"
+    }
+  ],
+  "proof_gates": {
+    "three_or_more_independent_processes": true,
+    "all_process_gates_passed": true,
+    "replicated_result_hash_exact": true,
+    "zero_cpu_gpu_mismatches": true,
+    "zero_repeat_mismatches": true,
+    "zero_postseal_modeled_transfers": true,
+    "zero_modeled_cpu_fallbacks": true,
+    "gpu_won_every_process": true
+  }
+}

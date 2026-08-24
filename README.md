@@ -25,7 +25,7 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 95 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 127 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -424,3 +424,30 @@ this is a calibrated multi-component vertical slice, not yet a whole model.
 See the [Phase 23 technical report](docs/phase23-device-resident-runtime.md),
 the [three-process qualification](benchmark-results/phase23-device-resident-summary.json),
 and the [primary evidence](benchmark-results/phase23-device-resident.json).
+
+## Phase 24 budgeted resident hot-skim cache
+
+Phase 24 builds the raw-network-data layer required by the next resident
+mode-logsum stage. The reviewed 315-term tour-mode IR discovers 209 logical
+skim bindings instead of relying on a hand-maintained list. Directional aliases
+are deduplicated, leaving 149 physical float32 cubes and a 6,378,932,500-byte hot
+set under an explicit 8 GiB budget on the 16 GiB RTX A4000.
+
+The public proof covers 1,204,594 valid mandatory-scheduling OD/period rows and
+reads all 209 logical bindings for each row: 251,760,146 raw skim reads per
+run. Independent CPU and CUDA implementations produce two exact bit hashes per
+row. Three processes and 15 measured GPU repetitions have zero CPU/GPU hash
+mismatches, zero repeat mismatches, zero post-seal modeled transfers, and zero
+CPU fallbacks.
+
+The replicated middle resident cache-layer speedup is **193.114x**; the
+conservative minimum is **82.323x**. Charging the complete one-time 6.38 GB
+upload plus one compute and publication to one run still gives a **1.813x**
+middle speedup; ten-run amortization is **16.702x**. These are deliberately
+cache-layer measurements, not full model or utility/logsum claims. The Phase
+23 precomputed 5-by-5 scheduling-logsum ingress remains until the real strict
+utility and nested-logit plan consumes these cubes in the next phase.
+
+See the [Phase 24 technical report](docs/phase24-resident-hot-skim-cache.md),
+the [three-process qualification](benchmark-results/phase24-resident-skim-cache-summary.json),
+and the [primary evidence](benchmark-results/phase24-resident-skim-cache.json).

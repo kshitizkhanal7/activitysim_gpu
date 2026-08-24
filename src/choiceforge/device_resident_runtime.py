@@ -56,6 +56,8 @@ class ResidentStageRecord:
 class ResidentRuntimeTelemetry:
     ingress_calls: int = 0
     ingress_bytes: int = 0
+    device_ingress_calls: int = 0
+    device_ingress_bytes: int = 0
     publication_calls: int = 0
     publication_bytes: int = 0
     checkpoint_calls: int = 0
@@ -120,6 +122,31 @@ class DeviceResidentRuntime:
         self.versions[name] = 1
         self.telemetry.ingress_calls += 1
         self.telemetry.ingress_bytes += table.nbytes
+        self._sample_state()
+        return table
+
+    def register_device_table(
+        self, name: str, columns: Mapping[str, Any]
+    ) -> DeviceTable:
+        """Attach already-resident immutable CUDA state before sealing ingress.
+
+        Large shared assets such as skim cubes are normally uploaded by a
+        budget-aware cache loader.  Registering their existing device arrays
+        avoids a second copy while keeping them inside the runtime's named,
+        versioned state graph.  Host arrays and post-seal attachment fail
+        closed under the same rules as ordinary ingress.
+        """
+
+        name = self._validate_name(name)
+        if self._sealed:
+            raise GpuOnlyViolation("device-resident ingress is sealed")
+        if name in self.tables:
+            raise ValueError(f"resident table {name!r} already exists")
+        table = DeviceTable({str(column): value for column, value in columns.items()})
+        self.tables[name] = table
+        self.versions[name] = 1
+        self.telemetry.device_ingress_calls += 1
+        self.telemetry.device_ingress_bytes += table.nbytes
         self._sample_state()
         return table
 

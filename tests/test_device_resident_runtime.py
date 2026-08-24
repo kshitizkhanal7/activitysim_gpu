@@ -57,8 +57,21 @@ def test_resident_runtime_fails_closed_after_ingress():
     assert runtime.telemetry.forbidden_postseal_host_bytes == 16
     with pytest.raises(GpuOnlyViolation, match="CPU fallback"):
         runtime.cpu_fallback("legacy_expression")
+    with pytest.raises(GpuOnlyViolation, match="sealed"):
+        runtime.register_device_table("late_device", {"id": _cupy().arange(2)})
     with pytest.raises(GpuOnlyViolation, match="contract failed"):
         runtime.assert_resident_contract()
+
+
+def test_resident_runtime_registers_existing_cuda_state_without_copy():
+    cp = _cupy()
+    values = cp.arange(6, dtype=cp.float32).reshape(3, 2)
+    runtime = DeviceResidentRuntime()
+    table = runtime.register_device_table("hot_skims", {"time": values})
+    assert table.columns["time"] is values
+    assert runtime.telemetry.ingress_bytes == 0
+    assert runtime.telemetry.device_ingress_calls == 1
+    assert runtime.telemetry.device_ingress_bytes == values.nbytes
 
 
 def test_checkpoint_restore_is_self_contained_and_hash_verified(tmp_path):
