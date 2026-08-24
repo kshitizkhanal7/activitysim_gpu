@@ -1,0 +1,125 @@
+{
+  "phase": 18,
+  "claim_scope": "public-MTC model-shaped GPU-native vertical slice; not full ActivitySim",
+  "boundary": {
+    "cpu_allowed": [
+      "CSV/config input",
+      "one-time ingress",
+      "kernel launch",
+      "final egress/output"
+    ],
+    "gpu_required": [
+      "feature graph",
+      "counter-based random draws",
+      "two dependent 21-alternative MNL choices",
+      "zone aggregation"
+    ]
+  },
+  "input": {
+    "path": "benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\households.csv",
+    "households": 2875192
+  },
+  "partition_households": 250000,
+  "repetitions": 9,
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.14",
+    "gpu": "NVIDIA RTX A4000",
+    "device_total_bytes": 17170956288,
+    "nvidia_smi": "NVIDIA RTX A4000, 16376, 571.59"
+  },
+  "reproducibility": {
+    "repository_base_commit": "b264c870659f24b36c92e5477cf70220bbf6b9b4",
+    "households_csv_sha256": "77bb2870677ebb430f3d7a813528445b1aea6d66096b9c03ace7201b901a527c",
+    "benchmark_script_sha256": "fc17dcc75751d3336cc7e5941020c04c9d228319f184dc3b9d7b52e1a810c3e5",
+    "gpu_runtime_sha256": "6c7a62344ba0d2bea7fadc96b86ce1c0f2d77e6b3d8f1a73c53933c69521770f",
+    "coefficient_sha256": "254d486c293508fb8b28e2d4817bd09e97c420b4f502668ef7470feaf07f76d0",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "cupy": "14.1.1",
+    "random_policy": "SplitMix64(entity_id xor seed-mix xor stream-mix), upper 24 bits to float32"
+  },
+  "timings_seconds": {
+    "cpu_numba_samples": [
+      0.4540621000342071,
+      0.4547542999498546,
+      0.45702330011408776,
+      0.4629715000046417,
+      0.45544549997430295,
+      0.46249920001719147,
+      0.45736629993189126,
+      0.4568389999913052,
+      0.4582558999536559
+    ],
+    "gpu_compute_samples": [
+      0.08207279990892857,
+      0.031418300000950694,
+      0.03135660011321306,
+      0.031258199946023524,
+      0.031523499987088144,
+      0.03120880003552884,
+      0.031447799992747605,
+      0.03133780008647591,
+      0.03127080004196614
+    ],
+    "gpu_total_with_transfer_samples": [
+      0.11492419999558479,
+      0.05563129996880889,
+      0.05729820008855313,
+      0.05438670003786683,
+      0.05406800005584955,
+      0.05507280002348125,
+      0.055713700014166534,
+      0.05530809995252639,
+      0.05532729998230934
+    ],
+    "cpu_numba_median": 0.45702330011408776,
+    "gpu_compute_median": 0.03135660011321306,
+    "gpu_total_with_transfer_median": 0.05532729998230934
+  },
+  "speedup": {
+    "gpu_compute_vs_numba": 14.575027218002088,
+    "gpu_total_with_transfer_vs_numba": 8.260357911197888
+  },
+  "correctness": {
+    "first_choice_mismatches": 1,
+    "first_choice_mismatch_rate": 3.478028597742342e-07,
+    "dependent_choice_mismatches": 3,
+    "dependent_choice_mismatch_rate": 1.0434085793227025e-06,
+    "zone_sum_max_abs_error": 1.0,
+    "dependent_logsum_max_abs_error": 0.007142543792724609,
+    "cpu_gpu_note": "GPU partitioning must be bit-exact. CPU/GPU uses an explicit numerical-equivalence bound because CUDA expf/FMA and Numba arithmetic are not bit-identical."
+  },
+  "telemetry": {
+    "input_bytes": 161011508,
+    "output_bytes": 71879800,
+    "modeled_host_to_device_bytes": 0,
+    "modeled_device_to_host_bytes": 0,
+    "modeled_cpu_fallbacks": 0,
+    "kernel_stages": [
+      "household_feature_graph",
+      "entity_rng_stream_1",
+      "fused_linear_choice",
+      "entity_rng_stream_2",
+      "fused_linear_choice",
+      "deterministic_zone_aggregation"
+    ],
+    "sampled_device_active_peak_bytes": 474411520,
+    "sampled_peak_note": "CuPy active allocations sampled after stages; temporary peaks may be higher"
+  },
+  "gates": {
+    "first_choice_mismatch_rate_le_1e-6": true,
+    "dependent_choice_mismatch_rate_le_2e-6": true,
+    "zone_ids_exact": true,
+    "zone_sum_max_abs_le_1": true,
+    "dependent_logsum_max_abs_le_0_01": true,
+    "partition_choice_bit_exact": true,
+    "partition_logsum_bit_exact": true,
+    "modeled_cpu_fallbacks_zero": true,
+    "modeled_host_to_device_bytes_zero": true,
+    "modeled_device_to_host_bytes_zero": true,
+    "gpu_compute_faster_than_numba": true,
+    "gpu_total_faster_than_numba": true
+  },
+  "qualified": true
+}

@@ -18,11 +18,14 @@ contains:
 - a hashed strict IR and normative CPU utility evaluator;
 - a strict CUDA C++ generator from that same IR;
 - an exact, first-divergence Sharrow comparison gate;
+- a fail-closed GPU-native state runtime with transfer/fallback telemetry;
+- entity-stable, partition-invariant GPU random streams;
+- deterministic ordered GPU group aggregation;
 - CPU/GPU correctness tests;
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 83 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 95 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -259,3 +262,33 @@ exactly qualified. A diagnostic 50,000-household run reduced measured
 destination pack-plus-upload work by about 107 ms, but did not establish an
 independent whole-model win, so reuse remains experimental. See
 [Phase 17 persistent execution](docs/phase17-persistent-execution.md).
+
+## Phase 18 GPU-native runtime foundation
+
+Phase 18 moves beyond one accelerated component and proves a model-shaped chain
+that remains on the GPU after one input upload: public-data feature
+construction, entity-stable random generation, two dependent 21-alternative
+choices, and deterministic zone aggregation. A sealed runtime rejects modeled
+host arrays, device downloads, and CPU fallbacks.
+
+On all 2,875,192 households in the public Prototype MTC table, nine measured
+runs give a 0.031357-second GPU modeled-compute median versus 0.457023 seconds
+for fused parallel Numba: **14.575x faster**. Including the permitted input and
+output transfers, the GPU median is 0.055327 seconds, or **8.260x faster**.
+Running the same workload as one table or deterministic 250,000-household
+partitions produces bit-identical GPU choices and logsums.
+
+The CPU/GPU comparison is explicitly numerical rather than falsely bit-exact:
+one first-stage choice and three dependent choices differ among 2.875 million
+rows because CUDA and Numba do not promise identical exponential/FMA
+arithmetic. Those observed rates pass the published one- and two-per-million
+gates. The benchmark uses real public household rows but synthetic coefficients,
+so this is a systems result, not a calibrated forecast or a complete GPU
+ActivitySim model.
+
+The live capacity audit also shows why the final architecture needs a hot-skim
+cache and deterministic population partitions: the 826 uncompressed skim
+arrays total 13.389 GiB on a 16,376 MiB RTX A4000. See
+[Phase 18 GPU-native runtime](docs/phase18-gpu-native-runtime.md),
+[full-household qualification](benchmark-results/phase18-gpu-native-full-households.json),
+and [capacity audit](benchmark-results/phase18-capacity-audit.json).

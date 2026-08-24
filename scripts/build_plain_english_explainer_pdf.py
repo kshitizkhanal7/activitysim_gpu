@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.064x", STYLES["metric_num"]),
-                Paragraph("1.040x", STYLES["metric_num"]),
-                Paragraph("0.0", STYLES["metric_num"]),
+                Paragraph("14.575x", STYLES["metric_num"]),
+                Paragraph("8.260x", STYLES["metric_num"]),
+                Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("supported complete model<br/>50k households", STYLES["metric_label"]),
-                Paragraph("Phase 17 destination<br/>five-pair 50k proof", STYLES["metric_label"]),
-                Paragraph("FP32 CPU/GPU maximum<br/>exact-gate difference", STYLES["metric_label"]),
+                Paragraph("Phase 18 modeled compute<br/>2.875M households", STYLES["metric_label"]),
+                Paragraph("including boundary<br/>input/output transfers", STYLES["metric_label"]),
+                Paragraph("modeled CPU fallbacks<br/>after sealed ingress", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the supported Phase 11 whole-model result, the stronger Phase 17 target-component result, and exact agreement between the published FP32 CPU and GPU recipes.",
+            "Read left to right: the Phase 18 GPU-native vertical-slice compute speedup, its transfer-inclusive speedup, and the fail-closed boundary result. These are systems measurements, not a complete GPU ActivitySim claim.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 22, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 24, 2026", STYLES["small"]),
         PageBreak(),
     ]
 
@@ -434,6 +434,7 @@ def markdown_story(text: str):
                 or stripped.startswith("## 22. Three different meanings")
                 or stripped.startswith("## 26. What must be done next")
                 or stripped.startswith("## 27. Phase 16")
+                or stripped.startswith("## 32. The practical path")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

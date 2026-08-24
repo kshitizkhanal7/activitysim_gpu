@@ -202,7 +202,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-The Python 3.11 ActivitySim and CUDA integration environment now passes 87 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, and Phase 17's schema-safe plan and workspace reuse.
+The Python 3.11 ActivitySim and CUDA integration environment now passes 95 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, and Phase 18's fail-closed GPU state, stable random draws, deterministic partitions, and ordered aggregation.
 
 ## 7. What was benchmarked?
 
@@ -783,7 +783,7 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. The project test suite now passes 87 tests, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, and Phase 17 plan reuse.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. The project test suite now passes 95 tests, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, and Phase 18 GPU-native runtime checks.
 
 This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer but failed its 50,000-household scale gate. Phase 16 recovered a repeated large destination-component win. Phase 17 added persistent plans and trip-mode continuation, strengthening that component win and making the five-run whole-model median faster. The strict path remains opt-in because the whole-model interval still includes zero and replication on other hardware and models is unfinished.
 
@@ -816,7 +816,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The complete repository now passes 87 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The complete repository now passes 95 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -1478,3 +1478,296 @@ run the same exactness and A/B protocol on a second NVIDIA GPU and then on a
 second public ActivitySim model. A result that survives different hardware and
 different travel equations is much more useful to the ActivitySim and Sharrow
 communities than a single impressive number from one workstation.
+
+## 30. Phase 18: can a chain of model steps live on the GPU?
+
+After Phase 17, the obvious ambitious question was: what if the GPU did not
+calculate one isolated piece and then hand everything back to the CPU? What if
+household data entered the GPU once, several dependent model steps happened
+there, and only the finished answers came back?
+
+Phase 18 builds the first honest version of that idea. It is not a whole travel
+model yet. It is a **vertical slice**, meaning a narrow but complete path from
+real input rows through multiple calculations to final outputs. Imagine
+building one fully working elevator before constructing every floor of a
+skyscraper. The elevator proves the important machinery can work together, but
+it does not mean the building is finished.
+
+### Does “GPU-only” really mean the CPU does absolutely nothing?
+
+No. A regular computer must use its CPU to start Python, read a CSV file, read
+configuration, tell the GPU which kernel to launch, handle errors, and write a
+result file. Even a CUDA program is launched by host code.
+
+In this project, **GPU-native modeled execution** has a precise meaning:
+
+- The CPU may read input and upload one partition before modeling starts.
+- The CPU may launch kernels and wait for them.
+- The CPU may download final outputs after modeling finishes.
+- The CPU may not calculate a utility, random choice, logsum, or modeled total.
+- The program may not secretly use NumPy or pandas when a GPU operation is
+  missing.
+
+The runtime closes a gate called `seal_ingress`. After that gate closes, a
+host array entering a modeled stage, an intermediate modeled result leaving
+the GPU, or a CPU fallback causes a hard error. This behavior is called
+**fail closed**. If the program cannot honor its promise, it stops instead of
+quietly producing a misleading benchmark.
+
+### What is GPU state?
+
+A travel model changes tables over time. A household first gets an auto
+ownership result. A person later gets a work location. Tours and trips are then
+created. Later steps depend on earlier answers. All those current tables are
+the model's **state**.
+
+Phase 18 adds a `DeviceTable`. Its columns must be CUDA arrays, which means the
+actual numbers live in GPU memory. All columns must describe the same number of
+rows. A `GpuNativeRuntime` owns these tables and records what happens at the
+CPU/GPU boundary. It counts input bytes, output bytes, modeled transfers, CPU
+fallbacks, and kernel stages.
+
+### Why random numbers are part of correctness
+
+Travel models use random draws to turn probabilities into simulated choices.
+Suppose household 42 gets random number 0.63 in one run. If changing the batch
+size gives it 0.18, the model can change even though no travel assumption
+changed. That would make scaling unsafe.
+
+The new GPU random generator uses three stable labels:
+
+```text
+entity ID + project seed + stream ID -> the same random draw
+```
+
+The entity ID identifies the household or person. The project seed identifies
+the run. The stream ID identifies the decision, such as first choice or second
+choice. A hash thoroughly mixes those integers, and the GPU turns part of the
+result into a number between zero and one.
+
+The important fact is what the formula does **not** use: it does not use the
+row's position inside a partition. Household 42 therefore gets the same bits
+whether it is processed in one table of 2.8 million households or a small table
+of 250,000. A separate NumPy implementation checks the GPU generator bit for
+bit.
+
+### Why adding numbers can be nondeterministic
+
+Floating-point addition is not perfectly associative. In exact mathematics,
+`(a + b) + c` equals `a + (b + c)`. On a computer, rounding after each addition
+can make the last bits different.
+
+Many fast GPU totals use **atomics**: many threads race safely to add their
+values to one total. The final answer can depend on which thread arrives first.
+Phase 18 instead sorts group IDs and gives one thread responsibility for each
+group. That thread adds rows in a fixed order. It may not be the fastest
+possible future method, but its behavior is easy to explain and reproduce.
+
+### What the public-data vertical slice does
+
+The benchmark reads all 2,875,192 households from the public Prototype MTC
+table. It then performs this chain after the GPU boundary closes:
+
+- **Stage 1:** Build eight household features, such as normalized household size, workers, automobile count, income, and zone information.
+- **Stage 2:** Generate the first stable random stream on the GPU.
+- **Stage 3:** Make a fused choice among 21 alternatives.
+- **Stage 4:** Put that first answer into the inputs of a second choice.
+- **Stage 5:** Generate a different stable stream and make the dependent second choice.
+- **Stage 6:** Sort households by traffic analysis zone, or TAZ, and total the first choices within each zone.
+- **Stage 7:** Download the final answers for checking.
+
+The word **dependent** matters. The second choice really uses the first choice.
+This is not a collection of unrelated kernels that happen to run one after
+another.
+
+### Which parts are real, and which are invented for the test?
+
+The households and their fields come from the real public MTC benchmark. The
+21 alternatives and eight-feature calculation have the shape of travel-model
+choice work. However, the coefficients are fixed synthetic test values. Nobody
+estimated them from a survey, so these choices must never be interpreted as a
+forecast of real behavior.
+
+The data transform also publishes its assumptions:
+
+- Negative income codes mean missing for this systems test and become zero.
+- Income above $250,000 is capped before normalization.
+- Very large household, worker, and automobile counts are capped before
+  normalization so rare coding outliers do not dominate the test.
+- Household ID is the stable random key.
+- The calculation uses a declared 32-bit floating-point policy.
+
+These choices make a stable systems benchmark. They do not claim to be the
+right behavioral specification for a transportation agency.
+
+## 31. Phase 18 results: fast, reproducible, and carefully bounded
+
+The full-table benchmark used the local NVIDIA RTX A4000, driver 571.59,
+Python 3.11.14, nine measured repetitions, and a fused parallel Numba CPU
+comparison. Compilation warm-up happened before the measured repetitions.
+
+| Full public household table | Median time |
+|---|---:|
+| Parallel fused Numba CPU | 0.457023 seconds |
+| GPU modeled work only | 0.031357 seconds |
+| GPU including one upload and final downloads | 0.055327 seconds |
+
+That is **14.575 times faster** for modeled computation and **8.260 times
+faster** even after the allowed boundary transfers.
+
+This is a much larger speedup than the whole ActivitySim results reported in
+earlier phases because the scopes are different. Phase 18 measures a compact
+GPU-native vertical slice where almost every operation is parallel. It does not
+include CSV parsing, all ActivitySim components, checkpoint work, or output
+writing. A person comparing the numbers must keep that difference in mind.
+
+### What exactly reproduced?
+
+The same GPU calculation ran in two arrangements:
+
+- all 2,875,192 households together; and
+- consecutive partitions containing at most 250,000 households each.
+
+Every final GPU choice was identical. Every final GPU logsum had identical
+bits. This is the Phase 18 **replication guarantee**: scaling the workload into
+deterministic partitions does not change the GPU result.
+
+Runtime telemetry also showed:
+
+| Boundary check | Result |
+|---|---:|
+| Modeled CPU fallbacks | 0 |
+| Host-to-device modeled bytes after ingress closed | 0 |
+| Device-to-host modeled bytes before final output | 0 |
+| Sampled active GPU allocation peak | about 452.4 MiB |
+
+The memory number samples active CuPy arrays after stages. A very short-lived
+temporary allocation could be higher, so it is a measured lower bound rather
+than a perfect hardware high-water mark.
+
+### Why are CPU and GPU answers not all bit-identical here?
+
+The Numba CPU and CUDA GPU both implement the same mathematical model, but they
+do not promise the same lowest-level versions of exponential and
+fused-multiply-add operations. Across all 2,875,192 rows:
+
+| CPU/GPU comparison | Observed difference |
+|---|---:|
+| First choices | 1 row |
+| Dependent second choices | 3 rows |
+| Largest dependent logsum difference | 0.007143 |
+| Largest zone-total difference | 1.0 |
+
+One first-stage boundary choice can affect the second-stage feature, which is
+why the number grows from one to three. The observed rates are 0.348 and 1.043
+differences per million rows. They pass the published limits of one and two per
+million.
+
+This is not the same guarantee as Phases 14-17, where a specially defined CPU
+recipe and generated CUDA utility recipe matched feature and utility bits
+exactly. Phase 18 deliberately compares against a strong normal Numba choice
+implementation. Its cross-architecture claim is **numerical equivalence within
+written bounds**, while its GPU partition claim is **bit-exact**.
+
+During development, a first full-table run used `log1p(income)`. NumPy and CUDA
+rounded that function differently by one float32 unit on some rows, and one
+row landed close enough to a choice boundary to change. The project did not
+hide the failure or simply rerun until it disappeared. It replaced the feature
+with capped linear normalization, documented the arithmetic policy, reran the
+full table, and still reported the remaining CUDA-versus-Numba boundary cases.
+
+### What fits in this GPU's memory?
+
+The local RTX A4000 reports 16,376 MiB of GPU memory. The public MTC skim file
+contains 826 datasets. If every dataset is counted as its raw uncompressed
+array, the collection needs 13.389 GiB. Earlier real 50,000-household
+ActivitySim integration runs already peaked near 8.4 GiB.
+
+Therefore the complete future model should not load every skim and every state
+table at once. Phase 18 proposes four planned pools:
+
+| Planned use | Budget |
+|---|---:|
+| CUDA, driver, and failure reserve | 2 GiB |
+| Frequently used, or “hot,” skims | 4 GiB |
+| Persistent model state | 2 GiB |
+| Largest component workspace | 3 GiB |
+| Remaining safety and partition room | about 4.99 GiB |
+
+A **hot skim cache** keeps the travel-time maps needed soonest on the GPU and
+evicts others safely when space is needed. A **population partition** processes
+a stable set of households and everything belonging to them, then moves to the
+next set. These are design budgets, not yet measured full-model limits. The
+maximum safe production partition cannot be claimed until the missing model
+components have real memory high-water measurements.
+
+### What does Phase 18 prove?
+
+- A sealed GPU state boundary can be enforced rather than merely promised.
+- Stable GPU random draws survive changes in partition size.
+- Dependent choices and an ordered group total can stay on the device.
+- This vertical slice can process the entire public household table at once.
+- The GPU is substantially faster than fused parallel Numba for this work, including the boundary transfers.
+- Every declared performance, numerical, partition, and fallback gate passes.
+
+### What does it not prove?
+
+- It is not a complete ActivitySim replacement.
+- Its synthetic coefficients do not make calibrated travel predictions.
+- It does not prove every person, tour, trip, timetable, shadow-price, and skim table fits together in 16 GB.
+- It does not yet provide restartable GPU checkpoints.
+- It does not accelerate file parsing or report writing.
+- It does not prove the same speed on another GPU or model.
+- It does not claim that ordinary CPU and GPU math is bit-identical.
+
+## 32. The practical path from this slice to a whole GPU model
+
+The next-generation project is possible on this GPU if it grows in dependency
+order and treats memory and replication as design rules.
+
+### Phase A: finish the GPU table toolbox
+
+Implement indexed joins, filters, stable sorting, scatter and gather, category
+encoding, group operations, and missing-value policies. Each operation needs a
+small readable CPU oracle, adversarial tests, and an explicit arithmetic rule.
+
+### Phase B: build the hot skim cache
+
+Track which skim arrays each component needs. Upload them asynchronously,
+retain frequently reused arrays, and evict only after every dependent CUDA
+event finishes. Record cache hits, misses, transferred bytes, and memory peaks.
+
+### Phase C: port one calibrated household-person chain
+
+Replace synthetic coefficients with a real public specification. Preserve
+stable entity channels and compare every intermediate column, not only the
+final output. A missing GPU operation must stop qualification rather than use
+a hidden CPU fallback.
+
+### Phase D: make restart behavior safe
+
+Long models must recover after a failure. Either serialize device tables at
+declared checkpoints or make a documented host checkpoint boundary. Restoring
+a checkpoint must reproduce random streams and every downstream table.
+
+### Phase E: add tours, trips, timetables, destinations, and shadow prices
+
+These are harder because they create variable numbers of rows, use large skim
+lookups, and update shared state. Port them one dependency layer at a time.
+Measure high-water GPU memory after every component and reduce partition size
+before an out-of-memory failure becomes possible.
+
+### Phase F: run the real whole-model proof
+
+Only after the calibrated chain is complete should the project run fresh,
+interleaved CPU/GPU whole-model trials. The proof must include table hashes,
+random-stream checks, fallback counters, memory peaks, transfer bytes, component
+times, whole-model time, software hashes, and a second-machine replication.
+
+The implication is exciting but specific. This workstation has enough GPU to
+build and test a serious next-generation model and to run large partitions very
+quickly. It does not have enough memory to hold the public model's entire skim
+collection plus every future state object without caching and partitioning.
+Success therefore comes from a GPU-native **system** - state, randomness,
+memory, checkpoints, and kernels together - not from writing one spectacular
+kernel.

@@ -1,0 +1,104 @@
+{
+  "phase": 18,
+  "generated_from_live_machine": true,
+  "gpu": {
+    "name": "NVIDIA RTX A4000",
+    "driver": "571.59",
+    "reported_total_mib": 16376,
+    "reported_free_mib_at_audit": 14844,
+    "total_bytes": 17171480576
+  },
+  "public_mtc": {
+    "households": 2875192,
+    "persons": 7566527,
+    "files_on_disk_bytes": {
+      "households.csv": 80070242,
+      "persons.csv": 215441880,
+      "land_use.csv": 131248,
+      "skims.omx": 733866957
+    },
+    "skim_dataset_count": 826,
+    "skim_raw_uncompressed_bytes": 14376530000,
+    "skim_raw_uncompressed_gib": 13.389186933636665,
+    "largest_skim_datasets": [
+      {
+        "name": "data/WLK_TRN_WLK_XWAIT__PM",
+        "bytes": 17405000,
+        "shape": [
+          1475,
+          1475
+        ],
+        "dtype": "float64"
+      },
+      {
+        "name": "data/WLK_TRN_WLK_XWAIT__MD",
+        "bytes": 17405000,
+        "shape": [
+          1475,
+          1475
+        ],
+        "dtype": "float64"
+      },
+      {
+        "name": "data/WLK_TRN_WLK_XWAIT__AM",
+        "bytes": 17405000,
+        "shape": [
+          1475,
+          1475
+        ],
+        "dtype": "float64"
+      },
+      {
+        "name": "data/WLK_TRN_WLK_WEGR__PM",
+        "bytes": 17405000,
+        "shape": [
+          1475,
+          1475
+        ],
+        "dtype": "float64"
+      },
+      {
+        "name": "data/WLK_TRN_WLK_WEGR__MD",
+        "bytes": 17405000,
+        "shape": [
+          1475,
+          1475
+        ],
+        "dtype": "float64"
+      }
+    ]
+  },
+  "prior_full_activitysim_evidence": {
+    "scope": "50,000-household Phase 17 public MTC runs",
+    "choiceforge_gpu_peak_mib_samples": [
+      8449.0,
+      8380.0,
+      8399.0,
+      8383.0,
+      8373.0
+    ],
+    "choiceforge_gpu_peak_mib_max": 8449.0
+  },
+  "phase18_vertical_slice_evidence": {
+    "households": 2875192,
+    "sampled_device_active_peak_bytes": 474411520,
+    "gpu_compute_speedup_vs_parallel_numba": 14.575027218002088,
+    "gpu_total_speedup_vs_parallel_numba": 8.260357911197888,
+    "qualified": true
+  },
+  "planning_budget": {
+    "status": "design assumption requiring stage-by-stage high-water qualification",
+    "reserve_bytes": 2147483648,
+    "hot_skim_cache_bytes": 4294967296,
+    "persistent_state_bytes": 2147483648,
+    "workspace_bytes": 3221225472,
+    "committed_bytes": 11811160064,
+    "unallocated_bytes": 5360320512
+  },
+  "conclusions": [
+    "The complete uncompressed skim collection cannot coexist with a safe runtime reserve and full model state on this 16 GB device.",
+    "A hot-skim cache plus deterministic household partitions is mandatory for the eventual full GPU-native model.",
+    "The Phase 18 vertical slice fits the entire public household table, but it is much smaller than a complete ActivitySim state graph.",
+    "No full-model maximum partition size is claimed until every remaining model component has a measured high-water mark."
+  ]
+}
