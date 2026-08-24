@@ -222,6 +222,37 @@ def gather_by_key_gpu(
     return {name: value[rows] for name, value in source_columns.items()}
 
 
+def key_rows_gpu(source_keys: Any, target_keys: Any) -> Any:
+    """Compile a validated device row map for a repeatedly used key join.
+
+    The returned CUDA vector can be retained by a resident runtime and reused
+    as ``source_column[row_map]`` without sorting the same static keys in every
+    scenario. Source keys must be unique so the mapping is unambiguous.
+    """
+
+    cp = _cupy()
+    if not _is_cuda_array(source_keys) or not _is_cuda_array(target_keys):
+        raise GpuOnlyViolation("join keys must reside on the GPU")
+    source = cp.ascontiguousarray(source_keys, dtype=cp.int64)
+    target = cp.ascontiguousarray(target_keys, dtype=cp.int64)
+    if source.size == 0:
+        if target.size:
+            raise KeyError("target key is missing from GPU lookup table")
+        return cp.empty(0, dtype=cp.int64)
+    order = cp.argsort(source, kind="stable")
+    sorted_keys = source[order]
+    if sorted_keys.size > 1 and bool(cp.any(sorted_keys[1:] == sorted_keys[:-1]).item()):
+        raise ValueError("source keys must be unique when compiling a GPU row map")
+    positions = cp.searchsorted(sorted_keys, target)
+    in_bounds = positions < sorted_keys.size
+    safe_positions = cp.minimum(positions, sorted_keys.size - 1)
+    if bool(cp.any(~in_bounds).item()) or bool(
+        cp.any(sorted_keys[safe_positions] != target).item()
+    ):
+        raise KeyError("target key is missing from GPU lookup table")
+    return cp.ascontiguousarray(order[safe_positions], dtype=cp.int64)
+
+
 def _row_count(columns: Mapping[str, Any]) -> int:
     lengths = {int(value.shape[0]) for value in columns.values()}
     if len(lengths) != 1:

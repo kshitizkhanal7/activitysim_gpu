@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.257x", STYLES["metric_num"]),
-                Paragraph("57", STYLES["metric_num"]),
+                Paragraph("24.405x", STYLES["metric_num"]),
+                Paragraph("1.356x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 22 median paired<br/>live component speedup", STYLES["metric_label"]),
-                Paragraph("near-boundary rows<br/>resolved exactly", STYLES["metric_label"]),
-                Paragraph("TDD, start, or end<br/>mismatches", STYLES["metric_label"]),
+                Paragraph("Phase 23 median<br/>resident modeled speedup", STYLES["metric_label"]),
+                Paragraph("median one-run<br/>setup-inclusive speedup", STYLES["metric_label"]),
+                Paragraph("behavioral, tour, timetable,<br/>or restart mismatches", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 22 median speedup across three paired live raw-skim scheduling runs, the tiny deterministic set sent to exact Sharrow boundary adjudication, and the frozen-reference result. Earlier compact-kernel speedups remain explained inside.",
+            "Read left to right: the Phase 23 median across three independent resident-runtime processes, the conservative result after charging one-time setup and publication to one run, and the frozen-reference/restart result. The compatible Phase 22 result remains explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

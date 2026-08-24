@@ -1,0 +1,281 @@
+{
+  "format_version": 1,
+  "runtime": "choiceforge.device_resident",
+  "tables": {
+    "auto_result": {
+      "version": 10,
+      "columns": {
+        "choice": {
+          "storage_key": "t0000_c0000",
+          "dtype": "int32",
+          "shape": [
+            50000
+          ],
+          "sha256": "7637eb12c1ca0e84a08868e0e147a6a368699250f7a5edad4b66ad7962089f91"
+        },
+        "logsum": {
+          "storage_key": "t0000_c0001",
+          "dtype": "float64",
+          "shape": [
+            50000
+          ],
+          "sha256": "b57c351cba2fd5e2169a89022ba3b6c7fe216f9391efe742e6f2440f9a911269"
+        }
+      }
+    },
+    "mtf_result": {
+      "version": 10,
+      "columns": {
+        "chooser_id": {
+          "storage_key": "t0001_c0000",
+          "dtype": "int64",
+          "shape": [
+            78900
+          ],
+          "sha256": "558ed805f589e3e175c7b8060c17b8e0ff141a1b34071983f263814ac4360a59"
+        },
+        "choice": {
+          "storage_key": "t0001_c0001",
+          "dtype": "int32",
+          "shape": [
+            78900
+          ],
+          "sha256": "3f00505dd02931c888802b30bb7817e9218e5007c62c2a46ef196bae965cf1de"
+        },
+        "logsum": {
+          "storage_key": "t0001_c0002",
+          "dtype": "float64",
+          "shape": [
+            78900
+          ],
+          "sha256": "2c0fc1de90c93a4ff15d5da3739ed51fdca5e04b12751507a63d10747d50c232"
+        }
+      }
+    },
+    "mandatory_tours": {
+      "version": 10,
+      "columns": {
+        "tour_id": {
+          "storage_key": "t0002_c0000",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "fabcde8dfb242671cc0dd32f645c24514e593b94a15a7311482ecb67ef5285ca"
+        },
+        "person_id": {
+          "storage_key": "t0002_c0001",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "d7a65623fbea84ca337917eb366300b280568770327208f60970286acb6e6962"
+        },
+        "tour_type": {
+          "storage_key": "t0002_c0002",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "b343399133a55f8cd33382ef28efdfa6200fac5fab4f151520efa3c13c414c56"
+        },
+        "tour_type_count": {
+          "storage_key": "t0002_c0003",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "6a4d6c6bd88148385e5f84d458756969657b3c0fe30c1d3c021ab136501661ef"
+        },
+        "tour_type_num": {
+          "storage_key": "t0002_c0004",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "e5eff7a9ca1fb4b199d5be37cc0a6082854bfb2f84f7ccbd5385e009a42bc540"
+        },
+        "tour_num": {
+          "storage_key": "t0002_c0005",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "6558ebbefac04e7c6340fb6a581f19d386bf929257a8091a94707bcdcf82011b"
+        },
+        "tour_count": {
+          "storage_key": "t0002_c0006",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "9e567e4649987fd0a4de27f5d474ee63f18b996a7f9d4bd05d3c5ac6900bc47f"
+        },
+        "tour_category": {
+          "storage_key": "t0002_c0007",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "26f80c70400c39604329430607798ca7245b19af79849aa1e05d4745f9e6c494"
+        },
+        "number_of_participants": {
+          "storage_key": "t0002_c0008",
+          "dtype": "int8",
+          "shape": [
+            81983
+          ],
+          "sha256": "aed14dba7efae8b0ccc5cf767abe26e6586bf077c12925012b32df5c21aeb77b"
+        },
+        "destination": {
+          "storage_key": "t0002_c0009",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "a88181970e2b59bce77a91a9ca034249c5e882ecdf7c48126f76b0099b3b4ccd"
+        },
+        "origin": {
+          "storage_key": "t0002_c0010",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "580dafe9349f9ee605999ab399bb6b826e3b6aac46d1249647b5a9871f04cb38"
+        },
+        "household_id": {
+          "storage_key": "t0002_c0011",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "d4f5439629ffce61bac115474ae7b7c27ed47042f856df857b4554296a9d0512"
+        }
+      }
+    },
+    "schedule_result": {
+      "version": 10,
+      "columns": {
+        "tour_id": {
+          "storage_key": "t0003_c0000",
+          "dtype": "int64",
+          "shape": [
+            81983
+          ],
+          "sha256": "624446cfbf6acdfaabc7cbdb6002eb70bb454aa114a50ccd2e3ff66acde4f5bf"
+        },
+        "tdd": {
+          "storage_key": "t0003_c0001",
+          "dtype": "int16",
+          "shape": [
+            81983
+          ],
+          "sha256": "105870a0785c9f58d6892b69da3f18a1971a6e0580f568a9c2b3b1f066b72dae"
+        }
+      }
+    },
+    "timetable_state": {
+      "version": 10,
+      "columns": {
+        "person_id": {
+          "storage_key": "t0004_c0000",
+          "dtype": "int64",
+          "shape": [
+            78900
+          ],
+          "sha256": "daf5e5fec51d69d207ee03b38b6f0bd7f85e466e96c874323aba89bbd81d4f36"
+        },
+        "window": {
+          "storage_key": "t0004_c0001",
+          "dtype": "int8",
+          "shape": [
+            78900,
+            21
+          ],
+          "sha256": "4142d5c9ef45bacf27a297b207e6c7014314b5884af5e3234b9268e0eaf832e6"
+        },
+        "previous_tdd": {
+          "storage_key": "t0004_c0002",
+          "dtype": "int16",
+          "shape": [
+            78900
+          ],
+          "sha256": "1209bbffb8811bac0abfe56cfc0a4e6dc52afc21d26c15722c1567680829feeb"
+        }
+      }
+    }
+  },
+  "completed_stages": [
+    "topology.household_zone_maps",
+    "topology.mandatory_person_maps",
+    "topology.tour_choice_map",
+    "scenario_warmup.auto_features",
+    "scenario_warmup.auto_choice",
+    "scenario_warmup.mandatory_frequency_choice",
+    "scenario_warmup.mandatory_tour_expansion",
+    "scenario_warmup.tour_schedule_link",
+    "scenario_warmup.mandatory_scheduling",
+    "scenario_0.auto_features",
+    "scenario_0.auto_choice",
+    "scenario_0.mandatory_frequency_choice",
+    "scenario_0.mandatory_tour_expansion",
+    "scenario_0.tour_schedule_link",
+    "scenario_0.mandatory_scheduling",
+    "scenario_1.auto_features",
+    "scenario_1.auto_choice",
+    "scenario_1.mandatory_frequency_choice",
+    "scenario_1.mandatory_tour_expansion",
+    "scenario_1.tour_schedule_link",
+    "scenario_1.mandatory_scheduling",
+    "scenario_2.auto_features",
+    "scenario_2.auto_choice",
+    "scenario_2.mandatory_frequency_choice",
+    "scenario_2.mandatory_tour_expansion",
+    "scenario_2.tour_schedule_link",
+    "scenario_2.mandatory_scheduling",
+    "scenario_3.auto_features",
+    "scenario_3.auto_choice",
+    "scenario_3.mandatory_frequency_choice",
+    "scenario_3.mandatory_tour_expansion",
+    "scenario_3.tour_schedule_link",
+    "scenario_3.mandatory_scheduling",
+    "scenario_4.auto_features",
+    "scenario_4.auto_choice",
+    "scenario_4.mandatory_frequency_choice",
+    "scenario_4.mandatory_tour_expansion",
+    "scenario_4.tour_schedule_link",
+    "scenario_4.mandatory_scheduling",
+    "scenario_5.auto_features",
+    "scenario_5.auto_choice",
+    "scenario_5.mandatory_frequency_choice",
+    "scenario_5.mandatory_tour_expansion",
+    "scenario_5.tour_schedule_link",
+    "scenario_5.mandatory_scheduling",
+    "scenario_6.auto_features",
+    "scenario_6.auto_choice",
+    "scenario_6.mandatory_frequency_choice",
+    "scenario_6.mandatory_tour_expansion",
+    "scenario_6.tour_schedule_link",
+    "scenario_6.mandatory_scheduling",
+    "scenario_7.auto_features",
+    "scenario_7.auto_choice",
+    "scenario_7.mandatory_frequency_choice",
+    "scenario_7.mandatory_tour_expansion",
+    "scenario_7.tour_schedule_link",
+    "scenario_7.mandatory_scheduling",
+    "scenario_8.auto_features",
+    "scenario_8.auto_choice",
+    "scenario_8.mandatory_frequency_choice",
+    "scenario_8.mandatory_tour_expansion",
+    "scenario_8.tour_schedule_link",
+    "scenario_8.mandatory_scheduling"
+  ],
+  "random_ledger": {},
+  "state_archive": "state.npz",
+  "state_archive_sha256": "f308c7835acaff5a84aa2c0e91b85075152310f9cf08f72f4ad153b091c169e3",
+  "metadata": {
+    "phase": 23,
+    "public_households": 50000,
+    "named_ingress_boundary": "compact 5x5 scheduling mode-logsum caches"
+  }
+}

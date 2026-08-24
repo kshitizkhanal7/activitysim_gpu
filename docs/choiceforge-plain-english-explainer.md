@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 22 result does and does not prove;
+- what the completed Phase 23 device-resident result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -71,6 +71,19 @@ all three pairs. The middle paired speedup was 1.257 times. The GPU also found
 CPU and GPU rounding could disagree. The real Sharrow arithmetic resolved only
 those 57 rows, using 11,400 bytes of transferred logsum data. This makes Phase
 22 an exact, mostly-GPU component result - not an absolutely CPU-free model.
+
+Phase 23 then changed the architecture. Instead of repeatedly returning to
+CPU-owned ActivitySim tables between decisions, it created a versioned model
+state that stays on the graphics card across calibrated auto ownership,
+mandatory-tour frequency, tour creation, tour identity linking, and timetable
+scheduling. A new fused kernel evaluates all 98 mandatory-frequency
+expressions and the final choice without building a large intermediate feature
+table. Three independent processes, each with nine measured repetitions,
+produced a middle resident speedup of **24.405 times**. Even charging one-time
+setup and final publication to a single run was **1.356 times faster** at the
+middle result. Every calibrated choice, all 12 tour columns, all 81,983 time
+choices, and every final timetable value matched. The runtime can also write a
+self-contained checkpoint, restore it, and continue computing on the GPU.
 
 ## 1. What is travel demand modeling?
 
@@ -2672,3 +2685,149 @@ one-in-81,983 boundary problem was found because the project preserved random
 draws, stable identities, CPU references, public checkpoints, arithmetic
 policies, and fail-closed tests. Those are the pieces that turn “the GPU looked
 fast” into a result another reviewer can challenge and reproduce.
+
+## 53. Why the 1.257-times result was not the GPU's real limit
+
+The Phase 22 timer measured a whole ActivitySim component. That was the right
+test for compatibility, but most of its roughly 32 seconds were not spent in
+the scheduling kernel. ActivitySim had to restart a saved pipeline, create and
+join pandas tables, organize model calls, synchronize state, validate results,
+and write output. Making a small kernel even faster could not remove that
+surrounding work.
+
+This is an example of **Amdahl's law**. It says that a system cannot become much
+faster by improving a part that occupies only a small fraction of total time.
+If a one-second calculation sits inside 30 seconds of unchanged setup, making
+that calculation instantaneous still leaves about 30 seconds.
+
+The escape is to change who owns the workflow. Phase 23 uploads the needed
+state once and lets several dependent model stages share it on the GPU.
+
+## 54. What a device-resident runtime is
+
+Think of a school group project stored in a shared online folder. If every
+student downloads the entire folder, changes one sentence, emails it back, and
+waits for someone else to upload it, most time is spent moving and organizing
+files. A better system keeps the current document in one shared place and
+records which person changed which section.
+
+Phase 23 does the same for model data. A **device table** is a set of columns in
+GPU memory. The runtime gives every table a name and version. Every model stage
+must declare which tables it reads and writes. It follows these rules:
+
+- input tables may be uploaded before the runtime is sealed;
+- after sealing, modeled outputs must be GPU arrays;
+- a host NumPy array or hidden CPU fallback causes a hard failure;
+- all outputs of a stage are checked before any become official;
+- replacing an existing table must be requested explicitly;
+- temporary tables are released after their final user;
+- only named final columns may be published; and
+- checkpoints record enough actual data to restart, not only a success label.
+
+This still needs a CPU process to read files and launch CUDA kernels. "Device
+resident" means the modeled state and arithmetic stay on the GPU between the
+declared entry, publication, and checkpoint boundaries.
+
+## 55. The six connected modeled stages
+
+The public Phase 23 graph begins with 50,000 households and 132,536 persons.
+It performs six connected kinds of work:
+
+1. The calibrated auto-ownership model chooses the number of cars for every
+   household.
+2. The mandatory-frequency model uses those new car choices and decides which
+   mandatory people make one or two work or school tours.
+3. The GPU creates the variable number of tour rows.
+4. Stable tour IDs connect every generated tour to its scheduling row.
+5. Six ordered scheduling batches test time choices, calculate probabilities,
+   and select TDDs.
+6. The timetable is updated so later tours cannot overlap earlier tours.
+
+The graph ends with 78,900 mandatory-person choices and 81,983 scheduled tours.
+The compact 5-by-5 mode-logsum caches are uploaded inputs in this phase. Phase
+22 proved that CUDA can generate them from raw skims, but joining that producer
+inside the sealed Phase 23 graph remains future work.
+
+## 56. Two optimizations that only a resident runtime can use well
+
+The first optimization is a **compiled join map**. Households repeatedly look
+up land-use data by zone, and persons repeatedly look up household data. The
+older code sorted and searched those keys every run. Phase 23 validates the
+relationships once and keeps the resulting row numbers on the GPU. Later runs
+use direct array indexing.
+
+The second optimization is a **fused fixed-choice compiler**. The mandatory
+frequency model has 98 published expressions and five possible answers. The
+old GPU path created 98 feature columns, multiplied them by coefficients, then
+ran separate probability and choice operations. The new generated CUDA kernel
+does all of this for one person in one thread:
+
+- read the person's permanent fields;
+- insert the auto-ownership answer made by the previous GPU stage;
+- evaluate 98 expressions;
+- accumulate five utility scores;
+- calculate probabilities and a logsum; and
+- use the exact ActivitySim random draw to select the answer.
+
+It changed zero of 78,900 frequency choices. Its largest logsum difference
+from the independent dense CPU calculation was less than
+`0.000000000000001`.
+
+## 57. The Phase 23 proof
+
+The team started three independent Python and CUDA processes. Each process ran
+nine measured CPU repetitions and nine measured resident-GPU repetitions after
+both compilers were warmed.
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| CPU modeled time | 0.7673 s | 0.7605 s | 0.7677 s | 0.7673 s |
+| GPU resident time | 0.0313 s | 0.0353 s | 0.0315 s | 0.0315 s |
+| Resident speedup | 24.516x | 21.555x | 24.405x | **24.405x** |
+| Setup-inclusive speedup | 1.356x | 1.314x | 1.360x | **1.356x** |
+
+"Setup-inclusive" charges the one-time input upload, scheduler creation, device
+join-map compilation, one modeled run, and final publication to only one run.
+It excludes file reading and compiler warm-up on both CPU and GPU. Optional
+checkpoint writing is reported separately and took about 0.34 seconds.
+
+If the same graph is run repeatedly, the fixed setup cost is shared. Arithmetic
+using the measured medians gives 9.055x over ten repeated runs and 20.868x over
+one hundred. These are amortized calculations, not measurements of different
+policy scenarios; measured parameter-batch scenarios are still future work.
+
+Every proof gate passed in all three processes:
+
+- 0 changed auto-ownership choices;
+- 0 changed mandatory-frequency choices;
+- 0 differences in all 12 generated tour columns;
+- 0 changed tour IDs or TDDs;
+- 0 changed timetable cells;
+- 0 repeat differences across 27 measured GPU runs;
+- 0 post-seal modeled transfers;
+- 0 CPU fallbacks; and
+- 0 schedule differences after checkpoint restore.
+
+## 58. What this success means - and what it does not mean
+
+Phase 23 proves that the GPU's large advantage was hidden by the old
+CPU-owned workflow. When several calibrated components share resident state,
+the modeled chain is more than 20 times faster in every independent process on
+this machine. Even a single run remains faster after paying the measured setup
+and publication costs.
+
+It does not prove that the entire ActivitySim model now runs in 0.03 seconds.
+Earlier workplace/school location and CDAP state are frozen inputs. Scheduling
+mode-logsum caches are also inputs. Destination choice, non-mandatory tours,
+joint tours, at-work subtours, trips, shadow pricing, skim-cache management,
+and normal pipeline output still need device-resident implementations.
+
+The next steps are to bring Phase 22's raw-skim logsum producer inside this
+runtime, add a bounded GPU skim cache, represent sampling and shadow-pricing
+state as versioned tables, then port the remaining model components. The proof
+must eventually be repeated on another GPU and another public model.
+
+The important change is that the project now has both pieces: a compatible
+ActivitySim path that proves exact integration, and a resident runtime that
+proves the architecture can deliver large speedups. Compatibility explains
+today's result; residency shows the path to the next generation.

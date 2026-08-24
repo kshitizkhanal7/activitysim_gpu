@@ -1,0 +1,69 @@
+{
+  "phase": 23,
+  "qualification": "three independent process-level device-resident runs",
+  "processes": 3,
+  "measured_repetitions_per_process": [
+    9,
+    9,
+    9
+  ],
+  "cpu_modeled_medians_seconds": [
+    0.7673010999569669,
+    0.7605041000060737,
+    0.767679400043562
+  ],
+  "gpu_resident_medians_seconds": [
+    0.031298200017772615,
+    0.035282299970276654,
+    0.03145589993800968
+  ],
+  "one_time_setup_seconds": [
+    0.5314053999027237,
+    0.5406777000753209,
+    0.53125690005254
+  ],
+  "final_publication_seconds": [
+    0.0029638000996783376,
+    0.0028877999866381288,
+    0.0018464000895619392
+  ],
+  "resident_speedups": [
+    24.51582198085694,
+    21.55483346172884,
+    24.40494157078425
+  ],
+  "setup_inclusive_speedups": [
+    1.3564527493180638,
+    1.3138239446772049,
+    1.3597854749946994
+  ],
+  "median_cpu_modeled_seconds": 0.7673010999569669,
+  "median_gpu_resident_seconds": 0.03145589993800968,
+  "median_resident_speedup": 24.40494157078425,
+  "median_setup_inclusive_speedup": 1.3564527493180638,
+  "minimum_resident_speedup": 21.55483346172884,
+  "minimum_setup_inclusive_speedup": 1.3138239446772049,
+  "median_ten_repeat_amortized_speedup": 9.0552901771291,
+  "median_hundred_repeat_amortized_speedup": 20.868263231064635,
+  "proof_gates": {
+    "three_independent_processes": true,
+    "all_source_proof_gates_pass": true,
+    "all_behavioral_outputs_exact": true,
+    "resident_gpu_faster_every_process": true,
+    "setup_inclusive_gpu_faster_every_process": true
+  },
+  "inputs": [
+    {
+      "path": "benchmark-results\\phase23-device-resident.json",
+      "sha256": "c9bbb8f685711b9f7d256fbcf27fc8823897e522adbc5e1260bb66475ec56843"
+    },
+    {
+      "path": "benchmark-results\\phase23-device-resident-2.json",
+      "sha256": "98f99e0be5c99d4f303240c07bf19230232800b0a932588b5f6865cedc9ab446"
+    },
+    {
+      "path": "benchmark-results\\phase23-device-resident-3.json",
+      "sha256": "915d7c8fa8da893fc043ff212fdeb81492e1d2fcf143254679c1adc06253a1ad"
+    }
+  ]
+}

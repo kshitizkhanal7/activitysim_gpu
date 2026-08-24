@@ -392,3 +392,35 @@ ActivitySim/Sharrow arithmetic adjudicated only those rows, transferring
 [Phase 22 continuous GPU scheduling](docs/phase22-continuous-gpu-scheduling.md),
 the [three-pair proof](benchmark-results/phase22-live-paired-summary.json), and
 the [restart checkpoint](benchmark-results/phase22-integrated-checkpoint.json).
+
+## Phase 23 next-generation device-resident runtime
+
+Phase 23 changes the system boundary instead of tuning another isolated
+kernel. A versioned, fail-closed CUDA state graph now keeps calibrated auto
+ownership, mandatory-tour frequency, variable-length tour construction,
+stable ID linkage, six scheduling batches, and timetable mutation resident
+across component boundaries. Host arrays cannot be committed after ingress is
+sealed; publication and checkpointing are explicit named boundaries.
+
+A persistent device topology compiles static household, zone, person, and tour
+joins once. A new fused MNL compiler evaluates all 98 mandatory-frequency
+expressions, five utilities, probabilities, logsum, and choice in one CUDA
+kernel while consuming the preceding GPU auto-ownership result.
+
+Three independent processes ran nine repetitions each on the public
+50,000-household checkpoint. The median modeled result is **24.405x faster**
+than the independent CPU chain (0.031456 versus 0.767301 seconds); the slowest
+process still achieved **21.555x**. Charging one-time setup and final
+publication to a single run remains **1.356x faster** at the median. Ten-run
+setup amortization is **9.055x**.
+
+All calibrated choices, all 12 tour columns, all 81,983 TDDs, and the final
+timetable match exactly. Every one of 27 measured GPU repetitions is
+bit-repeatable, all three self-contained checkpoints restore exactly, and
+post-seal modeled transfers and CPU fallbacks are zero. The compact scheduling
+logsum cache and upstream location/CDAP state remain named ingress boundaries;
+this is a calibrated multi-component vertical slice, not yet a whole model.
+
+See the [Phase 23 technical report](docs/phase23-device-resident-runtime.md),
+the [three-process qualification](benchmark-results/phase23-device-resident-summary.json),
+and the [primary evidence](benchmark-results/phase23-device-resident.json).

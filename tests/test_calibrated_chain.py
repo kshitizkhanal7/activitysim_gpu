@@ -9,6 +9,7 @@ from choiceforge.calibrated_chain import (
     choice_from_probabilities_cpu,
     evaluate_mnl_features,
     gather_by_key_gpu,
+    key_rows_gpu,
     mnl_probabilities,
     mnl_utilities,
     resolve_activitysim_mnl_spec,
@@ -117,3 +118,17 @@ def test_gpu_key_gather_matches_many_to_one_join_and_rejects_missing_keys():
     np.testing.assert_array_equal(cp.asnumpy(gathered["value"]), [1.0, 3.0, 1.0, 2.0])
     with pytest.raises(KeyError, match="missing"):
         gather_by_key_gpu(source, cp.asarray([40]), {"value": cp.asarray([3, 1, 2])})
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA device unavailable")
+def test_gpu_key_row_map_is_reusable_and_rejects_ambiguous_sources():
+    cp = _cupy()
+    source = cp.asarray([30, 10, 20], dtype=cp.int64)
+    target = cp.asarray([10, 30, 10, 20], dtype=cp.int64)
+    rows = key_rows_gpu(source, target)
+    values = cp.asarray([3.0, 1.0, 2.0])
+    np.testing.assert_array_equal(cp.asnumpy(values[rows]), [1.0, 3.0, 1.0, 2.0])
+    with pytest.raises(ValueError, match="unique"):
+        key_rows_gpu(cp.asarray([10, 10]), cp.asarray([10]))
+    with pytest.raises(KeyError, match="missing"):
+        key_rows_gpu(source, cp.asarray([40]))

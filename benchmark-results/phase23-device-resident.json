@@ -1,0 +1,1104 @@
+{
+  "phase": 23,
+  "claim_scope": "one sealed device graph for calibrated auto ownership, mandatory tour frequency, variable-row mandatory tours, ID linkage, and six-batch timetable scheduling",
+  "named_ingress_boundary": "upstream location/CDAP state and compact 5x5 scheduling mode-logsum caches",
+  "not_claimed": "a complete ActivitySim model or raw-network-skim generation inside the resident runtime",
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.14",
+    "gpu": "NVIDIA RTX A4000",
+    "cupy": "14.1.1"
+  },
+  "workload": {
+    "households": 50000,
+    "persons": 132536,
+    "mandatory_persons": 78900,
+    "mandatory_tours": 81983,
+    "scheduling_batches": 6,
+    "scheduling_interaction_rows": 15242743,
+    "published_columns": 21,
+    "fused_mtf_expressions": 98
+  },
+  "timings_seconds": {
+    "cpu_modeled_samples": [
+      0.7303304000524804,
+      0.777790299966,
+      0.7603090000338852,
+      0.7775554000400007,
+      0.7744482000125572,
+      0.7606310999253765,
+      0.7576403999701142,
+      0.7913418000098318,
+      0.7673010999569669
+    ],
+    "gpu_resident_samples": [
+      0.22402639989741147,
+      0.031791299930773675,
+      0.03147699998226017,
+      0.031425900058820844,
+      0.031237900024279952,
+      0.028842799947597086,
+      0.031298200017772615,
+      0.031140200095251203,
+      0.03121599997393787
+    ],
+    "cpu_modeled_median": 0.7673010999569669,
+    "gpu_resident_median": 0.031298200017772615,
+    "one_time_input_upload": 0.31569279998075217,
+    "one_time_scheduler_initialization": 0.10212769999634475,
+    "one_time_device_topology_compile": 0.11358489992562681,
+    "one_time_setup_total": 0.5314053999027237,
+    "final_publication": 0.0029638000996783376,
+    "checkpoint_write": 0.3340592000167817,
+    "single_run_setup_compute_publication": 0.5656674000201747
+  },
+  "speedup": {
+    "resident_gpu_vs_cpu_modeled": 24.51582198085694,
+    "transfer_inclusive_gpu_vs_cpu_modeled": 1.3564527493180638,
+    "ten_repeated_runs_amortized": 9.0552901771291,
+    "hundred_repeated_runs_amortized": 20.94054257854086
+  },
+  "correctness": {
+    "auto_checkpoint_mismatches": 0,
+    "mandatory_frequency_checkpoint_mismatches": 0,
+    "auto_logsum_max_abs_error": 1.7763568394002505e-15,
+    "fused_mtf_logsum_max_abs_error": 8.881784197001252e-16,
+    "tour_column_mismatches": {
+      "tour_id": 0,
+      "person_id": 0,
+      "tour_type": 0,
+      "tour_type_count": 0,
+      "tour_type_num": 0,
+      "tour_num": 0,
+      "tour_count": 0,
+      "tour_category": 0,
+      "number_of_participants": 0,
+      "destination": 0,
+      "origin": 0,
+      "household_id": 0
+    },
+    "scheduled_tour_id_mismatches": 0,
+    "tdd_mismatches": 0,
+    "timetable_mismatches_vs_cpu": 0,
+    "restart_tour_id_mismatches": 0,
+    "restart_tdd_mismatches": 0,
+    "repeat_mismatches": [
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      },
+      {
+        "auto_choice": 0,
+        "mtf_choice": 0,
+        "tour_id": 0,
+        "tdd": 0
+      }
+    ]
+  },
+  "telemetry": {
+    "ingress_calls": 14,
+    "ingress_bytes": 29411646,
+    "publication_calls": 1,
+    "publication_bytes": 8665731,
+    "checkpoint_calls": 1,
+    "checkpoint_bytes": 2407661,
+    "forbidden_postseal_host_bytes": 0,
+    "modeled_cpu_fallbacks": 0,
+    "peak_persistent_state_bytes": 66706705,
+    "stages": [
+      {
+        "name": "topology.household_zone_maps",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility"
+        ],
+        "writes": [
+          "household_join_map"
+        ],
+        "host_launch_seconds": 0.10095819993875921,
+        "device_seconds": 0.10098790740966797
+      },
+      {
+        "name": "topology.mandatory_person_maps",
+        "reads": [
+          "persons",
+          "household_state",
+          "households"
+        ],
+        "writes": [
+          "mandatory_person_map"
+        ],
+        "host_launch_seconds": 0.01152400008868426,
+        "device_seconds": 0.011546815872192383
+      },
+      {
+        "name": "topology.tour_choice_map",
+        "reads": [
+          "persons",
+          "mandatory_person_map",
+          "tour_choosers"
+        ],
+        "writes": [
+          "tour_choice_map"
+        ],
+        "host_launch_seconds": 0.0008518999675288796,
+        "device_seconds": 0.0008702719807624817
+      },
+      {
+        "name": "scenario_warmup.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.012088999967090786,
+        "device_seconds": 0.012123968124389648
+      },
+      {
+        "name": "scenario_warmup.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.04672090010717511,
+        "device_seconds": 0.04674870300292969
+      },
+      {
+        "name": "scenario_warmup.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.0016209000023081899,
+        "device_seconds": 0.0019824639558792116
+      },
+      {
+        "name": "scenario_warmup.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.003578400006517768,
+        "device_seconds": 0.003290112018585205
+      },
+      {
+        "name": "scenario_warmup.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0009292999748140574,
+        "device_seconds": 0.0009379839897155762
+      },
+      {
+        "name": "scenario_warmup.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.07346479990519583,
+        "device_seconds": 0.07349247741699219
+      },
+      {
+        "name": "scenario_0.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.005471699987538159,
+        "device_seconds": 0.033188865661621096
+      },
+      {
+        "name": "scenario_0.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.0006310000317171216,
+        "device_seconds": 0.014206975936889648
+      },
+      {
+        "name": "scenario_0.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00018720002844929695,
+        "device_seconds": 0.0038051838874816894
+      },
+      {
+        "name": "scenario_0.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.05077510001137853,
+        "device_seconds": 0.0066641921997070315
+      },
+      {
+        "name": "scenario_0.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.015932700014673173,
+        "device_seconds": 0.01591808032989502
+      },
+      {
+        "name": "scenario_0.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.15024820005055517,
+        "device_seconds": 0.14969856262207032
+      },
+      {
+        "name": "scenario_1.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.002846800023689866,
+        "device_seconds": 0.0028802878856658935
+      },
+      {
+        "name": "scenario_1.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.0005480999825522304,
+        "device_seconds": 0.0018431999683380126
+      },
+      {
+        "name": "scenario_1.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00015049998182803392,
+        "device_seconds": 0.0004147199988365173
+      },
+      {
+        "name": "scenario_1.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.0018884999444708228,
+        "device_seconds": 0.0004700160026550293
+      },
+      {
+        "name": "scenario_1.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0008776999311521649,
+        "device_seconds": 0.0008939840197563171
+      },
+      {
+        "name": "scenario_1.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.025017800042405725,
+        "device_seconds": 0.025041919708251953
+      },
+      {
+        "name": "scenario_2.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.0026641000295057893,
+        "device_seconds": 0.002696959972381592
+      },
+      {
+        "name": "scenario_2.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.00042369996663182974,
+        "device_seconds": 0.0018145279884338378
+      },
+      {
+        "name": "scenario_2.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00013669999316334724,
+        "device_seconds": 0.00041574400663375855
+      },
+      {
+        "name": "scenario_2.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.00198679999448359,
+        "device_seconds": 0.000449535995721817
+      },
+      {
+        "name": "scenario_2.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.000880399951711297,
+        "device_seconds": 0.0008889279961585998
+      },
+      {
+        "name": "scenario_2.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.02499170007649809,
+        "device_seconds": 0.025014080047607423
+      },
+      {
+        "name": "scenario_3.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.002578199957497418,
+        "device_seconds": 0.002612735986709595
+      },
+      {
+        "name": "scenario_3.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.00040339992847293615,
+        "device_seconds": 0.0018012160062789917
+      },
+      {
+        "name": "scenario_3.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00014340004418045282,
+        "device_seconds": 0.0004147199988365173
+      },
+      {
+        "name": "scenario_3.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.0020704999333247542,
+        "device_seconds": 0.0005314559936523438
+      },
+      {
+        "name": "scenario_3.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0008529999759048223,
+        "device_seconds": 0.0008622080087661744
+      },
+      {
+        "name": "scenario_3.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.02498740004375577,
+        "device_seconds": 0.025010015487670897
+      },
+      {
+        "name": "scenario_4.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.0025258000241592526,
+        "device_seconds": 0.002559135913848877
+      },
+      {
+        "name": "scenario_4.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.00039599998854100704,
+        "device_seconds": 0.0017960959672927857
+      },
+      {
+        "name": "scenario_4.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00013209995813667774,
+        "device_seconds": 0.0004116480052471161
+      },
+      {
+        "name": "scenario_4.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.0020417000632733107,
+        "device_seconds": 0.0004915199875831604
+      },
+      {
+        "name": "scenario_4.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0008360999636352062,
+        "device_seconds": 0.0008449599742889404
+      },
+      {
+        "name": "scenario_4.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.024912800057791173,
+        "device_seconds": 0.02494054412841797
+      },
+      {
+        "name": "scenario_5.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.002520899986848235,
+        "device_seconds": 0.0025558719635009764
+      },
+      {
+        "name": "scenario_5.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.000391000066883862,
+        "device_seconds": 0.0017879040241241455
+      },
+      {
+        "name": "scenario_5.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00013930001296103,
+        "device_seconds": 0.0004147199988365173
+      },
+      {
+        "name": "scenario_5.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.002004800015129149,
+        "device_seconds": 0.00046079999208450316
+      },
+      {
+        "name": "scenario_5.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0008351000724360347,
+        "device_seconds": 0.000843775987625122
+      },
+      {
+        "name": "scenario_5.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.022560799960047007,
+        "device_seconds": 0.022586368560791017
+      },
+      {
+        "name": "scenario_6.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.004596699960529804,
+        "device_seconds": 0.004623519897460938
+      },
+      {
+        "name": "scenario_6.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.0004301000153645873,
+        "device_seconds": 0.001511423945426941
+      },
+      {
+        "name": "scenario_6.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00014210003428161144,
+        "device_seconds": 0.00034303998947143557
+      },
+      {
+        "name": "scenario_6.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.0017331000417470932,
+        "device_seconds": 0.0006481919884681702
+      },
+      {
+        "name": "scenario_6.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.0013327000197023153,
+        "device_seconds": 0.001357856035232544
+      },
+      {
+        "name": "scenario_6.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.022480699932202697,
+        "device_seconds": 0.022518783569335937
+      },
+      {
+        "name": "scenario_7.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.004499199916608632,
+        "device_seconds": 0.0045229439735412595
+      },
+      {
+        "name": "scenario_7.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.00042349996510893106,
+        "device_seconds": 0.001511423945426941
+      },
+      {
+        "name": "scenario_7.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.00014819996431469917,
+        "device_seconds": 0.00034303998947143557
+      },
+      {
+        "name": "scenario_7.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.0017346999375149608,
+        "device_seconds": 0.0006461439728736877
+      },
+      {
+        "name": "scenario_7.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.001293900073505938,
+        "device_seconds": 0.0013189760446548461
+      },
+      {
+        "name": "scenario_7.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.022466499940492213,
+        "device_seconds": 0.022503423690795898
+      },
+      {
+        "name": "scenario_8.auto_features",
+        "reads": [
+          "households",
+          "land_use",
+          "accessibility",
+          "household_join_map"
+        ],
+        "writes": [
+          "auto_features"
+        ],
+        "host_launch_seconds": 0.004542500013485551,
+        "device_seconds": 0.004567872047424317
+      },
+      {
+        "name": "scenario_8.auto_choice",
+        "reads": [
+          "auto_features",
+          "auto_parameters",
+          "households"
+        ],
+        "writes": [
+          "auto_result"
+        ],
+        "host_launch_seconds": 0.00040959997568279505,
+        "device_seconds": 0.0015063040256500244
+      },
+      {
+        "name": "scenario_8.mandatory_frequency_choice",
+        "reads": [
+          "mandatory_person_map",
+          "auto_result"
+        ],
+        "writes": [
+          "mtf_result"
+        ],
+        "host_launch_seconds": 0.0001436000457033515,
+        "device_seconds": 0.00034201601147651673
+      },
+      {
+        "name": "scenario_8.mandatory_tour_expansion",
+        "reads": [
+          "tour_choosers",
+          "mtf_result",
+          "tour_choice_map"
+        ],
+        "writes": [
+          "mandatory_tours"
+        ],
+        "host_launch_seconds": 0.001783899962902069,
+        "device_seconds": 0.0006440960168838501
+      },
+      {
+        "name": "scenario_8.tour_schedule_link",
+        "reads": [
+          "mandatory_tours",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "tour_schedule_link"
+        ],
+        "host_launch_seconds": 0.001313099986873567,
+        "device_seconds": 0.0013384640216827393
+      },
+      {
+        "name": "scenario_8.mandatory_scheduling",
+        "reads": [
+          "tour_schedule_link",
+          "schedule_common",
+          "schedule_batch_0",
+          "schedule_batch_1",
+          "schedule_batch_2",
+          "schedule_batch_3",
+          "schedule_batch_4",
+          "schedule_batch_5"
+        ],
+        "writes": [
+          "schedule_result",
+          "timetable_state"
+        ],
+        "host_launch_seconds": 0.022488299990072846,
+        "device_seconds": 0.022527999877929687
+      }
+    ]
+  },
+  "checkpoint": {
+    "tables": [
+      "auto_result",
+      "mtf_result",
+      "mandatory_tours",
+      "schedule_result",
+      "timetable_state"
+    ],
+    "archive_sha256": "f308c7835acaff5a84aa2c0e91b85075152310f9cf08f72f4ad153b091c169e3",
+    "schedule_tdd_sha256": "105870a0785c9f58d6892b69da3f18a1971a6e0580f568a9c2b3b1f066b72dae"
+  },
+  "proof_gates": {
+    "calibrated_choices_exact": true,
+    "fused_mnl_logsums_within_1e_10": true,
+    "variable_tour_table_exact": true,
+    "scheduling_exact": true,
+    "restart_exact": true,
+    "all_measured_repeats_bit_exact": true,
+    "no_postseal_modeled_transfers": true,
+    "no_modeled_cpu_fallbacks": true,
+    "single_final_publication": true,
+    "gpu_resident_faster_than_cpu": true,
+    "all_stage_device_timings_recorded": true
+  },
+  "hashes": {
+    "phase21_input_manifest": "46d091c06d7b227a3ea9535e8dc709dc6860c9fcd52f28d8fa68eb95086cca57",
+    "phase20_source_manifest": "01abac58cf62de0b7c5dc90e54423dc9b97a1944fe68731af83d74ea426513ff",
+    "runtime_source": "9cd42ad88f33a2d75362f1087b5f2e913659eed05ba17dcfa8cb66e2d53321ef",
+    "benchmark_source": "9d4450442e210df4c9fab5bed69faf1e62e431cf29e1d526fac5acd78821b770"
+  }
+}
