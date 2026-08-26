@@ -1,0 +1,83 @@
+{
+  "phase": 25,
+  "scope": "six sealed public MTC mandatory-tour mode-choice programs: resident raw skims and dense inputs through generated 315-term CUDA utilities, nested logits, and device logsum-cache scatter",
+  "independent_process_run": true,
+  "warmup_runs": 1,
+  "measured_runs": 5,
+  "resident_seconds": [
+    0.17115429998375475,
+    0.16973920003511012,
+    0.1682524000061676,
+    0.16983769997023046,
+    0.16874550003558397
+  ],
+  "resident_median_seconds": 0.16973920003511012,
+  "resident_min_seconds": 0.1682524000061676,
+  "initial_live_device_pipeline_seconds": 1.6387821001699194,
+  "resident_speedup_vs_initial_live_device_pipeline": 9.654706159985093,
+  "batches": 6,
+  "rows_per_replay": 1210124,
+  "terms_per_program": [
+    315
+  ],
+  "alternatives_per_program": [
+    21
+  ],
+  "logical_skim_bindings_per_program": [
+    209
+  ],
+  "unique_skim_arrays_per_program": [
+    149
+  ],
+  "shared_skim_bytes_sum_across_program_references": 37191528672,
+  "unique_resident_skim_arrays_process": 149,
+  "unique_resident_skim_bytes_process": 6198588112,
+  "sealed_dense_input_bytes": 348517296,
+  "sealed_skim_coordinate_bytes": 154895872,
+  "compiled_scatter_plan_device_bytes": 19361984,
+  "precomputed_logsum_input_bytes": 0,
+  "bulk_modeled_logsum_device_to_host_bytes": 0,
+  "postseal_host_layout_builds": 0,
+  "replays": [
+    {
+      "seconds": 0.17115429998375475,
+      "logsum_bit_mismatches": 0,
+      "logsum_max_abs_difference": 0.0,
+      "cache_source_rows": 1210124
+    },
+    {
+      "seconds": 0.16973920003511012,
+      "logsum_bit_mismatches": 0,
+      "logsum_max_abs_difference": 0.0,
+      "cache_source_rows": 1210124
+    },
+    {
+      "seconds": 0.1682524000061676,
+      "logsum_bit_mismatches": 0,
+      "logsum_max_abs_difference": 0.0,
+      "cache_source_rows": 1210124
+    },
+    {
+      "seconds": 0.16983769997023046,
+      "logsum_bit_mismatches": 0,
+      "logsum_max_abs_difference": 0.0,
+      "cache_source_rows": 1210124
+    },
+    {
+      "seconds": 0.16874550003558397,
+      "logsum_bit_mismatches": 0,
+      "logsum_max_abs_difference": 0.0,
+      "cache_source_rows": 1210124
+    }
+  ],
+  "proof_gates": {
+    "six_real_programs_captured": true,
+    "real_315_term_ir": true,
+    "all_public_rows_replayed": true,
+    "no_precomputed_logsum_input": true,
+    "no_bulk_modeled_logsum_download": true,
+    "no_postseal_host_scatter_planning": true,
+    "every_replay_bit_exact": true,
+    "every_replay_complete": true
+  }
+}

@@ -376,6 +376,53 @@ def test_generated_strict_utilities_stay_on_device_through_nested_logsum():
     assert telemetry.nested_logsum.host_to_device_ms == 0
 
 
+def test_resident_invocation_snapshots_dense_inputs_and_skim_coordinates():
+    cp = pytest.importorskip("cupy")
+    rows = 7
+    cube = np.arange(4 * 5 * 3, dtype=np.float32).reshape(4, 5, 3)
+    orig = np.arange(rows, dtype=np.int64) % 4
+    dest = (np.arange(rows, dtype=np.int64) * 2) % 5
+    period = np.arange(rows, dtype=np.int64) % 3
+    dense = np.linspace(-1.0, 1.0, rows, dtype=np.float32)
+    spec = pd.DataFrame({
+        "Expression": ["odt_skims['TIME']", "df.x"],
+        "A": [0.5, 2.0],
+        "B": [-1.0, 0.25],
+    })
+    environment = {
+        "df": {"x": dense},
+        "odt_skims": {
+            "TIME": CudaDatasetSkimBinding(
+                data=cp.asarray(cube),
+                orig=cp.asarray(orig),
+                dest=cp.asarray(dest),
+                time=cp.asarray(period),
+                dest_count=5,
+                time_count=3,
+            )
+        },
+    }
+    result = evaluate_strict_cuda(
+        specification_ir(spec),
+        environment,
+        return_device=True,
+        capture_features=False,
+        compact_inputs=True,
+        group_skim_indices=True,
+        capture_resident_invocation=True,
+    )
+    invocation = result.resident_invocation
+    expected = cp.asnumpy(result.utilities)
+    dense[:] = 99
+    environment["odt_skims"]["TIME"].orig[:] = 3
+    actual = cp.asnumpy(invocation.execute())
+    np.testing.assert_array_equal(actual, expected)
+    assert invocation.logical_skim_bindings == 1
+    assert invocation.unique_skim_arrays == 1
+    assert invocation.shared_skim_data_bytes == cube.nbytes
+    assert invocation.skim_coordinate_bytes == rows * 3 * np.dtype(np.int64).itemsize
+
+
 @pytest.mark.parametrize(
     "tile_rows,cooperative", [(1, False), (1, True), (2, True), (4, True), (8, True)]
 )

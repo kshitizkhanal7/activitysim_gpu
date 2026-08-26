@@ -3,7 +3,10 @@ import pytest
 
 from choiceforge.cuda_backend import _cupy, cuda_available
 from choiceforge.gpu_native import GpuOnlyViolation
-from choiceforge.gpu_scheduling_integration import assemble_device_logsum_cache
+from choiceforge.gpu_scheduling_integration import (
+    CompiledDeviceLogsumScatter,
+    assemble_device_logsum_cache,
+)
 
 
 @pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
@@ -54,3 +57,29 @@ def test_device_logsum_cache_fails_closed_on_identity_and_slot_errors():
             {"chooser_ids": [11], "start": [5], "end": [5]},
             [11],
         )
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
+def test_compiled_logsum_scatter_reuses_device_plan_and_outputs():
+    cp = _cupy()
+    metadata = {
+        "chooser_ids": np.array([11, 11, 22], dtype=np.int64),
+        "start": np.array([5, 6, 19], dtype=np.int16),
+        "end": np.array([5, 9, 23], dtype=np.int16),
+    }
+    initial = cp.asarray([1.25, 2.5, 9.0], dtype=cp.float64)
+    plan = CompiledDeviceLogsumScatter.compile(
+        metadata, [11, 22], reference_logsums=initial
+    )
+    first = plan.execute(initial)
+    cache_pointer = int(first.cache.__cuda_array_interface__["data"][0])
+    second = plan.execute(cp.asarray([3.5, 4.5, -2.0], dtype=cp.float64))
+    assert int(second.cache.__cuda_array_interface__["data"][0]) == cache_pointer
+    cache = cp.asnumpy(second.cache)
+    assert cache[0, 0] == np.float32(3.5)
+    assert cache[0, 6] == np.float32(4.5)
+    assert cache[1, 24] == np.float32(-2.0)
+    assert plan.source_rows == 3
+    assert plan.plan_device_bytes > 0
+    with pytest.raises(GpuOnlyViolation):
+        plan.execute(np.array([1.0, 2.0, 3.0]))

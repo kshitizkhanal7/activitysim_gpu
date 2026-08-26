@@ -40,6 +40,12 @@ def main() -> int:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--kernel-reports", type=Path, required=True)
     parser.add_argument(
+        "--resident-replay-report",
+        type=Path,
+        help="also qualify Phase 25 sealed utility/nesting/cache replays",
+    )
+    parser.add_argument("--resident-replay-runs", type=int, default=5)
+    parser.add_argument(
         "--diagnostic-logsum-capture",
         type=Path,
         help="optional host capture for numeric debugging; never use for qualification",
@@ -47,6 +53,8 @@ def main() -> int:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     args.kernel_reports.mkdir(parents=True, exist_ok=True)
+    if args.resident_replay_report:
+        args.resident_replay_report.parent.mkdir(parents=True, exist_ok=True)
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
 
@@ -70,7 +78,12 @@ def main() -> int:
     from activitysim.core.workflow.runner import Runner
     from choiceforge import activitysim_scheduling
     from choiceforge.activitysim_destination import _simple_simulate_mtc21_logsums_cuda
-    from choiceforge.gpu_scheduling_integration import IntegratedGpuMandatoryScheduler
+    from choiceforge.gpu_scheduling_integration import (
+        CompiledDeviceLogsumScatter,
+        IntegratedGpuMandatoryScheduler,
+    )
+    from choiceforge.nested_logit import mtc21_nested_logsums_cuda
+    from choiceforge.cuda_backend import _cupy
 
     scheduler = IntegratedGpuMandatoryScheduler(args.inputs)
     original_compute = vts._compute_logsums
@@ -78,6 +91,25 @@ def main() -> int:
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
+    resident_records = []
+
+    def resident_invocation_sink(invocation, numeric_nest, alternatives, metadata, logsums):
+        if args.resident_replay_report is None:
+            return
+        if invocation is None:
+            raise RuntimeError("Phase 25 requested a resident invocation but none was captured")
+        resident_records.append(
+            {
+                "invocation": invocation,
+                "numeric_nest": numeric_nest,
+                "alternatives": tuple(alternatives),
+                "metadata": {
+                    key: (str(value) if key == "trace_label" else np.asarray(value).copy())
+                    for key, value in metadata.items()
+                },
+                "reference_logsums": _cupy().array(logsums, copy=True),
+            }
+        )
 
     def device_logsum_sink(values, metadata):
         nonlocal diagnostic_cache_host
@@ -148,6 +180,10 @@ def main() -> int:
                     trace_label or "mandatory_tour_scheduling.logsums",
                     explicit_chunk_size,
                     device_logsum_sink=device_logsum_sink,
+                    resident_invocation_sink=(
+                        resident_invocation_sink
+                        if args.resident_replay_report is not None else None
+                    ),
                     materialize_device_sink_result=bool(args.diagnostic_logsum_capture),
                 )
             finally:
@@ -429,9 +465,156 @@ def main() -> int:
     ]
     candidates = [item for item in kernel_reports if item.get("candidate_used")]
     fallbacks = [item for item in kernel_reports if item.get("fallback_used")]
+    report_candidate_rows = int(sum(item.get("rows", 0) for item in candidates))
     checkpoint = scheduler.checkpoint() if scheduler.complete else None
     if checkpoint is not None:
         args.checkpoint.write_text(json.dumps(checkpoint, indent=2) + "\n")
+
+    resident_report = None
+    if args.resident_replay_report is not None:
+        cp = _cupy()
+        if len(resident_records) != 6:
+            raise RuntimeError(
+                f"Phase 25 captured {len(resident_records)} resident batches, expected 6"
+            )
+        scatter_plans = [
+            CompiledDeviceLogsumScatter.compile(
+                record["metadata"],
+                scheduler.batches[number]["host"]["chooser_ids"],
+                reference_logsums=record["reference_logsums"],
+            )
+            for number, record in enumerate(resident_records)
+        ]
+
+        def replay_once(compare):
+            started = time.perf_counter()
+            mismatch_count = 0
+            max_abs = 0.0
+            cache_rows = 0
+            for number, record in enumerate(resident_records):
+                utilities = record["invocation"].execute()
+                logsums = mtc21_nested_logsums_cuda(
+                    utilities,
+                    record["numeric_nest"],
+                    record["alternatives"],
+                    return_device=True,
+                    numeric_policy="activitysim_pandas_float64",
+                )
+                assembled = scatter_plans[number].execute(logsums)
+                cache_rows += int(assembled.source_rows)
+                if compare:
+                    reference = record["reference_logsums"]
+                    different = logsums.view(cp.uint64) != reference.view(cp.uint64)
+                    mismatch_count += int(cp.count_nonzero(different).item())
+                    if int(logsums.size):
+                        max_abs = max(
+                            max_abs,
+                            float(cp.max(cp.abs(logsums - reference)).item()),
+                        )
+            cp.cuda.Stream.null.synchronize()
+            return {
+                "seconds": time.perf_counter() - started,
+                "logsum_bit_mismatches": mismatch_count,
+                "logsum_max_abs_difference": max_abs,
+                "cache_source_rows": cache_rows,
+            }
+
+        replay_once(compare=True)
+        replay_results = [
+            replay_once(compare=True)
+            for _ in range(max(1, int(args.resident_replay_runs)))
+        ]
+        seconds = [item["seconds"] for item in replay_results]
+        invocations = [record["invocation"] for record in resident_records]
+        process_skim_arrays = {}
+        for invocation in invocations:
+            for array in invocation.skim_arguments[: invocation.logical_skim_bindings]:
+                pointer = int(array.__cuda_array_interface__["data"][0])
+                process_skim_arrays.setdefault(pointer, int(array.nbytes))
+        initial_pipeline_seconds = sum(
+            (
+                item.get("binding_resolve_ms", 0.0)
+                + item.get("host_pack_ms", 0.0)
+                + item.get("input_upload_ms", 0.0)
+                + item.get("plan_build_ms", 0.0)
+                + item.get("coefficient_upload_ms", 0.0)
+                + item.get("kernel_ms", 0.0)
+                + item.get("nested_kernel_ms", 0.0)
+            ) / 1000.0
+            for item in candidates
+        )
+        resident_report = {
+            "phase": 25,
+            "scope": (
+                "six sealed public MTC mandatory-tour mode-choice programs: "
+                "resident raw skims and dense inputs through generated 315-term "
+                "CUDA utilities, nested logits, and device logsum-cache scatter"
+            ),
+            "independent_process_run": True,
+            "warmup_runs": 1,
+            "measured_runs": len(replay_results),
+            "resident_seconds": seconds,
+            "resident_median_seconds": float(np.median(seconds)),
+            "resident_min_seconds": float(np.min(seconds)),
+            "initial_live_device_pipeline_seconds": initial_pipeline_seconds,
+            "resident_speedup_vs_initial_live_device_pipeline": (
+                initial_pipeline_seconds / float(np.median(seconds))
+            ),
+            "batches": len(invocations),
+            "rows_per_replay": int(sum(item.rows for item in invocations)),
+            "terms_per_program": sorted({item.terms for item in invocations}),
+            "alternatives_per_program": sorted({item.alternatives for item in invocations}),
+            "logical_skim_bindings_per_program": sorted({
+                item.logical_skim_bindings for item in invocations
+            }),
+            "unique_skim_arrays_per_program": sorted({
+                item.unique_skim_arrays for item in invocations
+            }),
+            "shared_skim_bytes_sum_across_program_references": int(sum(
+                item.shared_skim_data_bytes for item in invocations
+            )),
+            "unique_resident_skim_arrays_process": len(process_skim_arrays),
+            "unique_resident_skim_bytes_process": int(sum(process_skim_arrays.values())),
+            "sealed_dense_input_bytes": int(sum(
+                item.dense_input_bytes for item in invocations
+            )),
+            "sealed_skim_coordinate_bytes": int(sum(
+                item.skim_coordinate_bytes for item in invocations
+            )),
+            "compiled_scatter_plan_device_bytes": int(sum(
+                item.plan_device_bytes for item in scatter_plans
+            )),
+            "precomputed_logsum_input_bytes": 0,
+            "bulk_modeled_logsum_device_to_host_bytes": 0,
+            "postseal_host_layout_builds": 0,
+            "replays": replay_results,
+        }
+        resident_report["proof_gates"] = {
+            "six_real_programs_captured": resident_report["batches"] == 6,
+            "real_315_term_ir": resident_report["terms_per_program"] == [315],
+            "all_public_rows_replayed": (
+                resident_report["rows_per_replay"] == report_candidate_rows
+            ),
+            "no_precomputed_logsum_input": (
+                resident_report["precomputed_logsum_input_bytes"] == 0
+            ),
+            "no_bulk_modeled_logsum_download": (
+                resident_report["bulk_modeled_logsum_device_to_host_bytes"] == 0
+            ),
+            "no_postseal_host_scatter_planning": (
+                resident_report["postseal_host_layout_builds"] == 0
+            ),
+            "every_replay_bit_exact": all(
+                item["logsum_bit_mismatches"] == 0 for item in replay_results
+            ),
+            "every_replay_complete": all(
+                item["cache_source_rows"] == report_candidate_rows
+                for item in replay_results
+            ),
+        }
+        args.resident_replay_report.write_text(
+            json.dumps(resident_report, indent=2) + "\n"
+        )
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {
@@ -450,7 +633,7 @@ def main() -> int:
         "end_mismatches": int(np.count_nonzero(actual.end.to_numpy() != expected.end.to_numpy())),
         "candidate_calls": len(candidates),
         "fallback_calls": len(fallbacks),
-        "candidate_rows": int(sum(item.get("rows", 0) for item in candidates)),
+        "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
         "cache_max_abs_difference": float(
@@ -497,7 +680,11 @@ def main() -> int:
     }
     args.report.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
-    return 0 if all(report["proof_gates"].values()) else 2
+    resident_ok = (
+        resident_report is None
+        or all(resident_report["proof_gates"].values())
+    )
+    return 0 if all(report["proof_gates"].values()) and resident_ok else 2
 
 
 if __name__ == "__main__":

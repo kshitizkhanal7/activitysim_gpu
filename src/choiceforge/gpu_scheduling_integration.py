@@ -35,6 +35,88 @@ class DeviceLogsumBatch:
 
 
 @dataclass(frozen=True)
+class CompiledDeviceLogsumScatter:
+    """Immutable device plan for repeated logsum-to-5x5 cache scatter."""
+
+    chooser_ids: np.ndarray
+    source_rows: int
+    unique_flat: Any
+    first_positions: Any
+    cache: Any
+    raw_cache: Any
+    present: Any
+    plan_device_bytes: int
+
+    @classmethod
+    def compile(
+        cls,
+        metadata: Mapping[str, Any],
+        expected_chooser_ids: Any,
+        *,
+        reference_logsums: Any | None = None,
+    ) -> "CompiledDeviceLogsumScatter":
+        """Resolve identities and slots once, before resident execution."""
+        cp = _cupy()
+        chooser_ids, flat = _logsum_scatter_layout(metadata, expected_chooser_ids)
+        expected = np.asarray(expected_chooser_ids, dtype=np.int64)
+        unique_flat, first_positions, inverse = np.unique(
+            flat, return_index=True, return_inverse=True
+        )
+        device_first = cp.asarray(first_positions)
+        if reference_logsums is not None and first_positions.size != flat.size:
+            values = cp.asarray(reference_logsums)
+            repeated = values[device_first][cp.asarray(inverse)]
+            if bool(cp.any(values != repeated).item()):
+                raise ValueError(
+                    "raw-skim logsum values differ within a duplicate tour/period slot"
+                )
+        device_flat = cp.asarray(unique_flat)
+        cache = cp.zeros((expected.size, 25), dtype=cp.float32)
+        raw_cache = cp.zeros((expected.size, 25), dtype=cp.float64)
+        present = cp.zeros((expected.size, 25), dtype=cp.bool_)
+        present.reshape(-1)[device_flat] = True
+        cp.cuda.Stream.null.synchronize()
+        return cls(
+            chooser_ids=expected.copy(),
+            source_rows=int(flat.size),
+            unique_flat=device_flat,
+            first_positions=device_first,
+            cache=cache,
+            raw_cache=raw_cache,
+            present=present,
+            plan_device_bytes=int(device_flat.nbytes + device_first.nbytes),
+        )
+
+    def execute(self, device_logsums: Any) -> DeviceLogsumBatch:
+        """Scatter with no host layout work, allocation, or modeled transfer."""
+        if not _is_cuda_array(device_logsums):
+            raise GpuOnlyViolation("resident scatter requires CUDA logsums")
+        if int(device_logsums.size) != self.source_rows:
+            raise ValueError("device logsum count differs from compiled scatter plan")
+        cp = _cupy()
+        started = time.perf_counter()
+        values = cp.asarray(device_logsums)
+        unique_values = values[self.first_positions]
+        self.cache.fill(0)
+        self.raw_cache.fill(0)
+        self.cache.reshape(-1)[self.unique_flat] = cp.asarray(
+            unique_values, dtype=cp.float32
+        )
+        self.raw_cache.reshape(-1)[self.unique_flat] = cp.asarray(
+            unique_values, dtype=cp.float64
+        )
+        cp.cuda.Stream.null.synchronize()
+        return DeviceLogsumBatch(
+            self.chooser_ids,
+            self.cache,
+            self.present,
+            self.raw_cache,
+            self.source_rows,
+            (time.perf_counter() - started) * 1000,
+        )
+
+
+@dataclass(frozen=True)
 class IntegratedBatchTelemetry:
     batch: int
     trace_label: str
@@ -77,14 +159,46 @@ def assemble_device_logsum_cache(
     if not _is_cuda_array(device_logsums):
         raise GpuOnlyViolation("raw-skim logsums must reside on the GPU")
     cp = _cupy()
+    chooser_ids, flat = _logsum_scatter_layout(metadata, expected_chooser_ids)
+    if int(device_logsums.size) != chooser_ids.size:
+        raise ValueError("device logsum count differs from its row metadata")
+    unique_flat, first_positions, inverse = np.unique(
+        flat, return_index=True, return_inverse=True
+    )
+
+    started = time.perf_counter()
+    cache = cp.zeros((np.asarray(expected_chooser_ids).size, 25), dtype=cp.float32)
+    raw_cache = cp.zeros((np.asarray(expected_chooser_ids).size, 25), dtype=cp.float64)
+    present = cp.zeros((np.asarray(expected_chooser_ids).size, 25), dtype=cp.bool_)
+    device_values = cp.asarray(device_logsums)
+    device_first = cp.asarray(first_positions)
+    if first_positions.size != flat.size:
+        repeated_reference = device_values[device_first][cp.asarray(inverse)]
+        if bool(cp.any(device_values != repeated_reference).item()):
+            raise ValueError(
+                "raw-skim logsum values differ within a duplicate tour/period slot"
+            )
+    device_flat = cp.asarray(unique_flat)
+    unique_values = device_values[device_first]
+    cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float32)
+    raw_cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float64)
+    present.reshape(-1)[device_flat] = True
+    cp.cuda.Stream.null.synchronize()
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    return DeviceLogsumBatch(
+        np.asarray(expected_chooser_ids, dtype=np.int64).copy(),
+        cache, present, raw_cache, chooser_ids.size, elapsed_ms
+    )
+
+
+def _logsum_scatter_layout(metadata, expected_chooser_ids):
+    """Validate host identity metadata and return its flat cache positions."""
     chooser_ids = np.asarray(metadata["chooser_ids"], dtype=np.int64)
     starts = np.asarray(metadata["start"], dtype=np.int16)
     ends = np.asarray(metadata["end"], dtype=np.int16)
     expected = np.asarray(expected_chooser_ids, dtype=np.int64)
     if chooser_ids.ndim != 1 or starts.shape != chooser_ids.shape or ends.shape != chooser_ids.shape:
         raise ValueError("logsum metadata arrays must be equal one-dimensional vectors")
-    if int(device_logsums.size) != chooser_ids.size:
-        raise ValueError("device logsum count differs from its row metadata")
     if chooser_ids.size == 0:
         raise ValueError("a scheduling logsum batch cannot be empty")
 
@@ -113,32 +227,7 @@ def assemble_device_logsum_cache(
             + skim_period_code(ends).astype(np.int32)
         )
     flat = owners.astype(np.int64) * np.int64(25) + slots.astype(np.int64)
-    unique_flat, first_positions, inverse = np.unique(
-        flat, return_index=True, return_inverse=True
-    )
-
-    started = time.perf_counter()
-    cache = cp.zeros((expected.size, 25), dtype=cp.float32)
-    raw_cache = cp.zeros((expected.size, 25), dtype=cp.float64)
-    present = cp.zeros((expected.size, 25), dtype=cp.bool_)
-    device_values = cp.asarray(device_logsums)
-    device_first = cp.asarray(first_positions)
-    if first_positions.size != flat.size:
-        repeated_reference = device_values[device_first][cp.asarray(inverse)]
-        if bool(cp.any(device_values != repeated_reference).item()):
-            raise ValueError(
-                "raw-skim logsum values differ within a duplicate tour/period slot"
-            )
-    device_flat = cp.asarray(unique_flat)
-    unique_values = device_values[device_first]
-    cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float32)
-    raw_cache.reshape(-1)[device_flat] = cp.asarray(unique_values, dtype=cp.float64)
-    present.reshape(-1)[device_flat] = True
-    cp.cuda.Stream.null.synchronize()
-    elapsed_ms = (time.perf_counter() - started) * 1000
-    return DeviceLogsumBatch(
-        expected.copy(), cache, present, raw_cache, chooser_ids.size, elapsed_ms
-    )
+    return chooser_ids, flat
 
 
 class IntegratedGpuMandatoryScheduler:

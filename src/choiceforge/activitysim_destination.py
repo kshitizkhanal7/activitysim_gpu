@@ -475,6 +475,7 @@ def _simple_simulate_mtc21_logsums_cuda(
     explicit_chunk_size,
     *,
     device_logsum_sink=None,
+    resident_invocation_sink=None,
     materialize_device_sink_result=False,
 ):
     """Run generated CUDA utility and nesting with an optional device sink.
@@ -916,17 +917,26 @@ def _simple_simulate_mtc21_logsums_cuda(
                     numeric_policy="activitysim_pandas_float64",
                 )
                 if device_logsum_sink is not None:
+                    sink_metadata = {
+                        "trace_label": trace_label,
+                        "chooser_ids": entry["chooser_ids"],
+                        "start": entry["start"],
+                        "end": entry["end"],
+                        "out_period": entry["out_period"],
+                        "in_period": entry["in_period"],
+                    }
                     device_logsum_sink(
                         logsums,
-                        {
-                            "trace_label": trace_label,
-                            "chooser_ids": entry["chooser_ids"],
-                            "start": entry["start"],
-                            "end": entry["end"],
-                            "out_period": entry["out_period"],
-                            "in_period": entry["in_period"],
-                        },
+                        sink_metadata,
                     )
+                    if resident_invocation_sink is not None:
+                        resident_invocation_sink(
+                            entry["resident_invocation"],
+                            numeric_nest,
+                            tuple(raw_utilities.columns),
+                            sink_metadata,
+                            logsums,
+                        )
                 telemetry = entry["telemetry"]
                 write_phase15_report({
                     "phase": candidate_phase,
@@ -1139,6 +1149,9 @@ def _simple_simulate_mtc21_logsums_cuda(
                         persistent_plan=strict_cuda_persistent_plan,
                         reuse_buffers=strict_cuda_reuse_buffers,
                         fused_utility_accumulation=strict_cuda_sharrow_fma,
+                        capture_resident_invocation=(
+                            resident_invocation_sink is not None
+                        ),
                     )
                     cache_after = cuda_dataset_cache_stats()
                     cache_delta = {
@@ -1149,6 +1162,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         "rows": len(dataframe),
                         "alternatives": tuple(document["alternatives"]),
                         "utilities": generated.utilities,
+                        "resident_invocation": generated.resident_invocation,
                         "telemetry": generated.telemetry,
                         "ir_cache_hit": ir_cache_hit,
                         "ir_compile_ms": ir_compile_ms,

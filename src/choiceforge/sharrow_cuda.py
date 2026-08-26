@@ -135,6 +135,59 @@ class StrictCudaResult:
     features: Any
     utilities: Any
     telemetry: StrictCudaTelemetry
+    resident_invocation: Any | None = None
+
+
+@dataclass(frozen=True)
+class ResidentStrictCudaInvocation:
+    """Sealed device-resident launch state for one strict utility batch.
+
+    Dense chooser leaves and skim coordinate vectors are private snapshots.
+    Skim data arrays and compiled coefficients are deliberately shared with
+    the owning device cache.  Replaying the invocation therefore performs no
+    host packing, upload, expression resolution, allocation, or compilation.
+    """
+
+    kernel: Any
+    float_inputs: Any
+    int_inputs: Any
+    float_scalars: Any
+    int_scalars: Any
+    coefficients: Any
+    features: Any
+    utilities: Any
+    skim_arguments: tuple[Any, ...]
+    grid: tuple[int, ...]
+    block: tuple[int, ...]
+    shared_mem: int
+    rows: int
+    terms: int
+    alternatives: int
+    dense_input_bytes: int
+    skim_coordinate_bytes: int
+    logical_skim_bindings: int
+    unique_skim_arrays: int
+    shared_skim_data_bytes: int
+
+    def execute(self):
+        """Launch into the invocation-owned output and keep it on CUDA."""
+        if self.rows:
+            self.kernel(
+                self.grid,
+                self.block,
+                (
+                    self.float_inputs,
+                    self.int_inputs,
+                    self.float_scalars,
+                    self.int_scalars,
+                    self.coefficients,
+                    self.features,
+                    self.utilities,
+                    np.int64(self.rows),
+                ) + self.skim_arguments,
+                shared_mem=self.shared_mem,
+            )
+        return self.utilities
 
 
 @dataclass(frozen=True)
@@ -160,6 +213,7 @@ def evaluate_strict_cuda(
     persistent_plan: bool = False,
     reuse_buffers: bool = False,
     fused_utility_accumulation: bool = False,
+    capture_resident_invocation: bool = False,
 ) -> StrictCudaResult:
     """Generate, cache, and execute a strict CUDA evaluator.
 
@@ -342,23 +396,34 @@ def evaluate_strict_cuda(
         utilities = cp.empty((rows, len(document["alternatives"])), dtype=cp.float32)
     cp.cuda.Stream.null.synchronize()
     uploaded = time.perf_counter()
+    feature_threads = (
+        256 // locality_tile_rows
+        if locality_optimized
+        else min(256, max(32, _round_up_warp(len(document["terms"]))))
+    )
+    threads = (
+        256
+        if locality_optimized
+        else max(
+            feature_threads,
+            min(1024, max(32, _round_up_warp(len(document["alternatives"])))),
+        )
+    )
+    grid = ((rows + locality_tile_rows - 1) // locality_tile_rows,)
+    block = (threads,)
+    shared_mem = _shared_memory_bytes(
+        len(document["terms"]),
+        sum(b.storage_kind == "skim" for b in bindings),
+        _skim_group_count(bindings),
+        locality_tile_rows,
+        locality_optimized,
+        group_skim_indices,
+        sparse_zero_coefficients,
+    )
     if rows:
-        feature_threads = (
-            256 // locality_tile_rows
-            if locality_optimized
-            else min(256, max(32, _round_up_warp(len(document["terms"]))))
-        )
-        threads = (
-            256
-            if locality_optimized
-            else max(
-                feature_threads,
-                min(1024, max(32, _round_up_warp(len(document["alternatives"])))),
-            )
-        )
         kernel(
-            ((rows + locality_tile_rows - 1) // locality_tile_rows,),
-            (threads,),
+            grid,
+            block,
             (
                 float_inputs,
                 int_inputs,
@@ -370,15 +435,7 @@ def evaluate_strict_cuda(
                 utilities,
                 np.int64(rows),
             ) + skim_arguments,
-            shared_mem=_shared_memory_bytes(
-                len(document["terms"]),
-                sum(b.storage_kind == "skim" for b in bindings),
-                _skim_group_count(bindings),
-                locality_tile_rows,
-                locality_optimized,
-                group_skim_indices,
-                sparse_zero_coefficients,
-            ),
+            shared_mem=shared_mem,
         )
         cp.cuda.Stream.null.synchronize()
     calculated = time.perf_counter()
@@ -389,6 +446,57 @@ def evaluate_strict_cuda(
         result_features = cp.asnumpy(features)
         result_utilities = cp.asnumpy(utilities)
     downloaded = time.perf_counter()
+    resident_invocation = None
+    if capture_resident_invocation:
+        frozen_skim_arguments, skim_coordinate_bytes = _freeze_skim_kernel_arguments(
+            cp,
+            bindings,
+            values,
+            grouped_indices=group_skim_indices and not locality_optimized,
+        )
+        resident_invocation = ResidentStrictCudaInvocation(
+            kernel=kernel,
+            float_inputs=cp.array(float_inputs, copy=True),
+            int_inputs=cp.array(int_inputs, copy=True),
+            float_scalars=cp.array(float_scalars, copy=True),
+            int_scalars=cp.array(int_scalars, copy=True),
+            coefficients=coefficients,
+            features=(
+                cp.empty((rows, len(document["terms"])), dtype=cp.float32)
+                if capture_features else cp.empty((1,), dtype=cp.float32)
+            ),
+            utilities=cp.empty(
+                (rows, len(document["alternatives"])), dtype=cp.float32
+            ),
+            skim_arguments=frozen_skim_arguments,
+            grid=grid,
+            block=block,
+            shared_mem=shared_mem,
+            rows=rows,
+            terms=len(document["terms"]),
+            alternatives=len(document["alternatives"]),
+            dense_input_bytes=int(
+                float_inputs.nbytes + int_inputs.nbytes
+                + float_scalars.nbytes + int_scalars.nbytes
+            ),
+            skim_coordinate_bytes=skim_coordinate_bytes,
+            logical_skim_bindings=sum(
+                binding.storage_kind == "skim" for binding in bindings
+            ),
+            unique_skim_arrays=len({
+                _device_pointer(values[binding.source].data)
+                for binding in bindings
+                if binding.storage_kind == "skim"
+            }),
+            shared_skim_data_bytes=sum({
+                _device_pointer(values[binding.source].data): int(
+                    values[binding.source].data.nbytes
+                )
+                for binding in bindings
+                if binding.storage_kind == "skim"
+            }.values()),
+        )
+        cp.cuda.Stream.null.synchronize()
     return StrictCudaResult(
         features=result_features,
         utilities=result_utilities,
@@ -457,6 +565,7 @@ def evaluate_strict_cuda(
             workspace_cache_hit=bool(input_workspace_hit and output_workspace_hit),
             fused_utility_accumulation=bool(fused_utility_accumulation),
         ),
+        resident_invocation=resident_invocation,
     )
 
 
@@ -1482,6 +1591,45 @@ def _skim_kernel_arguments(bindings, values, *, grouped_indices=False):
         if binding.skim_rank == 3:
             arguments.append(np.int64(value.time_count))
     return tuple(arguments)
+
+
+def _freeze_skim_kernel_arguments(cp, bindings, values, *, grouped_indices=False):
+    """Snapshot row coordinates while sharing the immutable resident cubes."""
+    arguments = []
+    coordinate_bytes = 0
+
+    def snapshot(value):
+        nonlocal coordinate_bytes
+        frozen = cp.array(value, copy=True)
+        coordinate_bytes += int(frozen.nbytes)
+        return frozen
+
+    if grouped_indices:
+        skim_bindings = [b for b in bindings if b.storage_kind == "skim"]
+        # Cube buffers dominate memory and are intentionally shared. Holding
+        # these array references also pins their owning allocations for replay.
+        arguments.extend(values[binding.source].data for binding in skim_bindings)
+        for _, representative in _skim_groups(bindings):
+            value = values[representative.source]
+            arguments.extend((snapshot(value.orig), snapshot(value.dest)))
+            if representative.skim_rank == 3:
+                arguments.append(snapshot(value.time))
+            arguments.append(np.int64(value.dest_count))
+            if representative.skim_rank == 3:
+                arguments.append(np.int64(value.time_count))
+        return tuple(arguments), coordinate_bytes
+
+    for binding in bindings:
+        if binding.storage_kind != "skim":
+            continue
+        value = values[binding.source]
+        arguments.extend((value.data, snapshot(value.orig), snapshot(value.dest)))
+        if binding.skim_rank == 3:
+            arguments.append(snapshot(value.time))
+        arguments.append(np.int64(value.dest_count))
+        if binding.skim_rank == 3:
+            arguments.append(np.int64(value.time_count))
+    return tuple(arguments), coordinate_bytes
 
 
 def _skim_groups(bindings):

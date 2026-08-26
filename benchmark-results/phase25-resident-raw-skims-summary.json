@@ -1,0 +1,94 @@
+{
+  "phase": 25,
+  "benchmark": "three-process public MTC resident raw-skims-to-mode-logsum-cache replay",
+  "processes": 3,
+  "batches": 6,
+  "rows_per_replay": 1210124,
+  "terms_per_program": [
+    315
+  ],
+  "alternatives_per_program": [
+    21
+  ],
+  "logical_skim_bindings_per_program": [
+    209
+  ],
+  "unique_skim_arrays_per_program": [
+    149
+  ],
+  "sealed_dense_input_bytes": 348517296,
+  "sealed_skim_coordinate_bytes": 154895872,
+  "compiled_scatter_plan_device_bytes": 19361984,
+  "precomputed_logsum_input_bytes": 0,
+  "bulk_modeled_logsum_device_to_host_bytes": 0,
+  "postseal_host_layout_builds": 0,
+  "unique_resident_skim_arrays_process": 149,
+  "unique_resident_skim_bytes_process": 6198588112,
+  "process_median_seconds": [
+    0.16903940006159246,
+    0.16973920003511012,
+    0.169423499959521
+  ],
+  "process_min_seconds": [
+    0.16844100004527718,
+    0.1682524000061676,
+    0.16795470006763935
+  ],
+  "median_of_process_medians_seconds": 0.169423499959521,
+  "slowest_process_median_seconds": 0.16973920003511012,
+  "resident_speedups_vs_initial_live_device_pipeline": [
+    10.388589284880604,
+    9.654706159985093,
+    9.474725174317264
+  ],
+  "median_resident_speedup_vs_initial_live_device_pipeline": 9.654706159985093,
+  "minimum_resident_speedup_vs_initial_live_device_pipeline": 9.474725174317264,
+  "total_measured_replays": 15,
+  "total_logsum_bit_mismatches": 0,
+  "maximum_logsum_absolute_difference": 0.0,
+  "live_activitysim_seconds": [
+    39.18907570000738,
+    32.53399150003679,
+    32.766072499915026
+  ],
+  "live_activitysim_output_mismatches": 0,
+  "proof_gates": {
+    "three_or_more_independent_processes": true,
+    "all_source_gates_pass": true,
+    "all_live_activitysim_gates_pass": true,
+    "all_live_activitysim_outputs_exact": true,
+    "schema_and_workload_invariant": true,
+    "resident_skim_memory_consistent_where_recorded": true,
+    "all_fifteen_replays_bit_exact": true,
+    "no_precomputed_logsum_input": true,
+    "resident_replay_faster_than_initial_pipeline_every_process": true
+  },
+  "inputs": [
+    {
+      "path": "benchmark-results\\phase25b-resident-raw-skims-1.json",
+      "sha256": "5a3ecd2a6510a3c5da72775b6415afaea18748bdd9bb06c48dbc83e6431b65a0"
+    },
+    {
+      "path": "benchmark-results\\phase25b-resident-raw-skims-2.json",
+      "sha256": "f506a97a392da8f944359859be7a5e97348e5cf07f0eabf6bfee79ddbdc0b470"
+    },
+    {
+      "path": "benchmark-results\\phase25b-resident-raw-skims-3.json",
+      "sha256": "44f1760d73c8699812f7bc9a96b591cc7af91551ad24f6475138653316eeebb4"
+    }
+  ],
+  "live_inputs": [
+    {
+      "path": "benchmark-results\\phase25b-live-1.json",
+      "sha256": "e890ef2fadf43a4be863efa27d416a6428d31e4fd69ed89113d4200b77101a8f"
+    },
+    {
+      "path": "benchmark-results\\phase25b-live-2.json",
+      "sha256": "5c52d000f575e7cacaed08a162999119970e280b1a1f7328c86b74f0bb1149b4"
+    },
+    {
+      "path": "benchmark-results\\phase25b-live-3.json",
+      "sha256": "682e485de6d7c589e1e019b60ded896384d49c2dd2c38f408447033702a54612"
+    }
+  ]
+}

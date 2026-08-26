@@ -451,3 +451,31 @@ utility and nested-logit plan consumes these cubes in the next phase.
 See the [Phase 24 technical report](docs/phase24-resident-hot-skim-cache.md),
 the [three-process qualification](benchmark-results/phase24-resident-skim-cache-summary.json),
 and the [primary evidence](benchmark-results/phase24-resident-skim-cache.json).
+
+## Phase 25 resident expression-to-logsum runtime
+
+Phase 25 connects those resident skims to the real public tour-mode equations.
+Each of six sealed programs reuses its compiled CUDA kernel, coefficients,
+dense chooser inputs, OD/time coordinates, 149 shared skim arrays, utility
+workspace, nested-logit reducer, and a precompiled GPU cache-scatter plan. The
+timed path accepts no precomputed scheduling logsum and performs no host layout
+work or bulk modeled download.
+
+The public workload contains 1,210,124 rows per replay, 315 expression terms,
+21 alternatives, 209 logical skim bindings, 381,189,060 term evaluations, and
+252,915,916 logical skim reads. Three fresh processes ran five measured replays
+each. Their medians were 0.169039, 0.169739, and 0.169423 seconds; the
+cross-process median is **0.169423 seconds** and the slowest is **0.169739
+seconds**. All 15 replays are bit-identical. Relative to each process's initial
+live CUDA setup-and-execution path, the resident speedups are 10.389x, 9.655x,
+and 9.475x (**9.655x median**).
+
+The paired live ActivitySim runs also end with zero TDD, start, or end
+differences. This is not called CPU-free: ActivitySim still prepares the dense
+batches, and the complete live scheduling path still explicitly adjudicates
+57 near-boundary choices (11,400 logsum bytes). The 9.655x figure compares
+resident execution with initial CUDA setup/execution, not CPU or whole-model
+time.
+
+See the [Phase 25 technical report](docs/phase25-resident-expression-runtime.md)
+and the [three-process qualification](benchmark-results/phase25-resident-raw-skims-summary.json).

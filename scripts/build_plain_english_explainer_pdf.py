@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("24.405x", STYLES["metric_num"]),
-                Paragraph("1.356x", STYLES["metric_num"]),
+                Paragraph("0.169 s", STYLES["metric_num"]),
+                Paragraph("9.655x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 23 median<br/>resident modeled speedup", STYLES["metric_label"]),
-                Paragraph("median one-run<br/>setup-inclusive speedup", STYLES["metric_label"]),
-                Paragraph("behavioral, tour, timetable,<br/>or restart mismatches", STYLES["metric_label"]),
+                Paragraph("Phase 25 median<br/>resident replay time", STYLES["metric_label"]),
+                Paragraph("median speedup vs initial<br/>live CUDA setup/execution", STYLES["metric_label"]),
+                Paragraph("logsum-bit or live<br/>schedule mismatches", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 23 median across three independent resident-runtime processes, the conservative result after charging one-time setup and publication to one run, and the frozen-reference/restart result. The compatible Phase 22 result remains explained inside.",
+            "Read left to right: the Phase 25 median across three independent resident-expression processes, its carefully labeled win over initial live CUDA setup/execution, and the exact logsum/live-schedule result. CPU and whole-model comparisons remain separately labeled inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 24, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 26, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

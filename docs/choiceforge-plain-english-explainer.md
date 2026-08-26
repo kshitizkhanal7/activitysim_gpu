@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 24 resident skim-cache result does and does not prove;
+- what the completed Phase 25 resident equation-to-logsum result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -94,6 +94,18 @@ skim values per run with zero mismatches. The middle resident cache-layer
 speedup was **193.114 times** and the slowest process was still **82.323
 times** faster. Even paying the entire upload once gave a middle **1.813-times**
 win. This is a raw-data-layer proof, not yet the complete utility/logsum stage.
+
+Phase 25 connects that raw-data layer to the real mathematics. Six real
+315-term programs now read the resident skims, score 21 travel modes, combine
+related modes with nested logit, and place the resulting logsums into each
+tour's 5-by-5 scheduling cache. The cache-placement map is compiled once and
+kept on the GPU too. Three fresh processes completed 15 measured replays with
+no changed logsum bit. The middle process time was **0.169 seconds** for all
+1.21 million rows. This was **9.655 times faster** than the same process's
+initial live CUDA setup-and-execution path. It is not a CPU speedup or a whole
+model speedup. ActivitySim still creates the dense input rows, and the final
+live scheduler still asks the exact CPU/Sharrow path to settle 57 extremely
+close probability cases.
 
 ## 1. What is travel demand modeling?
 
@@ -2832,11 +2844,12 @@ mode-logsum caches are also inputs. Destination choice, non-mandatory tours,
 joint tours, at-work subtours, trips, shadow pricing, and normal pipeline
 output still need device-resident implementations.
 
-Phase 24 has now completed skim-cache management. The next steps are to bind
-the real utility/logsum producer to that cache inside this runtime, represent
-sampling and shadow-pricing state as versioned tables, then port the remaining
-model components. The proof must eventually be repeated on another GPU and
-another public model.
+Phase 24 completed skim-cache management, and Phase 25 has now bound the real
+utility/logsum producer to that cache. Remaining work is to create the dense
+chooser rows inside the versioned runtime, connect the generated caches to its
+timetable stage, represent sampling and shadow-pricing state as versioned
+tables, then port the other model components. The proof must eventually be
+repeated on another GPU and another public model.
 
 The important change is that the project now has both pieces: a compatible
 ActivitySim path that proves exact integration, and a resident runtime that
@@ -2930,7 +2943,7 @@ It does not perform the 21-mode nested-logit calculation, produce the 5-by-5
 scheduling logsum cache, or replace that precomputed input in Phase 23. The
 all-binding hash program is a proof instrument, not a travel-choice model.
 
-The next connected phase has seven jobs:
+This was the seven-job plan for the next connected phase:
 
 1. Create the real chooser and OD/period row indices on the GPU.
 2. Give these resident cube pointers to the already-qualified strict CUDA
@@ -2942,6 +2955,123 @@ The next connected phase has seven jobs:
    boundaries, or retain and measure an explicit adjudication boundary.
 7. Replace Phase 23's saved logsum input and rerun every proof gate.
 
-That is the point where we can honestly say the resident model creates its
-scheduling logsums from raw network skims. Phase 24 removes the memory and data
-access risk; the next phase must connect the real mathematics.
+Phase 25 completed jobs 2 through 5 and removed the bulk saved-logsum input
+from its new producer. Job 1 remains because ActivitySim still prepares dense
+rows and coordinates. Job 6 remains as the explicit 57-row adjudication
+boundary. Job 7 is partly complete: the replacement producer is proven, but
+the historical Phase 23 timetable benchmark has not yet been rewired to consume
+it directly. The next section explains the measured result.
+
+## 63. Phase 25: connecting the road facts to the real equations
+
+Phase 24 was like placing all the needed road maps on a workbench. It proved
+that the GPU could find and read the right cells quickly, but it did not yet
+use those cells to predict a travel mode.
+
+Phase 25 adds the missing calculator. For every tour-and-time possibility, it
+does the following:
+
+1. Read facts about the traveler and the tour.
+2. Read time, distance, toll, fare, and transit facts from the resident skims.
+3. Evaluate 315 real expressions from the public MTC model.
+4. Turn those expression values into scores for 21 travel modes.
+5. Combine related modes using the model's nested-logit tree.
+6. Produce one logsum that summarizes how attractive the available modes are.
+7. Place that logsum in the correct cell of a 5-by-5 time-period cache used by
+   tour scheduling.
+
+The six programs represent work, school, and university tours for the first
+and second mandatory tour. Together they process 1,210,124 rows. That means
+381,189,060 expression evaluations and 252,915,916 logical skim reads in one
+complete replay.
+
+## 64. What "sealed and resident" means here
+
+The first time a batch appears, ActivitySim has already prepared its traveler
+fields and origin, destination, and time-period numbers. Phase 25 freezes those
+inputs in GPU memory. It also keeps the compiled equation program,
+coefficients, output space, and raw skim arrays there.
+
+There was one subtle trap. To place each new logsum in a scheduling cache, the
+computer needs a map saying, for example, "source row 12,345 belongs to tour
+700 and morning-to-evening cache cell 9." An early passing version rebuilt
+that map on the CPU during every replay. The values stayed on the GPU, but the
+operation was not truly resident.
+
+The final version compiles this map once. About 19.36 MB of device positions
+remain on the GPU, along with reusable output caches. During a measured replay,
+the CPU does not rebuild the map, upload it, or receive the modeled logsums.
+It only launches the GPU work.
+
+The device state for this boundary includes:
+
+| Resident item | Approximate size |
+|---|---:|
+| 149 unique skim arrays | 6.20 GB |
+| Dense equation inputs | 348.5 MB |
+| Origin/destination/time coordinates | 154.9 MB |
+| Compiled cache-placement map | 19.4 MB |
+
+The six programs share the 149 skim arrays. They are not six separate 6.20 GB
+copies. Counting GPU pointers across the whole process proves that only 149
+physical arrays exist.
+
+## 65. How the Phase 25 result was proved
+
+One fast run can be luck. The proof starts three fresh Python and CUDA
+processes. Each process first runs the real ActivitySim mandatory-scheduling
+component, captures the six actual programs, and checks final tour times
+against the frozen public answer. Then it warms the resident path once and
+measures five complete replays.
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Resident time | 0.169039 s | 0.169739 s | 0.169423 s | **0.169423 s** |
+| Speedup versus initial live CUDA setup/execution | 10.389x | 9.655x | 9.475x | **9.655x** |
+| Changed logsum bits across five replays | 0 | 0 | 0 | **0** |
+| Changed final TDD/start/end values | 0 | 0 | 0 | **0** |
+
+Fifteen measured resident replays therefore produce 18,151,860 logsums in
+total, with zero changed bits. All three live ActivitySim runs also reproduce
+all 81,983 mandatory tour schedules exactly.
+
+The 9.655-times number needs a careful label. It compares the sealed replay
+with the **initial CUDA path**, which has to resolve input bindings, pack and
+upload dense fields, prepare plans, and then run the same GPU mathematics. It
+does not compare with a CPU calculation. It also does not include the rest of
+ActivitySim. Earlier phase numbers answer those different questions.
+
+## 66. What success means, what remains, and why it matters
+
+The resident producer no longer needs a saved 5-by-5 logsum cache as its bulk
+input. It creates those cache values from real raw network skims and real
+calibrated equations. This closes the largest missing mathematical gap between
+the Phase 23 resident model graph and the Phase 24 raw-data layer.
+
+However, the older Phase 23 benchmark remains a historical artifact with its
+original saved-cache input. Phase 25 proves the replacement producer; the next
+phase must wire its generated caches directly into the versioned timetable
+stage and regenerate dense chooser rows on-device.
+
+The complete live path is also not absolutely CPU-free. ActivitySim still
+prepares the six dense batches. Python launches kernels and writes outputs.
+Most importantly, 57 scheduling draws are extremely close to a probability
+boundary. Tiny differences in 32-bit and 64-bit arithmetic could change which
+side of the boundary wins. The GPU detects these rows without looking at the
+saved answer, downloads 11,400 bytes of raw logsums, and lets the exact
+ActivitySim/Sharrow calculation settle them. Only one row is known to change
+without that protection, but all 57 are treated conservatively.
+
+The next success should therefore have two parts:
+
+- move dense row construction and generated logsum caches directly into the
+  versioned resident scheduling graph; and
+- define one shared Sharrow/CUDA rule for utility arithmetic, exponentials,
+  ordered sums, and probability search so all 57 boundary rows can stay on
+  the GPU with exact final choices.
+
+After that, the project can extend the same pattern to non-mandatory tours,
+joint tours, destinations, trips, and shadow pricing. The practical lesson is
+that large GPU gains do not come only from making multiplication faster. They
+come from keeping a connected chain of real work and its data in one place,
+while proving that every published decision still means the same thing.
