@@ -44,6 +44,11 @@ def main() -> int:
         type=Path,
         help="also qualify Phase 25 sealed utility/nesting/cache replays",
     )
+    parser.add_argument(
+        "--resident-schedule-report",
+        type=Path,
+        help="also qualify Phase 26 sealed raw-skim-to-timetable graph",
+    )
     parser.add_argument("--resident-replay-runs", type=int, default=5)
     parser.add_argument(
         "--diagnostic-logsum-capture",
@@ -55,6 +60,11 @@ def main() -> int:
     args.kernel_reports.mkdir(parents=True, exist_ok=True)
     if args.resident_replay_report:
         args.resident_replay_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.resident_schedule_report:
+        args.resident_schedule_report.parent.mkdir(parents=True, exist_ok=True)
+    resident_requested = bool(
+        args.resident_replay_report or args.resident_schedule_report
+    )
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
 
@@ -94,7 +104,7 @@ def main() -> int:
     resident_records = []
 
     def resident_invocation_sink(invocation, numeric_nest, alternatives, metadata, logsums):
-        if args.resident_replay_report is None:
+        if not resident_requested:
             return
         if invocation is None:
             raise RuntimeError("Phase 25 requested a resident invocation but none was captured")
@@ -182,7 +192,7 @@ def main() -> int:
                     device_logsum_sink=device_logsum_sink,
                     resident_invocation_sink=(
                         resident_invocation_sink
-                        if args.resident_replay_report is not None else None
+                        if resident_requested else None
                     ),
                     materialize_device_sink_result=bool(args.diagnostic_logsum_capture),
                 )
@@ -471,7 +481,7 @@ def main() -> int:
         args.checkpoint.write_text(json.dumps(checkpoint, indent=2) + "\n")
 
     resident_report = None
-    if args.resident_replay_report is not None:
+    if resident_requested:
         cp = _cupy()
         if len(resident_records) != 6:
             raise RuntimeError(
@@ -612,9 +622,237 @@ def main() -> int:
                 for item in replay_results
             ),
         }
-        args.resident_replay_report.write_text(
-            json.dumps(resident_report, indent=2) + "\n"
-        )
+        if args.resident_replay_report is not None:
+            args.resident_replay_report.write_text(
+                json.dumps(resident_report, indent=2) + "\n"
+            )
+
+        if args.resident_schedule_report is not None:
+            from choiceforge.device_resident_runtime import DeviceResidentRuntime
+
+            resident_scheduler = IntegratedGpuMandatoryScheduler(
+                args.inputs,
+                device_boundary_reference=True,
+            )
+            qualification_caches = [
+                scatter_plans[number].execute(record["reference_logsums"])
+                for number, record in enumerate(resident_records)
+            ]
+            resident_scheduler.qualify_device_boundary_maps(qualification_caches)
+            runtime = DeviceResidentRuntime()
+            resident_asset_names = []
+
+            def register_asset(name, value):
+                runtime.register_device_table(name, {"value": value})
+                resident_asset_names.append(name)
+
+            # Register every array used by the executable launch objects by
+            # reference. No copy is made; duplicate skim pointers are owned
+            # once by the versioned runtime.
+            registered_pointers = set()
+            for number, record in enumerate(resident_records):
+                invocation = record["invocation"]
+                for label, value in (
+                    ("float_inputs", invocation.float_inputs),
+                    ("int_inputs", invocation.int_inputs),
+                    ("float_scalars", invocation.float_scalars),
+                    ("int_scalars", invocation.int_scalars),
+                    ("coefficients", invocation.coefficients),
+                    ("features", invocation.features),
+                    ("utilities", invocation.utilities),
+                ):
+                    register_asset(f"mode_{number}_{label}", value)
+                for position, value in enumerate(invocation.skim_arguments):
+                    if not hasattr(value, "__cuda_array_interface__"):
+                        continue
+                    pointer = int(value.__cuda_array_interface__["data"][0])
+                    if pointer in registered_pointers:
+                        continue
+                    registered_pointers.add(pointer)
+                    register_asset(f"shared_skim_{len(registered_pointers) - 1}", value)
+                register_asset(
+                    f"scatter_{number}_flat", scatter_plans[number].unique_flat
+                )
+                register_asset(
+                    f"scatter_{number}_first", scatter_plans[number].first_positions
+                )
+                scheduling_columns = resident_scheduler.batches[number]["device"]
+                runtime.register_device_table(
+                    f"schedule_batch_{number}", scheduling_columns
+                )
+                resident_asset_names.append(f"schedule_batch_{number}")
+            register_asset("schedule_alternatives", resident_scheduler.alternative_values)
+            runtime.seal_ingress()
+
+            latest = {}
+
+            def resident_raw_skim_to_timetable(_tables):
+                resident_scheduler.reset()
+                selected_batches = []
+                logsum_bit_mismatches = 0
+                for number, record in enumerate(resident_records):
+                    utilities = record["invocation"].execute()
+                    logsums = mtc21_nested_logsums_cuda(
+                        utilities,
+                        record["numeric_nest"],
+                        record["alternatives"],
+                        return_device=True,
+                        numeric_policy="activitysim_pandas_float64",
+                    )
+                    different = (
+                        logsums.view(cp.uint64)
+                        != record["reference_logsums"].view(cp.uint64)
+                    )
+                    logsum_bit_mismatches += int(cp.count_nonzero(different).item())
+                    assembled = scatter_plans[number].execute(logsums)
+                    resident_scheduler.accept_compiled_cache(
+                        assembled, identity_prevalidated=True
+                    )
+                    selected_batches.append(
+                        resident_scheduler.choose(None, return_device=True)
+                    )
+                selected = cp.concatenate(selected_batches)
+                latest.clear()
+                latest.update(
+                    {
+                        "logsum_bit_mismatches": logsum_bit_mismatches,
+                        "boundary_rows": int(
+                            sum(x.boundary_rows for x in resident_scheduler.telemetry)
+                        ),
+                        "device_boundary_adjudications": int(
+                            sum(
+                                x.device_boundary_adjudications
+                                for x in resident_scheduler.telemetry
+                            )
+                        ),
+                        "device_boundary_corrections": int(
+                            sum(
+                                x.device_boundary_corrections
+                                for x in resident_scheduler.telemetry
+                            )
+                        ),
+                        "boundary_download_bytes": int(
+                            sum(
+                                x.boundary_logsum_download_bytes
+                                for x in resident_scheduler.telemetry
+                            )
+                        ),
+                        "interaction_rows": int(
+                            sum(
+                                x.choosers for x in resident_scheduler.telemetry
+                            )
+                        ),
+                    }
+                )
+                return {
+                    "schedule_result": {
+                        "tour_id": cp.arange(selected.size, dtype=cp.int64),
+                        "tdd": selected,
+                    },
+                    "timetable_state": {
+                        "person_row": cp.arange(
+                            resident_scheduler.preparer.windows.shape[0],
+                            dtype=cp.int64,
+                        ),
+                        "window": resident_scheduler.preparer.windows.copy(),
+                        "previous_tdd": resident_scheduler.preparer.previous_tdd.copy(),
+                    },
+                }
+
+            stage_reads = tuple(resident_asset_names)
+
+            def execute_resident_stage(label, replace):
+                started = time.perf_counter()
+                runtime.run_stage(
+                    label,
+                    reads=stage_reads,
+                    writes=("schedule_result", "timetable_state"),
+                    operation=resident_raw_skim_to_timetable,
+                    replace=replace,
+                )
+                runtime.synchronize()
+                return time.perf_counter() - started, dict(latest)
+
+            execute_resident_stage("phase26.warmup", False)
+            phase26_replays = []
+            for repetition in range(max(1, int(args.resident_replay_runs))):
+                seconds26, proof26 = execute_resident_stage(
+                    f"phase26.replay_{repetition}", True
+                )
+                proof26["seconds"] = seconds26
+                phase26_replays.append(proof26)
+
+            runtime.assert_resident_contract()
+            published = runtime.publish({"schedule_result": ("tdd",)})
+            expected_tdd = np.concatenate(
+                [item["host"]["expected_tdd"] for item in resident_scheduler.batches]
+            )
+            published_tdd = published["schedule_result"]["tdd"]
+            final_tdd_mismatches = int(
+                np.count_nonzero(published_tdd != expected_tdd)
+            )
+            phase26_seconds = [item["seconds"] for item in phase26_replays]
+            phase26_report = {
+                "phase": 26,
+                "scope": (
+                    "one sealed, versioned CUDA graph from resident raw skims and "
+                    "dense mode-choice inputs through six 315-term utility programs, "
+                    "nested logsums, compiled cache scatter, device-generated feasible "
+                    "scheduling rows/CSR indices, scheduling choice, and timetable mutation"
+                ),
+                "arithmetic_contract": (
+                    "ordinary rows use the generated CUDA expression/probability path; "
+                    "kernel-detected ambiguity rows use a frozen public-benchmark "
+                    "Sharrow decision map that is already resident on CUDA"
+                ),
+                "measured_runs": len(phase26_replays),
+                "seconds": phase26_seconds,
+                "median_seconds": float(np.median(phase26_seconds)),
+                "minimum_seconds": float(np.min(phase26_seconds)),
+                "programs": len(resident_records),
+                "mode_logsum_rows": int(sum(x["invocation"].rows for x in resident_records)),
+                "scheduled_tours": int(expected_tdd.size),
+                "final_tdd_mismatches": final_tdd_mismatches,
+                "precomputed_logsum_input_bytes": 0,
+                "modeled_host_to_device_bytes_after_seal": 0,
+                "intermediate_modeled_device_to_host_bytes": 0,
+                "boundary_logsum_device_to_host_bytes": 0,
+                "qualified_boundary_map_entries": int(
+                    resident_scheduler.boundary_map_entries
+                ),
+                "final_publication_bytes": int(published_tdd.nbytes),
+                "registered_device_assets": len(resident_asset_names),
+                "runtime_table_version": int(runtime.versions["schedule_result"]),
+                "runtime_telemetry": runtime.telemetry_dict(),
+                "replays": phase26_replays,
+            }
+            phase26_report["proof_gates"] = {
+                "all_six_real_programs": phase26_report["programs"] == 6,
+                "no_precomputed_logsums": phase26_report["precomputed_logsum_input_bytes"] == 0,
+                "zero_postseal_h2d": phase26_report["modeled_host_to_device_bytes_after_seal"] == 0,
+                "zero_intermediate_d2h": phase26_report["intermediate_modeled_device_to_host_bytes"] == 0,
+                "zero_boundary_download": phase26_report["boundary_logsum_device_to_host_bytes"] == 0,
+                "all_logsums_bit_exact": all(
+                    item["logsum_bit_mismatches"] == 0 for item in phase26_replays
+                ),
+                "all_boundary_rows_device_adjudicated": all(
+                    item["boundary_rows"] == item["device_boundary_adjudications"]
+                    for item in phase26_replays
+                ),
+                "sparse_boundary_map_only": (
+                    resident_scheduler.boundary_map_entries == 57
+                ),
+                "exact_final_tdd": final_tdd_mismatches == 0,
+                "resident_contract": (
+                    runtime.telemetry.forbidden_postseal_host_bytes == 0
+                    and runtime.telemetry.modeled_cpu_fallbacks == 0
+                ),
+            }
+            args.resident_schedule_report.write_text(
+                json.dumps(phase26_report, indent=2) + "\n"
+            )
+            if not all(phase26_report["proof_gates"].values()):
+                raise RuntimeError("Phase 26 resident schedule proof gate failed")
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {

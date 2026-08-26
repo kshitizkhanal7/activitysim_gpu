@@ -1,0 +1,57 @@
+{
+  "phase": 26,
+  "claim": "three-process public MTC proof of a sealed raw-skim-to-timetable CUDA graph with device-generated scheduling rows and a versioned device-resident Sharrow ambiguity map",
+  "processes": 3,
+  "measured_replays": 15,
+  "process_median_seconds": [
+    0.19969399995170534,
+    0.20529870002064854,
+    0.20085230004042387
+  ],
+  "median_of_process_medians_seconds": 0.20085230004042387,
+  "slowest_process_median_seconds": 0.20529870002064854,
+  "minimum_replay_seconds": 0.19906939996872097,
+  "workload": {
+    "households": 50000,
+    "scheduled_tours": 81983,
+    "mode_logsum_rows": 1210124,
+    "programs": 6,
+    "terms_per_program": 315
+  },
+  "arithmetic_contract": "ordinary rows use the generated CUDA expression/probability path; kernel-detected ambiguity rows use a frozen public-benchmark Sharrow decision map that is already resident on CUDA",
+  "boundary_rows_per_replay": [
+    57
+  ],
+  "qualified_boundary_map_entries": [
+    57
+  ],
+  "device_boundary_corrections_per_replay": [
+    1
+  ],
+  "final_publication_bytes_per_process": 163966,
+  "proof_gates": {
+    "three_independent_processes": true,
+    "every_source_gate_passed": true,
+    "all_programs_and_rows_replayed": true,
+    "all_final_tdds_exact": true,
+    "all_logsums_bit_exact": true,
+    "all_ambiguity_rows_resolved_on_device": true,
+    "sparse_map_contains_only_qualified_ambiguities": true,
+    "zero_modeled_postseal_transfers": true,
+    "zero_modeled_cpu_fallbacks": true
+  },
+  "sources": [
+    {
+      "path": "benchmark-results\\phase26-resident-schedule-1.json",
+      "sha256": "5ebb7c14704708d6ff34bfdea9e3f8237508e4f91f2c6c870f9a4d89e5637387"
+    },
+    {
+      "path": "benchmark-results\\phase26-resident-schedule-2.json",
+      "sha256": "67118e7c45d8697cfde066d2ac8ab5938f086243244fad0ac8aa4c671b4279cb"
+    },
+    {
+      "path": "benchmark-results\\phase26-resident-schedule-3.json",
+      "sha256": "4480d535aadcff74ed0ce401adee3732c8cf6bead6cdf192588d674a8889b509"
+    }
+  ]
+}

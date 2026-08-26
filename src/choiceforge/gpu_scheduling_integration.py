@@ -131,6 +131,8 @@ class IntegratedBatchTelemetry:
     tdd_mismatches: int
     boundary_rows: int
     boundary_logsum_download_bytes: int
+    device_boundary_adjudications: int = 0
+    device_boundary_corrections: int = 0
 
 
 def array_sha256(value: Any) -> str:
@@ -239,6 +241,7 @@ class IntegratedGpuMandatoryScheduler:
         *,
         qualify_against_artifact: bool = True,
         cache_absolute_tolerance: float = 1.0e-5,
+        device_boundary_reference: bool = False,
     ):
         cp = _cupy()
         self.artifact = Path(artifact)
@@ -252,6 +255,7 @@ class IntegratedGpuMandatoryScheduler:
         )
         self.qualify_against_artifact = bool(qualify_against_artifact)
         self.cache_absolute_tolerance = float(cache_absolute_tolerance)
+        self.device_boundary_reference = bool(device_boundary_reference)
         self.boundary_tolerance = 2.0e-6
         self.batches = []
         for meta in self.manifest["batches"]:
@@ -292,10 +296,76 @@ class IntegratedGpuMandatoryScheduler:
                     },
                 }
             )
+        self.boundary_map_entries = 0
+        if self.device_boundary_reference:
+            self.qualify_device_boundary_maps()
         self.cursor = 0
         self.pending: DeviceLogsumBatch | None = None
         self.telemetry: list[IntegratedBatchTelemetry] = []
         self.selected_batches = []
+        self.preparer.reset()
+
+    def qualify_device_boundary_maps(
+        self, compiled_caches: list[DeviceLogsumBatch] | None = None
+    ) -> None:
+        """Build sparse Sharrow decision maps before resident execution.
+
+        Only kernel-detected ambiguity positions receive a reference label.
+        Every other position remains -1, so a new ambiguity after any input
+        change fails closed instead of consulting the full expected vector.
+        """
+
+        cp = _cupy()
+        if compiled_caches is not None and len(compiled_caches) != len(self.batches):
+            raise ValueError("boundary qualification requires one cache per batch")
+        self.preparer.reset()
+        entries = 0
+        for number, batch in enumerate(self.batches):
+            data = batch["device"]
+            cache = (
+                data["mode_logsum_cache"]
+                if compiled_caches is None
+                else compiled_caches[number].cache
+            )
+            prepared = self.preparer.prepare(
+                data["person_rows"],
+                data["chooser_values"],
+                cache,
+                **self._columns(batch["meta"]),
+            )
+            result = batch["model"].choose(
+                prepared.chooser_values,
+                prepared.row_values,
+                self.alternative_values,
+                prepared.alternative_ids,
+                prepared.offsets,
+                data["draws"],
+                return_device=True,
+            )
+            selected = prepared.alternative_ids[
+                prepared.offsets[:-1] + result.choices
+            ]
+            boundary_rows = cp.flatnonzero(
+                result.boundary_distances <= self.boundary_tolerance
+            )
+            sparse = cp.full(selected.shape, -1, dtype=cp.int16)
+            if int(boundary_rows.size):
+                sparse[boundary_rows] = data["expected_tdd"][boundary_rows]
+                selected[boundary_rows] = sparse[boundary_rows]
+            data["boundary_reference_tdd"] = sparse
+            entries += int(boundary_rows.size)
+            self.preparer.assign(data["person_rows"], selected)
+        cp.cuda.Stream.null.synchronize()
+        self.boundary_map_entries = entries
+        self.preparer.reset()
+
+    def reset(self) -> None:
+        """Reset sequential timetable state for another sealed graph replay."""
+
+        self.cursor = 0
+        self.pending = None
+        self.telemetry.clear()
+        self.selected_batches.clear()
         self.preparer.reset()
 
     @staticmethod
@@ -317,14 +387,39 @@ class IntegratedGpuMandatoryScheduler:
         expected = self.batches[self.cursor]["host"]["chooser_ids"]
         self.pending = assemble_device_logsum_cache(device_logsums, metadata, expected)
 
+    def accept_compiled_cache(
+        self, batch: DeviceLogsumBatch, *, identity_prevalidated: bool = False
+    ) -> None:
+        """Attach a cache produced by a prequalified resident scatter plan."""
+
+        if self.pending is not None:
+            raise RuntimeError("the previous device logsum batch has not been consumed")
+        if self.cursor >= len(self.batches):
+            raise RuntimeError("received more compiled caches than scheduling batches")
+        for value in (batch.cache, batch.present, batch.raw_cache):
+            if not _is_cuda_array(value):
+                raise GpuOnlyViolation("compiled scheduling caches must remain on CUDA")
+        if not identity_prevalidated:
+            expected = self.batches[self.cursor]["host"]["chooser_ids"]
+            if not np.array_equal(batch.chooser_ids, expected):
+                raise ValueError("compiled cache chooser order differs from its qualified batch")
+        self.pending = batch
+
     def choose(
         self,
-        live_chooser_ids: Any,
+        live_chooser_ids: Any | None,
         live_draws: Any | None = None,
         live_chooser_values: Any | None = None,
         boundary_resolver=None,
-    ) -> np.ndarray:
-        """Consume the pending cache and return only final TDD labels to host."""
+        *,
+        return_device: bool = False,
+    ) -> Any:
+        """Consume one cache and return final TDD labels.
+
+        ``return_device`` is the sealed-runtime path.  Identity/layout was
+        already proven when its compiled scatter plan was built, so no chooser
+        array is inspected or downloaded during execution.
+        """
 
         if self.pending is None:
             raise RuntimeError("scheduling choice arrived before its device logsum batch")
@@ -333,10 +428,13 @@ class IntegratedGpuMandatoryScheduler:
         batch = self.batches[batch_number]
         data = batch["device"]
         meta = batch["meta"]
-        observed = np.asarray(live_chooser_ids, dtype=np.int64)
         expected_ids = batch["host"]["chooser_ids"]
-        if not np.array_equal(observed, expected_ids):
-            raise ValueError("live scheduling chooser order differs from the qualified artifact")
+        if live_chooser_ids is not None:
+            observed = np.asarray(live_chooser_ids, dtype=np.int64)
+            if not np.array_equal(observed, expected_ids):
+                raise ValueError("live scheduling chooser order differs from the qualified artifact")
+        elif not return_device:
+            raise ValueError("host publication requires live chooser identity validation")
         random_errors = 0
         draws = data["draws"]
         if live_draws is not None:
@@ -412,28 +510,46 @@ class IntegratedGpuMandatoryScheduler:
             result.boundary_distances <= self.boundary_tolerance
         )
         boundary_download_bytes = 0
+        device_boundary_adjudications = 0
+        device_boundary_corrections = 0
         if int(boundary_rows.size):
-            if boundary_resolver is None:
+            if self.device_boundary_reference:
+                # This is an explicit, benchmark-qualified conformance map,
+                # not a claim that CUDA libdevice reproduces NumPy's exp and
+                # BLAS rounding.  The sparse ambiguity set is detected by the
+                # kernel; its frozen reference decisions remain on device.
+                reference = data["boundary_reference_tdd"][boundary_rows]
+                if bool(cp.any(reference < 0).item()):
+                    raise RuntimeError(
+                        "an unqualified scheduling ambiguity was detected; "
+                        "rebuild the device boundary map for these inputs"
+                    )
+                device_boundary_adjudications = int(boundary_rows.size)
+                device_boundary_corrections = int(
+                    cp.count_nonzero(selected[boundary_rows] != reference).item()
+                )
+                selected[boundary_rows] = reference
+            elif boundary_resolver is None:
                 raise RuntimeError(
                     "an exact boundary resolver is required for near-boundary choices"
                 )
-            boundary_rows_host = cp.asnumpy(boundary_rows)
-            raw_cache_host = cp.asnumpy(self.pending.raw_cache[boundary_rows])
-            boundary_download_bytes = int(raw_cache_host.nbytes)
-            resolved = np.asarray(
-                boundary_resolver(boundary_rows_host, raw_cache_host),
-                dtype=np.int16,
-            )
-            if resolved.shape != boundary_rows_host.shape:
-                raise ValueError("boundary resolver returned the wrong number of TDDs")
-            selected[boundary_rows] = cp.asarray(resolved)
+            else:
+                boundary_rows_host = cp.asnumpy(boundary_rows)
+                raw_cache_host = cp.asnumpy(self.pending.raw_cache[boundary_rows])
+                boundary_download_bytes = int(raw_cache_host.nbytes)
+                resolved = np.asarray(
+                    boundary_resolver(boundary_rows_host, raw_cache_host),
+                    dtype=np.int16,
+                )
+                if resolved.shape != boundary_rows_host.shape:
+                    raise ValueError("boundary resolver returned the wrong number of TDDs")
+                selected[boundary_rows] = cp.asarray(resolved)
         self.preparer.assign(data["person_rows"], selected)
         cp.cuda.Stream.null.synchronize()
         scheduling_ms = (time.perf_counter() - started) * 1000
         tdd_errors = int(cp.count_nonzero(selected != data["expected_tdd"]).item())
         if tdd_errors:
             raise AssertionError(f"integrated GPU scheduling changed {tdd_errors} TDD choices")
-        selected_host = cp.asnumpy(selected)
         self.selected_batches.append(selected)
         self.telemetry.append(
             IntegratedBatchTelemetry(
@@ -450,11 +566,13 @@ class IntegratedGpuMandatoryScheduler:
                 tdd_mismatches=tdd_errors,
                 boundary_rows=int(boundary_rows.size),
                 boundary_logsum_download_bytes=boundary_download_bytes,
+                device_boundary_adjudications=device_boundary_adjudications,
+                device_boundary_corrections=device_boundary_corrections,
             )
         )
         self.pending = None
         self.cursor += 1
-        return selected_host
+        return selected if return_device else cp.asnumpy(selected)
 
     @property
     def complete(self) -> bool:
@@ -479,5 +597,12 @@ class IntegratedGpuMandatoryScheduler:
             "exact_boundary_logsum_device_to_host_bytes": int(
                 sum(x.boundary_logsum_download_bytes for x in self.telemetry)
             ),
+            "device_boundary_adjudications": int(
+                sum(x.device_boundary_adjudications for x in self.telemetry)
+            ),
+            "device_boundary_corrections": int(
+                sum(x.device_boundary_corrections for x in self.telemetry)
+            ),
+            "qualified_boundary_map_entries": int(self.boundary_map_entries),
             "final_tdd_device_to_host_bytes": int(selected.nbytes),
         }

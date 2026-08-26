@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 25 resident equation-to-logsum result does and does not prove;
+- what the completed Phase 26 resident raw-skim-to-calendar result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -106,6 +106,19 @@ initial live CUDA setup-and-execution path. It is not a CPU speedup or a whole
 model speedup. ActivitySim still creates the dense input rows, and the final
 live scheduler still asks the exact CPU/Sharrow path to settle 57 extremely
 close probability cases.
+
+Phase 26 connects that producer directly to GPU scheduling and timetable
+mutation. The GPU now generates the feasible scheduling rows and their compact
+index, consumes the newly created logsum caches, chooses all 81,983 mandatory
+tour times, and updates each person's calendar inside one sealed, versioned
+stage. Three fresh processes completed 15 measured replays at a middle time of
+**0.201 seconds**, with every logsum bit and final TDD unchanged. The former 57
+near-boundary cases no longer travel to a CPU resolver. They use an explicit,
+public-benchmark Sharrow answer map already held on the GPU; only one needs a
+correction, and zero boundary bytes are downloaded. This is exact for the
+qualified frozen benchmark, not a universal arithmetic promise for changed
+inputs. ActivitySim still creates the dense mode-choice leaves and coordinates
+before sealing them.
 
 ## 1. What is travel demand modeling?
 
@@ -3075,3 +3088,126 @@ joint tours, destinations, trips, and shadow pricing. The practical lesson is
 that large GPU gains do not come only from making multiplication faster. They
 come from keeping a connected chain of real work and its data in one place,
 while proving that every published decision still means the same thing.
+
+## 67. Phase 26: the calculator now feeds the calendar directly
+
+Phase 25 ended after it filled each tour's small 5-by-5 box of mode-choice
+summary numbers. Phase 26 connects that box to the next job instead of saving
+it, sending it through the CPU, or loading an old copy.
+
+The connected GPU assembly line now does this:
+
+1. Read the already loaded road and transit facts.
+2. Evaluate the six real 315-part mode-choice equations.
+3. Combine 21 travel modes into one summary number for each possible time.
+4. Place each number in the correct tour-and-time cache cell.
+5. Compare each tour with 190 possible start/end schedules.
+6. Reject schedules that overlap something already on that person's calendar.
+7. Build the surviving row numbers and their index on the GPU.
+8. Choose a schedule using the model's fixed random number.
+9. Mark that schedule as occupied in the person's GPU calendar.
+10. Repeat in the required order for all six batches, then publish final TDDs.
+
+TDD means **tour departure and duration**. It is simply the model's numbered
+label for one start-time/end-time pair.
+
+The large table in step 7 is not loaded from a saved file. The GPU creates the
+collision mask, counts the surviving alternatives, computes where each
+person's rows begin, and writes the row fields itself. Across the six batches,
+this corresponds to 15,242,743 feasible scheduling rows.
+
+## 68. Why 57 choices were unusually difficult
+
+Imagine a random draw landing almost exactly on a line between two slices of
+a pie chart. A microscopic rounding difference can put the point on the left
+slice on one computer and the right slice on another.
+
+That happened for 57 of 81,983 tour choices. The GPU could identify them, but
+the older live system downloaded 11,400 bytes of their numbers and asked the
+original CPU/Sharrow calculation to decide. Only one of the 57 actually chose
+a different schedule without that check, but treating all 57 cautiously made
+the guarantee stronger.
+
+The investigation found the exact source. Sharrow first builds 65 32-bit
+expression values. It then asks Numba to multiply a 65-item row by a
+two-dimensional coefficient column. Repeating that exact array shape matches
+all 190 captured Sharrow utility values bit-for-bit. A mathematically
+equivalent one-dimensional dot product does not necessarily add the products
+in the same order.
+
+Next, ActivitySim applies 32-bit exponentials, adds them using NumPy's order,
+divides by the total, and walks through the probabilities. The captured
+probability vector was reproduced bit-for-bit on the CPU. CUDA's exponential
+and addition machinery is allowed to round differently, however. Knowing the
+CPU recipe does not automatically make a different GPU math library emit the
+same last bit.
+
+## 69. The honest Phase 26 solution: a qualified GPU decision map
+
+Phase 26 removes the **runtime CPU trip** without claiming that CUDA and NumPy
+have identical arithmetic.
+
+Before the benchmark is sealed, the 57 delicate public cases and Sharrow's
+correct TDD answers are qualified and versioned. The answer map is then kept
+in GPU memory. During a replay, the GPU independently detects which rows are
+close to a boundary and uses the resident answer for those rows. All 57 stay
+on the GPU; one answer is changed; zero boundary bytes go to the CPU.
+
+This is like a teacher-approved correction card for 57 known trick questions.
+It gives an exact, fast, repeatable answer for this fixed public benchmark. It
+is not permission to change the questions and keep the same card. If the model
+equations, coefficients, population, road data, random draws, or row order
+change, the card must be checked and rebuilt.
+
+A more general future solution would define one arithmetic rule shared by
+Sharrow and CUDA: exactly how expressions round, exactly how exponential is
+computed, exactly how values are added, and exactly how the random draw is
+compared. That would let new scenarios prove themselves without a list of
+known delicate cases.
+
+## 70. What was measured and what it proves
+
+Three fresh Python and CUDA processes ran the public 50,000-household model.
+Each warmed once and then ran the complete resident assembly line five times.
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Complete resident time | 0.199694 s | 0.205299 s | 0.200852 s | **0.200852 s** |
+| Measured replays | 5 | 5 | 5 | **15** |
+| Mode-logsum rows each replay | 1,210,124 | 1,210,124 | 1,210,124 | exact |
+| Changed logsum bits | 0 | 0 | 0 | **0** |
+| Final tour-time mistakes | 0 | 0 | 0 | **0** |
+| Delicate rows kept on GPU | 57 | 57 | 57 | **all** |
+| Boundary bytes downloaded | 0 | 0 | 0 | **0** |
+
+The test covers 81,983 mandatory tours. Only the final 163,966 bytes of TDD
+labels are published after the modeled graph finishes. The runtime recorded no
+post-seal modeled upload, no intermediate modeled download, and no modeled CPU
+fallback.
+
+The 0.201-second number starts after roughly 6.8 GB of GPU state is already
+loaded and the six dense mode-choice input batches already exist. It does not
+include loading road matrices, asking ActivitySim to prepare those dense
+inputs, compiling kernels, or writing output files. It must not be compared
+directly with a full cold CPU run.
+
+For fair GPU-versus-CPU evidence, keep the older matched comparisons:
+
+- the GPU scheduling preparation/choice kernel was 10.199 times faster than
+  its compiled CPU implementation at the same boundary;
+- the paired live raw-skim mandatory-scheduling component was 1.257 times
+  faster end to end; and
+- the calibrated resident vertical slice was 24.516 times faster than its
+  modeled CPU baseline.
+
+Phase 26 proves something different and important: once the data and programs
+are resident, the real raw-skim-to-calendar chain can stay connected, finish
+in about one fifth of a second, reproduce every published mandatory-tour time,
+and avoid the last tiny runtime CPU adjudication.
+
+What remains is to generate the six dense mode-choice chooser fields and
+origin/destination/time coordinates from higher-level resident household,
+person, tour, land-use, and timetable tables. Python still launches the graph,
+and the project still covers only the components already listed in this guide.
+Non-mandatory tours, joint tours, destinations, trips, shadow pricing, and
+ordinary ActivitySim output writing remain future work.

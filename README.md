@@ -479,3 +479,16 @@ time.
 
 See the [Phase 25 technical report](docs/phase25-resident-expression-runtime.md)
 and the [three-process qualification](benchmark-results/phase25-resident-raw-skims-summary.json).
+
+## Phase 26 sealed raw-skim-to-timetable graph
+
+Phase 26 connects the Phase 25 producer directly to device-generated
+scheduling rows, choices, and timetable mutation inside one versioned resident
+stage. Three independent 50,000-household processes and 15 measured replays
+produced bit-identical logsums and all 81,983 TDDs exactly at a 0.200852-second
+cross-process median. The former 57-row CPU resolver is replaced by an explicit
+qualified Sharrow decision map resident on the GPU: all 57 rows stay on-device,
+one requires correction, and zero boundary bytes are downloaded.
+
+See the [Phase 26 technical report](docs/phase26-resident-raw-skim-to-timetable.md)
+and the [hash-chained qualification](benchmark-results/phase26-resident-schedule-summary.json).
