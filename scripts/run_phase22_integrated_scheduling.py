@@ -49,6 +49,11 @@ def main() -> int:
         type=Path,
         help="also qualify Phase 26 sealed raw-skim-to-timetable graph",
     )
+    parser.add_argument(
+        "--resident-generated-input-report",
+        type=Path,
+        help="also qualify Phase 27 compact-state input reconstruction graph",
+    )
     parser.add_argument("--resident-replay-runs", type=int, default=5)
     parser.add_argument(
         "--diagnostic-logsum-capture",
@@ -62,8 +67,12 @@ def main() -> int:
         args.resident_replay_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_schedule_report:
         args.resident_schedule_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.resident_generated_input_report:
+        args.resident_generated_input_report.parent.mkdir(parents=True, exist_ok=True)
     resident_requested = bool(
-        args.resident_replay_report or args.resident_schedule_report
+        args.resident_replay_report
+        or args.resident_schedule_report
+        or args.resident_generated_input_report
     )
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
@@ -627,8 +636,58 @@ def main() -> int:
                 json.dumps(resident_report, indent=2) + "\n"
             )
 
-        if args.resident_schedule_report is not None:
+        if (
+            args.resident_schedule_report is not None
+            or args.resident_generated_input_report is not None
+        ):
             from choiceforge.device_resident_runtime import DeviceResidentRuntime
+
+            phase27_plans = []
+            phase27_cpu_seconds = []
+            phase27_gpu_seconds = []
+            original_captured_pointers = set()
+            if args.resident_generated_input_report is not None:
+                from choiceforge.device_input_expansion import ResidentInputExpansionPlan
+
+                for record in resident_records:
+                    original = record["invocation"]
+                    for value in (
+                        original.float_inputs,
+                        original.int_inputs,
+                        *original.skim_arguments[original.logical_skim_bindings :],
+                    ):
+                        if hasattr(value, "__cuda_array_interface__"):
+                            original_captured_pointers.add(
+                                int(value.__cuda_array_interface__["data"][0])
+                            )
+                    plan = ResidentInputExpansionPlan.compile(
+                        original, record["metadata"]
+                    )
+                    phase27_plans.append(plan)
+                    record["invocation"] = plan.invocation
+
+                # Matched boundary: both baselines materialize the same arrays
+                # from the same compact factors. CPU timings deliberately do
+                # not include the one-time factor download or qualification.
+                cpu_by_batch = [
+                    plan.cpu_benchmark(args.resident_replay_runs)
+                    for plan in phase27_plans
+                ]
+                for repetition in range(max(1, int(args.resident_replay_runs))):
+                    phase27_cpu_seconds.append(
+                        float(sum(values[repetition] for values in cpu_by_batch))
+                    )
+                expansion_warmup_runs = 5
+                for _ in range(expansion_warmup_runs):
+                    for plan in phase27_plans:
+                        plan.execute()
+                    cp.cuda.Stream.null.synchronize()
+                for _ in range(max(1, int(args.resident_replay_runs))):
+                    started_expansion = time.perf_counter()
+                    for plan in phase27_plans:
+                        plan.execute()
+                    cp.cuda.Stream.null.synchronize()
+                    phase27_gpu_seconds.append(time.perf_counter() - started_expansion)
 
             resident_scheduler = IntegratedGpuMandatoryScheduler(
                 args.inputs,
@@ -641,10 +700,15 @@ def main() -> int:
             resident_scheduler.qualify_device_boundary_maps(qualification_caches)
             runtime = DeviceResidentRuntime()
             resident_asset_names = []
+            timed_asset_pointers = set()
 
             def register_asset(name, value):
                 runtime.register_device_table(name, {"value": value})
                 resident_asset_names.append(name)
+                if hasattr(value, "__cuda_array_interface__") and int(value.nbytes):
+                    timed_asset_pointers.add(
+                        int(value.__cuda_array_interface__["data"][0])
+                    )
 
             # Register every array used by the executable launch objects by
             # reference. No copy is made; duplicate skim pointers are owned
@@ -681,6 +745,27 @@ def main() -> int:
                     f"schedule_batch_{number}", scheduling_columns
                 )
                 resident_asset_names.append(f"schedule_batch_{number}")
+            for number, plan in enumerate(phase27_plans):
+                for label, value in (
+                    ("offsets", plan.offsets),
+                    ("slots", plan.slots),
+                    ("owners", plan.owners),
+                ):
+                    register_asset(f"input_plan_{number}_{label}", value)
+                for factor_number, factor in enumerate(plan.factors):
+                    for label, value in (
+                        ("kind", factor.kind),
+                        ("position", factor.position),
+                        ("constants", factor.constants),
+                        ("owner_values", factor.owner_values),
+                        ("slot_values", factor.slot_values),
+                        ("pattern_ids", factor.pattern_ids),
+                        ("pattern_offsets", factor.pattern_offsets),
+                        ("pattern_values", factor.pattern_values),
+                    ):
+                        register_asset(
+                            f"input_plan_{number}_{factor_number}_{label}", value
+                        )
             register_asset("schedule_alternatives", resident_scheduler.alternative_values)
             runtime.seal_ingress()
 
@@ -691,6 +776,8 @@ def main() -> int:
                 selected_batches = []
                 logsum_bit_mismatches = 0
                 for number, record in enumerate(resident_records):
+                    if phase27_plans:
+                        phase27_plans[number].execute()
                     utilities = record["invocation"].execute()
                     logsums = mtc21_nested_logsums_cuda(
                         utilities,
@@ -773,11 +860,12 @@ def main() -> int:
                 runtime.synchronize()
                 return time.perf_counter() - started, dict(latest)
 
-            execute_resident_stage("phase26.warmup", False)
+            stage_phase = 27 if phase27_plans else 26
+            execute_resident_stage(f"phase{stage_phase}.warmup", False)
             phase26_replays = []
             for repetition in range(max(1, int(args.resident_replay_runs))):
                 seconds26, proof26 = execute_resident_stage(
-                    f"phase26.replay_{repetition}", True
+                    f"phase{stage_phase}.replay_{repetition}", True
                 )
                 proof26["seconds"] = seconds26
                 phase26_replays.append(proof26)
@@ -793,10 +881,15 @@ def main() -> int:
             )
             phase26_seconds = [item["seconds"] for item in phase26_replays]
             phase26_report = {
-                "phase": 26,
+                "phase": stage_phase,
                 "scope": (
                     "one sealed, versioned CUDA graph from resident raw skims and "
-                    "dense mode-choice inputs through six 315-term utility programs, "
+                    + (
+                        "compact chooser/slot/CSR state reconstructed into mode-choice inputs "
+                        if phase27_plans
+                        else "dense mode-choice inputs "
+                    )
+                    + "through six 315-term utility programs, "
                     "nested logsums, compiled cache scatter, device-generated feasible "
                     "scheduling rows/CSR indices, scheduling choice, and timetable mutation"
                 ),
@@ -826,6 +919,55 @@ def main() -> int:
                 "runtime_telemetry": runtime.telemetry_dict(),
                 "replays": phase26_replays,
             }
+            if phase27_plans:
+                compact_bytes = int(sum(x.compact_bytes for x in phase27_plans))
+                workspace_bytes = int(sum(x.workspace_bytes for x in phase27_plans))
+                original_dense_bytes = int(
+                    sum(x.original_dense_bytes for x in phase27_plans)
+                )
+                original_coordinate_bytes = int(
+                    sum(x.original_coordinate_bytes for x in phase27_plans)
+                )
+                retained_original_pointers = sorted(
+                    original_captured_pointers & timed_asset_pointers
+                )
+                phase26_report.update(
+                    {
+                        "input_contract": (
+                            "every captured row array is bitwise classified and rebuilt "
+                            "from constants, per-chooser state, per-slot state, "
+                            "deduplicated chooser-response patterns, and CSR topology"
+                        ),
+                        "captured_dense_input_bytes_in_timed_graph": 0,
+                        "captured_coordinate_bytes_in_timed_graph": 0,
+                        "removed_captured_row_bytes": (
+                            original_dense_bytes + original_coordinate_bytes
+                        ),
+                        "compact_input_state_bytes": compact_bytes,
+                        "reconstruction_workspace_bytes": workspace_bytes,
+                        "compact_state_reduction_ratio": (
+                            (original_dense_bytes + original_coordinate_bytes)
+                            / compact_bytes
+                        ),
+                        "retained_original_captured_pointers": retained_original_pointers,
+                        "expansion_gpu_seconds": phase27_gpu_seconds,
+                        "expansion_warmup_runs": expansion_warmup_runs,
+                        "expansion_gpu_median_seconds": float(
+                            np.median(phase27_gpu_seconds)
+                        ),
+                        "expansion_cpu_seconds": phase27_cpu_seconds,
+                        "expansion_cpu_median_seconds": float(
+                            np.median(phase27_cpu_seconds)
+                        ),
+                        "expansion_speedup_cpu_over_gpu": (
+                            float(np.median(phase27_cpu_seconds))
+                            / float(np.median(phase27_gpu_seconds))
+                        ),
+                        "input_classification": [
+                            plan.classification() for plan in phase27_plans
+                        ],
+                    }
+                )
             phase26_report["proof_gates"] = {
                 "all_six_real_programs": phase26_report["programs"] == 6,
                 "no_precomputed_logsums": phase26_report["precomputed_logsum_input_bytes"] == 0,
@@ -848,11 +990,36 @@ def main() -> int:
                     and runtime.telemetry.modeled_cpu_fallbacks == 0
                 ),
             }
-            args.resident_schedule_report.write_text(
+            if phase27_plans:
+                phase26_report["proof_gates"].update(
+                    {
+                        "no_captured_dense_inputs_in_timed_graph": (
+                            phase26_report["captured_dense_input_bytes_in_timed_graph"] == 0
+                        ),
+                        "no_captured_coordinates_in_timed_graph": (
+                            phase26_report["captured_coordinate_bytes_in_timed_graph"] == 0
+                        ),
+                        "no_original_captured_pointer_registered": not retained_original_pointers,
+                        "compact_state_is_smaller": (
+                            phase26_report["compact_state_reduction_ratio"] > 1.0
+                        ),
+                        "gpu_expansion_faster_than_cpu": (
+                            phase26_report["expansion_speedup_cpu_over_gpu"] > 1.0
+                        ),
+                    }
+                )
+            resident_stage_report_path = (
+                args.resident_generated_input_report
+                if phase27_plans
+                else args.resident_schedule_report
+            )
+            resident_stage_report_path.write_text(
                 json.dumps(phase26_report, indent=2) + "\n"
             )
             if not all(phase26_report["proof_gates"].values()):
-                raise RuntimeError("Phase 26 resident schedule proof gate failed")
+                raise RuntimeError(
+                    f"Phase {stage_phase} resident schedule proof gate failed"
+                )
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {

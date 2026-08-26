@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 26 resident raw-skim-to-calendar result does and does not prove;
+- what the completed Phase 27 compact-input-to-calendar result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -119,6 +119,19 @@ correction, and zero boundary bytes are downloaded. This is exact for the
 qualified frozen benchmark, not a universal arithmetic promise for changed
 inputs. ActivitySim still creates the dense mode-choice leaves and coordinates
 before sealing them.
+
+Phase 27 removes those prepared row arrays from the timed graph. It replaces
+503.4 MB of repeated dense values and coordinates with 25.0 MB of compact
+facts: values shared by a whole tour, values shared by a time alternative,
+and small dictionaries for repeated tour-by-alternative patterns. A CUDA
+kernel rebuilds the exact arrays in about **0.002915 seconds**. The matched
+NumPy job takes **0.491203 seconds**, making this reconstruction boundary
+**168.52 times faster** on the GPU. The entire compact-input-to-calendar graph
+takes **0.205337 seconds**, only 2.23% longer than Phase 26 even though it now
+does the missing reconstruction. All 15 full replays keep every logsum bit and
+all 81,983 final times unchanged. ActivitySim still creates the dense arrays
+once during qualification so the compact form can be discovered and checked;
+removing that cold-start dependency is the next phase.
 
 ## 1. What is travel demand modeling?
 
@@ -3211,3 +3224,114 @@ person, tour, land-use, and timetable tables. Python still launches the graph,
 and the project still covers only the components already listed in this guide.
 Non-mandatory tours, joint tours, destinations, trips, shadow pricing, and
 ordinary ActivitySim output writing remain future work.
+
+## 71. Phase 27: stop carrying the same row facts again and again
+
+Phase 26 was extremely fast, but it began with about half a gigabyte of
+already prepared row arrays. Many rows repeated the same facts. A tour's home
+zone, destination, income, and vehicle facts do not change just because the
+model is testing another possible departure time. Time-related facts also
+repeat across many tours.
+
+Phase 27 asks a simple question: can the GPU rebuild the large arrays from the
+small facts instead of storing every repeated copy?
+
+It uses four kinds of compact fact:
+
+1. A **constant** is one value shared by the entire batch.
+2. A **tour value** is one value shared by all tested times for one tour.
+3. A **time-slot value** is one value shared by the same exact start/end pair.
+4. A **response pattern** is a reusable short list. For example, a parking
+   cost can depend on both a tour's parking rate and the duration of the tested
+   schedule. Tours that produce the same short list share one pattern number.
+
+The rows are ragged: different tours can have different numbers of feasible
+alternatives. A compact row-offset list says where each tour begins and ends.
+The GPU uses that list to recover both the row's owner and its position inside
+the tour without storing a large value column.
+
+## 72. How we prevent compression from changing an answer
+
+Calling something "compressed" is not enough. If the compression rounds a
+number or guesses a pattern, it could change a probability and eventually a
+travel choice.
+
+The Phase 27 compiler checks the raw computer bits of every floating-point
+input, integer input, origin, destination, and time coordinate. A column is
+accepted only if it exactly fits one of the four forms above. A response
+pattern is accepted only if its dictionary is smaller than the original
+column. There is no secret option to keep an unexplained full row column.
+
+After building the compact form, CUDA reconstructs every array and compares
+all of its bits with ActivitySim's original. If one bit differs, sealing
+fails. The proof also records the addresses of the original arrays and fails
+if any of those addresses appears in the timed runtime.
+
+This is why a field called `daily_parking_cost` caused useful early failures.
+It was not simply one value per tour or one value per time. The public model
+calculates it from both. The response-pattern representation handles that real
+relationship without pretending it is simpler than it is.
+
+## 73. The Phase 27 speed and memory result
+
+Three fresh processes each measured five complete graph replays. They also
+used five warm-ups and five measurements for the reconstruction-only CPU/GPU
+comparison.
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Complete compact-input-to-calendar graph | 0.205337 s | 0.208764 s | 0.204956 s | **0.205337 s** |
+| GPU reconstruction | 0.002915 s | 0.002906 s | 0.002939 s | **0.002915 s** |
+| NumPy reconstruction | 0.490051 s | 0.491203 s | 0.499566 s | **0.491203 s** |
+| CPU time divided by GPU time | 168.13x | 169.04x | 169.96x | **168.52x** |
+
+The old captured row arrays occupied 503,411,584 bytes. The compact persistent
+facts occupy 25,042,522 bytes, a **20.102-times reduction**. The GPU still
+needs about 508.3 MB of reusable workspace because the existing 315-term
+equation kernels expect the reconstructed row layout. Workspace is overwritten
+each run; it is not another saved input copy.
+
+The complete Phase 27 graph is only 2.23% slower than Phase 26. That is the
+important architectural result: rebuilding half a gigabyte of exact inputs
+adds only about 0.0045 seconds to the middle complete-graph measurement.
+
+Every one of the 15 full replays processed 1,210,124 mode-logsum rows. No
+logsum bit changed. No final TDD changed. No captured row pointer was retained.
+No modeled data moved to or from the CPU after sealing, and no modeled CPU
+fallback ran.
+
+## 74. What 168.52x means - and what it does not mean
+
+The 168.52-times result compares one clearly matched job: materialize the same
+503.4 MB of arrays from the same compact factors using NumPy or CUDA. It does
+not compare a full CPU ActivitySim model with a full GPU model.
+
+The 0.205337-second number is also a warm resident boundary. Raw skim cubes,
+compact facts, compiled programs, and timetable state are already on the GPU.
+It excludes cold file loading, initial factor discovery, compilation, and
+ordinary output writing.
+
+The older speed results still answer other questions. In particular, Phase 22
+measured a 1.257-times live ActivitySim component improvement, and Phase 23's
+calibrated resident vertical slice measured a 24.516-times modeled CPU/GPU
+advantage. Phase 27 should not replace their labels with its much larger but
+narrower reconstruction number.
+
+## 75. What comes next
+
+Today ActivitySim still prepares the large arrays once so Phase 27 can learn
+and prove the compact representation. The timed graph no longer needs those
+arrays, but a cold production startup still does.
+
+The next compiler should create compact facts directly from resident household,
+person, tour, land-use, and scheduling-alternative tables. Named expressions
+should replace anonymous response dictionaries where their arithmetic can be
+made identical. ActivitySim's dense arrays would remain only as a qualification
+answer key, not a production prerequisite.
+
+Two other frontiers remain. The fixed public benchmark still uses the 57-entry
+GPU decision map for arithmetic-boundary cases; a shared Sharrow/CUDA
+exponential, summation, normalization, and search rule would generalize that
+guarantee to changed scenarios. The connected GPU coverage must also expand
+from mandatory tours to non-mandatory tours, joint tours, destinations, trips,
+and the rest of a complete ActivitySim workflow.

@@ -19,13 +19,14 @@ contains:
 - a strict CUDA C++ generator from that same IR;
 - an exact, first-divergence Sharrow comparison gate;
 - a fail-closed GPU-native state runtime with transfer/fallback telemetry;
+- a fail-closed compact chooser/slot/CSR input reconstructor for sealed CUDA graphs;
 - entity-stable, partition-invariant GPU random streams;
 - deterministic ordered GPU group aggregation;
 - CPU/GPU correctness tests;
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 127 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 131 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -492,3 +493,23 @@ one requires correction, and zero boundary bytes are downloaded.
 
 See the [Phase 26 technical report](docs/phase26-resident-raw-skim-to-timetable.md)
 and the [hash-chained qualification](benchmark-results/phase26-resident-schedule-summary.json).
+
+## Phase 27 compact input reconstruction
+
+Phase 27 removes 503,411,584 bytes of captured row-dense chooser inputs and
+skim coordinates from the timed sealed graph. A fail-closed compiler represents
+them with 25,042,522 bytes of constant, per-chooser, exact-slot,
+chooser-response-pattern, and CSR state—a 20.102x reduction—and CUDA rebuilds
+the exact ABI before running the complete Phase 26 chain.
+
+Across three fresh 50,000-household processes, the matched reconstruction
+boundary is 0.002915 seconds on CUDA versus 0.491203 seconds with NumPy
+(168.52x). The complete compact-input-to-timetable graph is 0.205337 seconds,
+only 2.23% above Phase 26. All 15 measured full replays have bit-identical
+logsums and exact final TDDs, with no captured row pointer, post-seal modeled
+transfer, or CPU fallback. ActivitySim still supplies the dense arrays once
+during qualification; direct upstream production of the compact factors is
+the next boundary.
+
+See the [Phase 27 technical report](docs/phase27-compact-input-reconstruction.md)
+and the [hash-chained qualification](benchmark-results/phase27-generated-input-summary.json).

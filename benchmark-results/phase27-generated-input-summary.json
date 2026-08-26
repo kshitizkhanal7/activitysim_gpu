@@ -1,0 +1,68 @@
+{
+  "phase": 27,
+  "claim": "three-process public MTC proof that a sealed CUDA graph rebuilds all strict mode-choice row leaves and skim coordinates from compact chooser, exact-slot, response-pattern, and CSR state",
+  "processes": 3,
+  "measured_full_graph_replays": 15,
+  "process_median_seconds": [
+    0.20533719996456057,
+    0.20876430009957403,
+    0.20495550008490682
+  ],
+  "median_of_process_medians_seconds": 0.20533719996456057,
+  "slowest_process_median_seconds": 0.20876430009957403,
+  "minimum_full_graph_replay_seconds": 0.20449879998341203,
+  "expansion_gpu_process_median_seconds": [
+    0.002914799959398806,
+    0.0029058000072836876,
+    0.00293929991312325
+  ],
+  "expansion_cpu_process_median_seconds": [
+    0.49005079991184175,
+    0.4912028998369351,
+    0.49956570006906986
+  ],
+  "expansion_gpu_median_of_medians_seconds": 0.002914799959398806,
+  "expansion_cpu_median_of_medians_seconds": 0.4912028998369351,
+  "expansion_speedup_cpu_over_gpu_median_boundary": 168.52027812510622,
+  "removed_captured_row_bytes": 503411584,
+  "compact_input_state_bytes": 25042522,
+  "compact_state_reduction_ratio": 20.102271807927334,
+  "phase26_median_seconds": 0.20085230004042387,
+  "phase27_overhead_vs_phase26_percent": 2.232934312046253,
+  "workload": {
+    "households": 50000,
+    "scheduled_tours": 81983,
+    "mode_logsum_rows": 1210124,
+    "programs": 6,
+    "terms_per_program": 315
+  },
+  "proof_gates": {
+    "three_independent_processes": true,
+    "every_source_gate_passed": true,
+    "all_programs_rows_and_tours_replayed": true,
+    "all_reconstructed_logsums_bit_exact": true,
+    "all_final_tdds_exact": true,
+    "captured_row_arrays_absent": true,
+    "compact_state_at_least_20x_smaller": true,
+    "gpu_expansion_wins_every_process": true,
+    "zero_postseal_transfer_or_cpu_fallback": true
+  },
+  "sources": [
+    {
+      "path": "benchmark-results\\phase27-resident-input-1.json",
+      "sha256": "65168ff65eecbcfedecf4aba78faa79cb5a4a7fcca53011932a62678ea30c36f"
+    },
+    {
+      "path": "benchmark-results\\phase27-resident-input-2.json",
+      "sha256": "82ce3fe75253741816167ec07c86bcd648a5569300910d096adc9be2e87cddd2"
+    },
+    {
+      "path": "benchmark-results\\phase27-resident-input-3.json",
+      "sha256": "7bdb91964c9f2bf4c555f0574551ab6f6fd640ea96daa74e0b60434e5c9af667"
+    }
+  ],
+  "phase26_source": {
+    "path": "benchmark-results\\phase26-resident-schedule-summary.json",
+    "sha256": "e0db073bcad1252e3f128ae48c7ecb62d216eb630e9390eea144408052a26ecd"
+  }
+}

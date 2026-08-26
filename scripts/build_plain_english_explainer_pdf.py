@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("0.201 s", STYLES["metric_num"]),
-                Paragraph("57 / 57", STYLES["metric_num"]),
-                Paragraph("0", STYLES["metric_num"]),
+                Paragraph("0.205 s", STYLES["metric_num"]),
+                Paragraph("168.52x", STYLES["metric_num"]),
+                Paragraph("20.10x", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 26 median<br/>resident graph time", STYLES["metric_label"]),
-                Paragraph("boundary rows kept<br/>on the GPU", STYLES["metric_label"]),
-                Paragraph("logsum-bit or final<br/>TDD mismatches", STYLES["metric_label"]),
+                Paragraph("Phase 27 median<br/>complete graph time", STYLES["metric_label"]),
+                Paragraph("matched input<br/>reconstruction speedup", STYLES["metric_label"]),
+                Paragraph("compact persistent<br/>state reduction", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 26 median across three independent resident raw-skim-to-timetable processes, all delicate probability-boundary rows kept on-device, and the exact logsum/final-schedule result. CPU comparisons remain separately labeled inside.",
+            "Read left to right: the Phase 27 median across three independent compact-input-to-timetable processes, the matched NumPy/CUDA reconstruction speedup, and the persistent input-state reduction. All logsum bits and final schedules remain exact; boundary labels are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
