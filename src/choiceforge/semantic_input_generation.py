@@ -29,10 +29,18 @@ def _availability_expression(label, gather, auto_column):
 
     walk_base = "true"
     drive_base = f"(int_inputs[row * int_columns + {auto_column}] > 0LL)"
+    if label == "name:sov_available":
+        return f"(({g('odt_skims', 'SOV_TIME')} > 0.0f) && ({g('dot_skims', 'SOV_TIME')} > 0.0f))"
     if label == "name:sovtoll_available":
         return f"(({g('odt_skims', 'SOVTOLL_VTOLL')} > 0.0f) || ({g('dot_skims', 'SOVTOLL_VTOLL')} > 0.0f))"
+    if label == "name:hov2_available":
+        return f"(({g('odt_skims', 'HOV2_TIME')} + {g('dot_skims', 'HOV2_TIME')}) > 0.0f)"
     if label == "name:hov2toll_available":
         return f"(({g('odt_skims', 'HOV2TOLL_VTOLL')} + {g('dot_skims', 'HOV2TOLL_VTOLL')}) > 0.0f)"
+    if label == "name:hov3_available":
+        return f"(({g('odt_skims', 'HOV3_TIME')} > 0.0f) && ({g('dot_skims', 'HOV3_TIME')} > 0.0f))"
+    if label == "name:hov3toll_available":
+        return f"(({g('odt_skims', 'HOV3TOLL_VTOLL')} + {g('dot_skims', 'HOV3TOLL_VTOLL')}) > 0.0f)"
 
     walk = {
         "name:walk_local_available": ("LOC", False),
@@ -91,8 +99,12 @@ def _availability_expression(label, gather, auto_column):
 
 
 _AVAILABILITY_LABELS = {
+    "name:sov_available",
     "name:sovtoll_available",
+    "name:hov2_available",
     "name:hov2toll_available",
+    "name:hov3_available",
+    "name:hov3toll_available",
     "name:walk_local_available",
     "name:walk_commuter_available",
     "name:walk_express_available",
@@ -164,13 +176,14 @@ class SemanticInputProgram:
 def compile_semantic_input_program(
     *, invocation, rebuilt_skim_arguments, metadata: Mapping[str, Any],
     owner_index, owner_starts, slots, float_factor, int_factor,
+    parking_rates_override=None,
 ):
     """Compile and fail-closed qualify all response-pattern columns."""
     cp = _cupy()
     float_kinds = cp.asnumpy(float_factor.kind)
     int_kinds = cp.asnumpy(int_factor.kind)
-    float_pattern = np.flatnonzero(float_kinds == 3)
-    int_pattern = np.flatnonzero(int_kinds == 3)
+    float_pattern = np.flatnonzero((float_kinds == 3) | (float_kinds == 4))
+    int_pattern = np.flatnonzero((int_kinds == 3) | (int_kinds == 4))
     float_labels = [float_factor.column_labels[index] for index in float_pattern]
     int_labels = [int_factor.column_labels[index] for index in int_pattern]
     unsupported = sorted(
@@ -211,14 +224,21 @@ def compile_semantic_input_program(
     parking = cp.asnumpy(invocation.float_inputs[:, parking_column])
     durations = end.astype(np.int64) - start.astype(np.int64)
     owner_count = int(owner_starts.size)
-    rates = np.empty(owner_count, dtype=np.float64)
     offsets = np.r_[owner_starts, chooser_ids.size]
-    for owner in range(owner_count):
-        begin, finish = offsets[owner : owner + 2]
-        local_duration = durations[begin:finish]
-        rates[owner] = _infer_float32_multiplier(
-            parking[begin:finish], local_duration
-        )
+    if parking_rates_override is None:
+        rates = np.empty(owner_count, dtype=np.float64)
+        for owner in range(owner_count):
+            begin, finish = offsets[owner : owner + 2]
+            local_duration = durations[begin:finish]
+            rates[owner] = _infer_float32_multiplier(
+                parking[begin:finish], local_duration
+            )
+    else:
+        rates = np.asarray(parking_rates_override, dtype=np.float64)
+        if rates.shape != (owner_count,):
+            raise ValueError(
+                "Phase 29 direct parking rates do not align with compact tours"
+            )
     predicted = (rates[owner_index] * durations).astype(parking.dtype)
     if not np.array_equal(
         np.ascontiguousarray(predicted).view(np.uint8),

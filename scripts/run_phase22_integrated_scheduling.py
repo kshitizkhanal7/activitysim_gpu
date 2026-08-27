@@ -59,6 +59,11 @@ def main() -> int:
         type=Path,
         help="also qualify Phase 28 named semantic CUDA input generation graph",
     )
+    parser.add_argument(
+        "--resident-raw-table-input-report",
+        type=Path,
+        help="also qualify Phase 29 declared raw-table-to-calendar CUDA graph",
+    )
     parser.add_argument("--resident-replay-runs", type=int, default=5)
     parser.add_argument(
         "--diagnostic-logsum-capture",
@@ -76,11 +81,14 @@ def main() -> int:
         args.resident_generated_input_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_semantic_input_report:
         args.resident_semantic_input_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.resident_raw_table_input_report:
+        args.resident_raw_table_input_report.parent.mkdir(parents=True, exist_ok=True)
     resident_requested = bool(
         args.resident_replay_report
         or args.resident_schedule_report
         or args.resident_generated_input_report
         or args.resident_semantic_input_report
+        or args.resident_raw_table_input_report
     )
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
@@ -119,6 +127,20 @@ def main() -> int:
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
     resident_records = []
+    current_raw_source = None
+    raw_mode_constants = None
+    raw_cbd_threshold = None
+    if args.resident_raw_table_input_report:
+        import yaml
+
+        raw_mode_settings = yaml.safe_load(
+            (args.project / "configs" / "tour_mode_choice.yaml").read_text()
+        )
+        raw_global_settings = yaml.safe_load(
+            (args.project / "configs" / "settings.yaml").read_text()
+        )
+        raw_mode_constants = raw_mode_settings["CONSTANTS"]
+        raw_cbd_threshold = raw_global_settings["cbd_threshold"]
 
     def resident_invocation_sink(invocation, numeric_nest, alternatives, metadata, logsums):
         if not resident_requested:
@@ -135,6 +157,7 @@ def main() -> int:
                     for key, value in metadata.items()
                 },
                 "reference_logsums": _cupy().array(logsums, copy=True),
+                "raw_source": current_raw_source,
             }
         )
 
@@ -180,7 +203,52 @@ def main() -> int:
             diagnostic_cache_host[owners, slots] = raw_host_logsums
 
     def gpu_compute_logsums(*compute_args, **compute_kwargs):
+        nonlocal current_raw_source
         original_simple = simulate.simple_simulate_logsums
+
+        rng = None
+        original_normal_for_df = None
+        if args.resident_raw_table_input_report:
+            if len(compute_args) < 4:
+                raise RuntimeError("Phase 29 requires the positional ActivitySim logsum ABI")
+            raw_state, raw_alt_tdd, raw_tours, raw_purpose = compute_args[:4]
+            land_columns = [
+                "TOTPOP", "TOTEMP", "TOTACRE", "PRKCST", "area_type",
+                "TOPOLOGY", "TERMINAL", "density_index",
+            ]
+            current_raw_source = {
+                "tours": raw_tours.copy(),
+                "land_use": raw_state.get_dataframe("land_use")[land_columns].copy(),
+                "tour_purpose": str(raw_purpose),
+                "constants": raw_mode_constants,
+                "cbd_threshold": raw_cbd_threshold,
+            }
+            rng = raw_state.get_rn_generator()
+            original_normal_for_df = rng.normal_for_df
+
+            def capture_normal_for_df(df, *normal_args, **normal_kwargs):
+                result = original_normal_for_df(df, *normal_args, **normal_kwargs)
+                if (
+                    bool(normal_kwargs.get("broadcast"))
+                    and int(normal_kwargs.get("size") or 0) == 6
+                    and len(df) == len(raw_alt_tdd)
+                    and np.array_equal(np.asarray(df.index), np.asarray(raw_alt_tdd.index))
+                ):
+                    array = (
+                        result.to_numpy(copy=False)
+                        if hasattr(result, "to_numpy") else np.asarray(result)
+                    )
+                    if array.shape != (len(df), 6):
+                        raise RuntimeError(
+                            f"Phase 29 controlled draw matrix has shape {array.shape}"
+                        )
+                    first = ~df.index.duplicated(keep="first")
+                    current_raw_source["standard_normal_draws"] = np.asarray(
+                        array[first], dtype=np.float64
+                    ).copy()
+                return result
+
+            rng.normal_for_df = capture_normal_for_df
 
         def gpu_simple(
             state,
@@ -221,6 +289,9 @@ def main() -> int:
             return original_compute(*compute_args, **compute_kwargs)
         finally:
             simulate.simple_simulate_logsums = original_simple
+            if rng is not None:
+                rng.normal_for_df = original_normal_for_df
+            current_raw_source = None
 
     def integrated_choice(state, choosers, alternatives, spec, choice_column, *rest, **kwargs):
         if rest or kwargs.get("want_logsums") or kwargs.get("skip_choice"):
@@ -648,6 +719,7 @@ def main() -> int:
             args.resident_schedule_report is not None
             or args.resident_generated_input_report is not None
             or args.resident_semantic_input_report is not None
+            or args.resident_raw_table_input_report is not None
         ):
             from choiceforge.device_resident_runtime import DeviceResidentRuntime
 
@@ -658,16 +730,25 @@ def main() -> int:
             if (
                 args.resident_generated_input_report is not None
                 or args.resident_semantic_input_report is not None
+                or args.resident_raw_table_input_report is not None
             ):
                 from choiceforge.device_input_expansion import (
                     ResidentInputExpansionPlan,
                     ResidentSemanticInputPlan,
                 )
+                if args.resident_raw_table_input_report is not None:
+                    from choiceforge.raw_table_input_generation import (
+                        ResidentRawTableInputPlan,
+                    )
 
                 plan_type = (
-                    ResidentSemanticInputPlan
-                    if args.resident_semantic_input_report is not None
-                    else ResidentInputExpansionPlan
+                    ResidentRawTableInputPlan
+                    if args.resident_raw_table_input_report is not None
+                    else (
+                        ResidentSemanticInputPlan
+                        if args.resident_semantic_input_report is not None
+                        else ResidentInputExpansionPlan
+                    )
                 )
 
                 for record in resident_records:
@@ -681,16 +762,24 @@ def main() -> int:
                             original_captured_pointers.add(
                                 int(value.__cuda_array_interface__["data"][0])
                             )
-                    plan = plan_type.compile(
-                        original, record["metadata"]
-                    )
+                    if args.resident_raw_table_input_report is not None:
+                        if record["raw_source"] is None:
+                            raise RuntimeError("Phase 29 did not capture a raw source bundle")
+                        plan = plan_type.compile(
+                            original, record["metadata"], record["raw_source"]
+                        )
+                    else:
+                        plan = plan_type.compile(original, record["metadata"])
                     phase27_plans.append(plan)
                     record["invocation"] = plan.invocation
 
                 # Matched boundary: both baselines materialize the same arrays
                 # from the same compact factors. CPU timings deliberately do
                 # not include the one-time factor download or qualification.
-                if args.resident_semantic_input_report is None:
+                if (
+                    args.resident_semantic_input_report is None
+                    and args.resident_raw_table_input_report is None
+                ):
                     cpu_by_batch = [
                         plan.cpu_benchmark(args.resident_replay_runs)
                         for plan in phase27_plans
@@ -890,7 +979,8 @@ def main() -> int:
                 return time.perf_counter() - started, dict(latest)
 
             stage_phase = (
-                28 if phase27_plans and phase27_plans[0].semantic_program is not None
+                29 if args.resident_raw_table_input_report is not None
+                else 28 if phase27_plans and phase27_plans[0].semantic_program is not None
                 else 27 if phase27_plans else 26
             )
             execute_resident_stage(f"phase{stage_phase}.warmup", False)
@@ -1044,7 +1134,7 @@ def main() -> int:
                         ),
                     }
                 )
-                if stage_phase == 28:
+                if stage_phase in {28, 29}:
                     manifests = [
                         plan.semantic_program.manifest() for plan in phase27_plans
                     ]
@@ -1067,8 +1157,41 @@ def main() -> int:
                             ),
                         }
                     )
+                if stage_phase == 29:
+                    raw_manifests = [plan.raw_manifest() for plan in phase27_plans]
+                    phase26_report["raw_table_input_programs"] = raw_manifests
+                    phase26_report["input_contract"] = (
+                        "every strict dense input and skim coordinate is declared from "
+                        "one-row-per-tour ActivitySim tables, land use, controlled random "
+                        "draws, alternative slots, and resident raw skims; dense preprocessor "
+                        "rows are an oracle only and are not read by the compiler"
+                    )
+                    phase26_report["proof_gates"].update(
+                        {
+                            "zero_dense_oracle_bytes_read_for_compile": all(
+                                item["dense_oracle_bytes_read_for_compile"] == 0
+                                for item in raw_manifests
+                            ),
+                            "all_raw_sources_declared": all(
+                                item["source_count"] > 0 for item in raw_manifests
+                            ),
+                            "all_eighteen_availability_formulas_generated": all(
+                                item["availability_formulas"] == 18
+                                for item in raw_manifests
+                            ),
+                            "direct_land_use_parking_rate": all(
+                                item["parking_rate_source"]
+                                == "land_use.PRKCST_or_free_parking_at_work"
+                                for item in raw_manifests
+                            ),
+                        }
+                    )
             resident_stage_report_path = (
-                (args.resident_semantic_input_report or args.resident_generated_input_report)
+                (
+                    args.resident_raw_table_input_report
+                    or args.resident_semantic_input_report
+                    or args.resident_generated_input_report
+                )
                 if phase27_plans
                 else args.resident_schedule_report
             )

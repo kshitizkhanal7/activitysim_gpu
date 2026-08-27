@@ -1,0 +1,68 @@
+{
+  "phase": 29,
+  "scope": "declared one-row-per-tour and land-use source compilation through the complete sealed mandatory-tour raw-skim-to-timetable graph",
+  "workload": {
+    "households": 50000,
+    "mode_logsum_rows": 1210124,
+    "scheduled_tours": 81983,
+    "programs": 6,
+    "declared_sources_per_program": 57,
+    "availability_formulas_per_program": 18
+  },
+  "complete_graph_process_medians_seconds": [
+    0.21014809992630035,
+    0.22531149990390986,
+    0.22607490001246333
+  ],
+  "median_of_process_medians_seconds": 0.22531149990390986,
+  "minimum_complete_graph_seconds": 0.20983870001509786,
+  "raw_input_generation_process_medians_seconds": [
+    0.010439499979838729,
+    0.010328499949537218,
+    0.010505800019018352
+  ],
+  "raw_input_generation_median_seconds": 0.010439499979838729,
+  "cold_activitysim_process_seconds": [
+    30.6465822000755,
+    30.759445100091398,
+    31.021469399915077
+  ],
+  "cold_activitysim_median_seconds": 30.759445100091398,
+  "compact_input_state_bytes": 24849394,
+  "removed_captured_row_bytes": 503411584,
+  "compact_state_reduction_ratio": 20.258505458925878,
+  "dense_oracle_bytes_read_for_compile": 0,
+  "phase29_overhead_vs_phase28_percent": 6.379769073287256,
+  "phase29_compact_state_change_vs_phase28_percent": 22.659256320264866,
+  "qualification": {
+    "full_public_process_replays": 15,
+    "changed_raw_table_scenarios": 5,
+    "changed_raw_tours": 10000,
+    "changed_cuda_scenarios": 5,
+    "changed_cuda_rows": 8000
+  },
+  "proof_gates": {
+    "three_independent_processes": true,
+    "all_process_gates_passed": true,
+    "all_live_gates_passed": true,
+    "all_changed_world_gates_passed": true,
+    "consistent_compact_state": true,
+    "all_57_sources_declared_per_program": true,
+    "zero_dense_oracle_bytes_read_for_compile": true,
+    "all_18_availability_formulas_per_program": true,
+    "direct_land_use_parking_rates": true,
+    "zero_anonymous_response_patterns": true,
+    "all_logsums_and_schedules_exact": true,
+    "no_postseal_host_traffic_or_cpu_fallback": true
+  },
+  "source_hashes": {
+    "benchmark-results\\phase29-raw-table-input-1.json": "a97c6d46919f87dbf21d39545d8c7fc86374de9cf9b39b0e953ec1ead7a5ab65",
+    "benchmark-results\\phase29-raw-table-input-2.json": "67d4b6f65c2a1f1ba799299714f712fb7e853217660121273bb01fd30b29318a",
+    "benchmark-results\\phase29-raw-table-input-3.json": "e63182f2eb1d4fec52c9fae352b75405a562077ee57e6a604925b4ec5c411835",
+    "benchmark-results\\phase29-live-1.json": "b901c5ac65dfd49bb23f7945590831f680bddbeb335c21dd57806bce0215b747",
+    "benchmark-results\\phase29-live-2.json": "78dda691833284f9401cea4c50b4931d32f9f7a4a134a3b73e17d572184ab490",
+    "benchmark-results\\phase29-live-3.json": "673ee55e8b506a6df7f312c664966b160b4b708fc8a8f73cce6536750550e265",
+    "benchmark-results\\phase29-changed-scenario-qualification.json": "fbe3fcf1856e0d49845a9d0e1549ef43a9f98ef9d70ec5138235e3d487c14359",
+    "benchmark-results\\phase28-semantic-input-summary.json": "54ee85b92012e122a01da0e3def52c5ff27a00e6648daf2eda60d7b0e0d02503"
+  }
+}

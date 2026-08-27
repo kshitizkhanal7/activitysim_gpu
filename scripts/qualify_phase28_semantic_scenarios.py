@@ -111,7 +111,7 @@ def main():
     print(json.dumps(report, indent=2))
 
 
-def scenario(cp, seed, sources):
+def scenario(cp, seed, sources, labels=LABELS):
     rng = np.random.default_rng(seed)
     owners_count, alternatives, zones, periods = 64, 25, 7, 5
     rows = owners_count * alternatives
@@ -154,6 +154,11 @@ def scenario(cp, seed, sources):
         return array / np.float32(100.0)
 
     values = {}
+    if "name:sov_available" in labels:
+        values["name:sov_available"] = (
+            (v("odt_skims", "SOV_TIME") > 0)
+            & (v("dot_skims", "SOV_TIME") > 0)
+        )
     values["name:sovtoll_available"] = (
         (v("odt_skims", "SOVTOLL_VTOLL") > 0)
         | (v("dot_skims", "SOVTOLL_VTOLL") > 0)
@@ -162,6 +167,20 @@ def scenario(cp, seed, sources):
         v("odt_skims", "HOV2TOLL_VTOLL")
         + v("dot_skims", "HOV2TOLL_VTOLL") > 0
     )
+    if "name:hov2_available" in labels:
+        values["name:hov2_available"] = (
+            v("odt_skims", "HOV2_TIME") + v("dot_skims", "HOV2_TIME") > 0
+        )
+    if "name:hov3_available" in labels:
+        values["name:hov3_available"] = (
+            (v("odt_skims", "HOV3_TIME") > 0)
+            & (v("dot_skims", "HOV3_TIME") > 0)
+        )
+    if "name:hov3toll_available" in labels:
+        values["name:hov3toll_available"] = (
+            v("odt_skims", "HOV3TOLL_VTOLL")
+            + v("dot_skims", "HOV3TOLL_VTOLL") > 0
+        )
     for mode, suffix in (("local", "LOC"), ("commuter", "COM"),
                          ("express", "EXP"), ("heavyrail", "HVY"), ("lrf", "LRF")):
         walk = (
@@ -198,7 +217,7 @@ def scenario(cp, seed, sources):
     rates = rng.uniform(0.05, 8.0, size=8)
     parking = (rates[archetype][owner] * duration).astype(np.float32)
     float_host = parking.reshape(-1, 1)
-    int_host = np.column_stack((auto[owner], *(values[label] for label in LABELS))).astype(np.int64)
+    int_host = np.column_stack((auto[owner], *(values[label] for label in labels))).astype(np.int64)
     float_inputs = cp.asarray(float_host)
     int_inputs = cp.asarray(int_host)
 
@@ -221,7 +240,7 @@ def scenario(cp, seed, sources):
         skim_coordinate_bytes=coordinate_bytes,
         float_input_sources=(("column", "daily_parking_cost"),),
         int_input_sources=(("name", "auto_ownership"),) + tuple(
-            tuple(label.split(":", 1)) for label in LABELS
+            tuple(label.split(":", 1)) for label in labels
         ),
         skim_input_sources=sources,
         skim_input_ranks=(3,) * len(sources),

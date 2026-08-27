@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 28 semantic-input-to-calendar result does and does not prove;
+- what the completed Phase 29 raw-table-to-calendar result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -145,6 +145,20 @@ outputs. The stronger meaning costs time: the full graph is 3.15% slower than
 Phase 27 because it computes real skim rules instead of looking up remembered
 patterns. ActivitySim still supplies dense rows before sealing as a
 qualification answer key, so cold raw-table generation remains unfinished.
+
+Phase 29 takes the larger upstream step. Instead of learning compact facts by
+looking at the giant prepared answer rows, its compiler starts with one source
+row per tour, land-use facts, controlled random inputs, possible time slots,
+and raw network skims. It declares 57 sources for each of six programs and
+generates all 18 road/transit availability fields on CUDA. Parking rates now
+come directly from land use plus free-parking status. Across three public
+processes and 15 replays, the middle complete graph is **0.225311 seconds**;
+every logsum bit and all 81,983 final times still match. Five changed raw-table
+populations (10,000 tours) and five changed skim worlds (8,000 rows) also pass.
+The compact state is 24.85 MB, **20.259 times smaller** than the removed rows.
+The qualification harness still runs the old dense path separately as an
+answer key and to expose the compiled utility interface, so the roughly
+30.759-second cold ActivitySim run has not disappeared yet.
 
 ## 1. What is travel demand modeling?
 
@@ -3442,3 +3456,105 @@ After that, the other major correctness frontier remains: replace the frozen
 addition order, normalization, and probability search. Coverage can then grow
 to non-mandatory and joint tours, destinations, trips, and complete model
 output.
+
+## 81. Phase 29: stop learning the recipe from the answer sheet
+
+Imagine that a student solves a problem correctly, but only after studying a
+completed answer sheet and noticing repeated patterns. Phase 27 did something
+similar when it compressed prepared rows. Phase 28 replaced the most obvious
+remembered patterns with named rules, but other values were still classified
+by looking at the prepared result.
+
+Phase 29 writes down where **every** ingredient comes from before checking the
+answer:
+
+- one raw row for each tour supplies facts about the person and household;
+- the land-use table supplies facts about origins and destinations;
+- the model constants supply items such as walking speed and maximum wait;
+- controlled random inputs supply the stochastic ride-hail ingredients;
+- possible start/end times supply alternative slots; and
+- resident skim cubes supply road and transit conditions.
+
+For each real program, this makes 57 declared sources. If the compiler meets a
+column, period, skim direction, or zone that it cannot explain, it stops. It
+does not inspect the dense answer and invent a new category.
+
+## 82. What "one row per tour" changes
+
+One tour may be tested against roughly 25 representative time choices. The old
+preprocessor therefore repeats the same age, car ownership, household size,
+destination, and similar facts many times. With more than a million rows,
+that repetition becomes expensive.
+
+The Phase 29 source table has one row per tour. A small GPU expansion step uses
+the tour owner and the tested time slot to create exactly the row needed by the
+utility kernel. Origin, destination, outbound time, return time, and reversed
+skim directions are also generated from named coordinate rules.
+
+The important proof is not merely that the result is smaller. The compiler
+reads **zero bytes** from the dense oracle while constructing the plan. Only
+after construction does the test harness compare the generated arrays with
+ActivitySim's old arrays, byte for byte.
+
+## 83. Parking and availability now come from upstream causes
+
+Phase 28 had to recover a parking rate from rounded parking-cost answers.
+Phase 29 reads the original hourly rate from the destination's land-use row.
+If a work tour has free workplace parking, its rate is zero. CUDA multiplies
+that unrounded rate by the tested duration.
+
+Phase 29 also expands from 14 to all 18 availability rules. Four road-mode
+fields happened to be constant in the public benchmark, but that does not mean
+they will remain constant after a network change. They now check raw SOV,
+HOV2, HOV3, and tolled skim values just like the other named rules.
+
+This is a useful scientific lesson: a value being constant in one dataset is
+not the same as a law saying it must always be constant.
+
+## 84. How we tried to break the raw-table compiler
+
+The public benchmark was run in three fresh processes, with five complete
+resident replays in each process. That makes 15 full replays. Every one of
+1,210,124 mode-logsum rows keeps the same final bits, and all 81,983 scheduled
+tour times remain exact.
+
+We also created ten changed test worlds:
+
+- five raw-table populations contain 10,000 tours with changed people,
+  households, zones, parking prices, free parking, density, value of time, and
+  nonzero ride-hail wait variation; and
+- five raw-skim worlds contain 8,000 rows with changing positive, zero, and
+  negative road/transit values.
+
+A separate readable implementation calculates each answer. All direct source
+formulas and all 18 availability formulas pass, and every scenario hash is
+different. These are focused source/formula tests, not ten complete regional
+policy simulations.
+
+## 85. The Phase 29 result, cost, and honest next boundary
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Complete raw-table-input-to-calendar graph | 0.210148 s | 0.225311 s | 0.226075 s | **0.225311 s** |
+| Raw input generation | 0.010439 s | 0.010328 s | 0.010506 s | **0.010439 s** |
+| Checkpoint-to-result ActivitySim run | 30.647 s | 30.759 s | 31.021 s | **30.759 s** |
+
+Phase 29 keeps 24,849,394 bytes instead of 503,411,584 bytes of repeated
+rows, a **20.259-times reduction**. It uses 22.659% more compact state than
+Phase 28 because values that happened to be constant are now stored per tour
+so a changed population can change them. The complete graph is 6.380% slower
+than Phase 28. That is the price measured on this machine for a much stronger,
+scenario-capable source contract.
+
+The qualification process still lets ActivitySim create dense rows. They are
+now only an independent answer key and a way to expose the existing compiled
+utility interface; they are not inputs to the Phase 29 compiler and do not
+enter the sealed graph. Therefore it would be wrong to say that the
+30.759-second cold run has become a 0.225-second whole-model run.
+
+The next ambitious step is a **native schema and IR bootstrap**. It should read
+the reviewed utility specification and skim metadata, allocate the GPU
+interface, and launch the Phase 29 source compiler without running the dense
+preprocessor at all. The legacy ActivitySim path would then run only in a
+separate verification process. The same phase should attack the remaining
+57-case frozen boundary map with one shared Sharrow/CUDA arithmetic definition.

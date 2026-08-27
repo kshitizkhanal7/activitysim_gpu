@@ -1,0 +1,188 @@
+{
+  "phase": 29,
+  "scope": "five changed raw-table populations plus five changed raw-skim CUDA worlds, including all direct owner formulas and all 18 availability rules",
+  "raw_table_scenarios": [
+    {
+      "seed": 2901,
+      "raw_tours": 2000,
+      "exact": true,
+      "source_columns_checked": 23,
+      "sha256": "0b134c0b65d43a5d563df74de282141cf56e6394a2cb73f5561263a55763d125"
+    },
+    {
+      "seed": 2902,
+      "raw_tours": 2000,
+      "exact": true,
+      "source_columns_checked": 23,
+      "sha256": "f5336aee150ff7a236fd471f1aad1cbc3bec58d6b03a32a3d08cbe21a4c6b912"
+    },
+    {
+      "seed": 2903,
+      "raw_tours": 2000,
+      "exact": true,
+      "source_columns_checked": 23,
+      "sha256": "03228401a12ca5b2b6d3f74bbadcac5a058004af530a1415748367940b0cb592"
+    },
+    {
+      "seed": 2904,
+      "raw_tours": 2000,
+      "exact": true,
+      "source_columns_checked": 23,
+      "sha256": "85c6bfd0f014ec6640b84fa8c6e03d88016afc47c686821f15514ff0d4bb8653"
+    },
+    {
+      "seed": 2905,
+      "raw_tours": 2000,
+      "exact": true,
+      "source_columns_checked": 23,
+      "sha256": "b41ce3021c8f5c727999639d55bf2f0150d49cbf0d54aeb026efe1c7590eab5c"
+    }
+  ],
+  "cuda_scenarios": [
+    {
+      "seed": 2901,
+      "rows": 1600,
+      "exact": true,
+      "generated_availability_formulas": 16,
+      "generated_sources": [
+        "name:sov_available",
+        "name:sovtoll_available",
+        "name:hov2_available",
+        "name:hov2toll_available",
+        "name:hov3_available",
+        "name:hov3toll_available",
+        "name:walk_local_available",
+        "name:walk_commuter_available",
+        "name:walk_express_available",
+        "name:walk_heavyrail_available",
+        "name:walk_lrf_available",
+        "column:walk_ferry_available",
+        "name:drive_local_available",
+        "name:drive_commuter_available",
+        "name:drive_express_available",
+        "name:drive_heavyrail_available"
+      ],
+      "anonymous_response_pattern_columns": 0,
+      "sha256": "eefa5a596179d00d4318de23c10f90e34a5e70eba66679e8117e9a745231ab9a"
+    },
+    {
+      "seed": 2902,
+      "rows": 1600,
+      "exact": true,
+      "generated_availability_formulas": 18,
+      "generated_sources": [
+        "name:sov_available",
+        "name:sovtoll_available",
+        "name:hov2_available",
+        "name:hov2toll_available",
+        "name:hov3_available",
+        "name:hov3toll_available",
+        "name:walk_local_available",
+        "name:walk_commuter_available",
+        "name:walk_express_available",
+        "name:walk_heavyrail_available",
+        "name:walk_lrf_available",
+        "column:walk_ferry_available",
+        "name:drive_local_available",
+        "name:drive_commuter_available",
+        "name:drive_express_available",
+        "name:drive_heavyrail_available",
+        "name:drive_lrf_available",
+        "column:drive_ferry_available"
+      ],
+      "anonymous_response_pattern_columns": 0,
+      "sha256": "144a6f99a5b804ba66c5959fdeca6226764ded60c6946956b6ad08bffaa4b9e8"
+    },
+    {
+      "seed": 2903,
+      "rows": 1600,
+      "exact": true,
+      "generated_availability_formulas": 18,
+      "generated_sources": [
+        "name:sov_available",
+        "name:sovtoll_available",
+        "name:hov2_available",
+        "name:hov2toll_available",
+        "name:hov3_available",
+        "name:hov3toll_available",
+        "name:walk_local_available",
+        "name:walk_commuter_available",
+        "name:walk_express_available",
+        "name:walk_heavyrail_available",
+        "name:walk_lrf_available",
+        "column:walk_ferry_available",
+        "name:drive_local_available",
+        "name:drive_commuter_available",
+        "name:drive_express_available",
+        "name:drive_heavyrail_available",
+        "name:drive_lrf_available",
+        "column:drive_ferry_available"
+      ],
+      "anonymous_response_pattern_columns": 0,
+      "sha256": "5c22a81c284e63a13f14d61124593151de2907e4064a277cbc64e0a3afcdd2ce"
+    },
+    {
+      "seed": 2904,
+      "rows": 1600,
+      "exact": true,
+      "generated_availability_formulas": 17,
+      "generated_sources": [
+        "name:sov_available",
+        "name:sovtoll_available",
+        "name:hov2_available",
+        "name:hov2toll_available",
+        "name:hov3_available",
+        "name:hov3toll_available",
+        "name:walk_local_available",
+        "name:walk_commuter_available",
+        "name:walk_express_available",
+        "name:walk_heavyrail_available",
+        "name:walk_lrf_available",
+        "name:drive_local_available",
+        "name:drive_commuter_available",
+        "name:drive_express_available",
+        "name:drive_heavyrail_available",
+        "name:drive_lrf_available",
+        "column:drive_ferry_available"
+      ],
+      "anonymous_response_pattern_columns": 0,
+      "sha256": "6b12398d48b8a7c218bc5c87bdd70f3b6e4ce000354009e53231d88ad4a63c12"
+    },
+    {
+      "seed": 2905,
+      "rows": 1600,
+      "exact": true,
+      "generated_availability_formulas": 16,
+      "generated_sources": [
+        "name:sov_available",
+        "name:sovtoll_available",
+        "name:hov2_available",
+        "name:hov2toll_available",
+        "name:hov3_available",
+        "name:hov3toll_available",
+        "name:walk_local_available",
+        "name:walk_commuter_available",
+        "name:walk_express_available",
+        "name:walk_heavyrail_available",
+        "name:walk_lrf_available",
+        "name:drive_local_available",
+        "name:drive_commuter_available",
+        "name:drive_express_available",
+        "name:drive_lrf_available",
+        "column:drive_ferry_available"
+      ],
+      "anonymous_response_pattern_columns": 0,
+      "sha256": "d03bc71a83dfdc8525188af654dfd8a947737eae29e6bd3ecff814f99802c453"
+    }
+  ],
+  "proof_gates": {
+    "five_changed_raw_table_scenarios": true,
+    "ten_thousand_raw_tours": true,
+    "all_raw_table_formulas_exact": true,
+    "five_changed_cuda_scenarios": true,
+    "all_eighteen_availability_formulas_generated": true,
+    "all_cuda_rows_exact": true,
+    "zero_anonymous_patterns": true,
+    "all_outputs_scenario_responsive": true
+  }
+}

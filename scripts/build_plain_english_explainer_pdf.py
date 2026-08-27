@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("0.212 s", STYLES["metric_num"]),
-                Paragraph("15 rules", STYLES["metric_num"]),
-                Paragraph("24.85x", STYLES["metric_num"]),
+                Paragraph("0.225 s", STYLES["metric_num"]),
+                Paragraph("57 sources", STYLES["metric_num"]),
+                Paragraph("20.26x", STYLES["metric_num"]),
             ],
             [
-                Paragraph("Phase 28 median<br/>complete graph time", STYLES["metric_label"]),
-                Paragraph("named semantic<br/>GPU generators", STYLES["metric_label"]),
+                Paragraph("Phase 29 median<br/>complete graph time", STYLES["metric_label"]),
+                Paragraph("declared sources<br/>per real program", STYLES["metric_label"]),
                 Paragraph("compact persistent<br/>state reduction", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: the Phase 28 median across three independent semantic-input-to-timetable processes, the number of named response formulas, and the persistent input-state reduction. All logsum bits and final schedules remain exact; boundary labels are explained inside.",
+            "Read left to right: the Phase 29 median across three independent raw-table-input-to-timetable processes, the number of declared sources per program, and the persistent input-state reduction. All logsum bits and final schedules remain exact; boundaries are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -436,6 +436,7 @@ def markdown_story(text: str):
                 or stripped.startswith("## 27. Phase 16")
                 or stripped.startswith("## 32. The practical path")
                 or stripped.startswith("## 76. Phase 28")
+                or stripped.startswith("## 81. Phase 29")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))
