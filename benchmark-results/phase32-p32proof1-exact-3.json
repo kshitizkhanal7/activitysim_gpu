@@ -1,0 +1,36 @@
+{
+  "decision_columns_exact": true,
+  "decision_cells_different": 0,
+  "decision_rows_different": 0,
+  "byte_identical_non_trip_outputs": [
+    "final_accessibility.csv",
+    "final_households.csv",
+    "final_joint_tour_participants.csv",
+    "final_land_use.csv",
+    "final_persons.csv",
+    "final_tours.csv"
+  ],
+  "diagnostic_columns": {
+    "destination_logsum": {
+      "text_cells_different": 0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "gate": 0.0001
+    },
+    "mode_choice_logsum": {
+      "text_cells_different": 0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "gate": 1e-05
+    }
+  },
+  "diagnostic_column": "destination_logsum",
+  "diagnostic_text_cells_different": 0,
+  "diagnostic_max_abs": 0.0,
+  "diagnostic_mean_abs": 0.0,
+  "diagnostic_gate": 0.0001,
+  "mode_choice_logsum_max_abs": 0.0,
+  "mode_choice_logsum_gate": 1e-05,
+  "success": true,
+  "claim_boundary": "all modeled decisions and non-trip substantive files are exact; declared logsum diagnostics are bounded, not byte-identical"
+}

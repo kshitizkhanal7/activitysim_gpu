@@ -3881,3 +3881,162 @@ wins are not mistaken for total-model wins. Separately, CPU and GPU still need
 one shared, precisely specified exponential/reduction implementation plus
 changed-scenario boundary fuzzing before the small frozen answer map can be
 removed for every possible scenario.
+
+## 97. Phase 32 asks the question that matters to a model user
+
+Until Phase 31, the strongest new result measured one resumed component. That
+was useful engineering evidence, but a person waiting for a regional travel
+model asks a simpler question: **Does the entire model finish sooner?**
+
+Phase 32 runs the full public ActivitySim example from its first initialization
+step through its final summary step. There are 34 named steps. They include
+reading land use and households, choosing school and workplace locations,
+creating tours, choosing destinations and travel modes, scheduling trips,
+writing trip matrices, and publishing final tables.
+
+The benchmark samples 50,000 households from a public population of 2,875,192
+households and keeps all 1,454 travel zones. It is large enough to execute the
+real model structure on this RTX A4000 without pretending that a tiny made-up
+array represents a whole travel forecast.
+
+The comparison is intentionally difficult. The control is not an old,
+unoptimized CPU script. It is the best already-qualified Phase 17 runtime,
+which already uses generated GPU code for trip destination and trip mode
+choice. Phase 32 must improve that strong control by adding the native GPU
+mandatory scheduler without slowing the rest of the model.
+
+## 98. One road atlas must serve several GPU jobs
+
+Three large GPU jobs now occur in one process:
+
+1. **Mandatory tour scheduling** decides when work, school, and university
+   tours happen. Its mode-logsum equations and final time choice use the new
+   native GPU path.
+2. **Trip destination** chooses intermediate stops. Its existing generated
+   GPU equations calculate mode logsums for sampled stop locations.
+3. **Trip mode choice** chooses how each trip is made. Its existing generated
+   GPU equations evaluate utilities for car, transit, walking, biking, and
+   related alternatives.
+
+All three jobs read many of the same network measurements. The first attempt
+released more than 6 GB of GPU skims immediately after mandatory scheduling.
+That sounded tidy, but trip destination then had to rebuild the same GPU road
+atlas. The model remained correct, yet trip destination took 275.9 seconds
+instead of about 27 seconds. Fast individual kernels do not help if the system
+repeatedly destroys and rebuilds their largest input.
+
+The corrected lifetime is:
+
+```text
+load ActivitySim's public network data
+              |
+              v
+use shared CUDA skims for mandatory scheduling
+              |
+              v
+reuse them for trip destination
+              |
+              v
+reuse them for trip mode choice
+              |
+              v
+release 6,198,614,528 CUDA bytes once
+              |
+              v
+finish the remaining ActivitySim steps
+```
+
+Scheduling-specific hooks still end immediately after mandatory scheduling.
+Only the read-only network cubes remain. That distinction is important: later
+joint and non-mandatory schedulers must not accidentally enter a backend that
+has not been proved for their rules.
+
+Why not load the Phase 31 native skim file for the whole model? Many unported
+ActivitySim steps still require the Sharrow representation. Keeping both the
+6.20 GB native file and a second Sharrow copy would waste main memory. Phase 32
+therefore reuses the representation the complete model already needs. The
+Phase 31 store remains the right choice for an independent mandatory-only run.
+
+## 99. Two bugs that looked like GPU slowness
+
+Whole-model tests found problems that a component replay could not reveal.
+
+First, scheduling metadata escaped into trip destination. The code tried to
+read tour fields named `start` and `end` from ordinary trip-destination rows.
+Those rows do not have the fields, so the guarded GPU candidate stopped and
+returned to Sharrow. The fix reads scheduling identity only when a real
+scheduling device sink requests it. A regression test now passes a destination
+table with no scheduling columns and proves that those fields are untouched.
+
+Second, a diagnostic setting ran the strict CPU answer-key calculation inside
+every trip-destination batch. When a run appeared to freeze, interrupting it
+showed the processor inside `evaluate_strict_cpu`, not inside a GPU kernel.
+The CPU oracle is valuable when qualifying arithmetic, but it is not production
+work and must not contaminate a speed measurement.
+
+Phase 32 turns that repeated shadow off only for the timed whole-model run.
+Correctness is not assumed. Each fresh GPU process still checks its mandatory
+outputs, random stream, device boundary choices, transfers, fallbacks, and all
+34 completed steps. After the process exits, a separate verifier compares all
+published final model tables with its matched fresh control. This is a stronger
+separation: the answer key does not run inside the stopwatch, but it still
+judges the completed answer.
+
+## 100. The Phase 32 result: a real dent in total time
+
+The proof runs three fresh pairs in alternating order. “Fresh” means a new
+Python process, so a hidden cache from an earlier candidate cannot make the GPU
+look artificially fast. “Paired” means each Phase 32 run is compared with a
+nearby Phase 17 control on the same machine.
+
+| Pair | Already-GPU Phase 17 | Phase 32 | Seconds saved | Total reduction |
+|---|---:|---:|---:|---:|
+| 1 | 200.0 s | 188.4 s | 11.6 s | 5.800% |
+| 2 | 196.2 s | 190.9 s | 5.3 s | 2.701% |
+| 3 | 197.0 s | 188.8 s | 8.2 s | 4.162% |
+| Middle result | **197.0 s** | **188.8 s** | **8.2 s** | **4.162%** |
+
+The middle speedup is **1.0434 times**. That number is modest compared with a
+9x resident-kernel replay because most of the 34-step model still runs outside
+the new native scheduler. But it is the more important number for a model user:
+it measures waiting time for the complete workflow. Phase 32 wins all three
+pairs, so the result is not built on selecting one lucky run.
+
+Mandatory scheduling itself changes much more. The three controls take 25.6,
+24.3, and 24.7 seconds. The three Phase 32 runs take 14.9, 15.0, and 15.2
+seconds. Comparing the middle values, the component is **39.271% faster in
+elapsed-time reduction**, or **1.647 times as fast**. A roughly ten-second
+component saving becomes an 8.2-second middle whole-model saving after normal
+variation elsewhere in the workflow.
+
+All three correctness comparisons report:
+
+- zero changed modeled decision cells;
+- zero changed destination-logsum values;
+- zero changed mode-choice-logsum values;
+- byte-identical non-trip substantive files;
+- exactly 81,983 mandatory tour schedules;
+- all 1,210,124 native logsum rows processed without fallback;
+- all 57 exercised close-boundary choices handled on the GPU; and
+- zero bulk or boundary logsum bytes downloaded for scheduling.
+
+This is the first result in the native-runtime sequence that can honestly say:
+**yes, the new GPU scheduling architecture makes a replicated dent in total
+model time.** Its guarantee is limited to this public model, sample, software
+lock, and RTX A4000. It is not evidence that every travel model will improve by
+exactly 4.162%.
+
+What should happen next? The largest opportunity is to make the shared native
+skim and expression service useful to more of the remaining model, especially
+non-mandatory destination and scheduling, tour mode choice, and trip
+scheduling. Future phases should remain large enough to move total runtime,
+not merely report another tiny kernel. They must keep three gates:
+
+1. a complete-model stopwatch;
+2. a single authoritative network representation that fits memory; and
+3. independent final-output replication after every matched pair.
+
+A second research track must define one arithmetic contract shared by the
+Sharrow reference and the CUDA compiler. Changed-scenario and probability-
+boundary fuzz tests must pass before the 57-entry qualified safety map can be
+removed for unfamiliar scenarios.

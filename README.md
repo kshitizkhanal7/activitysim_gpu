@@ -27,7 +27,7 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 142 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 144 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -630,3 +630,21 @@ resident graph remains exact at a 0.217801-second median.
 See the [Phase 31 technical report](docs/phase31-persistent-native-skim-store.md),
 the [hash-chained summary](benchmark-results/phase31-native-skim-store-summary.json),
 and the [reproducible build report](benchmark-results/phase31-native-skim-store-build.json).
+
+## Phase 32 whole-model runtime proof
+
+Phase 32 integrates native GPU mandatory scheduling with the established GPU
+trip-destination and trip-mode consumers inside all 34 public ActivitySim
+steps. The shared immutable CUDA skim cubes remain resident through the final
+GPU consumer and then release exactly 6,198,614,528 bytes once.
+
+Three fresh, interleaved 50,000-household pairs all favor Phase 32 over the
+already GPU-accelerated Phase 17 runtime. Median all-model time falls from
+197.0 to 188.8 seconds: 8.2 seconds saved, 4.162% lower, and **1.0434x faster**.
+Mandatory scheduling falls from a 24.7-second middle baseline to a 15.0-second
+middle candidate, 39.271% lower. All three complete-output comparisons have
+zero changed modeled decisions and zero diagnostic logsum differences; all
+candidate live gates pass with no fallback or bulk modeled download.
+
+See the [Phase 32 technical report](docs/phase32-whole-model-runtime.md) and the
+[three-pair proof](benchmark-results/phase32-p32proof1-summary.json).

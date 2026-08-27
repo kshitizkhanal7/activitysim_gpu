@@ -29,8 +29,17 @@ def main() -> int:
     parser.add_argument("--project", type=Path, required=True)
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--config-overlay", type=Path)
+    parser.add_argument("--config-overlay", type=Path, action="append")
     parser.add_argument("--resume", default="mandatory_tour_frequency")
+    parser.add_argument(
+        "--full-model",
+        action="store_true",
+        help=(
+            "Phase 32: run the complete model and release shared CUDA skims "
+            "after the final qualified GPU consumer"
+        ),
+    )
+    parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
         "--inputs",
@@ -74,6 +83,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--native-abi-live",
+        action="store_true",
+        help=(
+            "use the Phase 30 native ABI in a live/full-model performance run "
+            "without retaining the six invocations for resident replay"
+        ),
+    )
+    parser.add_argument(
         "--native-skim-store",
         type=Path,
         help=(
@@ -96,10 +113,20 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    native_abi_enabled = bool(
+        args.native_abi_live or args.native_abi_bootstrap_report
+    )
     if args.native_skim_store and not args.native_abi_bootstrap_report:
         parser.error("--native-skim-store requires --native-abi-bootstrap-report")
+    if args.full_model and args.native_skim_store:
+        parser.error(
+            "a full model still needs ActivitySim skims outside mandatory scheduling; "
+            "use --native-abi-live to reuse that already-resident host dataset"
+        )
     args.output.mkdir(parents=True, exist_ok=True)
     args.kernel_reports.mkdir(parents=True, exist_ok=True)
+    phase17_mode_reports = args.kernel_reports / "mode"
+    phase17_mode_reports.mkdir(parents=True, exist_ok=True)
     if args.resident_replay_report:
         args.resident_replay_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_schedule_report:
@@ -129,13 +156,27 @@ def main() -> int:
         {
             "CHOICEFORGE_STRICT_CUDA_CANDIDATE": "1",
             "CHOICEFORGE_STRICT_CUDA_MAX_ROWS": "2000000",
+            "CHOICEFORGE_STRICT_CUDA_TILE_ROWS": "1",
+            "CHOICEFORGE_STRICT_CUDA_LOCALITY": "1",
+            "CHOICEFORGE_STRICT_CUDA_SPARSE_COEFFICIENTS": "0",
             "CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32": "1",
             "CHOICEFORGE_STRICT_CUDA_COMPACT_INPUTS": "1",
             "CHOICEFORGE_STRICT_CUDA_GROUPED_INDICES": "1",
             "CHOICEFORGE_STRICT_CUDA_PERSISTENT_PLAN": "1",
-            "CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS": "1",
+            # Phase 17 qualified reusable plans, but its reusable workspace
+            # remained an opt-in experiment and can retain allocations across
+            # model steps. Keep the stable primary full-model policy here.
+            "CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS": "0" if args.full_model else "1",
+            "CHOICEFORGE_STRICT_CUDA_MODE_CHOICE": "1" if args.full_model else "0",
+            # The strict CPU/CUDA shadow is a qualification tool, not part of
+            # a production timing boundary. Full-model exactness is checked
+            # out of band against every final table after the run.
+            "CHOICEFORGE_STRICT_CUDA_BATCHES": "0" if args.full_model else "1000",
             "CHOICEFORGE_STRICT_CUDA_SHARROW_FMA": "1",
             "CHOICEFORGE_PHASE17_REPORT_DIR": str(args.kernel_reports.resolve()),
+            "CHOICEFORGE_PHASE17_MODE_REPORT_DIR": str(
+                phase17_mode_reports.resolve()
+            ),
             "CHOICEFORGE_PHASE17_RUN_ID": "phase22-integrated-scheduling",
         }
     )
@@ -159,7 +200,7 @@ def main() -> int:
         # Phase 31 must not recreate Sharrow merely to adjudicate the 57
         # already-qualified scheduling ambiguities.  The sparse reference map
         # is derived from the frozen public proof artifact and stays on CUDA.
-        device_boundary_reference=bool(args.native_skim_store),
+        device_boundary_reference=native_abi_enabled,
     )
     scheduler_initialization_seconds = time.perf_counter() - scheduler_started
     original_compute = vts._compute_logsums
@@ -167,6 +208,7 @@ def main() -> int:
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
     original_network_los_load_data = activitysim_los.Network_LOS.load_data
     original_runner_call = Runner.__call__
+    original_runner_by_name = Runner.by_name
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
@@ -175,12 +217,17 @@ def main() -> int:
     current_native_manifest = None
     native_manifests = []
     native_skim_store = None
+    full_model_scheduler_checkpoint = None
     native_skim_stub_calls = 0
     native_network_info_bypass_calls = 0
     native_network_load_bypass_calls = 0
+    full_model_native_release_calls = 0
+    full_model_native_release_seconds = 0.0
+    full_model_native_release_freed_bytes = 0
+    full_model_native_release_after_model = None
     raw_mode_constants = None
     raw_cbd_threshold = None
-    if args.resident_raw_table_input_report or args.native_abi_bootstrap_report:
+    if args.resident_raw_table_input_report or native_abi_enabled:
         import yaml
 
         raw_mode_settings = yaml.safe_load(
@@ -257,7 +304,7 @@ def main() -> int:
         nonlocal current_raw_source, current_native_manifest, native_skim_store
         original_simple = simulate.simple_simulate_logsums
 
-        if args.native_abi_bootstrap_report:
+        if native_abi_enabled:
             native_started = time.perf_counter()
             if len(compute_args) < 8:
                 raise RuntimeError("Phase 30 requires the positional ActivitySim logsum ABI")
@@ -690,7 +737,7 @@ def main() -> int:
         return pd.Series(selected, index=choosers.index)
 
     def run_one_model(self, models, resume_after=None, memory_sidecar_process=None):
-        if isinstance(models, list) and resume_after in models:
+        if not args.full_model and isinstance(models, list) and resume_after in models:
             checkpoint = models.index(resume_after)
             models = models[: checkpoint + 2]
         return original_runner_call(
@@ -699,6 +746,38 @@ def main() -> int:
             resume_after=resume_after,
             memory_sidecar_process=memory_sidecar_process,
         )
+
+    def run_full_model_step(self, model_name):
+        nonlocal full_model_native_release_calls, full_model_native_release_seconds
+        nonlocal full_model_native_release_freed_bytes
+        nonlocal full_model_native_release_after_model
+        nonlocal full_model_scheduler_checkpoint
+        result = original_runner_by_name(self, model_name)
+        if args.full_model and str(model_name) == "mandatory_tour_scheduling":
+            full_model_scheduler_checkpoint = scheduler.checkpoint()
+            # The scheduling-only hooks must end here, but its immutable CUDA
+            # skim cubes are also inputs to trip destination and trip mode.
+            # Retain those cubes through the final GPU skim consumer so the
+            # full model pays one upload instead of a 6+ GB rebuild.
+            vts._compute_logsums = original_compute
+            vts.interaction_sample_simulate = original_activitysim_choice
+            activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
+        if args.full_model and str(model_name) == "trip_mode_choice":
+            from choiceforge.cuda_backend import _cupy
+            from choiceforge.cuda_skims import clear_cuda_dataset_cache
+
+            cp = _cupy()
+            cp.cuda.Stream.null.synchronize()
+            before = int(cp.get_default_memory_pool().used_bytes())
+            release_started = time.perf_counter()
+            clear_cuda_dataset_cache()
+            cp.cuda.Stream.null.synchronize()
+            after = int(cp.get_default_memory_pool().used_bytes())
+            full_model_native_release_calls += 1
+            full_model_native_release_seconds += time.perf_counter() - release_started
+            full_model_native_release_freed_bytes += max(0, before - after)
+            full_model_native_release_after_model = str(model_name)
+        return result
 
     def native_skims_for_logsums(
         state, tour_purpose, model_settings, trace_label
@@ -749,23 +828,22 @@ def main() -> int:
     vts.interaction_sample_simulate = integrated_choice
     activitysim_scheduling.interaction_sample_simulate_choiceforge = integrated_choice
     Runner.__call__ = run_one_model
+    if args.full_model:
+        Runner.by_name = run_full_model_step
     from activitysim.cli import main as activitysim_main
 
     cli = ["activitysim", "run"]
-    if args.config_overlay:
-        cli.extend(["-c", str(args.config_overlay.resolve())])
-    cli.extend(
-        [
-            "-c",
-            str((args.project / "configs").resolve()),
-            "-d",
-            str(args.data.resolve()),
-            "-o",
-            str(args.output.resolve()),
-            "-r",
-            args.resume,
-        ]
-    )
+    for overlay in args.config_overlay or []:
+        cli.extend(["-c", str(overlay.resolve())])
+    cli.extend([
+        "-c", str((args.project / "configs").resolve()),
+        "-d", str(args.data.resolve()),
+        "-o", str(args.output.resolve()),
+    ])
+    if args.full_model:
+        cli.extend(["--households_sample_size", str(args.households_sample_size)])
+    else:
+        cli.extend(["-r", args.resume])
     old_argv = sys.argv
     started = time.perf_counter()
     exit_code = 0
@@ -785,6 +863,7 @@ def main() -> int:
         vts.interaction_sample_simulate = original_activitysim_choice
         activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
         Runner.__call__ = original_runner_call
+        Runner.by_name = original_runner_by_name
 
     actual = pd.read_parquet(
         args.output
@@ -799,16 +878,26 @@ def main() -> int:
     ).sort_index()
     expected = expected.loc[expected.tour_category.astype(str).eq("mandatory")]
     actual = actual.loc[expected.index]
-    kernel_reports = [
-        json.loads(path.read_text())
-        for path in sorted(args.kernel_reports.glob("*.json"))
-    ]
+    kernel_report_paths = sorted(args.kernel_reports.rglob("*.json"))
+    kernel_reports = [json.loads(path.read_text()) for path in kernel_report_paths]
     candidates = [item for item in kernel_reports if item.get("candidate_used")]
     fallbacks = [item for item in kernel_reports if item.get("fallback_used")]
+    timing_path = args.output / "timing_log.csv"
+    model_timing_seconds = {}
+    if timing_path.exists():
+        timing_frame = pd.read_csv(timing_path)
+        model_timing_seconds = {
+            str(row.model_name): float(row.seconds)
+            for row in timing_frame.itertuples(index=False)
+        }
     report_candidate_rows = int(sum(item.get("rows", 0) for item in candidates))
-    if args.native_abi_bootstrap_report:
+    if native_abi_enabled:
         report_candidate_rows = int(sum(item["invocation"].rows for item in resident_records))
-    checkpoint = scheduler.checkpoint() if scheduler.complete else None
+        if not resident_records:
+            report_candidate_rows = int(sum(item["rows"] for item in native_manifests))
+    checkpoint = full_model_scheduler_checkpoint
+    if checkpoint is None and scheduler.complete:
+        checkpoint = scheduler.checkpoint()
     if checkpoint is not None:
         args.checkpoint.write_text(json.dumps(checkpoint, indent=2) + "\n")
 
@@ -1596,12 +1685,14 @@ def main() -> int:
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {
-        "phase": 22,
+        "phase": 32 if args.full_model else 22,
         "scope": (
+            "full public ActivitySim model with native mandatory scheduling and "
+            "one shared CUDA skim residency interval through trip mode choice"
+            if args.full_model else
             "live ActivitySim raw network skims through generated CUDA utility, "
             "CUDA nesting, device cache scatter, timetable preparation, choice, "
-            "and timetable mutation, with exact Sharrow adjudication only for "
-            "numerically near-boundary draws"
+            "and timetable mutation"
         ),
         "elapsed_seconds_including_resume_overhead": elapsed,
         "exit_code": int(exit_code or 0),
@@ -1610,7 +1701,7 @@ def main() -> int:
         "start_mismatches": int(np.count_nonzero(actual.start.to_numpy() != expected.start.to_numpy())),
         "end_mismatches": int(np.count_nonzero(actual.end.to_numpy() != expected.end.to_numpy())),
         "candidate_calls": (
-            len(native_manifests) if args.native_abi_bootstrap_report else len(candidates)
+            len(native_manifests) if native_abi_enabled else len(candidates)
         ),
         "fallback_calls": len(fallbacks),
         "candidate_rows": report_candidate_rows,
@@ -1627,7 +1718,7 @@ def main() -> int:
             sum(x["boundary_logsum_download_bytes"] for x in batch_telemetry)
         ),
         "bulk_modeled_logsum_device_to_host_bytes": (
-            0 if args.native_abi_bootstrap_report else int(
+            0 if native_abi_enabled else int(
                 sum(item.get("logsum_device_to_host_bytes", -1) for item in candidates)
             )
         ),
@@ -1637,8 +1728,12 @@ def main() -> int:
         "cache_build_ms": float(sum(x["cache_build_ms"] for x in batch_telemetry)),
         "scheduling_ms": float(sum(x["scheduling_ms"] for x in batch_telemetry)),
         "batch_telemetry": batch_telemetry,
-        "kernel_reports": [path.name for path in sorted(args.kernel_reports.glob("*.json"))],
-        "native_abi_bootstrap_used": bool(args.native_abi_bootstrap_report),
+        "kernel_reports": [
+            path.relative_to(args.kernel_reports).as_posix()
+            for path in kernel_report_paths
+        ],
+        "native_abi_bootstrap_used": native_abi_enabled,
+        "native_abi_live_only": bool(args.native_abi_live),
         "native_abi_programs": len(native_manifests),
         "native_skim_store_used": bool(args.native_skim_store),
         "scheduler_initialization_seconds": scheduler_initialization_seconds,
@@ -1655,6 +1750,22 @@ def main() -> int:
         "device_boundary_map_entries": int(scheduler.boundary_map_entries),
         "device_boundary_adjudications": int(
             sum(item.device_boundary_adjudications for item in scheduler.telemetry)
+        ),
+        "full_model": bool(args.full_model),
+        "households_sample_size": (
+            int(args.households_sample_size) if args.full_model else None
+        ),
+        "full_model_native_release_calls": int(full_model_native_release_calls),
+        "full_model_native_release_seconds": float(full_model_native_release_seconds),
+        "full_model_native_release_freed_bytes": int(
+            full_model_native_release_freed_bytes
+        ),
+        "full_model_native_release_after_model": (
+            full_model_native_release_after_model
+        ),
+        "model_timing_seconds": model_timing_seconds,
+        "activitysim_all_model_steps_seconds": float(
+            sum(model_timing_seconds.values())
         ),
     }
     report["proof_gates"] = {
@@ -1701,6 +1812,24 @@ def main() -> int:
                         item.boundary_logsum_download_bytes
                         for item in scheduler.telemetry
                     ) == 0
+                ),
+            }
+        )
+    if args.full_model:
+        report["proof_gates"].update(
+            {
+                "all_34_model_steps_timed": len(model_timing_seconds) == 34,
+                "native_cuda_skims_released_after_last_gpu_consumer_once": (
+                    full_model_native_release_calls == 1
+                    and full_model_native_release_freed_bytes > 5_000_000_000
+                    and full_model_native_release_after_model == "trip_mode_choice"
+                ),
+                "all_57_boundary_choices_adjudicated_on_device": (
+                    scheduler.boundary_map_entries >= 57
+                    and report["device_boundary_adjudications"] == 57
+                ),
+                "zero_boundary_logsum_download": (
+                    report["boundary_logsum_download_bytes"] == 0
                 ),
             }
         )

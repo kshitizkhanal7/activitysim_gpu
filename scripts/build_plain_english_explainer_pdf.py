@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.135x", STYLES["metric_num"]),
-                Paragraph("3.654 s", STYLES["metric_num"]),
-                Paragraph("6.20 GB", STYLES["metric_num"]),
+                Paragraph("1.043x", STYLES["metric_num"]),
+                Paragraph("8.2 s", STYLES["metric_num"]),
+                Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("conservative cold<br/>component speedup", STYLES["metric_label"]),
-                Paragraph("cold component<br/>time saved", STYLES["metric_label"]),
-                Paragraph("verified native<br/>skim payload", STYLES["metric_label"]),
+                Paragraph("median whole-model<br/>speedup", STYLES["metric_label"]),
+                Paragraph("median whole-model<br/>seconds saved", STYLES["metric_label"]),
+                Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 31 cuts the conservative cold mandatory-scheduling boundary from 30.739 to 27.085 seconds, saves 3.654 seconds, and verifies every byte of a 6.20 GB GPU-ready skim store. All logsum bits and final schedules remain exact; boundaries and limits are explained inside.",
+            "Read left to right: Phase 32 cuts the median complete 34-step public model from 197.0 to 188.8 seconds, saves 8.2 seconds, and changes zero modeled decision cells in three matched fresh-process pairs. It improves the already GPU-accelerated Phase 17 control; boundaries and limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

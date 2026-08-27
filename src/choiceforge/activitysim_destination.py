@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 _STRICT_IR_CACHE = {}
 
 
+def _candidate_sink_metadata(choosers, trace_label, *, required):
+    """Read scheduling-only row identity only when a device sink needs it."""
+    if not required:
+        return {}
+    return {
+        "chooser_ids": np.asarray(choosers.index, dtype=np.int64),
+        "start": np.asarray(choosers["start"], dtype=np.int16),
+        "end": np.asarray(choosers["end"], dtype=np.int16),
+        "out_period": np.asarray(choosers["out_period"].astype(str)),
+        "in_period": np.asarray(choosers["in_period"].astype(str)),
+    }
+
+
 def _cached_strict_ir(spec_frame):
     """Compile an immutable model specification once per process."""
     from choiceforge.sharrow_ir import specification_ir
@@ -1158,7 +1171,7 @@ def _simple_simulate_mtc21_logsums_cuda(
                         key: cache_after[key] - cache_before[key]
                         for key in ("binding_hits", "binding_misses", "array_uploads")
                     }
-                    candidate_queue.append({
+                    candidate_entry = {
                         "rows": len(dataframe),
                         "alternatives": tuple(document["alternatives"]),
                         "utilities": generated.utilities,
@@ -1169,16 +1182,19 @@ def _simple_simulate_mtc21_logsums_cuda(
                         "skim_cache_delta": cache_delta,
                         "fallback_args": args,
                         "fallback_kwargs": kwargs,
-                        # Sharrow may lower ``dataframe`` to only referenced
-                        # utility leaves. The authoritative scheduling row
-                        # identity and representative TDD times remain on the
-                        # outer ActivitySim chooser frame in the same order.
-                        "chooser_ids": np.asarray(choosers.index, dtype=np.int64),
-                        "start": np.asarray(choosers["start"], dtype=np.int16),
-                        "end": np.asarray(choosers["end"], dtype=np.int16),
-                        "out_period": np.asarray(choosers["out_period"].astype(str)),
-                        "in_period": np.asarray(choosers["in_period"].astype(str)),
-                    })
+                    }
+                    # Sharrow may lower ``dataframe`` to only referenced
+                    # utility leaves. Scheduling identity remains on the
+                    # outer frame, but ordinary destination rows do not have
+                    # scheduling start/end fields and must never read them.
+                    candidate_entry.update(
+                        _candidate_sink_metadata(
+                            choosers,
+                            trace_label,
+                            required=device_logsum_sink is not None,
+                        )
+                    )
+                    candidate_queue.append(candidate_entry)
                     # eval_utilities needs only a correctly shaped host object;
                     # the reducer consumes the queued device matrix directly.
                     placeholder = np.zeros(
