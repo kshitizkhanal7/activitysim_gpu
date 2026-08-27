@@ -242,6 +242,7 @@ class IntegratedGpuMandatoryScheduler:
         qualify_against_artifact: bool = True,
         cache_absolute_tolerance: float = 1.0e-5,
         device_boundary_reference: bool = False,
+        scheduling_exp_policy: str = "libdevice_f32",
     ):
         cp = _cupy()
         self.artifact = Path(artifact)
@@ -256,6 +257,7 @@ class IntegratedGpuMandatoryScheduler:
         self.qualify_against_artifact = bool(qualify_against_artifact)
         self.cache_absolute_tolerance = float(cache_absolute_tolerance)
         self.device_boundary_reference = bool(device_boundary_reference)
+        self.scheduling_exp_policy = str(scheduling_exp_policy)
         self.boundary_tolerance = 2.0e-6
         self.batches = []
         for meta in self.manifest["batches"]:
@@ -282,6 +284,7 @@ class IntegratedGpuMandatoryScheduler:
                         overflow_protection=False,
                         chooser_float64=True,
                         dot_policy="sharrow65_lane4",
+                        exp_policy=self.scheduling_exp_policy,
                     ),
                     "device": {
                         name: cp.asarray(host[name])

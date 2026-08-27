@@ -1,0 +1,99 @@
+{
+  "phase": 30,
+  "scope": "native reviewed-IR/raw-metadata bootstrap with no ActivitySim dense logsum preprocessor in the production path",
+  "workload": {
+    "households": 50000,
+    "mode_logsum_rows": 1210124,
+    "scheduled_tours": 81983,
+    "programs": 6,
+    "terms_per_program": 315,
+    "alternatives": 21
+  },
+  "complete_graph_process_medians_seconds": [
+    0.2267123000929132,
+    0.22138869995251298,
+    0.23106639995239675
+  ],
+  "median_of_process_medians_seconds": 0.2267123000929132,
+  "minimum_complete_graph_seconds": 0.21070549997966737,
+  "native_bootstrap_process_seconds": [
+    4.540633100201376,
+    4.488557799952105,
+    4.867005000007339
+  ],
+  "native_bootstrap_median_seconds": 4.540633100201376,
+  "cold_activitysim_process_seconds": [
+    30.222466600011103,
+    30.779023400042206,
+    30.739373299991712
+  ],
+  "cold_activitysim_median_seconds": 30.739373299991712,
+  "cold_seconds_change_vs_phase29": -0.020071800099685788,
+  "cold_percent_change_vs_phase29": -0.06525410336361004,
+  "resident_percent_change_vs_phase29": 0.6217171292192125,
+  "compact_input_state_bytes": 24849394,
+  "removed_captured_row_bytes": 503411584,
+  "compact_state_reduction_ratio": 20.258505458925878,
+  "dense_preprocessor_rows_read": 0,
+  "dense_preprocessor_values_read": 0,
+  "dense_preprocessor_rows_avoided": 1210124,
+  "schema_sha256_by_purpose": {
+    "school": "a3e3e3941df90af7d80b7f37f89084945e5fb32bf28fe0f3d7ce2b5ac9d7d1e6",
+    "univ": "634034f066ef3deb07ef9fb4dd3f492260f9f311b58da972b45dfd95654b3a8b",
+    "work": "8a8a7265245078db72cf030ba8d462c4451abf0ad63f60acb4a9ae7d80ff688c"
+  },
+  "ir_sha256_by_purpose": {
+    "school": "e994d6eecb4e8157439c395e7c4737b576968a94452a2374db4bb3cd3645317f",
+    "univ": "756e347494c2d002d4e1a90eb057f52dcc44e630d142041e4578e7b4780f944d",
+    "work": "1a31d6e04f862ae5925d4c174a59b0b695394c60981060475d88db4ab2e8988a"
+  },
+  "qualification": {
+    "full_public_process_replays": 15,
+    "native_legacy_logsum_programs_hashed": 6,
+    "native_legacy_aggregate_sha256": "41ea4ab90d0b47595a6ad59b1598a050a09a01db5d775dd3d1ad9f5be79e1322",
+    "arithmetic_policies": [
+      {
+        "exp_policy": "libdevice_f32",
+        "choice_mismatches": 0,
+        "detected_ambiguities": 58
+      },
+      {
+        "exp_policy": "libdevice_f64_to_f32",
+        "choice_mismatches": 0,
+        "detected_ambiguities": 57
+      }
+    ],
+    "production_boundary_map_entries": 57
+  },
+  "proof_gates": {
+    "three_independent_native_processes": true,
+    "all_native_process_gates_passed": true,
+    "all_live_gates_passed": true,
+    "all_15_resident_replays_bit_exact": true,
+    "all_1_210_124_dense_rows_avoided": true,
+    "zero_dense_preprocessor_reads": true,
+    "three_stable_purpose_schemas_and_irs": true,
+    "declared_native_abi_complete": true,
+    "native_and_legacy_logsums_byte_identical": true,
+    "independent_hash_run_gates_passed": true,
+    "both_exponential_policies_reference_exact": true,
+    "no_postseal_host_traffic_or_cpu_fallback": true,
+    "cold_runtime_not_regressed": true
+  },
+  "source_hashes": {
+    "benchmark-results\\phase30-native-bootstrap-1.json": "bf31525b7ec7363ff19e04a2adf34a436cc93ef187200ad57032966b4d0ebf2f",
+    "benchmark-results\\phase30-native-bootstrap-2.json": "9498fbdd6511032faf1f3da4ee24a08d9b04ea306aa8564a3626225ba3124f95",
+    "benchmark-results\\phase30-native-bootstrap-3.json": "99cef1147af6f56de530822aab82c9db8c9c6d41b711b00256dd91bbead546ec",
+    "benchmark-results\\phase30-live-1.json": "14fedea38f7e547634ac765c93eb0f71a38e243045f33768fed79669c31372cf",
+    "benchmark-results\\phase30-live-2.json": "221ca14173f9c1ebcbb7dc88774cb5f8507187f7b627808d20d8e3ab51612025",
+    "benchmark-results\\phase30-live-3.json": "bd150b99330c170f14aebdf421ec9352d7889e3573c17f7d083920935bd0a6be",
+    "benchmark-results\\phase30-native-logsum-hashes.json": "704b9b9ec37d25adf013f0abc8283cfd30d908e00b7c0a4a7dce8887baf82f30",
+    "benchmark-results\\phase30-legacy-logsum-hashes.json": "14158e99d0ad3034076ed1b19634ca9b8542824c495cf346da06f02363de02d5",
+    "benchmark-results\\phase30-native-hash-resident.json": "5cd44d3365115dde0c89bb8dcf1c8db6387ede688f4afb72ee95b74bb79d015d",
+    "benchmark-results\\phase30-native-hash-live.json": "facf3de07baeb702303825dfbec6892b1dda345f4d84067b93527902574ddd25",
+    "benchmark-results\\phase30-legacy-hash-resident.json": "1cec39c64edf7f349ab914bcbb2680c69602dbc1759ac4616955c18ebdf6ac43",
+    "benchmark-results\\phase30-legacy-hash-live.json": "4746849e2408988f3cb39d442add774699e9693ebefdc7879df76a57b4d99fb3",
+    "benchmark-results\\phase30-arithmetic-contract.json": "b7f50a43eb20bc4735609eafcae323f0625f2250a35a6ed08d8ce24aa6118ff3",
+    "benchmark-results\\phase29-raw-table-input-summary.json": "29dd269d50cbc8907f1c03d74a5373e2f95c79bc72f4b4a7f379144748980e1e"
+  }
+}

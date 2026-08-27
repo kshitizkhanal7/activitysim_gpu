@@ -1,0 +1,114 @@
+{
+  "phase": 30,
+  "scope": "shared scheduling dot/sum/probability contract with two device exponential lowerings",
+  "policies": [
+    {
+      "exp_policy": "libdevice_f32",
+      "choice_mismatches": 0,
+      "detected_ambiguities": 58,
+      "ambiguity_mismatches": 0,
+      "all_mismatches_detected_as_ambiguous": true,
+      "batches": [
+        {
+          "batch": 0,
+          "choosers": 54483,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 42,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 1,
+          "choosers": 21271,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 13,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 2,
+          "choosers": 3146,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 3,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 3,
+          "choosers": 1748,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 4,
+          "choosers": 562,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 5,
+          "choosers": 773,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        }
+      ]
+    },
+    {
+      "exp_policy": "libdevice_f64_to_f32",
+      "choice_mismatches": 0,
+      "detected_ambiguities": 57,
+      "ambiguity_mismatches": 0,
+      "all_mismatches_detected_as_ambiguous": true,
+      "batches": [
+        {
+          "batch": 0,
+          "choosers": 54483,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 42,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 1,
+          "choosers": 21271,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 12,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 2,
+          "choosers": 3146,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 3,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 3,
+          "choosers": 1748,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 4,
+          "choosers": 562,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        },
+        {
+          "batch": 5,
+          "choosers": 773,
+          "choice_mismatches": 0,
+          "detected_ambiguities": 0,
+          "ambiguity_mismatches": 0
+        }
+      ]
+    }
+  ],
+  "selected_policy": "libdevice_f32",
+  "proof_gates": {
+    "six_batches_per_policy": true,
+    "all_mismatches_fail_closed_in_detected_set": true,
+    "selected_policy_minimizes_reference_mismatches": true
+  }
+}

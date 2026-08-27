@@ -56,6 +56,47 @@ def cuda_dataset_cache_stats():
     }
 
 
+def cuda_cube_from_activitysim(wrapper, key):
+    """Upload one immutable ActivitySim/xarray skim cube without row targets.
+
+    Unlike :func:`cuda_wrapper_from_activitysim`, this is deliberately usable
+    before a dense chooser frame exists.  Phase 30 supplies compact origin,
+    destination, and period coordinates later from its raw-table plan.
+    """
+    from .cuda_backend import _cupy
+
+    if not hasattr(wrapper, "dataset") or hasattr(wrapper, "skim_dict"):
+        raise TypeError("native ABI bootstrap requires an xarray DatasetWrapper")
+    cp = _cupy()
+    array = wrapper.dataset[key]
+    required = (wrapper.odim, wrapper.ddim)
+    if not all(dimension in array.dims for dimension in required):
+        raise ValueError(f"skim {key!r} lacks native OD dimensions {required!r}")
+    has_time = "time_period" in array.dims
+    order = required + (("time_period",) if has_time else ())
+    if set(array.dims) != set(order):
+        raise ValueError(f"skim {key!r} has unsupported dimensions {array.dims!r}")
+    host_values = np.asarray(array.transpose(*order).values)
+    if host_values.dtype != np.float32:
+        raise ValueError(
+            f"native strict skim {key!r} requires float32, got {host_values.dtype}"
+        )
+    interface = host_values.__array_interface__
+    device_key = (
+        int(interface["data"][0]), host_values.shape, host_values.strides,
+        host_values.dtype.str,
+    )
+    if device_key not in _DATASET_ARRAY_CACHE:
+        _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(cp.asarray(host_values))
+        _DATASET_CACHE_STATS["array_uploads"] += 1
+    return (
+        _DATASET_ARRAY_CACHE[device_key],
+        int(host_values.shape[1]),
+        int(host_values.shape[2]) if has_time else 1,
+        3 if has_time else 2,
+    )
+
+
 class CudaChooserColumns:
     """Lazy device view of a pandas-like chooser table's numeric columns."""
 

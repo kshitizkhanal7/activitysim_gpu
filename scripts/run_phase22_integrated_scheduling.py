@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -64,6 +65,22 @@ def main() -> int:
         type=Path,
         help="also qualify Phase 29 declared raw-table-to-calendar CUDA graph",
     )
+    parser.add_argument(
+        "--native-abi-bootstrap-report",
+        type=Path,
+        help=(
+            "Phase 30: bypass dense ActivitySim logsum preprocessing, compile the "
+            "strict ABI from reviewed IR/raw metadata, and qualify the full resident graph"
+        ),
+    )
+    parser.add_argument(
+        "--qualification-logsum-hash-report",
+        type=Path,
+        help=(
+            "optional out-of-band qualification artifact hashing the six generated "
+            "logsum vectors; the deliberate D2H copy is excluded from performance runs"
+        ),
+    )
     parser.add_argument("--resident-replay-runs", type=int, default=5)
     parser.add_argument(
         "--diagnostic-logsum-capture",
@@ -83,12 +100,17 @@ def main() -> int:
         args.resident_semantic_input_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_raw_table_input_report:
         args.resident_raw_table_input_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.native_abi_bootstrap_report:
+        args.native_abi_bootstrap_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.qualification_logsum_hash_report:
+        args.qualification_logsum_hash_report.parent.mkdir(parents=True, exist_ok=True)
     resident_requested = bool(
         args.resident_replay_report
         or args.resident_schedule_report
         or args.resident_generated_input_report
         or args.resident_semantic_input_report
         or args.resident_raw_table_input_report
+        or args.native_abi_bootstrap_report
     )
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
@@ -128,9 +150,11 @@ def main() -> int:
     diagnostic_cache_host = None
     resident_records = []
     current_raw_source = None
+    current_native_manifest = None
+    native_manifests = []
     raw_mode_constants = None
     raw_cbd_threshold = None
-    if args.resident_raw_table_input_report:
+    if args.resident_raw_table_input_report or args.native_abi_bootstrap_report:
         import yaml
 
         raw_mode_settings = yaml.safe_load(
@@ -158,6 +182,7 @@ def main() -> int:
                 },
                 "reference_logsums": _cupy().array(logsums, copy=True),
                 "raw_source": current_raw_source,
+                "native_abi_manifest": current_native_manifest,
             }
         )
 
@@ -203,8 +228,125 @@ def main() -> int:
             diagnostic_cache_host[owners, slots] = raw_host_logsums
 
     def gpu_compute_logsums(*compute_args, **compute_kwargs):
-        nonlocal current_raw_source
+        nonlocal current_raw_source, current_native_manifest
         original_simple = simulate.simple_simulate_logsums
+
+        if args.native_abi_bootstrap_report:
+            native_started = time.perf_counter()
+            if len(compute_args) < 8:
+                raise RuntimeError("Phase 30 requires the positional ActivitySim logsum ABI")
+            (
+                raw_state, raw_alt_tdd, raw_tours, raw_purpose, model_settings,
+                _network_los, raw_skims, trace_label,
+            ) = compute_args[:8]
+            from activitysim.abm.models.tour_mode_choice import TourModeComponentSettings
+            from activitysim.core import config
+            from choiceforge.cuda_skims import cuda_cube_from_activitysim
+            from choiceforge.native_abi_bootstrap import (
+                NativeSkimCube,
+                compile_native_strict_abi,
+            )
+            from choiceforge.raw_table_input_generation import ResidentRawTableInputPlan
+            from choiceforge.sharrow_ir import specification_ir
+
+            logsum_settings = TourModeComponentSettings.read_settings_file(
+                raw_state.filesystem,
+                str(model_settings.LOGSUM_SETTINGS),
+                mandatory=False,
+            )
+            constants = config.get_model_constants(logsum_settings)
+            coefficients = raw_state.filesystem.get_segment_coefficients(
+                logsum_settings, raw_purpose
+            )
+            logsum_spec = raw_state.filesystem.read_model_spec(
+                file_name=logsum_settings.SPEC
+            )
+            logsum_spec = simulate.eval_coefficients(
+                raw_state, logsum_spec, coefficients, estimator=None
+            )
+            numeric_nest = config.get_logit_model_settings(logsum_settings)
+            numeric_nest = simulate.eval_nest_coefficients(
+                numeric_nest, coefficients, trace_label
+            )
+            document = specification_ir(logsum_spec.reset_index())
+            scalar_environment = raw_state.get_global_constants().copy()
+            scalar_environment.update(constants)
+            scalar_environment.update(coefficients)
+
+            def cube_loader(source):
+                _, direction, key = source
+                wrapper_name = "od_skims" if direction == "od_skims_reverse" else direction
+                if wrapper_name not in raw_skims:
+                    raise ValueError(f"Phase 30 skim direction {direction!r} is absent")
+                data, dest_count, time_count, rank = cuda_cube_from_activitysim(
+                    raw_skims[wrapper_name], key
+                )
+                return NativeSkimCube(data, dest_count, time_count, rank)
+
+            metadata = {
+                "trace_label": str(trace_label) + ".native_abi",
+                "chooser_ids": np.asarray(raw_alt_tdd.index, dtype=np.int64),
+                "start": np.asarray(raw_alt_tdd["start"], dtype=np.int16),
+                "end": np.asarray(raw_alt_tdd["end"], dtype=np.int16),
+                "out_period": np.asarray(raw_alt_tdd["out_period"].astype(str)),
+                "in_period": np.asarray(raw_alt_tdd["in_period"].astype(str)),
+            }
+            rng = raw_state.get_rn_generator()
+            draws = rng.normal_for_df(raw_alt_tdd, broadcast=True, size=6)
+            draws = draws.to_numpy(copy=False) if hasattr(draws, "to_numpy") else np.asarray(draws)
+            first = ~raw_alt_tdd.index.duplicated(keep="first")
+            current_raw_source = {
+                "tours": raw_tours.copy(),
+                "land_use": raw_state.get_dataframe("land_use")[[
+                    "TOTPOP", "TOTEMP", "TOTACRE", "PRKCST", "area_type",
+                    "TOPOLOGY", "TERMINAL", "density_index",
+                ]].copy(),
+                "tour_purpose": str(raw_purpose),
+                "constants": constants,
+                "cbd_threshold": raw_cbd_threshold,
+                "standard_normal_draws": np.asarray(draws[first], dtype=np.float64).copy(),
+            }
+            native = compile_native_strict_abi(
+                document, scalar_environment, cube_loader, rows=len(raw_alt_tdd)
+            )
+            current_native_manifest = {
+                **native.manifest,
+                "purpose": str(raw_purpose),
+                "rows": int(len(raw_alt_tdd)),
+                "dense_preprocessor_rows_avoided": int(len(raw_alt_tdd)),
+            }
+            native_manifests.append(current_native_manifest)
+            immediate_plan = ResidentRawTableInputPlan.compile(
+                native.invocation, metadata, current_raw_source,
+                validate_oracle=False,
+            )
+            immediate_plan.execute()
+            utilities = immediate_plan.invocation.execute()
+            logsums = mtc21_nested_logsums_cuda(
+                utilities,
+                numeric_nest,
+                document["alternatives"],
+                return_device=True,
+                numeric_policy="activitysim_pandas_float64",
+            )
+            current_native_manifest["bootstrap_seconds"] = (
+                time.perf_counter() - native_started
+            )
+            device_logsum_sink(logsums, metadata)
+            resident_invocation_sink(
+                immediate_plan.invocation,
+                numeric_nest,
+                tuple(document["alternatives"]),
+                metadata,
+                logsums,
+            )
+            current_raw_source = None
+            current_native_manifest = None
+            # The integrated GPU cache is authoritative. ActivitySim only needs
+            # an index-aligned placeholder for its legacy alternatives table.
+            return pd.Series(
+                np.zeros(len(raw_alt_tdd), dtype=np.float64), index=raw_alt_tdd.index
+            )
 
         rng = None
         original_normal_for_df = None
@@ -564,6 +706,8 @@ def main() -> int:
     candidates = [item for item in kernel_reports if item.get("candidate_used")]
     fallbacks = [item for item in kernel_reports if item.get("fallback_used")]
     report_candidate_rows = int(sum(item.get("rows", 0) for item in candidates))
+    if args.native_abi_bootstrap_report:
+        report_candidate_rows = int(sum(item["invocation"].rows for item in resident_records))
     checkpoint = scheduler.checkpoint() if scheduler.complete else None
     if checkpoint is not None:
         args.checkpoint.write_text(json.dumps(checkpoint, indent=2) + "\n")
@@ -720,6 +864,7 @@ def main() -> int:
             or args.resident_generated_input_report is not None
             or args.resident_semantic_input_report is not None
             or args.resident_raw_table_input_report is not None
+            or args.native_abi_bootstrap_report is not None
         ):
             from choiceforge.device_resident_runtime import DeviceResidentRuntime
 
@@ -731,19 +876,26 @@ def main() -> int:
                 args.resident_generated_input_report is not None
                 or args.resident_semantic_input_report is not None
                 or args.resident_raw_table_input_report is not None
+                or args.native_abi_bootstrap_report is not None
             ):
                 from choiceforge.device_input_expansion import (
                     ResidentInputExpansionPlan,
                     ResidentSemanticInputPlan,
                 )
-                if args.resident_raw_table_input_report is not None:
+                if (
+                    args.resident_raw_table_input_report is not None
+                    or args.native_abi_bootstrap_report is not None
+                ):
                     from choiceforge.raw_table_input_generation import (
                         ResidentRawTableInputPlan,
                     )
 
                 plan_type = (
                     ResidentRawTableInputPlan
-                    if args.resident_raw_table_input_report is not None
+                    if (
+                        args.resident_raw_table_input_report is not None
+                        or args.native_abi_bootstrap_report is not None
+                    )
                     else (
                         ResidentSemanticInputPlan
                         if args.resident_semantic_input_report is not None
@@ -762,11 +914,19 @@ def main() -> int:
                             original_captured_pointers.add(
                                 int(value.__cuda_array_interface__["data"][0])
                             )
-                    if args.resident_raw_table_input_report is not None:
+                    if (
+                        args.resident_raw_table_input_report is not None
+                        or args.native_abi_bootstrap_report is not None
+                    ):
                         if record["raw_source"] is None:
                             raise RuntimeError("Phase 29 did not capture a raw source bundle")
                         plan = plan_type.compile(
-                            original, record["metadata"], record["raw_source"]
+                            original,
+                            record["metadata"],
+                            record["raw_source"],
+                            validate_oracle=(
+                                args.native_abi_bootstrap_report is None
+                            ),
                         )
                     else:
                         plan = plan_type.compile(original, record["metadata"])
@@ -779,6 +939,7 @@ def main() -> int:
                 if (
                     args.resident_semantic_input_report is None
                     and args.resident_raw_table_input_report is None
+                    and args.native_abi_bootstrap_report is None
                 ):
                     cpu_by_batch = [
                         plan.cpu_benchmark(args.resident_replay_runs)
@@ -979,7 +1140,8 @@ def main() -> int:
                 return time.perf_counter() - started, dict(latest)
 
             stage_phase = (
-                29 if args.resident_raw_table_input_report is not None
+                30 if args.native_abi_bootstrap_report is not None
+                else 29 if args.resident_raw_table_input_report is not None
                 else 28 if phase27_plans and phase27_plans[0].semantic_program is not None
                 else 27 if phase27_plans else 26
             )
@@ -1134,7 +1296,7 @@ def main() -> int:
                         ),
                     }
                 )
-                if stage_phase in {28, 29}:
+                if stage_phase in {28, 29, 30}:
                     manifests = [
                         plan.semantic_program.manifest() for plan in phase27_plans
                     ]
@@ -1157,7 +1319,7 @@ def main() -> int:
                             ),
                         }
                     )
-                if stage_phase == 29:
+                if stage_phase in {29, 30}:
                     raw_manifests = [plan.raw_manifest() for plan in phase27_plans]
                     phase26_report["raw_table_input_programs"] = raw_manifests
                     phase26_report["input_contract"] = (
@@ -1186,9 +1348,66 @@ def main() -> int:
                             ),
                         }
                     )
+                if stage_phase == 30:
+                    phase26_report["native_abi_programs"] = native_manifests
+                    phase26_report["native_bootstrap_seconds"] = float(
+                        sum(item["bootstrap_seconds"] for item in native_manifests)
+                    )
+                    phase26_report["dense_preprocessor_rows_avoided"] = int(
+                        sum(
+                            item["dense_preprocessor_rows_avoided"]
+                            for item in native_manifests
+                        )
+                    )
+                    phase26_report["scheduling_arithmetic_contract"] = {
+                        "utility_dot": "sharrow65_four_lane_float32",
+                        "probability_sum": "numpy_pairwise_float32",
+                        "probability_search": "source_order_float32_inverse_cdf",
+                        "exponential": "cuda_libdevice_expf",
+                        "remaining_cross_library_ambiguity_entries": int(
+                            resident_scheduler.boundary_map_entries
+                        ),
+                    }
+                    phase26_report["input_contract"] = (
+                        "reviewed hashed utility IR, named raw-table sources, scalar "
+                        "settings, and immutable raw skim metadata compile the strict "
+                        "CUDA ABI without joining dense chooser-alternative rows or "
+                        "executing ActivitySim's logsum preprocessor"
+                    )
+                    phase26_report["proof_gates"].update(
+                        {
+                            "all_native_abi_programs_declared": (
+                                len(native_manifests) == 6
+                                and all(item["bindings"] for item in native_manifests)
+                            ),
+                            "zero_dense_preprocessor_rows_read": all(
+                                item["dense_preprocessor_rows_read"] == 0
+                                for item in native_manifests
+                            ),
+                            "zero_dense_preprocessor_values_read": all(
+                                item["dense_preprocessor_values_read"] == 0
+                                for item in native_manifests
+                            ),
+                            "all_programs_share_reviewed_codegen": all(
+                                item["codegen"] == native_manifests[0]["codegen"]
+                                for item in native_manifests
+                            ),
+                            "three_purpose_schemas_repeat_exactly": (
+                                len({
+                                    (item["purpose"], item["schema_sha256"])
+                                    for item in native_manifests
+                                }) == 3
+                            ),
+                            "all_public_dense_preprocessor_rows_avoided": (
+                                phase26_report["dense_preprocessor_rows_avoided"]
+                                == phase26_report["mode_logsum_rows"]
+                            ),
+                        }
+                    )
             resident_stage_report_path = (
                 (
-                    args.resident_raw_table_input_report
+                    args.native_abi_bootstrap_report
+                    or args.resident_raw_table_input_report
                     or args.resident_semantic_input_report
                     or args.resident_generated_input_report
                 )
@@ -1198,6 +1417,44 @@ def main() -> int:
             resident_stage_report_path.write_text(
                 json.dumps(phase26_report, indent=2) + "\n"
             )
+            if args.qualification_logsum_hash_report:
+                logsum_hashes = []
+                for number, record in enumerate(resident_records):
+                    host_logsums = np.ascontiguousarray(
+                        cp.asnumpy(record["reference_logsums"])
+                    )
+                    logsum_hashes.append(
+                        {
+                            "batch": number,
+                            "trace_label": str(record["metadata"]["trace_label"]),
+                            "rows": int(host_logsums.size),
+                            "dtype": str(host_logsums.dtype),
+                            "sha256": hashlib.sha256(
+                                host_logsums.view(np.uint8)
+                            ).hexdigest(),
+                        }
+                    )
+                hash_document = {
+                    "phase": 30,
+                    "scope": (
+                        "out-of-band exact qualification only; these deliberate "
+                        "device-to-host copies are not part of any timed resident run"
+                    ),
+                    "bootstrap": (
+                        "native_abi"
+                        if args.native_abi_bootstrap_report
+                        else "activitysim_dense_oracle"
+                    ),
+                    "programs": logsum_hashes,
+                    "aggregate_sha256": hashlib.sha256(
+                        "\n".join(item["sha256"] for item in logsum_hashes).encode(
+                            "ascii"
+                        )
+                    ).hexdigest(),
+                }
+                args.qualification_logsum_hash_report.write_text(
+                    json.dumps(hash_document, indent=2) + "\n"
+                )
             if not all(phase26_report["proof_gates"].values()):
                 raise RuntimeError(
                     f"Phase {stage_phase} resident schedule proof gate failed"
@@ -1218,7 +1475,9 @@ def main() -> int:
         "tdd_mismatches": int(np.count_nonzero(actual.tdd.to_numpy() != expected.tdd.to_numpy())),
         "start_mismatches": int(np.count_nonzero(actual.start.to_numpy() != expected.start.to_numpy())),
         "end_mismatches": int(np.count_nonzero(actual.end.to_numpy() != expected.end.to_numpy())),
-        "candidate_calls": len(candidates),
+        "candidate_calls": (
+            len(native_manifests) if args.native_abi_bootstrap_report else len(candidates)
+        ),
         "fallback_calls": len(fallbacks),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -1233,8 +1492,10 @@ def main() -> int:
         "boundary_logsum_download_bytes": int(
             sum(x["boundary_logsum_download_bytes"] for x in batch_telemetry)
         ),
-        "bulk_modeled_logsum_device_to_host_bytes": int(
-            sum(item.get("logsum_device_to_host_bytes", -1) for item in candidates)
+        "bulk_modeled_logsum_device_to_host_bytes": (
+            0 if args.native_abi_bootstrap_report else int(
+                sum(item.get("logsum_device_to_host_bytes", -1) for item in candidates)
+            )
         ),
         "final_tdd_device_to_host_bytes": (
             int(checkpoint["final_tdd_device_to_host_bytes"]) if checkpoint else None
@@ -1243,6 +1504,8 @@ def main() -> int:
         "scheduling_ms": float(sum(x["scheduling_ms"] for x in batch_telemetry)),
         "batch_telemetry": batch_telemetry,
         "kernel_reports": [path.name for path in sorted(args.kernel_reports.glob("*.json"))],
+        "native_abi_bootstrap_used": bool(args.native_abi_bootstrap_report),
+        "native_abi_programs": len(native_manifests),
     }
     report["proof_gates"] = {
         "activitysim_completed": report["exit_code"] == 0,

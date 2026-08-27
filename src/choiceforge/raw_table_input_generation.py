@@ -50,6 +50,66 @@ _SEMANTIC_INT = {
     "column:drive_ferry_available",
 }
 
+# Public input typing contract used by the Phase 30 native ABI bootstrap.  A
+# source not listed here is not silently guessed from a sample population.
+# The sets include both direct raw-table values and CUDA-generated values.
+RAW_FLOAT_SOURCES = frozenset({
+    "column:terminal_time",
+    "column:ivot",
+    "column:daily_parking_cost",
+    "column:density_index",
+    "column:origin_walk_time",
+    "column:destination_walk_time",
+    "column:dest_density_index",
+    "column:totalWaitTaxi",
+    "column:totalWaitSingleTNC",
+    "column:totalWaitSharedTNC",
+})
+RAW_INT_SOURCES = frozenset({
+    "name:sov_available",
+    "name:auto_ownership",
+    "name:age",
+    "name:is_joint",
+    "name:is_atwork_subtour",
+    "name:work_tour_is_SOV",
+    "name:sovtoll_available",
+    "name:hov2_available",
+    "name:number_of_participants",
+    "column:hhsize",
+    "name:hov2toll_available",
+    "name:hov3_available",
+    "name:hov3toll_available",
+    "column:dest_topology",
+    "name:work_tour_is_bike",
+    "name:walk_local_available",
+    "name:walk_lrf_available",
+    "name:walk_express_available",
+    "name:walk_heavyrail_available",
+    "name:walk_commuter_available",
+    "name:drive_local_available",
+    "name:drive_lrf_available",
+    "name:drive_express_available",
+    "name:drive_heavyrail_available",
+    "name:drive_commuter_available",
+    "column:is_indiv",
+    "column:num_workers",
+    "column:walk_ferry_available",
+    "column:drive_ferry_available",
+    "column:destination_in_cbd",
+    "name:is_escort",
+    # The reviewed MTC utility spec addresses these same preprocessor arrays
+    # through both bare-name and dataframe-column syntax.
+    "column:age",
+    "column:auto_ownership",
+    "column:is_joint",
+})
+
+RAW_SOURCE_ALIASES = {
+    "column:age": "name:age",
+    "column:auto_ownership": "name:auto_ownership",
+    "column:is_joint": "name:is_joint",
+}
+
 
 def _row_topology(metadata: Mapping[str, Any], rows: int):
     chooser_ids = np.asarray(metadata["chooser_ids"], dtype=np.int64)
@@ -402,9 +462,13 @@ class ResidentRawTableInputPlan(ResidentInputExpansionPlan):
 
     raw_source_manifest: tuple[Mapping[str, Any], ...] = ()
     oracle_dense_bytes_read_for_compile: int = 0
+    oracle_comparison_performed: bool = True
 
     @classmethod
-    def compile(cls, invocation, metadata: Mapping[str, Any], raw_source):
+    def compile(
+        cls, invocation, metadata: Mapping[str, Any], raw_source,
+        *, validate_oracle: bool = True,
+    ):
         cp = _cupy()
         (
             chooser_ids, owner_starts, owner_index, offsets, _pairs, slots,
@@ -480,34 +544,36 @@ class ResidentRawTableInputPlan(ResidentInputExpansionPlan):
                 float_manifest + int_manifest + coordinate_manifest
             ),
             oracle_dense_bytes_read_for_compile=0,
+            oracle_comparison_performed=bool(validate_oracle),
         )
         plan.execute()
         cp.cuda.Stream.null.synchronize()
         # Oracle comparison happens only after construction.  It is deliberately
         # not used to choose a formula, factor kind, value, or coordinate source.
-        comparisons = (
-            ("float_inputs", plan.invocation.float_inputs, invocation.float_inputs),
-            ("int_inputs", plan.invocation.int_inputs, invocation.int_inputs),
-        )
-        for label, generated, oracle in comparisons:
-            if not bool(cp.array_equal(
-                cp.ascontiguousarray(generated).view(cp.uint8),
-                cp.ascontiguousarray(oracle).view(cp.uint8),
-            )):
-                different = cp.asnumpy(generated != oracle)
-                positions = np.argwhere(different)
-                first = tuple(int(x) for x in positions[0]) if positions.size else None
-                raise ValueError(
-                    f"Phase 29 raw-table {label} differs from the dense oracle at {first}"
-                )
-        for factor, label, oracle in zip(
-            coordinate_factors, coordinate_labels, oracle_coordinates
-        ):
-            generated = factor.target
-            if not bool(cp.array_equal(generated, oracle)):
-                raise ValueError(
-                    f"Phase 29 raw-table coordinate {label} differs from the dense oracle"
-                )
+        if validate_oracle:
+            comparisons = (
+                ("float_inputs", plan.invocation.float_inputs, invocation.float_inputs),
+                ("int_inputs", plan.invocation.int_inputs, invocation.int_inputs),
+            )
+            for label, generated, oracle in comparisons:
+                if not bool(cp.array_equal(
+                    cp.ascontiguousarray(generated).view(cp.uint8),
+                    cp.ascontiguousarray(oracle).view(cp.uint8),
+                )):
+                    different = cp.asnumpy(generated != oracle)
+                    positions = np.argwhere(different)
+                    first = tuple(int(x) for x in positions[0]) if positions.size else None
+                    raise ValueError(
+                        f"Phase 29 raw-table {label} differs from the dense oracle at {first}"
+                    )
+            for factor, label, oracle in zip(
+                coordinate_factors, coordinate_labels, oracle_coordinates
+            ):
+                generated = factor.target
+                if not bool(cp.array_equal(generated, oracle)):
+                    raise ValueError(
+                        f"Phase 29 raw-table coordinate {label} differs from the dense oracle"
+                    )
         return plan
 
     def raw_manifest(self):
@@ -518,4 +584,5 @@ class ResidentRawTableInputPlan(ResidentInputExpansionPlan):
             "dense_oracle_bytes_read_for_compile": self.oracle_dense_bytes_read_for_compile,
             "availability_formulas": len(_SEMANTIC_INT),
             "parking_rate_source": "land_use.PRKCST_or_free_parking_at_work",
+            "oracle_comparison_performed": self.oracle_comparison_performed,
         }

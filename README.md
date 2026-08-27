@@ -570,3 +570,36 @@ native schema/IR bootstrap.
 See the [Phase 29 technical report](docs/phase29-raw-table-input-generation.md),
 the [hash-chained Phase 29 summary](benchmark-results/phase29-raw-table-input-summary.json),
 and the [changed-world qualification](benchmark-results/phase29-changed-scenario-qualification.json).
+
+## Phase 30 native strict-ABI bootstrap
+
+Phase 30 removes the dense ActivitySim logsum preprocessor from the live
+production bootstrap. Reviewed utility IR, an explicit raw-source type
+contract, scalar settings, controlled random draws, and immutable skim-cube
+metadata now compile the complete strict CUDA ABI directly. Unknown sources or
+wrong-rank skims fail closed. The live path never joins or reads a dense
+chooser-alternative frame.
+
+The public 50,000-household proof bypassed **1,210,124 dense preprocessor rows**
+in each of three fresh processes. All 15 resident replays kept every logsum bit
+and all 81,983 final schedules exact. A separate proof-only legacy process and
+native process hashed all six generated logsum vectors; their aggregate
+SHA-256 is identical. Three stable purpose-specific IR and ABI hashes make the
+compiled contract auditable.
+
+The median complete resident graph is 0.226712 seconds. Median cold
+checkpoint-to-result time is 30.739 seconds versus 30.759 seconds in Phase 29,
+a 0.065% change that is run noise rather than a speedup claim. Cold startup is
+still dominated by loading the 6.452 GB Sharrow skim dataset. The achievement
+is an upstream architectural dependency removal with exact replication, not a
+new whole-model performance multiplier.
+
+Two explicit CUDA exponential policies were also tested against all six frozen
+public scheduling batches. Both produced zero choice mismatches, but the live
+generated-logsum path still needs its 57-entry resident boundary map for a
+universal fail-closed guarantee. Phase 30 keeps that safeguard and documents
+the remaining arithmetic frontier honestly.
+
+See the [Phase 30 technical report](docs/phase30-native-abi-bootstrap.md),
+the [hash-chained summary](benchmark-results/phase30-native-bootstrap-summary.json),
+and the [arithmetic qualification](benchmark-results/phase30-arithmetic-contract.json).

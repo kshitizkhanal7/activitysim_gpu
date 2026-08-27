@@ -221,11 +221,11 @@ def compile_semantic_input_program(
         raise ValueError("Phase 28 slot metadata is not an exact start/end mapping")
 
     parking_column = int(float_pattern[0])
-    parking = cp.asnumpy(invocation.float_inputs[:, parking_column])
     durations = end.astype(np.int64) - start.astype(np.int64)
     owner_count = int(owner_starts.size)
     offsets = np.r_[owner_starts, chooser_ids.size]
     if parking_rates_override is None:
+        parking = cp.asnumpy(invocation.float_inputs[:, parking_column])
         rates = np.empty(owner_count, dtype=np.float64)
         for owner in range(owner_count):
             begin, finish = offsets[owner : owner + 2]
@@ -239,15 +239,18 @@ def compile_semantic_input_program(
             raise ValueError(
                 "Phase 29 direct parking rates do not align with compact tours"
             )
-    predicted = (rates[owner_index] * durations).astype(parking.dtype)
-    if not np.array_equal(
-        np.ascontiguousarray(predicted).view(np.uint8),
-        np.ascontiguousarray(parking).view(np.uint8),
-    ):
-        raise ValueError(
-            "Phase 28 daily_parking_cost does not satisfy rate * (end - start) "
-            "with identical output bits"
-        )
+        if not np.isfinite(rates).all():
+            raise ValueError("Phase 29 direct parking rates must be finite")
+    if parking_rates_override is None:
+        predicted = (rates[owner_index] * durations).astype(parking.dtype)
+        if not np.array_equal(
+            np.ascontiguousarray(predicted).view(np.uint8),
+            np.ascontiguousarray(parking).view(np.uint8),
+        ):
+            raise ValueError(
+                "Phase 28 daily_parking_cost does not satisfy rate * (end - start) "
+                "with identical output bits"
+            )
 
     sources = tuple(getattr(invocation, "skim_input_sources", ()))
     ranks = tuple(getattr(invocation, "skim_input_ranks", ()))

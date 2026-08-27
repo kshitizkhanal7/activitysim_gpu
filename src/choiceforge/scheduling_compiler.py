@@ -171,6 +171,7 @@ def _cuda_source(
     overflow_protection: bool = True,
     chooser_float64: bool = False,
     dot_policy: str = "fma_sequential",
+    exp_policy: str = "libdevice_f32",
 ) -> str:
     _validate_schema(schema)
     valid = set(schema.chooser_columns + schema.row_columns + schema.alternative_columns)
@@ -211,8 +212,13 @@ def _cuda_source(
         accumulator_lines = ["float acc = 0.0f;"]
         finish_lines = ["utility = acc;"]
     body = "\n        ".join(assignments + accumulator_lines + sums + finish_lines)
+    if exp_policy not in {"libdevice_f32", "libdevice_f64_to_f32"}:
+        raise ValueError(f"unknown scheduling exponential policy {exp_policy!r}")
+    exp_argument = "values[lane]-row_max" if overflow_protection else "values[lane]"
     weight_expression = (
-        "expf(values[lane]-row_max)" if overflow_protection else "expf(values[lane])"
+        f"expf({exp_argument})"
+        if exp_policy == "libdevice_f32"
+        else f"(float)exp((double)({exp_argument}))"
     )
     logsum_expression = (
         "row_max+logf(total)" if overflow_protection else "logf(total)"
@@ -286,6 +292,7 @@ def _raw_kernel(
     overflow_protection=True,
     chooser_float64=False,
     dot_policy="fma_sequential",
+    exp_policy="libdevice_f32",
 ):
     cp = _cupy()
     source = _cuda_source(
@@ -295,6 +302,7 @@ def _raw_kernel(
         overflow_protection,
         chooser_float64,
         dot_policy,
+        exp_policy,
     )
     options = ["--std=c++11"]
     if dot_policy == "sharrow65_lane4":
@@ -320,6 +328,7 @@ class CompiledCudaSchedulingModel:
         overflow_protection: bool = True,
         chooser_float64: bool = False,
         dot_policy: str = "fma_sequential",
+        exp_policy: str = "libdevice_f32",
     ):
         _register_pip_cuda_dlls()
         if not expressions or len(expressions) != len(coefficients):
@@ -330,6 +339,7 @@ class CompiledCudaSchedulingModel:
         self.overflow_protection = bool(overflow_protection)
         self.chooser_float64 = bool(chooser_float64)
         self.dot_policy = str(dot_policy)
+        self.exp_policy = str(exp_policy)
         self.kernel = _raw_kernel(
             self.expressions,
             self.coefficients,
@@ -337,6 +347,7 @@ class CompiledCudaSchedulingModel:
             self.overflow_protection,
             self.chooser_float64,
             self.dot_policy,
+            self.exp_policy,
         )
         self._threads: int | None = None
 

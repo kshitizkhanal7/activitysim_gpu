@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 29 raw-table-to-calendar result does and does not prove;
+- what the completed Phase 30 native-bootstrap result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -159,6 +159,18 @@ The compact state is 24.85 MB, **20.259 times smaller** than the removed rows.
 The qualification harness still runs the old dense path separately as an
 answer key and to expose the compiled utility interface, so the roughly
 30.759-second cold ActivitySim run has not disappeared yet.
+
+Phase 30 removes that production dependency. The GPU interface is now built
+directly from a reviewed equation recipe, declared raw-table types, scalar
+settings, controlled random draws, and raw skim-cube descriptions. The old
+dense preprocessor is run only in a separate proof process. Across three fresh
+public processes, all 1,210,124 dense rows are avoided, all 15 resident replays
+are exact, and all 81,983 final times match. A byte-level hash test also proves
+that the native and legacy paths generate identical six logsum arrays. The
+middle resident time is **0.226712 seconds**. The middle cold run is **30.739
+seconds**, essentially unchanged because loading 6.452 GB of network skims is
+still the largest startup cost. This phase is a major independence and
+replication result, not a major new cold speedup.
 
 ## 1. What is travel demand modeling?
 
@@ -3558,3 +3570,138 @@ interface, and launch the Phase 29 source compiler without running the dense
 preprocessor at all. The legacy ActivitySim path would then run only in a
 separate verification process. The same phase should attack the remaining
 57-case frozen boundary map with one shared Sharrow/CUDA arithmetic definition.
+
+## 86. Phase 30: build the recipe without making the answer sheet
+
+Phase 29 could create every input from real upstream causes, but its live test
+still let ActivitySim prepare the huge dense table first. That table was not
+read by the input compiler, yet it was still used to reveal the shape of the
+GPU interface. It was like writing a recipe independently but still looking at
+a finished cake to learn how many bowls to put on the counter.
+
+Phase 30 creates the interface without making the finished cake. It starts
+with four kinds of information:
+
+- a reviewed **intermediate representation**, or IR, containing the 315
+  equation terms and their 21 travel-mode alternatives;
+- a type contract naming the 10 floating-point and 31 integer row sources;
+- 48 scalar settings such as constants and coefficients; and
+- 209 logical skim sources with six groups of origin, destination, and time
+  coordinates.
+
+Together these form an **application binary interface**, or ABI. ABI sounds
+complicated, but it simply means a precise agreement about what data a program
+receives, its type, its order, and its shape. If the recipe asks for an unknown
+source or a skim cube with the wrong number of dimensions, compilation stops.
+There is no hidden rule that guesses.
+
+## 87. What the live native path actually does
+
+For each work, school, or university scheduling program, the live path now:
+
+1. reads and hashes the reviewed utility recipe;
+2. takes one raw row per tour plus land-use facts;
+3. requests the same controlled random numbers once and preserves their order;
+4. uploads immutable raw network skim cubes without creating target rows;
+5. compiles named inputs and skim coordinates into the strict CUDA ABI;
+6. runs utility, nested logit, cache scatter, scheduling choice, and timetable
+   mutation on the GPU; and
+7. publishes only the final schedule labels.
+
+The ordinary ActivitySim workflow still owns model orchestration, raw tables,
+configuration files, and final publication. Therefore Phase 30 is not a claim
+that the entire regional model uses no CPU. The precise claim is that the
+mandatory-tour mode-logsum and scheduling production path no longer executes
+or reads ActivitySim's dense chooser-alternative preprocessor.
+
+## 88. How we proved that removing the old path changed nothing
+
+Correct final schedules are necessary, but they are not enough. Two slightly
+different probability calculations can sometimes choose the same answer by
+luck. Phase 30 therefore uses several layers of evidence:
+
+- three fresh Python and CUDA processes each run five complete resident
+  replays, making 15 full measurements;
+- every replay checks all 1,210,124 logsum values bit for bit;
+- all 81,983 final scheduled tour times are compared with ActivitySim;
+- every process records stable SHA-256 hashes for the work, school, and
+  university IR and ABI schemas;
+- a separate native process deliberately downloads and hashes its six logsum
+  arrays only for qualification;
+- a separate legacy process does the same after running the old dense
+  preprocessor; and
+- every individual hash and the combined hash match exactly.
+
+The shared combined logsum hash is
+`41ea4ab90d0b47595a6ad59b1598a050a09a01db5d775dd3d1ad9f5be79e1322`.
+The deliberate hash downloads are not inside any timed resident run. This
+separation prevents a correctness test from being quietly counted as GPU
+performance.
+
+## 89. The Phase 30 measured result
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Complete native-input-to-calendar graph | 0.226712 s | 0.221389 s | 0.231066 s | **0.226712 s** |
+| Native ABI bootstrap for six programs | 4.540633 s | 4.488558 s | 4.867005 s | **4.540633 s** |
+| Checkpoint-to-result ActivitySim run | 30.222 s | 30.779 s | 30.739 s | **30.739 s** |
+
+The compact persistent facts still occupy 24,849,394 bytes instead of
+503,411,584 bytes of repeated row arrays, a **20.259-times reduction**. Plan
+construction reads zero dense preprocessor rows and zero dense preprocessor
+values. It avoids creating 1,210,124 dense rows in the production bootstrap.
+
+The complete resident graph is 0.622% slower than Phase 29, while the middle
+cold run is 0.065% faster. Both differences are small enough to treat as
+ordinary timing variation. It would be misleading to advertise either as an
+important performance change.
+
+Why did removing more than a million dense rows not make cold startup much
+faster? A fresh process spends about 12 seconds loading and arranging a 6.452
+GB Sharrow skim dataset before this component can run. It also restores the
+ActivitySim checkpoint and initializes Python, CUDA, configuration, and model
+state. Phase 30 removed a dependency, but it did not remove those larger costs.
+
+## 90. Why the 57-entry arithmetic safeguard remains
+
+Turning utility scores into a choice uses exponential functions, additions,
+division, and a search through cumulative probabilities. A CPU math library
+and a CUDA math library can round the final bit differently. Usually that does
+not matter. It matters when a controlled random draw lands extremely close to
+a probability boundary.
+
+Phase 30 makes the scheduling dot product, probability sum, and search order
+explicit. It also compiles and tests two GPU exponential policies:
+
+- CUDA 32-bit exponential detected 58 possibly ambiguous public rows; and
+- CUDA 64-bit exponential rounded back to 32 bits detected 57.
+
+Both policies produced zero incorrect choices on the frozen six-batch
+reference artifact. However, the live newly generated logsum path still shows
+that one boundary correction can be required. Removing the resident 57-entry
+map would therefore make the claim broader than the evidence. The runtime
+keeps the small fail-closed map on the GPU, downloads zero boundary bytes, and
+states that its exact guarantee applies to this qualified public benchmark.
+
+## 91. What Phase 30 means and the next ambitious target
+
+Phase 30 is the point where the production GPU program can stand on its own at
+the mode-logsum bootstrap boundary. Phases 1 through 29 are not made moot.
+They supply the independent CPU answer keys, shared arithmetic rules, compact
+data model, raw-source formulas, resident runtime, changed-world tests, and
+failure gates that make the new independence believable.
+
+The next major opportunity is a persistent native skim store. Instead of
+loading and rearranging 6.452 GB through Sharrow for every fresh process, a
+Phase 31 runtime should create a versioned GPU-ready skim artifact once, map or
+stream only the 149 required physical cubes, verify their content hashes, and
+reuse them across scenarios and processes. The benchmark must separately time
+cold file-to-GPU startup, warm scenario reuse, resident computation, and final
+publication.
+
+In parallel, a shared correctly specified exponential and reduction
+implementation should run in both the Sharrow reference and CUDA backend. New
+changed-scenario and boundary-fuzz tests must pass before the 57-entry map can
+be deleted. After those two frontiers, the same native ABI pattern can expand
+to non-mandatory tours, joint tours, destinations, trips, and eventually a
+larger end-to-end device-resident ActivitySim workflow.

@@ -1,0 +1,50 @@
+{
+  "phase": 30,
+  "scope": "out-of-band exact qualification only; these deliberate device-to-host copies are not part of any timed resident run",
+  "bootstrap": "activitysim_dense_oracle",
+  "programs": [
+    {
+      "batch": 0,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.work.compute_logsums.logsums",
+      "rows": 817245,
+      "dtype": "float64",
+      "sha256": "bb04d12acd0b85015bf1ffbca9f308a6f358143dc68c76747f30cdbff81b54b7"
+    },
+    {
+      "batch": 1,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.school.compute_logsums.logsums",
+      "rows": 319065,
+      "dtype": "float64",
+      "sha256": "6f9f9b9ebb622f43a34ca5597d9d597444337f391915b090e9ac0949fd645341"
+    },
+    {
+      "batch": 2,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_1.univ.compute_logsums.logsums",
+      "rows": 47190,
+      "dtype": "float64",
+      "sha256": "163723fa1578fe73c2fa7caf9186f5327c5f2f40ff327b79c56219f4a65f4974"
+    },
+    {
+      "batch": 3,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.work.compute_logsums.logsums",
+      "rows": 14345,
+      "dtype": "float64",
+      "sha256": "9bb9eb5f9994454e1ceb033803ffcff6bfa7f3adbe0ad36b876ca02da7f288c5"
+    },
+    {
+      "batch": 4,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.school.compute_logsums.logsums",
+      "rows": 5051,
+      "dtype": "float64",
+      "sha256": "158de62c3aac15f4d6773066aaf7d276d273592ddd0c24bfb94425e6321edcf4"
+    },
+    {
+      "batch": 5,
+      "trace_label": "mandatory_tour_scheduling.vectorize_tour_scheduling.tour_2.univ.compute_logsums.logsums",
+      "rows": 7228,
+      "dtype": "float64",
+      "sha256": "0c428ca51e3edc84aba2fcaed763775077d1d0f4cde4ba8728fc47fdc1595b80"
+    }
+  ],
+  "aggregate_sha256": "41ea4ab90d0b47595a6ad59b1598a050a09a01db5d775dd3d1ad9f5be79e1322"
+}
