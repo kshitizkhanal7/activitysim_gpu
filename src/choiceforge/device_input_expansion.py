@@ -77,7 +77,7 @@ def _kernels(cp):
                 } else if (kind[column] == 2) {
                     source = slot_values
                         + ((long long)slot[row] * slot_columns + compact_column) * item_size;
-                } else {
+                } else if (kind[column] == 3) {
                     int pattern = pattern_ids[
                         (long long)owner[row] * pattern_columns + compact_column
                     ];
@@ -85,6 +85,10 @@ def _kernels(cp):
                         + (long long)pattern * pattern_width
                         + (row - offsets[owner[row]]);
                     source = pattern_values + value * item_size;
+                } else {
+                    unsigned char* target = output + element * item_size;
+                    for (int byte = 0; byte < item_size; ++byte) target[byte] = 0;
+                    return;
                 }
                 unsigned char* target = output + element * item_size;
                 if (item_size == 8) {
@@ -125,6 +129,8 @@ class CompactArrayFactor:
     pattern_columns: int
     slot_count: int
     pattern_width: int
+    column_labels: tuple[str, ...]
+    semantic_generated_columns: int
 
     @property
     def compact_bytes(self):
@@ -335,6 +341,15 @@ def _factor_array(
         pattern_columns=len(pattern_columns),
         slot_count=slot_count,
         pattern_width=int(np.max(np.diff(np.r_[owner_starts, rows]))),
+        column_labels=tuple(
+            _format_source_label(item)
+            for item in (
+                column_labels
+                if column_labels is not None
+                else (f"column_{index}" for index in range(columns))
+            )
+        ),
+        semantic_generated_columns=0,
     )
 
 
@@ -350,9 +365,14 @@ class ResidentInputExpansionPlan:
     labels: tuple[str, ...]
     original_dense_bytes: int
     original_coordinate_bytes: int
+    semantic_program: Any | None = None
 
     @classmethod
     def compile(cls, invocation, metadata: Mapping[str, Any]):
+        return cls._compile(invocation, metadata, semantic=False)
+
+    @classmethod
+    def _compile(cls, invocation, metadata: Mapping[str, Any], *, semantic):
         cp = _cupy()
         chooser_ids = np.asarray(metadata["chooser_ids"], dtype=np.int64)
         rows = int(invocation.rows)
@@ -416,6 +436,23 @@ class ResidentInputExpansionPlan:
                 "Phase 27 did not identify every captured skim coordinate array: "
                 f"found {coordinate_bytes}, expected {invocation.skim_coordinate_bytes}"
             )
+        semantic_program = None
+        if semantic:
+            from .semantic_input_generation import compile_semantic_input_program
+
+            semantic_program, float_factor, int_factor = compile_semantic_input_program(
+                invocation=invocation,
+                rebuilt_skim_arguments=tuple(rebuilt_args),
+                metadata=metadata,
+                owner_index=owner_index,
+                owner_starts=owner_starts,
+                slots=slots,
+                float_factor=float_factor,
+                int_factor=int_factor,
+            )
+            factors[0] = float_factor
+            factors[1] = int_factor
+
         rebuilt = replace(
             invocation,
             float_inputs=float_factor.target,
@@ -433,6 +470,7 @@ class ResidentInputExpansionPlan:
                 invocation.float_inputs.nbytes + invocation.int_inputs.nbytes
             ),
             original_coordinate_bytes=int(invocation.skim_coordinate_bytes),
+            semantic_program=semantic_program,
         )
         plan.execute()
         cp.cuda.Stream.null.synchronize()
@@ -463,6 +501,10 @@ class ResidentInputExpansionPlan:
             self.offsets.nbytes
             + self.slots.nbytes
             + sum(x.compact_bytes for x in self.factors)
+            + (
+                self.semantic_program.compact_bytes
+                if self.semantic_program is not None else 0
+            )
         )
 
     @property
@@ -480,6 +522,13 @@ class ResidentInputExpansionPlan:
             )
         for factor in self.factors:
             factor.execute(self.owners, self.offsets, self.slots)
+        if self.semantic_program is not None:
+            self.semantic_program.execute(
+                self.invocation.float_inputs,
+                self.invocation.int_inputs,
+                self.owners,
+                self.slots,
+            )
         return self.invocation
 
     def classification(self):
@@ -489,11 +538,27 @@ class ResidentInputExpansionPlan:
                 "chooser_columns": factor.owner_columns,
                 "slot_columns": factor.slot_columns,
                 "chooser_slot_pattern_columns": factor.pattern_columns,
+                "semantic_generated_columns": factor.semantic_generated_columns,
                 "target_bytes": factor.target_bytes,
                 "compact_bytes": factor.compact_bytes,
+                "columns": [
+                    {
+                        "column": index,
+                        "source": factor.column_labels[index],
+                        "factor": (
+                            "constant" if int(kind) == 0 else
+                            "chooser" if int(kind) == 1 else
+                            "slot" if int(kind) == 2 else
+                            "chooser_slot_pattern" if int(kind) == 3 else
+                            "semantic_generated"
+                        ),
+                    }
+                    for index, kind in enumerate(_cupy().asnumpy(factor.kind))
+                ],
             }
             for label, factor in zip(self.labels, self.factors)
-        }
+        } | ({"semantic_program": self.semantic_program.manifest()}
+             if self.semantic_program is not None else {})
 
     def cpu_benchmark(self, runs=5):
         offsets = _cupy().asnumpy(self.offsets)
@@ -562,3 +627,17 @@ def _coordinate_factor_positions(invocation):
             result.append((factor_index, position))
             factor_index += 1
     return result
+
+
+def _format_source_label(source):
+    if isinstance(source, (tuple, list)):
+        return ":".join(str(part) for part in source)
+    return str(source)
+
+
+class ResidentSemanticInputPlan(ResidentInputExpansionPlan):
+    """Phase 28 plan that replaces response dictionaries with named formulas."""
+
+    @classmethod
+    def compile(cls, invocation, metadata: Mapping[str, Any]):
+        return cls._compile(invocation, metadata, semantic=True)

@@ -54,6 +54,11 @@ def main() -> int:
         type=Path,
         help="also qualify Phase 27 compact-state input reconstruction graph",
     )
+    parser.add_argument(
+        "--resident-semantic-input-report",
+        type=Path,
+        help="also qualify Phase 28 named semantic CUDA input generation graph",
+    )
     parser.add_argument("--resident-replay-runs", type=int, default=5)
     parser.add_argument(
         "--diagnostic-logsum-capture",
@@ -69,10 +74,13 @@ def main() -> int:
         args.resident_schedule_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_generated_input_report:
         args.resident_generated_input_report.parent.mkdir(parents=True, exist_ok=True)
+    if args.resident_semantic_input_report:
+        args.resident_semantic_input_report.parent.mkdir(parents=True, exist_ok=True)
     resident_requested = bool(
         args.resident_replay_report
         or args.resident_schedule_report
         or args.resident_generated_input_report
+        or args.resident_semantic_input_report
     )
     if args.diagnostic_logsum_capture:
         args.diagnostic_logsum_capture.mkdir(parents=True, exist_ok=True)
@@ -639,6 +647,7 @@ def main() -> int:
         if (
             args.resident_schedule_report is not None
             or args.resident_generated_input_report is not None
+            or args.resident_semantic_input_report is not None
         ):
             from choiceforge.device_resident_runtime import DeviceResidentRuntime
 
@@ -646,8 +655,20 @@ def main() -> int:
             phase27_cpu_seconds = []
             phase27_gpu_seconds = []
             original_captured_pointers = set()
-            if args.resident_generated_input_report is not None:
-                from choiceforge.device_input_expansion import ResidentInputExpansionPlan
+            if (
+                args.resident_generated_input_report is not None
+                or args.resident_semantic_input_report is not None
+            ):
+                from choiceforge.device_input_expansion import (
+                    ResidentInputExpansionPlan,
+                    ResidentSemanticInputPlan,
+                )
+
+                plan_type = (
+                    ResidentSemanticInputPlan
+                    if args.resident_semantic_input_report is not None
+                    else ResidentInputExpansionPlan
+                )
 
                 for record in resident_records:
                     original = record["invocation"]
@@ -660,7 +681,7 @@ def main() -> int:
                             original_captured_pointers.add(
                                 int(value.__cuda_array_interface__["data"][0])
                             )
-                    plan = ResidentInputExpansionPlan.compile(
+                    plan = plan_type.compile(
                         original, record["metadata"]
                     )
                     phase27_plans.append(plan)
@@ -669,14 +690,15 @@ def main() -> int:
                 # Matched boundary: both baselines materialize the same arrays
                 # from the same compact factors. CPU timings deliberately do
                 # not include the one-time factor download or qualification.
-                cpu_by_batch = [
-                    plan.cpu_benchmark(args.resident_replay_runs)
-                    for plan in phase27_plans
-                ]
-                for repetition in range(max(1, int(args.resident_replay_runs))):
-                    phase27_cpu_seconds.append(
-                        float(sum(values[repetition] for values in cpu_by_batch))
-                    )
+                if args.resident_semantic_input_report is None:
+                    cpu_by_batch = [
+                        plan.cpu_benchmark(args.resident_replay_runs)
+                        for plan in phase27_plans
+                    ]
+                    for repetition in range(max(1, int(args.resident_replay_runs))):
+                        phase27_cpu_seconds.append(
+                            float(sum(values[repetition] for values in cpu_by_batch))
+                        )
                 expansion_warmup_runs = 5
                 for _ in range(expansion_warmup_runs):
                     for plan in phase27_plans:
@@ -766,6 +788,13 @@ def main() -> int:
                         register_asset(
                             f"input_plan_{number}_{factor_number}_{label}", value
                         )
+                if plan.semantic_program is not None:
+                    for label, value in (
+                        ("semantic_start", plan.semantic_program.slot_start),
+                        ("semantic_end", plan.semantic_program.slot_end),
+                        ("semantic_parking_rates", plan.semantic_program.parking_rates),
+                    ):
+                        register_asset(f"input_plan_{number}_{label}", value)
             register_asset("schedule_alternatives", resident_scheduler.alternative_values)
             runtime.seal_ingress()
 
@@ -860,7 +889,10 @@ def main() -> int:
                 runtime.synchronize()
                 return time.perf_counter() - started, dict(latest)
 
-            stage_phase = 27 if phase27_plans else 26
+            stage_phase = (
+                28 if phase27_plans and phase27_plans[0].semantic_program is not None
+                else 27 if phase27_plans else 26
+            )
             execute_resident_stage(f"phase{stage_phase}.warmup", False)
             phase26_replays = []
             for repetition in range(max(1, int(args.resident_replay_runs))):
@@ -956,12 +988,14 @@ def main() -> int:
                             np.median(phase27_gpu_seconds)
                         ),
                         "expansion_cpu_seconds": phase27_cpu_seconds,
-                        "expansion_cpu_median_seconds": float(
-                            np.median(phase27_cpu_seconds)
+                        "expansion_cpu_median_seconds": (
+                            float(np.median(phase27_cpu_seconds))
+                            if phase27_cpu_seconds else None
                         ),
                         "expansion_speedup_cpu_over_gpu": (
                             float(np.median(phase27_cpu_seconds))
                             / float(np.median(phase27_gpu_seconds))
+                            if phase27_cpu_seconds else None
                         ),
                         "input_classification": [
                             plan.classification() for plan in phase27_plans
@@ -1005,11 +1039,36 @@ def main() -> int:
                         ),
                         "gpu_expansion_faster_than_cpu": (
                             phase26_report["expansion_speedup_cpu_over_gpu"] > 1.0
+                            if phase26_report["expansion_speedup_cpu_over_gpu"] is not None
+                            else True
                         ),
                     }
                 )
+                if stage_phase == 28:
+                    manifests = [
+                        plan.semantic_program.manifest() for plan in phase27_plans
+                    ]
+                    phase26_report["semantic_input_programs"] = manifests
+                    phase26_report["input_contract"] = (
+                        "every chooser-response input is regenerated by a named CUDA "
+                        "formula from compact chooser/alternative state and resident raw skims; "
+                        "anonymous response dictionaries are absent"
+                    )
+                    phase26_report["proof_gates"].update(
+                        {
+                            "all_response_columns_semantically_generated": all(
+                                item["generated_float_columns"]
+                                + item["generated_int_columns"] > 0
+                                for item in manifests
+                            ),
+                            "zero_anonymous_response_patterns": all(
+                                item["anonymous_response_pattern_columns"] == 0
+                                for item in manifests
+                            ),
+                        }
+                    )
             resident_stage_report_path = (
-                args.resident_generated_input_report
+                (args.resident_semantic_input_report or args.resident_generated_input_report)
                 if phase27_plans
                 else args.resident_schedule_report
             )

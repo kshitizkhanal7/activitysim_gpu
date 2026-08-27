@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 27 compact-input-to-calendar result does and does not prove;
+- what the completed Phase 28 semantic-input-to-calendar result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -132,6 +132,19 @@ does the missing reconstruction. All 15 full replays keep every logsum bit and
 all 81,983 final times unchanged. ActivitySim still creates the dense arrays
 once during qualification so the compact form can be discovered and checked;
 removing that cold-start dependency is the next phase.
+
+Phase 28 replaces the remaining anonymous response dictionaries with named
+rules. The GPU now calculates parking cost from a tour rate and duration, and
+calculates 14 mode-availability fields from raw resident road/transit skims and
+auto ownership. Three public processes and 15 complete replays finish at a
+middle **0.211799 seconds**, with every logsum bit and every final tour time
+unchanged. Compact state falls again to 20.26 MB, a **24.849-times reduction**
+from the removed rows. Five deliberately changed synthetic populations and
+skim sets exercise all 15 rules across 8,000 rows with exact, different
+outputs. The stronger meaning costs time: the full graph is 3.15% slower than
+Phase 27 because it computes real skim rules instead of looking up remembered
+patterns. ActivitySim still supplies dense rows before sealing as a
+qualification answer key, so cold raw-table generation remains unfinished.
 
 ## 1. What is travel demand modeling?
 
@@ -3335,3 +3348,97 @@ exponential, summation, normalization, and search rule would generalize that
 guarantee to changed scenarios. The connected GPU coverage must also expand
 from mandatory tours to non-mandatory tours, joint tours, destinations, trips,
 and the rest of a complete ActivitySim workflow.
+
+## 76. Phase 28: replace remembered patterns with named rules
+
+Phase 27's response dictionaries were like compact answer sheets. They were
+exact, but they said, "tour pattern 7 produces this list" rather than saying
+why the list had those values. That is safe for a fixed qualified run, but a
+new road condition should cause a new answer because of a rule, not because a
+new answer sheet happened to be prepared.
+
+Phase 28 replaces every one of those special columns with a named rule:
+
+- parking cost equals a tour's hourly rate times the tested duration;
+- toll-mode availability checks whether the matching toll skims are positive;
+- walk-transit availability checks the matching outbound and return transit
+  skim values; and
+- drive-transit availability makes the same checks and also requires a car.
+
+There are 15 rules: one parking-cost rule and 14 availability rules. The
+compiler carries each source's name from the model recipe into the GPU plan.
+If it meets an unexplained response column, it stops. It does not quietly keep
+the old dictionary.
+
+## 77. Why parking cost needed a small math detective story
+
+ActivitySim multiplies the parking rate and duration with a high-precision
+number, then stores a 32-bit result. Suppose you only see a rounded answer such
+as 1.23. Dividing 1.23 by one duration may not recover the original rate well
+enough to reproduce a different duration's last bit.
+
+The compiler therefore finds an **interval** of possible high-precision rates
+for every observed rounded cost. It intersects all those intervals and chooses
+a rate that regenerates every observed 32-bit result exactly. If no such rate
+exists, compilation fails.
+
+This is stronger than guessing, but it is still a qualification technique. A
+future production loader should read the original unrounded parking rate from
+the land-use table and combine it with the tour's free-parking fact directly.
+
+## 78. How we tested that the rules are not just memorizing one run
+
+The public 50,000-household benchmark is essential, but repeating the same
+input cannot by itself show that a formula responds correctly to change.
+
+We created five extra test worlds. Each has different people, car ownership,
+parking rates, possible times, zones, and raw road/transit numbers. Some skim
+values are positive, some zero, and some negative so availability rules must
+change. A separate readable NumPy calculation makes the answer key.
+
+Across 8,000 rows, the CUDA generator matches every bit. All 15 rules are
+actually exercised, no response dictionary remains, and the five output
+hashes are different. This proves the input generator reacts to changed
+ingredients. It does **not** claim that five complete new ActivitySim policy
+scenarios have been qualified from beginning to end.
+
+## 79. The Phase 28 result and tradeoff
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| Complete semantic-input-to-calendar graph | 0.211799 s | 0.210766 s | 0.216390 s | **0.211799 s** |
+| Named input generation | 0.008788 s | 0.008805 s | 0.008802 s | **0.008802 s** |
+| Checkpoint-to-result ActivitySim run | 31.853 s | 32.148 s | 31.170 s | **31.853 s** |
+
+The original captured arrays occupy 503,411,584 bytes. Phase 28 keeps
+20,258,882 bytes of compact input state, a **24.849-times reduction**. That is
+19.102% less compact state than Phase 27, and 5,439,864 bytes of response
+dictionaries are gone.
+
+The semantic graph is not faster than the dictionary graph. Its middle full
+time is 3.147% above Phase 27 and 5.450% above Phase 26. That is expected: a
+dictionary lookup is cheaper than gathering many real transit skims and
+re-evaluating availability. The gain is stronger generality, smaller state,
+and a clear path to new scenarios, not a new whole-model speedup claim.
+
+All 15 public replays still process 1,210,124 mode-logsum rows and publish all
+81,983 mandatory-tour time labels exactly. No modeled data crosses the CPU/GPU
+boundary after sealing, and no modeled CPU fallback runs.
+
+## 80. What Phase 28 still does not finish
+
+The timed graph no longer needs dense input rows or response dictionaries.
+However, ActivitySim still creates dense rows before sealing so the compiler
+can discover and check constant, per-tour, and time-slot facts. The parking
+rate is recovered from qualified outputs rather than loaded from raw land use.
+
+The next phase should build those compact facts directly from resident
+household, person, tour, land-use, and alternative tables. ActivitySim's dense
+rows should become a test-only answer key. That would remove the cold-start
+dense-row dependency, not merely the timed dependency.
+
+After that, the other major correctness frontier remains: replace the frozen
+57-case boundary map with a shared Sharrow/CUDA definition for exponential,
+addition order, normalization, and probability search. Coverage can then grow
+to non-mandatory and joint tours, destinations, trips, and complete model
+output.

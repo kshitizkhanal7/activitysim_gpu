@@ -1,0 +1,63 @@
+{
+  "phase": 28,
+  "scope": "named semantic CUDA input generation through the complete sealed mandatory-tour raw-skim-to-timetable graph",
+  "workload": {
+    "households": 50000,
+    "mode_logsum_rows": 1210124,
+    "scheduled_tours": 81983,
+    "programs": 6
+  },
+  "complete_graph_process_medians_seconds": [
+    0.21179920004215091,
+    0.21076579997316003,
+    0.21639029996003956
+  ],
+  "median_of_process_medians_seconds": 0.21179920004215091,
+  "minimum_complete_graph_seconds": 0.2091736999573186,
+  "semantic_generation_process_medians_seconds": [
+    0.008787599974311888,
+    0.008804699988104403,
+    0.00880209996830672
+  ],
+  "semantic_generation_median_seconds": 0.00880209996830672,
+  "cold_activitysim_process_seconds": [
+    31.853065199917182,
+    32.14810180000495,
+    31.16970719990786
+  ],
+  "cold_activitysim_median_seconds": 31.853065199917182,
+  "compact_input_state_bytes": 20258882,
+  "removed_captured_row_bytes": 503411584,
+  "compact_state_reduction_ratio": 24.848932137518744,
+  "removed_response_dictionary_bytes": 5439864,
+  "phase28_overhead_vs_phase27_percent": 3.1470186983681536,
+  "phase28_overhead_vs_phase26_percent": 5.450223870736792,
+  "phase28_compact_bytes_reduction_vs_phase27_percent": 19.102069671736732,
+  "qualification": {
+    "full_public_process_replays": 15,
+    "changed_scenarios": 5,
+    "changed_scenario_rows": 8000
+  },
+  "proof_gates": {
+    "three_independent_processes": true,
+    "all_process_gates_passed": true,
+    "all_live_gates_passed": true,
+    "all_changed_scenario_gates_passed": true,
+    "consistent_compact_state": true,
+    "all_fifteen_formulas_present": true,
+    "zero_anonymous_response_patterns": true,
+    "all_logsums_and_schedules_exact": true,
+    "no_postseal_host_traffic_or_cpu_fallback": true
+  },
+  "source_hashes": {
+    "benchmark-results\\phase28-semantic-input-1.json": "a4cd1875cbc1436273d2c472b9e2156b26c7fcbac3106e10083c9097f82302fc",
+    "benchmark-results\\phase28-semantic-input-2.json": "ff7edbe75d4be5fe4a2164ddab340c75955dbf086cd49ffa39939ffc1b87e597",
+    "benchmark-results\\phase28-semantic-input-3.json": "5c1ff994462c161cccc30f64c00ae486e941226bf68b5fdb1c8f8c4bfffb05a2",
+    "benchmark-results\\phase28-live-1.json": "43b58af54dbb4f62dbfd564c07c640ca170b802fd55ff0b55f916f0d3047596f",
+    "benchmark-results\\phase28-live-2.json": "125d394f86621f6ad207a46229dc43e6ec3489e34514287baad07566d7c65723",
+    "benchmark-results\\phase28-live-3.json": "a01f8f3a07c9d700515ca4078e0a8a5fd2deca9980571493497ebb9db3ea748c",
+    "benchmark-results\\phase28-changed-scenario-qualification.json": "4573c912cf4e12c9166b144aa286fb03e10241082bb035e4cb09922ecc5f33f8",
+    "benchmark-results\\phase27-generated-input-summary.json": "17e8232f8be59200a75208222d4838f7c9ad5c9488f9d6f4f41ec0ed6cf05a27",
+    "benchmark-results\\phase26-resident-schedule-summary.json": "e0db073bcad1252e3f128ae48c7ecb62d216eb630e9390eea144408052a26ecd"
+  }
+}

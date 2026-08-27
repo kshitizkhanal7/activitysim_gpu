@@ -170,6 +170,9 @@ class ResidentStrictCudaInvocation:
     shared_skim_data_bytes: int
     float_input_sources: tuple[tuple[str, ...], ...]
     int_input_sources: tuple[tuple[str, ...], ...]
+    skim_input_sources: tuple[tuple[str, ...], ...]
+    skim_input_ranks: tuple[int, ...]
+    skim_input_groups: tuple[int, ...]
 
     def execute(self):
         """Launch into the invocation-owned output and keep it on CUDA."""
@@ -504,6 +507,18 @@ def evaluate_strict_cuda(
             int_input_sources=tuple(
                 binding.source
                 for binding in _unique_storage_bindings(bindings, "int64")
+            ),
+            skim_input_sources=tuple(
+                binding.source for binding in bindings
+                if binding.storage_kind == "skim"
+            ),
+            skim_input_ranks=tuple(
+                binding.skim_rank for binding in bindings
+                if binding.storage_kind == "skim"
+            ),
+            skim_input_groups=tuple(
+                binding.skim_group for binding in bindings
+                if binding.storage_kind == "skim"
             ),
         )
         cp.cuda.Stream.null.synchronize()

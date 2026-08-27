@@ -513,3 +513,27 @@ the next boundary.
 
 See the [Phase 27 technical report](docs/phase27-compact-input-reconstruction.md)
 and the [hash-chained qualification](benchmark-results/phase27-generated-input-summary.json).
+
+## Phase 28 named semantic input generation
+
+Phase 28 replaces all anonymous chooser-response dictionaries with declared
+CUDA formulas. `daily_parking_cost` is generated from a compact per-tour rate
+and exact duration; 14 mode-availability columns are generated directly from
+resident raw skims, compact coordinates, and auto ownership. Unknown response
+sources fail closed.
+
+Three fresh 50,000-household processes and 15 measured full replays produced a
+0.211799-second median complete graph. All 1,210,124 logsum rows were
+bit-identical and all 81,983 final TDDs exact. Compact state is 20,258,882
+bytes—a 24.849x reduction from captured rows and 19.102% smaller than Phase 27.
+Five changed synthetic populations/skims exercised all 15 formulas across
+8,000 additional rows with exact results and distinct hashes.
+
+The semantic graph is 3.147% slower than Phase 27 because it performs real raw
+skim gathers instead of dictionary lookups. ActivitySim dense inputs are still
+used before sealing to qualify non-response factors and recover parking rates;
+direct raw-table production remains the next boundary.
+
+See the [Phase 28 technical report](docs/phase28-semantic-input-generation.md),
+the [hash-chained public qualification](benchmark-results/phase28-semantic-input-summary.json),
+and the [changed-scenario qualification](benchmark-results/phase28-changed-scenario-qualification.json).

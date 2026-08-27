@@ -1,0 +1,75 @@
+{
+  "phase": 28,
+  "scope": "five independently generated changed populations, parking rates, alternative times, zone coordinates, and raw skim cubes",
+  "scenarios": [
+    {
+      "seed": 2801,
+      "rows": 1600,
+      "exact": true,
+      "generated_float_columns": 1,
+      "generated_int_columns": 13,
+      "anonymous_response_pattern_columns": 0,
+      "expected_sha256": "77548427940316e0b873411d4a8e74ecee890005c8a6e0ccf3a2b92d82ef068e"
+    },
+    {
+      "seed": 2802,
+      "rows": 1600,
+      "exact": true,
+      "generated_float_columns": 1,
+      "generated_int_columns": 14,
+      "anonymous_response_pattern_columns": 0,
+      "expected_sha256": "7b2e9afc20e3d6bd8f5e19c1ca8c347026c4fdea0a17c72c8567314708c90d9f"
+    },
+    {
+      "seed": 2803,
+      "rows": 1600,
+      "exact": true,
+      "generated_float_columns": 1,
+      "generated_int_columns": 14,
+      "anonymous_response_pattern_columns": 0,
+      "expected_sha256": "8e053ae0d116fbaf306c4f5b9dd8b03fdb546682be2fd4a066531f868b27c919"
+    },
+    {
+      "seed": 2804,
+      "rows": 1600,
+      "exact": true,
+      "generated_float_columns": 1,
+      "generated_int_columns": 14,
+      "anonymous_response_pattern_columns": 0,
+      "expected_sha256": "14dfb9549437de991273ed6171331d6dd8b6776aecf71013b2b7be148de97d01"
+    },
+    {
+      "seed": 2805,
+      "rows": 1600,
+      "exact": true,
+      "generated_float_columns": 1,
+      "generated_int_columns": 14,
+      "anonymous_response_pattern_columns": 0,
+      "expected_sha256": "2591a93a588e4dcda8d502fce4b06fa993e7310a6619f3800e3579c7aae0fc97"
+    }
+  ],
+  "covered_semantic_sources": [
+    "column:daily_parking_cost",
+    "column:drive_ferry_available",
+    "column:walk_ferry_available",
+    "name:drive_commuter_available",
+    "name:drive_express_available",
+    "name:drive_heavyrail_available",
+    "name:drive_local_available",
+    "name:drive_lrf_available",
+    "name:hov2toll_available",
+    "name:sovtoll_available",
+    "name:walk_commuter_available",
+    "name:walk_express_available",
+    "name:walk_heavyrail_available",
+    "name:walk_local_available",
+    "name:walk_lrf_available"
+  ],
+  "proof_gates": {
+    "five_changed_scenarios": true,
+    "all_scenarios_bit_exact": true,
+    "no_anonymous_patterns": true,
+    "all_fifteen_formulas_exercised": true,
+    "different_scenario_outputs": true
+  }
+}

@@ -7,6 +7,7 @@ import pytest
 cp = pytest.importorskip("cupy")
 
 from choiceforge.device_input_expansion import ResidentInputExpansionPlan
+from choiceforge.semantic_input_generation import _infer_float32_multiplier
 
 
 @dataclass(frozen=True)
@@ -67,7 +68,11 @@ def test_compact_plan_reconstructs_every_array_bit_exactly():
     assert plan.compact_bytes < (
         invocation.dense_input_bytes + invocation.skim_coordinate_bytes
     )
-    assert plan.classification()["float_inputs"] == {
+    classification = plan.classification()["float_inputs"]
+    assert {key: classification[key] for key in (
+        "constant_columns", "chooser_columns", "slot_columns",
+        "chooser_slot_pattern_columns", "target_bytes", "compact_bytes",
+    )} == {
         "constant_columns": 1,
         "chooser_columns": 1,
         "slot_columns": 1,
@@ -75,9 +80,22 @@ def test_compact_plan_reconstructs_every_array_bit_exactly():
         "target_bytes": 1200,
         "compact_bytes": 239,
     }
+    assert classification["columns"] == [
+        {"column": 0, "source": "column_0", "factor": "constant"},
+        {"column": 1, "source": "column_1", "factor": "chooser"},
+        {"column": 2, "source": "column_2", "factor": "slot"},
+    ]
 
 
 def test_compact_plan_fails_closed_on_row_specific_dense_column():
     invocation, metadata = _fixture(nonfactorable=True)
     with pytest.raises(ValueError, match="neither constant, chooser-factored, nor slot-factored"):
         ResidentInputExpansionPlan.compile(invocation, metadata)
+
+
+def test_semantic_rate_solver_reproduces_double_then_float_rounding():
+    duration = np.arange(0, 25, dtype=np.int64)
+    expected = (np.float64(0.123456789123) * duration).astype(np.float32)
+    recovered = _infer_float32_multiplier(expected, duration)
+    actual = (recovered * duration).astype(np.float32)
+    assert np.array_equal(actual.view(np.uint32), expected.view(np.uint32))
