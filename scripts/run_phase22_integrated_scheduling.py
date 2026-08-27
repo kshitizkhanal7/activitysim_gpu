@@ -74,6 +74,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--native-skim-store",
+        type=Path,
+        help=(
+            "Phase 31: load all native ABI skim cubes from a versioned, "
+            "byte-verified artifact and bypass Sharrow dataset materialization"
+        ),
+    )
+    parser.add_argument(
         "--qualification-logsum-hash-report",
         type=Path,
         help=(
@@ -88,6 +96,8 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.native_skim_store and not args.native_abi_bootstrap_report:
+        parser.error("--native-skim-store requires --native-abi-bootstrap-report")
     args.output.mkdir(parents=True, exist_ok=True)
     args.kernel_reports.mkdir(parents=True, exist_ok=True)
     if args.resident_replay_report:
@@ -131,6 +141,7 @@ def main() -> int:
     )
 
     from activitysim.abm.models.util import vectorize_tour_scheduling as vts
+    from activitysim.core import los as activitysim_los
     from activitysim.core import simulate
     from activitysim.core.workflow.runner import Runner
     from choiceforge import activitysim_scheduling
@@ -142,8 +153,19 @@ def main() -> int:
     from choiceforge.nested_logit import mtc21_nested_logsums_cuda
     from choiceforge.cuda_backend import _cupy
 
-    scheduler = IntegratedGpuMandatoryScheduler(args.inputs)
+    scheduler_started = time.perf_counter()
+    scheduler = IntegratedGpuMandatoryScheduler(
+        args.inputs,
+        # Phase 31 must not recreate Sharrow merely to adjudicate the 57
+        # already-qualified scheduling ambiguities.  The sparse reference map
+        # is derived from the frozen public proof artifact and stays on CUDA.
+        device_boundary_reference=bool(args.native_skim_store),
+    )
+    scheduler_initialization_seconds = time.perf_counter() - scheduler_started
     original_compute = vts._compute_logsums
+    original_skims_for_logsums = vts.skims_for_logsums
+    original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
+    original_network_los_load_data = activitysim_los.Network_LOS.load_data
     original_runner_call = Runner.__call__
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
@@ -152,6 +174,10 @@ def main() -> int:
     current_raw_source = None
     current_native_manifest = None
     native_manifests = []
+    native_skim_store = None
+    native_skim_stub_calls = 0
+    native_network_info_bypass_calls = 0
+    native_network_load_bypass_calls = 0
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or args.native_abi_bootstrap_report:
@@ -228,7 +254,7 @@ def main() -> int:
             diagnostic_cache_host[owners, slots] = raw_host_logsums
 
     def gpu_compute_logsums(*compute_args, **compute_kwargs):
-        nonlocal current_raw_source, current_native_manifest
+        nonlocal current_raw_source, current_native_manifest, native_skim_store
         original_simple = simulate.simple_simulate_logsums
 
         if args.native_abi_bootstrap_report:
@@ -246,6 +272,7 @@ def main() -> int:
                 NativeSkimCube,
                 compile_native_strict_abi,
             )
+            from choiceforge.native_skim_store import NativeSkimStore
             from choiceforge.raw_table_input_generation import ResidentRawTableInputPlan
             from choiceforge.sharrow_ir import specification_ir
 
@@ -274,6 +301,34 @@ def main() -> int:
             scalar_environment.update(coefficients)
 
             def cube_loader(source):
+                nonlocal native_skim_store
+                if args.native_skim_store:
+                    if native_skim_store is None:
+                        live_zone_ids = np.asarray(
+                            raw_state.get_dataframe("land_use").index,
+                            dtype=np.int64,
+                        )
+                        if np.array_equal(
+                            live_zone_ids,
+                            np.arange(live_zone_ids.size, dtype=np.int64),
+                        ):
+                            # ActivitySim recodes the public MTC TAZ identity
+                            # 1..1454 to zero-based row positions in its saved
+                            # pipeline.  Reconstitute that proven positional
+                            # mapping before checking the store's source-ID hash.
+                            native_zone_ids = live_zone_ids + 1
+                        else:
+                            native_zone_ids = live_zone_ids
+                        native_skim_store = NativeSkimStore.load(
+                            args.native_skim_store,
+                            document,
+                            native_zone_ids,
+                            budget_bytes=8 * 1024**3,
+                        )
+                    data, dest_count, time_count, rank = native_skim_store.cube(
+                        source
+                    )
+                    return NativeSkimCube(data, dest_count, time_count, rank)
                 _, direction, key = source
                 wrapper_name = "od_skims" if direction == "od_skims_reverse" else direction
                 if wrapper_name not in raw_skims:
@@ -645,7 +700,49 @@ def main() -> int:
             memory_sidecar_process=memory_sidecar_process,
         )
 
+    def native_skims_for_logsums(
+        state, tour_purpose, model_settings, trace_label
+    ):
+        nonlocal native_skim_stub_calls
+        native_skim_stub_calls += 1
+        destination = model_settings.DESTINATION_FOR_TOUR_PURPOSE
+        if isinstance(destination, dict):
+            destination = destination.get(tour_purpose)
+        if not isinstance(destination, str):
+            raise TypeError(
+                f"Phase 31 has no destination field for purpose {tour_purpose!r}"
+            )
+        return {
+            "choiceforge_native_skim_store": True,
+            "orig_col_name": "home_zone_id",
+            "dest_col_name": destination,
+        }
+
+    def native_network_los_load_data(self):
+        nonlocal native_network_load_bypass_calls
+        if self.zone_system != activitysim_los.ONE_ZONE:
+            raise RuntimeError("Phase 31 native skim bypass requires a one-zone model")
+        native_network_load_bypass_calls += 1
+        # Period labeling below needs only the already validated network
+        # settings.  The native CUDA store owns all skim values for this model
+        # step, so constructing an ActivitySim SkimDataset would be redundant.
+        self.skim_dicts.clear()
+
+    def native_network_los_load_skim_info(self):
+        nonlocal native_network_info_bypass_calls
+        if self.zone_system != activitysim_los.ONE_ZONE:
+            raise RuntimeError("Phase 31 native skim bypass requires a one-zone model")
+        native_network_info_bypass_calls += 1
+        # Network_LOS.__init__ normally opens every OMX file here merely to
+        # inventory its matrices.  The signed native-store manifest is the
+        # authoritative inventory for Phase 31, so keep the legacy map empty.
+        self.skims_info.clear()
+
     vts._compute_logsums = gpu_compute_logsums
+    if args.native_skim_store:
+        vts.skims_for_logsums = native_skims_for_logsums
+        activitysim_los.Network_LOS.load_skim_info = native_network_los_load_skim_info
+        activitysim_los.Network_LOS.load_data = native_network_los_load_data
     # The public MTC configuration selects ActivitySim's named choice backend.
     # Patch both dispatch targets so Phase 22 remains correct if a configuration
     # switches to the ChoiceForge backend without changing this runner.
@@ -682,6 +779,9 @@ def main() -> int:
         elapsed = time.perf_counter() - started
         sys.argv = old_argv
         vts._compute_logsums = original_compute
+        vts.skims_for_logsums = original_skims_for_logsums
+        activitysim_los.Network_LOS.load_skim_info = original_network_los_load_skim_info
+        activitysim_los.Network_LOS.load_data = original_network_los_load_data
         vts.interaction_sample_simulate = original_activitysim_choice
         activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
         Runner.__call__ = original_runner_call
@@ -1140,7 +1240,8 @@ def main() -> int:
                 return time.perf_counter() - started, dict(latest)
 
             stage_phase = (
-                30 if args.native_abi_bootstrap_report is not None
+                31 if args.native_skim_store is not None
+                else 30 if args.native_abi_bootstrap_report is not None
                 else 29 if args.resident_raw_table_input_report is not None
                 else 28 if phase27_plans and phase27_plans[0].semantic_program is not None
                 else 27 if phase27_plans else 26
@@ -1296,7 +1397,7 @@ def main() -> int:
                         ),
                     }
                 )
-                if stage_phase in {28, 29, 30}:
+                if stage_phase in {28, 29, 30, 31}:
                     manifests = [
                         plan.semantic_program.manifest() for plan in phase27_plans
                     ]
@@ -1319,7 +1420,7 @@ def main() -> int:
                             ),
                         }
                     )
-                if stage_phase in {29, 30}:
+                if stage_phase in {29, 30, 31}:
                     raw_manifests = [plan.raw_manifest() for plan in phase27_plans]
                     phase26_report["raw_table_input_programs"] = raw_manifests
                     phase26_report["input_contract"] = (
@@ -1348,7 +1449,7 @@ def main() -> int:
                             ),
                         }
                     )
-                if stage_phase == 30:
+                if stage_phase in {30, 31}:
                     phase26_report["native_abi_programs"] = native_manifests
                     phase26_report["native_bootstrap_seconds"] = float(
                         sum(item["bootstrap_seconds"] for item in native_manifests)
@@ -1404,6 +1505,39 @@ def main() -> int:
                             ),
                         }
                     )
+                if stage_phase == 31:
+                    if native_skim_store is None:
+                        raise RuntimeError("Phase 31 native skim store was never loaded")
+                    store_telemetry = native_skim_store.telemetry_dict()
+                    phase26_report["native_skim_store"] = store_telemetry
+                    phase26_report["input_contract"] = (
+                        "a versioned, byte-verified 149-cube native artifact supplies "
+                        "all 209 logical skim bindings directly to CUDA; ActivitySim's "
+                        "6.452 GB Sharrow dataset is never materialized"
+                    )
+                    phase26_report["proof_gates"].update(
+                        {
+                            "native_store_all_payload_bytes_verified": (
+                                store_telemetry["verified_payload_bytes"]
+                                == store_telemetry["payload_bytes"]
+                            ),
+                            "native_store_has_209_logical_bindings": (
+                                store_telemetry["logical_bindings"] == 209
+                            ),
+                            "native_store_has_149_physical_cubes": (
+                                store_telemetry["physical_cubes"] == 149
+                            ),
+                            "all_six_sharrow_skim_requests_bypassed": (
+                                native_skim_stub_calls == 6
+                            ),
+                            "activitysim_network_skim_inventory_bypassed_once": (
+                                native_network_info_bypass_calls == 1
+                            ),
+                            "activitysim_network_data_load_bypassed_once": (
+                                native_network_load_bypass_calls == 1
+                            ),
+                        }
+                    )
             resident_stage_report_path = (
                 (
                     args.native_abi_bootstrap_report
@@ -1435,7 +1569,7 @@ def main() -> int:
                         }
                     )
                 hash_document = {
-                    "phase": 30,
+                    "phase": 31 if args.native_skim_store else 30,
                     "scope": (
                         "out-of-band exact qualification only; these deliberate "
                         "device-to-host copies are not part of any timed resident run"
@@ -1506,6 +1640,22 @@ def main() -> int:
         "kernel_reports": [path.name for path in sorted(args.kernel_reports.glob("*.json"))],
         "native_abi_bootstrap_used": bool(args.native_abi_bootstrap_report),
         "native_abi_programs": len(native_manifests),
+        "native_skim_store_used": bool(args.native_skim_store),
+        "scheduler_initialization_seconds": scheduler_initialization_seconds,
+        "cold_component_seconds_including_scheduler_initialization": (
+            elapsed + scheduler_initialization_seconds
+        ),
+        "native_skim_stub_calls": int(native_skim_stub_calls),
+        "native_network_info_bypass_calls": int(native_network_info_bypass_calls),
+        "native_network_load_bypass_calls": int(native_network_load_bypass_calls),
+        "native_skim_store_load_seconds": (
+            native_skim_store.telemetry.total_load_seconds
+            if native_skim_store is not None else None
+        ),
+        "device_boundary_map_entries": int(scheduler.boundary_map_entries),
+        "device_boundary_adjudications": int(
+            sum(item.device_boundary_adjudications for item in scheduler.telemetry)
+        ),
     }
     report["proof_gates"] = {
         "activitysim_completed": report["exit_code"] == 0,
@@ -1528,6 +1678,32 @@ def main() -> int:
         ),
         "checkpoint_written": checkpoint is not None,
     }
+    if args.native_skim_store:
+        report["proof_gates"].update(
+            {
+                "sharrow_skim_materialization_bypassed": native_skim_stub_calls == 6,
+                "activitysim_network_skim_inventory_bypassed": (
+                    native_network_info_bypass_calls == 1
+                ),
+                "activitysim_network_data_load_bypassed": (
+                    native_network_load_bypass_calls == 1
+                ),
+                "native_skim_store_loaded": native_skim_store is not None,
+                "all_57_boundary_choices_adjudicated_on_device": (
+                    scheduler.boundary_map_entries >= 57
+                    and sum(
+                        item.device_boundary_adjudications
+                        for item in scheduler.telemetry
+                    ) == 57
+                ),
+                "zero_boundary_logsum_download": (
+                    sum(
+                        item.boundary_logsum_download_bytes
+                        for item in scheduler.telemetry
+                    ) == 0
+                ),
+            }
+        )
     args.report.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     resident_ok = (

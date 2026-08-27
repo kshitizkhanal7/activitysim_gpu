@@ -1,0 +1,111 @@
+{
+  "phase": 31,
+  "scope": "persistent, byte-verified native skim artifact through exact public MTC mandatory scheduling, with no Sharrow skim materialization",
+  "workload": {
+    "households": 50000,
+    "mode_logsum_rows": 1210124,
+    "scheduled_tours": 81983,
+    "programs": 6,
+    "terms_per_program": 315,
+    "alternatives": 21,
+    "logical_skim_bindings": 209,
+    "physical_skim_cubes": 149,
+    "zones": 1454
+  },
+  "cold_activitysim_process_seconds": [
+    26.434293699916452,
+    26.57004650007002,
+    26.35010030004196
+  ],
+  "cold_activitysim_median_seconds": 26.434293699916452,
+  "scheduler_initialization_process_seconds": [
+    0.6511020998004824,
+    0.596717500127852,
+    0.5830117000732571
+  ],
+  "scheduler_initialization_median_seconds": 0.596717500127852,
+  "cold_component_with_scheduler_process_seconds": [
+    27.085395799716935,
+    27.166764000197873,
+    26.933112000115216
+  ],
+  "cold_component_with_scheduler_median_seconds": 27.085395799716935,
+  "cold_component_seconds_saved_vs_phase30": 3.6539775002747774,
+  "cold_component_percent_reduction_vs_phase30": 11.886961600078438,
+  "cold_component_speedup_vs_phase30": 1.134905818888309,
+  "native_store_load_process_seconds": [
+    4.229012500029057,
+    4.04257299983874,
+    4.319566800026223
+  ],
+  "native_store_load_median_seconds": 4.229012500029057,
+  "verified_payload_read_process_seconds": [
+    4.117254498647526,
+    3.9303371019195765,
+    4.211100300308317
+  ],
+  "verified_payload_read_median_seconds": 4.117254498647526,
+  "overlapped_device_upload_process_seconds": [
+    0.08032920071855187,
+    0.07375970110297203,
+    0.057026300113648176
+  ],
+  "overlapped_device_upload_median_seconds": 0.07375970110297203,
+  "resident_graph_process_medians_seconds": [
+    0.21757779992185533,
+    0.21780109987594187,
+    0.2247289998922497
+  ],
+  "resident_graph_median_seconds": 0.21780109987594187,
+  "resident_percent_change_vs_phase30": -3.9306205324189603,
+  "artifact": {
+    "format": "choiceforge.native-skim-store.v1",
+    "payload_bytes": 6198588112,
+    "payload_sha256": "67c689cf833357fb61556d6cb96f4adf2a1135c6207ee702cb04392e5aa2539a",
+    "skim_contract_sha256": "63fa6ba86dbaeefc31929829660354eab99713f72e40bdccf07489ae07f4f212",
+    "source_omx_sha256": "04bddb2dd6b829a2ce25a27369d3276143fa9a354989ebd30ed9bba92f8e9bfb",
+    "source_land_use_sha256": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203"
+  },
+  "qualification": {
+    "full_public_resident_replays": 15,
+    "aggregate_logsum_sha256": "41ea4ab90d0b47595a6ad59b1598a050a09a01db5d775dd3d1ad9f5be79e1322",
+    "device_boundary_adjudications_per_process": [
+      57,
+      57,
+      57
+    ],
+    "boundary_download_bytes_per_process": [
+      0,
+      0,
+      0
+    ]
+  },
+  "proof_gates": {
+    "three_independent_full_processes": true,
+    "all_live_and_resident_gates_passed": true,
+    "all_15_resident_replays_bit_exact": true,
+    "all_live_outputs_exact": true,
+    "every_payload_byte_verified_in_every_process": true,
+    "complete_deduplicated_skim_contract": true,
+    "stable_store_and_contract_hashes": true,
+    "sharrow_and_omx_inventory_never_materialized": true,
+    "all_boundary_choices_adjudicated_on_device": true,
+    "phase31_phase30_native_and_legacy_logsums_byte_identical": true,
+    "immutable_store_build_gates_passed": true,
+    "wins_every_cold_process_against_phase30_median": true,
+    "phase30_proof_remains_green": true
+  },
+  "source_hashes": {
+    "benchmark-results\\phase31-resident-1.json": "19d29aa2a85ccad45f82aa3b8c8a8e4884d99405a990c1bd4e9db96bdc74c9a8",
+    "benchmark-results\\phase31-resident-2.json": "c795cbc82c41ffcba3c4983eb3592468b8dc390044076cf7e98ef73b797c20c6",
+    "benchmark-results\\phase31-resident-3.json": "a69fa82260103f43ca3f33f76f213e9a8140480b97bbe7f7bf06b841c58e79d1",
+    "benchmark-results\\phase31-live-1.json": "147db6add744b62fdd31ccfa6682708506470fafe2113bdc2128f57c7b2b913c",
+    "benchmark-results\\phase31-live-2.json": "392da536cc55c8d5c81dc05bbaf3677041599d31efb6395be57cc699d9f38601",
+    "benchmark-results\\phase31-live-3.json": "9c8381d7e95eb33c9358787baf571de16dc5af8a6ff417a49be9f6c7544e10f3",
+    "benchmark-results\\phase31-native-skim-store-build.json": "42586d8bd3b0e8910d815cf02dd5bf6fa9928ff5b74ccd0a54ffd5ba99c800f0",
+    "benchmark-results\\phase31-native-logsum-hashes.json": "18580906f47b7c4e317794c20098f4e7c935f305d494f9e90a67c0fba9cabb68",
+    "benchmark-results\\phase30-native-logsum-hashes.json": "704b9b9ec37d25adf013f0abc8283cfd30d908e00b7c0a4a7dce8887baf82f30",
+    "benchmark-results\\phase30-legacy-logsum-hashes.json": "14158e99d0ad3034076ed1b19634ca9b8542824c495cf346da06f02363de02d5",
+    "benchmark-results\\phase30-native-bootstrap-summary.json": "6595fffb8ada985ab5557fbf2929f37b7907c7bdab5038d5a7f261396f8ec829"
+  }
+}

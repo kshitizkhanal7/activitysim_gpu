@@ -20,13 +20,14 @@ contains:
 - an exact, first-divergence Sharrow comparison gate;
 - a fail-closed GPU-native state runtime with transfer/fallback telemetry;
 - a fail-closed compact chooser/slot/CSR input reconstructor for sealed CUDA graphs;
+- a persistent, versioned, byte-verified native skim artifact loader;
 - entity-stable, partition-invariant GPU random streams;
 - deterministic ordered GPU group aggregation;
 - CPU/GPU correctness tests;
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 131 tests, including
+The Python 3.11 ActivitySim/CUDA integration suite passes 142 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -603,3 +604,29 @@ the remaining arithmetic frontier honestly.
 See the [Phase 30 technical report](docs/phase30-native-abi-bootstrap.md),
 the [hash-chained summary](benchmark-results/phase30-native-bootstrap-summary.json),
 and the [arithmetic qualification](benchmark-results/phase30-arithmetic-contract.json).
+
+## Phase 31 persistent native skim store
+
+Phase 31 removes Sharrow skim materialization from the live native mandatory-
+scheduling path. A one-time builder packs the 149 physical float32 skim cubes
+required by 209 logical ABI bindings into a versioned 6,198,588,112-byte
+artifact. Every fresh process checks the manifest, reviewed IR contract, zone
+identity/order, memory budget, and every payload byte before trusting the CUDA
+cubes. Double-buffered pinned reads overlap verification with device upload.
+
+Three fresh public 50,000-household processes and 15 full resident replays are
+exact: all 1,210,124 logsum values match bit for bit and all 81,983 final tour
+times match. The Phase 31, Phase 30 native, and Phase 30 legacy aggregate
+logsum SHA-256 values are identical. All 57 exercised numerical-boundary
+choices are adjudicated by the qualified device map with zero boundary bytes
+downloaded.
+
+The conservative cold component boundary, including scheduler/map
+initialization, falls from the Phase 30 median of 30.739373 seconds to
+27.085396 seconds: 3.653978 seconds saved, 11.886962% lower, and **1.134906x
+faster**. The verified native-store load has a 4.229013-second median. The
+resident graph remains exact at a 0.217801-second median.
+
+See the [Phase 31 technical report](docs/phase31-persistent-native-skim-store.md),
+the [hash-chained summary](benchmark-results/phase31-native-skim-store-summary.json),
+and the [reproducible build report](benchmark-results/phase31-native-skim-store-build.json).

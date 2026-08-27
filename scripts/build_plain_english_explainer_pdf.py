@@ -306,14 +306,14 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("0 dense rows", STYLES["metric_num"]),
-                Paragraph("1.21M avoided", STYLES["metric_num"]),
-                Paragraph("20.26x", STYLES["metric_num"]),
+                Paragraph("1.135x", STYLES["metric_num"]),
+                Paragraph("3.654 s", STYLES["metric_num"]),
+                Paragraph("6.20 GB", STYLES["metric_num"]),
             ],
             [
-                Paragraph("dense preprocessor<br/>rows read", STYLES["metric_label"]),
-                Paragraph("dense rows avoided<br/>per public run", STYLES["metric_label"]),
-                Paragraph("compact persistent<br/>state reduction", STYLES["metric_label"]),
+                Paragraph("conservative cold<br/>component speedup", STYLES["metric_label"]),
+                Paragraph("cold component<br/>time saved", STYLES["metric_label"]),
+                Paragraph("verified native<br/>skim payload", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 30 reads no dense preprocessor rows, avoids 1,210,124 such rows per public run, and retains the 20.26-times compact-state reduction. Native and legacy logsum bytes, plus all final schedules, remain exact; boundaries are explained inside.",
+            "Read left to right: Phase 31 cuts the conservative cold mandatory-scheduling boundary from 30.739 to 27.085 seconds, saves 3.654 seconds, and verifies every byte of a 6.20 GB GPU-ready skim store. All logsum bits and final schedules remain exact; boundaries and limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -438,6 +438,7 @@ def markdown_story(text: str):
                 or stripped.startswith("## 76. Phase 28")
                 or stripped.startswith("## 81. Phase 29")
                 or stripped.startswith("## 86. Phase 30")
+                or stripped.startswith("## 92. Phase 31")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

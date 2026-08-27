@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 30 native-bootstrap result does and does not prove;
+- what the completed Phase 31 persistent-skim result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -171,6 +171,16 @@ middle resident time is **0.226712 seconds**. The middle cold run is **30.739
 seconds**, essentially unchanged because loading 6.452 GB of network skims is
 still the largest startup cost. This phase is a major independence and
 replication result, not a major new cold speedup.
+
+Phase 31 attacks the startup cost that Phase 30 exposed. It converts the
+needed network measurements into a checked, GPU-ready file once, then skips
+Sharrow's 6.452 GB dataset in every live run. Three fresh processes keep every
+logsum bit and all 81,983 schedules exact. Including setup for the small
+on-device boundary map, the middle cold component time falls from **30.739
+seconds to 27.085 seconds**: **3.654 seconds saved**, **11.887% lower**, and
+**1.135 times faster**. This is the first material cold-start gain since the
+native runtime work began; it applies to this resumed mandatory-scheduling
+component, not the whole regional model.
 
 ## 1. What is travel demand modeling?
 
@@ -3705,3 +3715,169 @@ changed-scenario and boundary-fuzz tests must pass before the 57-entry map can
 be deleted. After those two frontiers, the same native ABI pattern can expand
 to non-mandatory tours, joint tours, destinations, trips, and eventually a
 larger end-to-end device-resident ActivitySim workflow.
+
+## 92. Phase 31: turn the road atlas into a ready-to-use GPU book
+
+Phase 30 could build the GPU calculation without ActivitySim's giant prepared
+answer table. But it still asked Sharrow to open and arrange the network
+measurements every time a new Python process started. Imagine a delivery
+driver who owns a carefully planned route but must rebuild the whole road atlas
+from hundreds of compressed pages before every delivery. The route is fast;
+rebuilding the atlas is not.
+
+The public network file is called an **OMX file**. It contains 826 matrices.
+A matrix is a rectangular grid of numbers. In this case, rows are origin zones,
+columns are destination zones, and a number may mean distance, travel time,
+fare, waiting time, or another travel condition. Many measurements also have
+five time-of-day versions.
+
+The reviewed mandatory tour equations do not need 826 independent matrices.
+They make 209 logical requests, but some requests are reverse views or are
+repeated by work, school, and university programs. After those duplicates are
+shared, the GPU needs 149 physical cubes. A **cube** here means either one
+origin-by-destination grid or five such grids stacked by time period.
+
+Phase 31 builds those 149 cubes once and writes them in exactly the order and
+32-bit format the GPU runtime expects. This new file is the **native skim
+store**. “Native” means it is already shaped for this GPU interface. “Skim” is
+the travel-model word for a zone-to-zone measurement. “Store” simply means a
+saved collection.
+
+## 93. What is saved, and what must be trusted
+
+The store has two main pieces:
+
+- `payload.f32` holds 6,198,588,112 bytes of actual 32-bit measurements; and
+- `manifest.json` is a detailed contents label.
+
+The label records the 149 names, shapes, dimensions, byte locations, source
+files, five time periods, 1,454-zone order, and the reviewed 209-request
+contract. It also records cryptographic fingerprints called **SHA-256 hashes**.
+A hash is like a very sensitive digital fingerprint: changing even one byte
+almost certainly changes the fingerprint.
+
+The original compressed OMX file is about 734 million bytes. The ready-to-use
+store is about 6.20 billion bytes, or 8.446 times larger. This is an honest
+trade. The project uses more disk space so each model process can avoid
+decompressing, naming, rearranging, converting, and joining the same data.
+The store is generated locally rather than checked into Git because a 6.20 GB
+file would make the source repository impractical.
+
+Before the GPU can trust a store, the loader checks:
+
+1. the file-format version and the fingerprint of the full label;
+2. that the reviewed equations still ask for the same skim contract;
+3. that the zone identities and their order match;
+4. that all cube shapes, byte locations, and types are sensible;
+5. that the file fits the declared 8 GiB budget; and
+6. the SHA-256 fingerprint over every one of the 6,198,588,112 payload bytes.
+
+If a byte is corrupt, the model recipe changed, the zones moved, or the store
+is too large, loading stops. Tests deliberately exercise all of those failure
+paths. This is what **fail closed** means: uncertainty produces an error, not
+a possibly believable but unproven travel forecast.
+
+## 94. How the fast loader works
+
+GPU transfers are fastest from a special kind of main memory called **pinned
+memory**. The operating system agrees not to move those memory pages while the
+GPU is using them. Phase 31 keeps two reusable pinned buffers:
+
+```text
+CPU reads and hashes chunk 2  ---------
+                                      \
+GPU uploads chunk 1          ----------> work overlaps
+
+CPU reads and hashes chunk 3  ---------
+                                      \
+GPU uploads chunk 2          ----------> work overlaps again
+```
+
+This is called **double buffering**. While the GPU uploads one block, the CPU
+fills and checks the other. The first correct loader did the work mostly one
+step at a time and hashed the same valid data twice. It took 11.148 seconds to
+load the store, and the whole cold interval was worse than Phase 30. That
+failure was measured rather than hidden.
+
+The final loader reads straight from the file into the pinned buffer, makes
+one ordered fingerprint over every byte, and overlaps the two kinds of work.
+Its three verified load times are 4.229, 4.043, and 4.320 seconds. The middle
+result is **4.229 seconds**. A separate 0.074-second number in the report is
+only upload waiting and bookkeeping left visible after overlap; it is not a
+claim that 6.20 GB crossed the physical bus in 0.074 seconds.
+
+## 95. The hidden calls that also had to disappear
+
+Changing one skim function was not enough. Testing revealed three less obvious
+paths:
+
+- ActivitySim still opened the OMX file to inventory all matrix names;
+- its network-data loader still tried to build the Sharrow dataset; and
+- 57 choices extremely close to probability boundaries still called Sharrow
+  for a final decision.
+
+Phase 31 bypasses the first two operations only inside this guarded one-zone
+native runner. The manifest becomes the authoritative inventory. The 57 close
+choices use the already-qualified answer map stored on the GPU. A conservative
+setup pass may reserve 58 map positions, but exactly 57 were exercised in each
+live run. All 57 stayed on the GPU, and zero boundary logsum bytes returned to
+the CPU. If a new scenario creates an unrecognized close case, the runtime
+still stops rather than guessing.
+
+The zone check also needed care. The public source calls its zones 1 through
+1454, while ActivitySim's saved internal table calls the same ordered rows 0
+through 1453. The adapter adds one only when the internal index is exactly that
+complete consecutive sequence. The reconstructed public IDs must then match
+the saved zone fingerprint. This is a checked translation, not an assumption
+that every unfamiliar zone system starts at one.
+
+## 96. The Phase 31 result and its meaning
+
+The proof uses three fresh Python processes and five full resident replays in
+each, for 15 complete replays:
+
+| Result | Process 1 | Process 2 | Process 3 | Middle result |
+|---|---:|---:|---:|---:|
+| ActivitySim checkpoint-to-result interval | 26.434 s | 26.570 s | 26.350 s | **26.434 s** |
+| Cold interval including scheduler/map setup | 27.085 s | 27.167 s | 26.933 s | **27.085 s** |
+| Verified native-store load | 4.229 s | 4.043 s | 4.320 s | **4.229 s** |
+| Complete resident raw-source-to-calendar graph | 0.217578 s | 0.217801 s | 0.224729 s | **0.217801 s** |
+
+For the fairest conservative comparison, Phase 31 includes scheduler/map setup
+even though Phase 30's published 30.739-second interval began after its
+scheduler object was created. Phase 31 still saves **3.654 seconds**, cuts the
+measured cold component interval by **11.887%**, and is **1.135 times faster**.
+Every Phase 31 process beats the Phase 30 middle time.
+
+Correctness did not become approximate:
+
+- every one of 1,210,124 logsum values matches bit for bit in all 15 replays;
+- all 81,983 scheduled tour times match;
+- every store byte is checked in every process;
+- no live Sharrow skim dataset or OMX inventory is built;
+- all exercised close-boundary decisions remain on the GPU; and
+- Phase 31, Phase 30 native, and Phase 30 legacy calculations share the exact
+  same six-program logsum fingerprint:
+  `41ea4ab90d0b47595a6ad59b1598a050a09a01db5d775dd3d1ad9f5be79e1322`.
+
+What does this mean in the larger project? Phase 31 proves that changing the
+data-loading architecture can finally make a visible dent in cold component
+time without giving back the replication guarantees built in earlier phases.
+Phases 1 through 30 were not wasted: they supplied the answer keys, arithmetic
+rules, source contracts, device runtime, changed-world tests, and
+failure checks needed to trust this result.
+
+What does it not mean? It does not make all of ActivitySim GPU-only. It does
+not say a full regional-model run is 1.135 times faster. It covers the resumed
+public mandatory-scheduling component on one RTX A4000, one zone system, one
+network dataset, and one local storage environment. Building or changing the
+network requires rebuilding and requalifying the store.
+
+The next ambitious job is model-wide reuse. The same compiled-asset registry,
+native schema, skim store, and device-resident runtime should cover
+non-mandatory and joint tours, destinations, trip mode choice, and trip
+scheduling. That phase must publish end-to-end model wall time so component
+wins are not mistaken for total-model wins. Separately, CPU and GPU still need
+one shared, precisely specified exponential/reduction implementation plus
+changed-scenario boundary fuzzing before the small frozen answer map can be
+removed for every possible scenario.
