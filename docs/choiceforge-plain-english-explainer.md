@@ -4622,3 +4622,91 @@ A successful next phase needs all of the following:
 That path attacks the measured bottleneck instead of adding another tiny kernel.
 It also keeps the central promise of this project: faster travel modeling that
 can still be reproduced, inspected, and trusted.
+
+## 121. Phase 36: build the GPU's answer sheet on the GPU
+
+Phase 35 revealed an awkward workflow. The CPU carefully filled a giant answer
+sheet containing 56 columns for every possible trip destination, and then sent
+that finished sheet to the GPU. The GPU calculated quickly, but the CPU had
+already done a lot of copying and arranging.
+
+Phase 36 changes the handoff. The CPU sends a smaller package of basic facts:
+where the trip starts and ends, time period, direction, household vehicles,
+traveler age, tour mode, party size, trip duration, value of time, and the three
+controlled transit-wait values. Small land-use tables such as parking cost and
+density stay on the GPU. A new GPU preparation kernel uses those facts to fill
+the complete answer sheet where the next GPU kernel will read it.
+
+This is like sending ingredients and a recipe to a fast kitchen instead of
+assembling 56 labeled plates in a distant warehouse and trucking every plate
+to the kitchen.
+
+## 122. What exactly became smaller?
+
+The old finished input used 428 bytes for each possible destination row. The
+new raw packet uses 84 bytes:
+
+| Packet part | Bytes per row | Examples |
+|---|---:|---|
+| 14 whole-number facts | 56 | zones, period, modes, age, vehicle count |
+| 2 decimal facts | 16 | duration and value of time |
+| 3 controlled wait values | 12 | transit waiting times |
+| **total** | **84** | compact Phase 36 packet |
+
+In the full public model there were 4,188,312 such rows. The old method would
+construct 1,792,597,536 bytes, about 1.79 GB. Phase 36 transferred 351,818,208
+bytes, about 351.8 MB. That removes 1,440,779,328 bytes from this boundary, an
+**80.37% reduction**.
+
+This does not mean the whole computer uses 80% less memory or the whole model is
+80% faster. It means one precisely measured data handoff became 80% smaller.
+That distinction keeps the result useful and honest.
+
+## 123. How do we know the smaller package did not change the model?
+
+First, a 500-household shadow run built both the Phase 35 and Phase 36 utility
+inputs. It compared the GPU results before accepting the new path. Then a
+second 500-household run used only Phase 36. Finally, the complete public model
+ran with 50,000 households and 1,454 zones.
+
+The large run completed all 34 ActivitySim steps and all 30 trip-purpose
+programs. It processed all 4,188,312 utility rows on the new path, never fell
+back to the CPU evaluator, and released 6.20 GB of shared GPU network memory
+after the final GPU consumer.
+
+An independent program compared the completed Phase 36 output with Phase 35:
+
+- changed modeled decision cells: **0**;
+- changed decision rows: **0**;
+- maximum destination-logsum difference: **0**;
+- maximum mode-logsum difference: **0**; and
+- byte-for-byte identical published CSV files: **7 of 7**.
+
+Several safety rules support that result. Values too large for the compact
+whole-number format stop the run. Unknown inputs stop the run. Missing CUDA
+support stops the run. Paired missing numerical values are compared correctly
+in shadow mode. The system does not quietly switch to another evaluator and
+pretend the test passed.
+
+## 124. Did Phase 36 make the whole model faster?
+
+It almost certainly removed useful work, but this qualification cannot make a
+new scientific stopwatch claim. Another program was actively using the GPU.
+Phase 36 happened to finish the complete model in 174.0 seconds versus 224.6
+seconds in an older Phase 35 artifact, and its trip-destination step happened to
+take 22.6 versus 28.9 seconds. Those runs did not occur under matched quiet
+conditions, so the differences are observations, not proof of speedup.
+
+What *is* proved is stronger than a hopeful microbenchmark: Phase 36 produces
+the exact same public-model answers while eliminating a counted 1.79 GB dense
+CPU construction and replacing it with a 351.8 MB compact transfer. A supplied
+test script can run three fresh alternating Phase 35-versus-Phase 36 pairs when
+the machine is quiet.
+
+The next ambitious step is a resident trip-state engine. Today the compact
+packet is still rebuilt for each purpose. Phase 37 should upload common trip,
+tour, person, and household facts once, reuse them across all 30 programs, and
+fuse preparation with utility calculation when safe. It should also let many
+independent tour schedules advance on the GPU while preserving the required
+order of trips inside each tour. Changed populations, coefficients, land use,
+and travel-time matrices must all pass before calling that engine general.

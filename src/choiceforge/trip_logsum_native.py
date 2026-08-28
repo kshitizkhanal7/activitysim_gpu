@@ -19,6 +19,27 @@ from .cuda_backend import _cupy
 
 
 _AVAILABILITY_KERNEL_CACHE = {}
+_DEVICE_PREPARATION_KERNEL_CACHE = {}
+_RESIDENT_LAND_CACHE = {}
+
+
+_RAW_INT_COLUMNS = {
+    name: position
+    for position, name in enumerate(
+        (
+            "origin", "destination", "period", "outbound",
+            "first", "last", "free_parking", "tour_mode", "parent_mode",
+            "is_atwork_subtour", "auto_ownership", "age", "participants",
+            "hhsize",
+        )
+    )
+}
+_RAW_FLOAT_COLUMNS = {"duration": 0, "value_of_time": 1}
+
+
+def clear_trip_device_state_cache():
+    """Drop Phase 36 aliases to immutable resident land-use arrays."""
+    _RESIDENT_LAND_CACHE.clear()
 
 _AVAILABILITY = {
     "name:sov_available": ("SOV_TIME", 0, None),
@@ -118,6 +139,11 @@ class TripLogsumNativeTelemetry:
     upload_seconds: float
     availability_kernel_seconds: float
     utility_kernel_seconds: float
+    backend: str = "phase35_host_abi"
+    device_preparation_kernel_seconds: float = 0.0
+    compact_device_input_bytes: int = 0
+    dense_host_abi_bytes_avoided: int = 0
+    resident_land_bytes: int = 0
 
 
 class TripLogsumNativePlan:
@@ -160,6 +186,11 @@ class TripLogsumNativePlan:
         if set(self.float_labels) != expected_float or set(self.int_labels) != expected_int:
             raise ValueError("trip native input ABI differs from the reviewed 11/45 contract")
         self._availability_kernel, self._availability_args = self._compile_availability()
+        self._device_preparation_kernel = None
+        self._device_preparation_args = None
+        self._coordinate_args = None
+        self._skim_dest_count = None
+        self._skim_time_count = None
 
     def _skim_argument(self, key):
         wanted = ("skim", "odt_skims", key)
@@ -228,6 +259,461 @@ class TripLogsumNativePlan:
             kernel.compile()
             _AVAILABILITY_KERNEL_CACHE[source] = kernel
         return kernel, tuple(self._skim_argument(key) for key in selected)
+
+    def _coordinate_contract(self):
+        """Return every grouped coordinate buffer and its declared direction."""
+        args = list(self.invocation.skim_arguments)
+        position = self.invocation.logical_skim_bindings
+        groups = self.invocation.skim_input_groups
+        sources = self.invocation.skim_input_sources
+        ranks = self.invocation.skim_input_ranks
+        result = []
+        odt_dimensions = None
+        for group in sorted(set(groups)):
+            representative = groups.index(group)
+            direction = sources[representative][1]
+            rank = ranks[representative]
+            if direction not in {
+                "odt_skims", "dot_skims", "od_skims", "od_skims_reverse"
+            }:
+                raise ValueError(
+                    f"trip native coordinate direction {direction!r} is unsupported"
+                )
+            origin = args[position]
+            destination = args[position + 1]
+            position += 2
+            period = None
+            if rank == 3:
+                period = args[position]
+                position += 1
+            dest_count = int(args[position])
+            position += 1
+            time_count = 1
+            if rank == 3:
+                time_count = int(args[position])
+                position += 1
+            result.append(
+                (direction, rank, origin, destination, period, dest_count, time_count)
+            )
+            if direction == "odt_skims":
+                odt_dimensions = (dest_count, time_count)
+        if position != len(args) or odt_dimensions is None:
+            raise ValueError("trip native grouped skim ABI is malformed")
+        return tuple(result), odt_dimensions
+
+    @staticmethod
+    def _mode_mask(values):
+        mask = 0
+        for value in values:
+            number = int(value)
+            if number < 0 or number >= 63:
+                raise ValueError("trip native mode index is outside mask range 0..62")
+            mask |= 1 << number
+        return np.uint64(mask)
+
+    def _compile_device_preparation(self):
+        """Compile the Phase 36 compact raw-state to complete ABI kernel."""
+        float_pos = {label: pos for pos, label in enumerate(self.float_labels)}
+        int_pos = {label: pos for pos, label in enumerate(self.int_labels)}
+        ri = _RAW_INT_COLUMNS
+        rf = _RAW_FLOAT_COLUMNS
+        assigned_float = set()
+        assigned_int = set()
+        statements = []
+
+        def assign_float(label, expression):
+            assigned_float.add(label)
+            statements.append(f"  floats[fb + {float_pos[label]}] = (float)({expression});")
+
+        def assign_int(label, expression):
+            assigned_int.add(label)
+            statements.append(f"  ints[ib + {int_pos[label]}] = ({expression}) ? 1LL : 0LL;")
+
+        assign_float(
+            "column:total_terminal_time",
+            "((outbound && first) ? 0.0 : terminal[origin]) + "
+            "((!outbound && last) ? 0.0 : terminal[destination])",
+        )
+        assign_float("column:ivot", f"1.0 / raw_floats[rfd + {rf['value_of_time']}]")
+        assign_float(
+            "column:total_parking_cost",
+            "(origin_duration * parking[origin] + destination_duration * "
+            "parking[destination]) / 2.0",
+        )
+        assign_float(
+            "column:density_index",
+            "outbound ? density[destination] : density[origin]",
+        )
+        assign_float("column:origin_walk_time", "walk_time")
+        assign_float("column:destination_walk_time", "walk_time")
+        assign_float("column:origTaxiWaitTime", "waits[row * 3]")
+        assign_float("column:origSingleTNCWaitTime", "waits[row * 3 + 1]")
+        assign_float("column:origSharedTNCWaitTime", "waits[row * 3 + 2]")
+        assign_float("column:i_tour_mode", "mode")
+        assign_float(
+            "column:origin_density_index",
+            "outbound ? density[origin] : density[destination]",
+        )
+
+        value_ints = {
+            "name:auto_ownership": f"raw_ints[rib + {ri['auto_ownership']}]",
+            "name:age": f"raw_ints[rib + {ri['age']}]",
+            "name:is_joint": f"raw_ints[rib + {ri['participants']}] > 1",
+            "name:is_atwork_subtour": f"raw_ints[rib + {ri['is_atwork_subtour']}] != 0",
+            "name:work_tour_is_SOV": f"raw_ints[rib + {ri['parent_mode']}] == 1",
+            "name:number_of_participants": f"raw_ints[rib + {ri['participants']}]",
+            "column:hhsize": f"raw_ints[rib + {ri['hhsize']}]",
+            "column:trip_topology": "outbound ? topology[destination] : topology[origin]",
+            "name:work_tour_is_bike": f"raw_ints[rib + {ri['parent_mode']}] == 2",
+            "name:outbound": "outbound",
+            "name:inbound": "!outbound",
+            "name:tour_mode_is_auto": "((auto_modes >> mode) & 1ULL) != 0ULL",
+            "name:tour_mode_is_walk": "mode == walk_mode",
+            "name:tour_mode_is_bike": "mode == bike_mode",
+            "name:tour_mode_is_walk_transit": "((walk_transit_modes >> mode) & 1ULL) != 0ULL",
+            "name:tour_mode_is_drive_transit": "((drive_transit_modes >> mode) & 1ULL) != 0ULL",
+            "name:tour_mode_is_ride_hail": "((ride_hail_modes >> mode) & 1ULL) != 0ULL",
+            "column:is_indiv": f"raw_ints[rib + {ri['participants']}] == 1",
+            "column:tour_mode_is_SOV": "((sov_modes >> mode) & 1ULL) != 0ULL",
+            "column:tour_mode_is_SR2": "((sr2_modes >> mode) & 1ULL) != 0ULL",
+            "column:tour_mode_is_SR3P": "((sr3_modes >> mode) & 1ULL) != 0ULL",
+            "column:first_trip": "first",
+        }
+        integer_value_labels = {
+            "name:auto_ownership", "name:age", "name:number_of_participants",
+            "column:hhsize", "column:trip_topology",
+        }
+        for label, expression in value_ints.items():
+            assigned_int.add(label)
+            suffix = "" if label in integer_value_labels else " ? 1LL : 0LL"
+            statements.append(
+                f"  ints[ib + {int_pos[label]}] = (long long)({expression}){suffix};"
+            )
+
+        selected = []
+        for label, (key, direction, threshold) in _AVAILABILITY.items():
+            if key not in selected:
+                selected.append(key)
+            skim_pos = selected.index(key)
+            conditions = [f"skim_{skim_pos}[skim_index] > 0.0f"]
+            if direction == 1:
+                conditions.extend(("auto_ownership > 0", "outbound"))
+            elif direction == 2:
+                conditions.extend(("auto_ownership > 0", "!outbound"))
+            if threshold is not None:
+                conditions.append(f"mode >= {int(threshold)}")
+            assign_int(label, " && ".join(conditions))
+        for key in (
+            "WLK_LRF_WLK_FERRYIVT", "DRV_LRF_WLK_FERRYIVT",
+            "WLK_LRF_DRV_FERRYIVT",
+        ):
+            if key not in selected:
+                selected.append(key)
+        wf, dfo, dfi = (
+            selected.index(key)
+            for key in (
+                "WLK_LRF_WLK_FERRYIVT", "DRV_LRF_WLK_FERRYIVT",
+                "WLK_LRF_DRV_FERRYIVT",
+            )
+        )
+        assign_int(
+            "column:walk_ferry_available",
+            f"ints[ib + {int_pos['name:walk_lrf_available']}] && "
+            f"skim_{wf}[skim_index] > 0.0f",
+        )
+        assign_int(
+            "column:drive_ferry_available",
+            f"(outbound && ints[ib + {int_pos['name:drive_lrf_available_outbound']}] "
+            f"&& skim_{dfo}[skim_index] > 0.0f) || (!outbound && "
+            f"ints[ib + {int_pos['name:drive_lrf_available_inbound']}] && "
+            f"skim_{dfi}[skim_index] > 0.0f)",
+        )
+        if assigned_float != set(self.float_labels):
+            raise ValueError("Phase 36 float ABI preparation contract is incomplete")
+        if assigned_int != set(self.int_labels):
+            missing = sorted(set(self.int_labels) - assigned_int)
+            raise ValueError(f"Phase 36 integer ABI preparation is incomplete: {missing}")
+
+        coordinate_contract, odt_dimensions = self._coordinate_contract()
+        coordinate_parameters = []
+        coordinate_arguments = []
+        coordinate_statements = []
+        for group, (direction, rank, origin_arg, destination_arg, period_arg, _, _) in enumerate(
+            coordinate_contract
+        ):
+            coordinate_parameters.extend(
+                (f"  long long* group_{group}_origin", f"  long long* group_{group}_destination")
+            )
+            coordinate_arguments.extend((origin_arg, destination_arg))
+            reverse = direction in {"dot_skims", "od_skims_reverse"}
+            coordinate_statements.extend(
+                (
+                    f"  group_{group}_origin[row] = {'destination' if reverse else 'origin'};",
+                    f"  group_{group}_destination[row] = {'origin' if reverse else 'destination'};",
+                )
+            )
+            if rank == 3:
+                coordinate_parameters.append(f"  long long* group_{group}_period")
+                coordinate_arguments.append(period_arg)
+                coordinate_statements.append(f"  group_{group}_period[row] = period;")
+
+        skim_parameters = [
+            f"  const float* skim_{number}" for number in range(len(selected))
+        ]
+        parameters = ",\n".join(skim_parameters + coordinate_parameters)
+        source = f'''extern "C" __global__ void trip_device_prepare(
+  float* floats, long long* ints, const int* raw_ints,
+  const double* raw_floats, const float* waits,
+  const double* terminal, const double* parking, const double* density,
+  const long long* topology, long long rows, int float_columns,
+  int int_columns, int raw_int_columns, int raw_float_columns,
+  long long land_size, long long dest_count, long long time_count,
+  double walk_time, unsigned long long auto_modes,
+  unsigned long long walk_transit_modes, unsigned long long drive_transit_modes,
+  unsigned long long ride_hail_modes, unsigned long long sov_modes,
+  unsigned long long sr2_modes, unsigned long long sr3_modes,
+  int walk_mode, int bike_mode,
+{parameters}) {{
+  const long long row = (long long)blockDim.x * blockIdx.x + threadIdx.x;
+  if (row >= rows) return;
+  const long long fb = row * float_columns;
+  const long long ib = row * int_columns;
+  const long long rib = row * raw_int_columns;
+  const long long rfd = row * raw_float_columns;
+  const long long origin = raw_ints[rib + {ri['origin']}];
+  const long long destination = raw_ints[rib + {ri['destination']}];
+  const long long period = raw_ints[rib + {ri['period']}];
+  const bool outbound = raw_ints[rib + {ri['outbound']}] != 0;
+  const bool first = raw_ints[rib + {ri['first']}] != 0;
+  const bool last = raw_ints[rib + {ri['last']}] != 0;
+  const bool free_parking = raw_ints[rib + {ri['free_parking']}] != 0;
+  const int mode = raw_ints[rib + {ri['tour_mode']}];
+  const int auto_ownership = raw_ints[rib + {ri['auto_ownership']}];
+  const double duration = raw_floats[rfd + {rf['duration']}];
+  const double origin_duration = first ? ((!outbound) ? duration * (!free_parking) : 0.0) : 1.0;
+  const double destination_duration = last ? ((!outbound) ? duration * (!free_parking) : 0.0) : 1.0;
+  const long long skim_index = (origin * dest_count + destination) * time_count + period;
+{chr(10).join(statements)}
+{chr(10).join(coordinate_statements)}
+}}'''
+        kernel = _DEVICE_PREPARATION_KERNEL_CACHE.get(source)
+        if kernel is None:
+            kernel = self.cp.RawKernel(
+                source,
+                "trip_device_prepare",
+                options=("--std=c++11", "--fmad=false", "--prec-div=true"),
+            )
+            kernel.compile()
+            _DEVICE_PREPARATION_KERNEL_CACHE[source] = kernel
+        return (
+            kernel,
+            tuple(self._skim_argument(key) for key in selected),
+            tuple(coordinate_arguments),
+            odt_dimensions[0],
+            odt_dimensions[1],
+        )
+
+    def _resident_land(self, land_use):
+        key = id(land_use)
+        cached = _RESIDENT_LAND_CACHE.get(key)
+        if cached is not None:
+            return cached
+        labels = np.asarray(land_use.index, dtype=np.int64)
+        if labels.size == 0 or labels.min() < 0 or len(np.unique(labels)) != len(labels):
+            raise ValueError("Phase 36 land-use index must be unique nonnegative integers")
+        size = int(labels.max()) + 1
+        if size > max(1_000_000, 16 * len(labels)):
+            raise ValueError("Phase 36 land-use index is too sparse for resident lookup")
+        valid = np.zeros(size, dtype=bool)
+        valid[labels] = True
+
+        def dense(column, dtype):
+            values = np.asarray(land_use[column], dtype=dtype)
+            target = np.zeros(size, dtype=dtype)
+            target[labels] = values
+            if np.issubdtype(np.dtype(dtype), np.floating) and not np.isfinite(values).all():
+                raise ValueError(f"Phase 36 land-use column {column!r} is not finite")
+            return self.cp.asarray(target)
+
+        device = (
+            dense("TERMINAL", np.float64), dense("PRKCST", np.float64),
+            dense("density_index", np.float64), dense("TOPOLOGY", np.int64),
+        )
+        cached = {
+            "valid": valid,
+            "size": size,
+            "device": device,
+            "bytes": int(sum(item.nbytes for item in device)),
+        }
+        _RESIDENT_LAND_CACHE[key] = cached
+        return cached
+
+    @staticmethod
+    def _checked_int32(values, label):
+        array = np.asarray(values)
+        if array.size:
+            info = np.iinfo(np.int32)
+            if np.nanmin(array) < info.min or np.nanmax(array) > info.max:
+                raise ValueError(f"Phase 36 raw column {label!r} exceeds int32")
+        return np.asarray(array, dtype=np.int32)
+
+    def populate_device(self, frame, land_use, tours, constants, draws):
+        """Generate the full strict ABI on CUDA from a compact raw state packet."""
+        started = time.perf_counter()
+        rows = len(frame)
+        if rows != self.invocation.rows:
+            raise ValueError("trip native frame length differs from invocation")
+        if self._device_preparation_kernel is None:
+            (
+                self._device_preparation_kernel,
+                self._device_preparation_args,
+                self._coordinate_args,
+                self._skim_dest_count,
+                self._skim_time_count,
+            ) = self._compile_device_preparation()
+        origin = _values(frame, "_choiceforge_origin", np.int64)
+        destination = _values(frame, "_choiceforge_destination", np.int64)
+        period = _period(_values(frame, "trip_period"))
+        original_origin = _values(frame, str(constants["orig_col_name"]), np.int64)
+        outbound = _values(frame, "outbound", bool)
+        first = _values(frame, "trip_num", np.int64) == 1
+        last = _values(frame, "trip_num", np.int64) == _values(
+            frame, "trip_count", np.int64
+        )
+        free = (_values(frame, "tour_type").astype(str) == "work") & _values(
+            frame, "free_parking_at_work", bool
+        )
+        mode_map = constants["I_MODE_MAP"]
+        mode = np.asarray(
+            [mode_map[str(item)] for item in _values(frame, "tour_mode")],
+            dtype=np.int64,
+        )
+        parent = tours["tour_mode"].reindex(
+            _values(frame, "parent_tour_id")
+        ).fillna("").to_numpy()
+        parent_mode = np.select(
+            [np.isin(parent, ["DRIVEALONEFREE", "DRIVEALONEPAY"]), parent == "BIKE"],
+            [1, 2],
+            default=0,
+        )
+        atwork = ~np.asarray(frame["parent_tour_id"].isna())
+        auto = _values(frame, "auto_ownership", np.int64)
+        participants = _values(frame, "number_of_participants", np.int64)
+        raw_int_values = {
+            "origin": origin, "destination": destination, "period": period,
+            "outbound": outbound,
+            "first": first, "last": last, "free_parking": free,
+            "tour_mode": mode, "parent_mode": parent_mode,
+            "is_atwork_subtour": atwork, "auto_ownership": auto,
+            "age": _values(frame, "age", np.int64),
+            "participants": participants, "hhsize": _values(frame, "hhsize", np.int64),
+        }
+        raw_ints = np.column_stack(
+            [
+                self._checked_int32(raw_int_values[name], name)
+                for name in _RAW_INT_COLUMNS
+            ]
+        ).astype(np.int32, copy=False)
+        raw_floats = np.column_stack(
+            [
+                _values(frame, "duration", np.float64),
+                _values(frame, "value_of_time", np.float64),
+            ]
+        ).astype(np.float64, copy=False)
+
+        # Preserve Phase 35/ActivitySim wait arithmetic exactly; only the final
+        # float32 results cross the compact boundary. Phase 37 can qualify a
+        # CUDA transcendental implementation separately if it is worthwhile.
+        bands = _density_band(land_use, original_origin)
+        waits = np.column_stack(
+            [
+                _wait(
+                    np.asarray(draws)[:, number],
+                    _mapped(constants[f"{family}_waitTime_mean"], bands),
+                    _mapped(constants[f"{family}_waitTime_sd"], bands),
+                    float(constants["min_waitTime"]),
+                    float(constants["max_waitTime"]),
+                )
+                for number, family in enumerate(
+                    ("Taxi", "TNC_single", "TNC_shared")
+                )
+            ]
+        ).astype(np.float32, copy=False)
+        land = self._resident_land(land_use)
+        for label, zones in (
+            ("origin", origin), ("destination", destination),
+            ("original_origin", original_origin),
+        ):
+            if zones.size and (
+                zones.min() < 0 or zones.max() >= land["size"]
+                or not np.all(land["valid"][zones])
+            ):
+                raise ValueError(f"Phase 36 {label} contains an unknown land-use zone")
+        if origin.size and (
+            origin.max() >= self._skim_dest_count
+            or destination.max() >= self._skim_dest_count
+            or period.min() < 0 or period.max() >= self._skim_time_count
+        ):
+            raise ValueError("Phase 36 compact skim coordinate is outside the cube")
+        built = time.perf_counter()
+        raw_ints_device = self.cp.asarray(raw_ints)
+        raw_floats_device = self.cp.asarray(raw_floats)
+        waits_device = self.cp.asarray(waits)
+        self.cp.cuda.Stream.null.synchronize()
+        uploaded = time.perf_counter()
+        mode_masks = (
+            self._mode_mask(constants["I_AUTO_MODES"]),
+            self._mode_mask(constants["I_WALK_TRANSIT_MODES"]),
+            self._mode_mask(constants["I_DRIVE_TRANSIT_MODES"]),
+            self._mode_mask(constants["I_RIDE_HAIL_MODES"]),
+            self._mode_mask(constants["I_SOV_MODES"]),
+            self._mode_mask(constants["I_SR2_MODES"]),
+            self._mode_mask(constants["I_SR3P_MODES"]),
+        )
+        walk_time = float(constants["shortWalk"]) * 60.0 / float(
+            constants["walkSpeed"]
+        )
+        self._device_preparation_kernel(
+            ((rows + 255) // 256,),
+            (256,),
+            (
+                self.invocation.float_inputs, self.invocation.int_inputs,
+                raw_ints_device, raw_floats_device, waits_device,
+                *land["device"], np.int64(rows),
+                np.int32(len(self.float_labels)), np.int32(len(self.int_labels)),
+                np.int32(len(_RAW_INT_COLUMNS)), np.int32(len(_RAW_FLOAT_COLUMNS)),
+                np.int64(land["size"]), np.int64(self._skim_dest_count),
+                np.int64(self._skim_time_count), np.float64(walk_time),
+                *mode_masks, np.int32(constants["I_WALK_MODE"]),
+                np.int32(constants["I_BIKE_MODE"]),
+                *self._device_preparation_args, *self._coordinate_args,
+            ),
+        )
+        self.cp.cuda.Stream.null.synchronize()
+        prepared = time.perf_counter()
+        utilities = self.invocation.execute()
+        self.cp.cuda.Stream.null.synchronize()
+        utility_done = time.perf_counter()
+        compact_bytes = int(raw_ints.nbytes + raw_floats.nbytes + waits.nbytes)
+        telemetry = TripLogsumNativeTelemetry(
+            rows=rows,
+            compact_host_bytes=compact_bytes,
+            host_build_seconds=built - started,
+            upload_seconds=uploaded - built,
+            availability_kernel_seconds=0.0,
+            utility_kernel_seconds=utility_done - prepared,
+            backend="phase36_device_abi",
+            device_preparation_kernel_seconds=prepared - uploaded,
+            compact_device_input_bytes=compact_bytes,
+            dense_host_abi_bytes_avoided=int(
+                rows * (
+                    len(self.float_labels) * 4 + len(self.int_labels) * 8
+                    + 3 * 8  # former host origin/destination/period coordinates
+                )
+            ),
+            resident_land_bytes=land["bytes"],
+        )
+        return utilities, telemetry
 
     def populate(self, frame, land_use, tours, constants, draws):
         started = time.perf_counter()

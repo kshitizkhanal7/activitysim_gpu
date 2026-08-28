@@ -713,3 +713,25 @@ generation from a smaller resident person-tour-trip state packet.
 See the [Phase 35 technical report](docs/phase35-resident-trip-runtime.md), the
 [full proof report](benchmark-results/phase35-p35pair1-gpu-1.json), and the
 [exact-output verification](benchmark-results/phase35-p35pair1-exact-1.json).
+
+## Phase 36 device-generated trip ABI
+
+Phase 36 removes the 1.79 GB dense CPU input factory measured in Phase 35. A
+compact 84-byte-per-row packet now carries raw trip, tour, person, household,
+and controlled-wait facts to the GPU. A generated CUDA preparation kernel joins
+those facts with resident land-use state and writes the complete 11-float/
+45-integer utility ABI, availability flags, and skim coordinates on device.
+
+The complete public 50,000-household run exercised all 30 programs over
+4,188,312 directional rows. It replaced 1,792,597,536 bytes of dense host ABI
+construction with 351,818,208 bytes of compact input, an 80.37% reduction at
+that boundary. All 34 model steps completed with zero fallback. Independent
+verification against Phase 35 found zero changed decision cells, zero logsum
+difference, and all seven published CSVs byte-for-byte identical.
+
+The architectural and replication claims are proved; an incremental speedup is
+not claimed because an unrelated workload was using the GPU during the full
+run. A three-pair Phase 35-versus-Phase 36 harness is included for a quiet
+machine. See the [Phase 36 technical report](docs/phase36-device-generated-trip-abi.md),
+the [full proof report](benchmark-results/phase36-p36full1-gpu.json), and the
+[exact-output verification](benchmark-results/phase36-p36full1-exact.json).

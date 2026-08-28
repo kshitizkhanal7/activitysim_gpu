@@ -34,6 +34,9 @@ def reset_trip_destination_stage_telemetry():
 def clear_trip_native_cube_cache():
     """Release Phase 35's aliases of shared resident CUDA skim cubes."""
     _TRIP_NATIVE_CUBE_CACHE.clear()
+    from choiceforge.trip_logsum_native import clear_trip_device_state_cache
+
+    clear_trip_device_state_cache()
 
 
 def trip_destination_stage_telemetry():
@@ -262,13 +265,40 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
         document, scalar_environment, cube_loader, rows=len(bundle["combined"])
     )
     plan = TripLogsumNativePlan(native.invocation)
-    utilities, telemetry = plan.populate(
-        bundle["combined"],
-        state.get_dataframe("land_use"),
-        state.get_dataframe("tours"),
-        bundle["locals"],
-        draws,
+    populate_arguments = (
+        bundle["combined"], state.get_dataframe("land_use"),
+        state.get_dataframe("tours"), bundle["locals"], draws,
     )
+    phase36_device = (
+        os.environ.get("CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI", "0") == "1"
+    )
+    phase36_shadow = (
+        os.environ.get("CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI_SHADOW", "0") == "1"
+    )
+    shadow_metrics = {}
+    if phase36_device and phase36_shadow:
+        cp = plan.cp
+        reference_utilities, _ = plan.populate(*populate_arguments)
+        reference_copy = cp.array(reference_utilities, copy=True)
+        utilities, telemetry = plan.populate_device(*populate_arguments)
+        both_nan = cp.isnan(reference_copy) & cp.isnan(utilities)
+        equal = (reference_copy == utilities) | both_nan
+        difference = cp.where(equal, 0.0, cp.abs(reference_copy - utilities))
+        mismatches = int(cp.count_nonzero(~equal).get())
+        max_abs = float(cp.max(difference).get()) if difference.size else 0.0
+        shadow_metrics = {
+            "abi_shadow_utility_mismatches": mismatches,
+            "abi_shadow_utility_max_abs_difference": max_abs,
+        }
+        if max_abs > 1.0e-5:
+            raise AssertionError(
+                "Phase 36 device ABI utility shadow mismatch "
+                f"count={mismatches} max_abs={max_abs:.3e}"
+            )
+    elif phase36_device:
+        utilities, telemetry = plan.populate_device(*populate_arguments)
+    else:
+        utilities, telemetry = plan.populate(*populate_arguments)
     logsums, nested = mtc21_nested_logsums_cuda(
         utilities,
         bundle["nest_spec"],
@@ -288,6 +318,14 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
             "nested_kernel_seconds": nested.kernel_ms / 1000.0,
             "dense_preprocessor_rows_read": 0,
             "fallback_calls": 0,
+            "backend": telemetry.backend,
+            "device_preparation_kernel_seconds": (
+                telemetry.device_preparation_kernel_seconds
+            ),
+            "compact_device_input_bytes": telemetry.compact_device_input_bytes,
+            "dense_host_abi_bytes_avoided": telemetry.dense_host_abi_bytes_avoided,
+            "resident_land_bytes": telemetry.resident_land_bytes,
+            **shadow_metrics,
         }
     )
     return np.asarray(logsums)

@@ -63,6 +63,14 @@ def main() -> int:
             "probability table, reusable workspace, and exact random ledger"
         ),
     )
+    parser.add_argument(
+        "--phase36-device-trip-abi",
+        action="store_true",
+        help=(
+            "extend Phase 35 with compact raw trip/tour uploads, resident "
+            "land-use state, and direct CUDA generation of the complete 11/45 ABI"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -137,6 +145,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase36_device_trip_abi:
+        args.phase35_resident_trip = True
+        os.environ["CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI"] = "1"
     if args.phase35_resident_trip:
         args.phase34_location_choice = True
         os.environ["CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION"] = "1"
@@ -1857,12 +1868,17 @@ def main() -> int:
         phase35_trip_destination = trip_destination_stage_telemetry()
     report = {
         "phase": (
+            36 if args.phase36_device_trip_abi else
             35 if args.phase35_resident_trip else
             34 if args.phase34_location_choice else
             33 if args.phase33_model_wide else
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with the Phase 35 trip runtime plus "
+            "compact raw trip/tour uploads, resident land use, and direct CUDA "
+            "generation of the complete trip-mode 11/45 utility ABI"
+            if args.phase36_device_trip_abi else
             "full public ActivitySim model with the Phase 34 runtime plus a "
             "persistent CUDA trip-scheduling service and a native raw-trip-to-"
             "mode-logsum ABI that bypasses dense trip-destination preprocessing"
@@ -2133,6 +2149,45 @@ def main() -> int:
                     and all(
                         item["fallback_calls"] == 0
                         for item in phase35_trip_destination.get("native_logsum", [])
+                    )
+                ),
+            }
+        )
+    if args.phase36_device_trip_abi:
+        native_events = phase35_trip_destination.get("native_logsum", [])
+        report["proof_gates"].update(
+            {
+                "phase36_all_trip_abis_generated_on_device": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("backend") == "phase36_device_abi"
+                        for item in native_events
+                    )
+                ),
+                "phase36_dense_host_abi_eliminated": (
+                    sum(
+                        item.get("dense_host_abi_bytes_avoided", 0)
+                        for item in native_events
+                    ) == 1_792_597_536
+                ),
+                "phase36_compact_packet_below_400mb": (
+                    0 < sum(
+                        item.get("compact_device_input_bytes", 0)
+                        for item in native_events
+                    ) < 400_000_000
+                ),
+                "phase36_device_preparation_kernels_used": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("device_preparation_kernel_seconds", 0) > 0
+                        for item in native_events
+                    )
+                ),
+                "phase36_resident_land_state_used": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("resident_land_bytes", 0) > 0
+                        for item in native_events
                     )
                 ),
             }
