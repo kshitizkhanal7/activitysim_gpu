@@ -4336,3 +4336,149 @@ zero decision changes, bounded declared diagnostics, no fallback, and explicit
 memory accounting. That is how the project can move from a credible 14.33%
 whole-model reduction toward a much larger device-resident runtime without
 trading away trust.
+
+## 109. Phase 34: move a whole location family together
+
+Phase 34 follows that rule. It does not celebrate one tiny test kernel. It
+moves a connected family of real model calculations onto the existing GPU
+runtime:
+
+1. school location, such as which zone a student attends;
+2. workplace location, such as which zone a worker travels to;
+3. the destination of a joint household tour;
+4. the destination of a short tour made during the workday; and
+5. the travel mode for that short at-work tour.
+
+Location choice is not simply "pick the closest place." ActivitySim first
+samples plausible places. For each sampled place, it asks how attractive the
+place is and how easy it is to reach by all available modes. The combined
+mode-quality number is called a **logsum**. Higher logsums usually mean the
+place has a better collection of travel options. ActivitySim then combines
+that information with jobs, school enrollment, distance, and other model
+rules before making a controlled random choice.
+
+The GPU does the large repeated arithmetic used to make the logsums. ActivitySim
+still owns the sample of places, probability rules, random numbers, shadow-
+pricing iteration, and final table. This narrow boundary is important: we are
+accelerating the same model, not quietly inventing a different one.
+
+## 110. Proof that the new GPU work really ran
+
+Saying "GPU mode was on" is weak evidence. A program might fall back to the
+CPU without anyone noticing. Phase 34 instead knows the exact shape of the
+public benchmark and checks it after every candidate run.
+
+| New group | Expected GPU calls | Rows calculated |
+|---|---:|---:|
+| school-location logsums | 3 | 685,915 |
+| workplace-location logsums | 4 | 1,859,082 |
+| joint-tour destination logsums | 5 | 76,559 |
+| at-work destination logsums | 1 | 310,968 |
+| **Location total** | **13** | **2,932,524** |
+| at-work mode utility | 1 | 15,100 |
+
+All three final candidate runs had exactly those counts and zero fallback. The
+runner also kept every older proof: all 34 model steps finished, the earlier
+mandatory and non-mandatory scheduling programs ran, the trip destination and
+mode bridges ran, controlled random choices stayed exact, and GPU network data
+was released once after its final user.
+
+One subtle software detail mattered. The at-work mode component had saved its
+own reference to ActivitySim's original calculation function. Changing the
+shared function was therefore not enough. Phase 34 explicitly replaces that
+saved component reference while preserving the original as an emergency exact
+fallback. A regression test records that this bridge belongs to Phase 34.
+
+## 111. The Phase 34 stopwatch result
+
+We ran three fresh pairs. In every pair, regular pinned ActivitySim ran first
+and the Phase 34 candidate ran second. Both processed the same 50,000 sampled
+households, 1,454 zones, and all 34 model steps.
+
+| Pair | Regular ActivitySim | Phase 34 | Saved | Reduction | Speedup |
+|---|---:|---:|---:|---:|---:|
+| 1 | 270.2 s | 185.1 s | 85.1 s | 31.50% | 1.460x |
+| 2 | 210.2 s | 199.6 s | 10.6 s | 5.04% | 1.053x |
+| 3 | 269.1 s | 207.2 s | 61.9 s | 23.00% | 1.299x |
+| Middle result | **269.1 s** | **199.6 s** | **69.5 s** | **25.83%** | **1.348x** |
+
+In plain language, the middle regular run took about 4 minutes 29 seconds. The
+middle GPU run took about 3 minutes 20 seconds. The difference was about 1
+minute 10 seconds. "1.348x" means the regular run took 1.348 times as long;
+it does not mean 348 times faster.
+
+All three GPU candidates won, which replicates the direction of the result.
+However, the amount saved varied from 10.6 to 85.1 seconds. That is a wide
+spread. The honest conclusion is that this machine repeatedly favored the GPU
+runtime, while 25.83% is a three-run median rather than a precise universal
+constant. A quiet dedicated benchmark machine and more repetitions would be
+needed for a narrow scientific confidence interval.
+
+## 112. Where the time saving came from
+
+Phase 34 includes all earlier successful GPU work. Therefore the complete
+69.5-second median saving is not caused only by the new location kernels. The
+component table helps separate the story:
+
+| Component | Regular | Phase 34 | Saved | Speedup |
+|---|---:|---:|---:|---:|
+| school location | 11.0 s | 8.4 s | 2.6 s | 1.310x |
+| workplace location | 16.8 s | 12.3 s | 4.5 s | 1.366x |
+| joint-tour destination | 3.7 s | 3.5 s | 0.2 s | 1.057x |
+| at-work destination | 4.9 s | 2.8 s | 2.1 s | 1.750x |
+| at-work mode | 1.3 s | 1.6 s | -0.3 s | 0.813x |
+| mandatory scheduling, retained | 29.7 s | 15.0 s | 14.7 s | 1.980x |
+| non-mandatory destination, retained | 17.1 s | 11.9 s | 5.2 s | 1.437x |
+| non-mandatory scheduling, retained | 12.0 s | 7.1 s | 4.9 s | 1.690x |
+| trip destination, retained | 54.1 s | 32.8 s | 21.3 s | 1.649x |
+
+The five newly targeted component medians add to about **9.1 seconds saved**.
+That is the best cautious estimate of the new Phase 34 contribution in this
+experiment. The rest of the whole-model advantage comes from retained earlier
+GPU acceleration and ordinary variation in CPU work. At-work mode is a small
+negative median result and is shown rather than hidden. More GPU coverage does
+not automatically mean more speed when packing and launch costs exceed the
+arithmetic saved.
+
+## 113. Accuracy: same decisions, tiny declared diagnostics
+
+A separate verifier compared every final CSV in each candidate with its own
+control. It found:
+
+- changed modeled decision cells: **0**;
+- changed decision rows: **0**;
+- maximum school-location logsum difference: **0.0000038147**;
+- maximum workplace-location logsum difference: **0.0000019074**;
+- maximum destination logsum difference: **0.0000100001**; and
+- maximum mode-choice logsum difference: **0.0000038136**.
+
+The two location limits are 0.00001, the destination limit is 0.0001, and the
+mode limit is 0.00001. All observed differences fit. These logsums are
+diagnostic decimal scores, not chosen zones or modes. CPU and GPU arithmetic
+can round the last few decimal places differently because they group additions
+in different orders. The verifier permits that only in four named columns and
+still requires every actual decision to be identical.
+
+## 114. What Phase 34 means, and what comes next
+
+Phase 34 is meaningful success: the location-choice family now uses millions
+of real generated-CUDA calculations, all three complete candidates beat
+regular ActivitySim, and decisions replicate exactly. It also teaches a limit.
+Fast kernels are no longer the only problem. The CPU still samples alternatives,
+joins pandas tables, repeatedly packs person-tour-trip data, runs sequential
+trip scheduling, and writes files. Moving one more equation will have shrinking
+returns.
+
+The next large phase should build a resident person-tour-trip state engine. It
+would keep commonly reused columns and network indices together across model
+steps, remove repeated table packing, and then test a GPU trip scheduler that
+processes independent tour chains in parallel while preserving the order
+inside each chain. Success must include two comparisons: Phase 35 versus Phase
+34 to prove the new work's incremental benefit, and Phase 35 versus regular
+ActivitySim to show the larger practical result. Changed populations,
+coefficients, and travel-time matrices should be tested too.
+
+The goal is not "put everything on GPU" as a slogan. The goal is to remove the
+largest remaining data-motion and orchestration costs while keeping the public
+ActivitySim contract, controlled randomness, exact choices, bounded named
+diagnostics, explicit fallbacks, and reproducible evidence.

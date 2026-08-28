@@ -22,6 +22,7 @@ from .activitysim_destination import _cached_strict_ir
 logger = logging.getLogger(__name__)
 _ORIGINAL_TRIP_MODE_CHOICE_SIMULATE = None
 _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE = None
+_ORIGINAL_ATWORK_MODE_CHOICE_SIMULATE = None
 _REPORT_SEQUENCE = 0
 
 
@@ -57,6 +58,30 @@ def install_activitysim_tour_mode_candidate() -> None:
     logger.info("installed ChoiceForge strict-CUDA tour-mode utility bridge")
 
 
+def install_activitysim_atwork_mode_candidate() -> None:
+    """Install generated CUDA for the at-work subtour mode component.
+
+    The at-work component keeps a module-local reference imported before the
+    primary tour-mode bridge is installed.  Patch that binding explicitly and
+    preserve the original ActivitySim function as the exact fallback.
+    """
+    global _ORIGINAL_ATWORK_MODE_CHOICE_SIMULATE
+    from activitysim.abm.models import atwork_subtour_mode_choice
+    from activitysim.abm.models.util import mode
+
+    if _ORIGINAL_ATWORK_MODE_CHOICE_SIMULATE is not None:
+        return
+    _ORIGINAL_ATWORK_MODE_CHOICE_SIMULATE = (
+        _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE
+        if _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE is not None
+        else mode.run_tour_mode_choice_simulate
+    )
+    atwork_subtour_mode_choice.run_tour_mode_choice_simulate = (
+        _atwork_mode_choice_simulate_cuda
+    )
+    logger.info("installed ChoiceForge strict-CUDA at-work mode utility bridge")
+
+
 def _mode_choice_simulate_cuda(*args, **kwargs):
     """Replace only Sharrow utility evaluation for one mode-choice segment."""
     return _generated_mode_choice_simulate(
@@ -68,6 +93,16 @@ def _tour_mode_choice_simulate_cuda(*args, **kwargs):
     """Replace only Sharrow utility evaluation for one tour-mode segment."""
     return _generated_mode_choice_simulate(
         _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE, "tour_mode_choice", *args, **kwargs
+    )
+
+
+def _atwork_mode_choice_simulate_cuda(*args, **kwargs):
+    """Replace only Sharrow utility evaluation for at-work subtour mode."""
+    return _generated_mode_choice_simulate(
+        _ORIGINAL_ATWORK_MODE_CHOICE_SIMULATE,
+        "atwork_subtour_mode_choice",
+        *args,
+        **kwargs,
     )
 
 
@@ -117,7 +152,7 @@ def _generated_mode_choice_simulate(original, component, *args, **kwargs):
             download_ms = (time.perf_counter() - download_started) * 1000
             telemetry = generated.telemetry
             _write_report({
-                "phase": 33 if component == "tour_mode_choice" else 17,
+                "phase": _component_phase(component),
                 "component": component,
                 "trace_label": trace_label,
                 "rows": len(choosers),
@@ -157,7 +192,7 @@ def _generated_mode_choice_simulate(original, component, *args, **kwargs):
             return utilities, None, None
         except Exception as exc:
             _write_report({
-                "phase": 33 if component == "tour_mode_choice" else 17,
+                "phase": _component_phase(component),
                 "component": component,
                 "trace_label": trace_label,
                 "rows": len(choosers),
@@ -179,6 +214,14 @@ def _generated_mode_choice_simulate(original, component, *args, **kwargs):
         return original(*args, **kwargs)
     finally:
         activitysim_flow.apply_flow = original_apply_flow
+
+
+def _component_phase(component: str) -> int:
+    if component == "atwork_subtour_mode_choice":
+        return 34
+    if component == "tour_mode_choice":
+        return 33
+    return 17
 
 
 def _strict_inputs(state, spec, dataframe, locals_d):

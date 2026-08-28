@@ -3,7 +3,7 @@ param(
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
     [ValidateSet("phase17", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33)][int]$CandidatePhase = 32,
+    [ValidateSet(32, 33, 34)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -12,7 +12,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $project = Join-Path $repo "benchmark-data\phase9-mtc-full\prototype_mtc_extended"
 $python = Join-Path $repo ".venv-phase8\Scripts\python.exe"
 $activitysim = Join-Path $repo ".venv-phase8\Scripts\activitysim.exe"
-$overlayName = if ($CandidatePhase -eq 33) {
+$overlayName = if ($CandidatePhase -ge 33) {
     "configs_phase33_choiceforge"
 } else {
     "configs_phase9_choiceforge"
@@ -141,6 +141,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
             "--kernel-reports", $candidateKernel
         )
         if ($CandidatePhase -eq 33) { $candidateArguments += "--phase33-model-wide" }
+        if ($CandidatePhase -eq 34) { $candidateArguments += "--phase34-location-choice" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -212,9 +213,14 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
     $candidateMedian = [double]$candidateComponentValues[$middle]
     $gpuRole = switch ($modelName) {
         "mandatory_tour_scheduling" { "Phase32 native GPU retained" }
-        "non_mandatory_tour_destination" { if ($CandidatePhase -eq 33) { "Phase33 generated GPU" } else { "not directly GPU-targeted" } }
-        "non_mandatory_tour_scheduling" { if ($CandidatePhase -eq 33) { "Phase33 scheduling GPU" } else { "not directly GPU-targeted" } }
-        "tour_mode_choice_simulate" { if ($CandidatePhase -eq 33) { "Phase33 generated GPU" } else { "not directly GPU-targeted" } }
+        "school_location" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "workplace_location" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "joint_tour_destination" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "atwork_subtour_destination" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "atwork_subtour_mode_choice" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU" } else { "not directly GPU-targeted" } }
+        "non_mandatory_tour_destination" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
+        "non_mandatory_tour_scheduling" { if ($CandidatePhase -ge 33) { "Phase33 scheduling GPU retained" } else { "not directly GPU-targeted" } }
+        "tour_mode_choice_simulate" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
         "trip_destination" { "Phase17 generated GPU retained" }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }

@@ -47,6 +47,14 @@ def main() -> int:
             "destination logsums, non-mandatory scheduling, and primary tour mode"
         ),
     )
+    parser.add_argument(
+        "--phase34-location-choice",
+        action="store_true",
+        help=(
+            "extend the Phase 33 runtime to school, workplace, joint-tour, "
+            "and at-work location-choice logsum programs"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -121,6 +129,8 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase34_location_choice:
+        args.phase33_model_wide = True
     if args.phase33_model_wide and not args.full_model:
         parser.error("--phase33-model-wide requires --full-model")
     native_abi_enabled = bool(
@@ -774,6 +784,13 @@ def main() -> int:
         nonlocal full_model_native_release_after_model
         nonlocal full_model_scheduler_checkpoint
         model_name_text = str(model_name)
+        location_logsum_steps = {
+            "school_location",
+            "workplace_location",
+            "joint_tour_destination",
+            "non_mandatory_tour_destination",
+            "atwork_subtour_destination",
+        }
         if (
             args.phase33_model_wide
             and model_name_text == "tour_mode_choice_simulate"
@@ -784,8 +801,21 @@ def main() -> int:
             )
 
             install_activitysim_tour_mode_candidate()
-        if args.phase33_model_wide and model_name_text == "non_mandatory_tour_destination":
-            def phase33_location_logsums(
+        if args.phase34_location_choice and model_name_text == "atwork_subtour_mode_choice":
+            from choiceforge.activitysim_mode_choice import (
+                install_activitysim_atwork_mode_candidate,
+            )
+
+            install_activitysim_atwork_mode_candidate()
+        location_candidate_enabled = (
+            model_name_text == "non_mandatory_tour_destination"
+            or (
+                args.phase34_location_choice
+                and model_name_text in location_logsum_steps
+            )
+        )
+        if args.phase33_model_wide and location_candidate_enabled:
+            def generated_location_logsums(
                 state,
                 choosers,
                 spec,
@@ -808,17 +838,17 @@ def main() -> int:
                         skims or {},
                         locals_d or {},
                         trace_label
-                        or "non_mandatory_tour_destination.compute_logsums",
+                        or f"{model_name_text}.compute_logsums",
                         explicit_chunk_size,
                     )
                 finally:
-                    simulate.simple_simulate_logsums = phase33_location_logsums
+                    simulate.simple_simulate_logsums = generated_location_logsums
 
-            simulate.simple_simulate_logsums = phase33_location_logsums
+            simulate.simple_simulate_logsums = generated_location_logsums
         try:
             result = original_runner_by_name(self, model_name)
         finally:
-            if args.phase33_model_wide and model_name_text == "non_mandatory_tour_destination":
+            if args.phase33_model_wide and location_candidate_enabled:
                 simulate.simple_simulate_logsums = original_simple_simulate_logsums
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
             full_model_scheduler_checkpoint = scheduler.checkpoint()
@@ -961,6 +991,35 @@ def main() -> int:
     ]
     phase33_tour_mode = [
         item for item in candidates if item.get("component") == "tour_mode_choice"
+    ]
+    phase34_location = [
+        item for item in candidates
+        if any(
+            str(item.get("trace_label", "")).startswith(f"{prefix}.")
+            for prefix in (
+                "school_location",
+                "workplace_location",
+                "joint_tour_destination",
+                "atwork_subtour_destination",
+            )
+        )
+    ]
+    phase34_location_groups = {
+        prefix: [
+            item for item in phase34_location
+            if str(item.get("trace_label", "")).startswith(f"{prefix}.")
+        ]
+        for prefix in (
+            "school_location",
+            "workplace_location",
+            "joint_tour_destination",
+            "atwork_subtour_destination",
+        )
+    }
+    phase34_atwork_mode = [
+        item
+        for item in candidates
+        if item.get("component") == "atwork_subtour_mode_choice"
     ]
     timing_path = args.output / "timing_log.csv"
     model_timing_seconds = {}
@@ -1765,8 +1824,15 @@ def main() -> int:
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {
-        "phase": 33 if args.phase33_model_wide else (32 if args.full_model else 22),
+        "phase": (
+            34 if args.phase34_location_choice else
+            33 if args.phase33_model_wide else
+            (32 if args.full_model else 22)
+        ),
         "scope": (
+            "full public ActivitySim model with the Phase 33 runtime plus "
+            "school, workplace, joint-tour, and at-work location logsum CUDA programs"
+            if args.phase34_location_choice else
             "full public ActivitySim model with six qualified GPU consumers and "
             "one shared CUDA skim residency interval through trip mode choice"
             if args.phase33_model_wide else
@@ -1801,6 +1867,24 @@ def main() -> int:
         "phase33_tour_mode_cuda_calls": len(phase33_tour_mode),
         "phase33_tour_mode_rows": int(
             sum(item.get("rows", 0) for item in phase33_tour_mode)
+        ),
+        "phase34_location_cuda_calls": len(phase34_location),
+        "phase34_location_rows": int(
+            sum(item.get("rows", 0) for item in phase34_location)
+        ),
+        "phase34_location_trace_labels": [
+            str(item.get("trace_label", "")) for item in phase34_location
+        ],
+        "phase34_location_groups": {
+            prefix: {
+                "cuda_calls": len(items),
+                "rows": int(sum(item.get("rows", 0) for item in items)),
+            }
+            for prefix, items in phase34_location_groups.items()
+        },
+        "phase34_atwork_mode_cuda_calls": len(phase34_atwork_mode),
+        "phase34_atwork_mode_rows": int(
+            sum(item.get("rows", 0) for item in phase34_atwork_mode)
         ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -1946,6 +2030,28 @@ def main() -> int:
                 "all_9_primary_tour_mode_cuda_calls_used": (
                     report["phase33_tour_mode_cuda_calls"] == 9
                     and report["phase33_tour_mode_rows"] > 0
+                ),
+            }
+        )
+    if args.phase34_location_choice:
+        report["proof_gates"].update(
+            {
+                "all_13_phase34_location_cuda_programs_used": (
+                    report["phase34_location_cuda_calls"] == 13
+                    and report["phase34_location_rows"] == 2_932_524
+                ),
+                "phase34_location_workload_shape_exact": (
+                    report["phase34_location_groups"]
+                    == {
+                        "school_location": {"cuda_calls": 3, "rows": 685_915},
+                        "workplace_location": {"cuda_calls": 4, "rows": 1_859_082},
+                        "joint_tour_destination": {"cuda_calls": 5, "rows": 76_559},
+                        "atwork_subtour_destination": {"cuda_calls": 1, "rows": 310_968},
+                    }
+                ),
+                "atwork_mode_cuda_program_used": (
+                    report["phase34_atwork_mode_cuda_calls"] == 1
+                    and report["phase34_atwork_mode_rows"] > 0
                 ),
             }
         )

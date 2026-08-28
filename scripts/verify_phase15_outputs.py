@@ -15,6 +15,8 @@ EXCLUDED = {"final_checkpoints.csv"}
 DIAGNOSTIC_LIMITS = {
     "destination_logsum": 1e-4,
     "mode_choice_logsum": 1e-5,
+    "school_location_logsum": 1e-5,
+    "workplace_location_logsum": 1e-5,
 }
 
 

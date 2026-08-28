@@ -306,8 +306,8 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.167x", STYLES["metric_num"]),
-                Paragraph("29.6 s", STYLES["metric_num"]),
+                Paragraph("1.348x", STYLES["metric_num"]),
+                Paragraph("69.5 s", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 33 cuts the median complete 34-step public model from 206.6 to 177.0 seconds, saves 29.6 seconds, and changes zero modeled decision cells in three matched fresh-process pairs against regular pinned ActivitySim. Boundaries and limits are explained inside.",
+            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds, saves 69.5 seconds, and changes zero modeled decision cells in three matched fresh-process pairs against regular pinned ActivitySim. Boundaries, variance, and limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 27, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 28, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

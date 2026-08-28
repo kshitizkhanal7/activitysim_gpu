@@ -673,3 +673,22 @@ logsums remain inside 0.0001 and 0.00001 gates.
 
 See the [Phase 33 technical report](docs/phase33-model-wide-gpu-runtime.md) and
 the [three-pair proof](benchmark-results/phase33-p33model1-summary.json).
+
+## Phase 34 location-choice family runtime
+
+Phase 34 expands the generated CUDA boundary to school and workplace location,
+joint-tour and at-work destination logsums, plus at-work subtour mode. Each
+candidate proves exactly 13 new location programs covering 2,932,524 rows and
+one 15,100-row at-work mode program, with zero fallback.
+
+Three fresh matched 50,000-household pairs against regular pinned
+ActivitySim/Sharrow reduce median all-model time from 269.1 to 199.6 seconds:
+69.5 seconds saved, 25.83% lower, and **1.348x faster**. All three candidates
+win and every complete-output comparison finds zero changed decision cells.
+Four declared diagnostic logsum fields differ only within explicit numerical
+limits. The new Phase 34 component medians account for about 9.1 seconds of
+savings; the larger whole-model result also includes retained earlier GPU work
+and substantial run-to-run system variance.
+
+See the [Phase 34 technical report](docs/phase34-location-choice-runtime.md) and
+the [three-pair proof](benchmark-results/phase34-p34model1-summary.json).

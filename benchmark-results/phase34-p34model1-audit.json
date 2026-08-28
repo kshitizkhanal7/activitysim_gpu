@@ -1,0 +1,78 @@
+{
+  "checks": {
+    "candidate_won_every_pair": true,
+    "every_pair_exact": true,
+    "median_candidate_faster": true,
+    "phase_is_34": true,
+    "three_matched_pairs": true,
+    "trial_1_passed": true,
+    "trial_2_passed": true,
+    "trial_3_passed": true
+  },
+  "claim_boundary": "integrity audit of the three-pair public 50,000-household Phase 34 qualification; hashes detect later artifact or implementation changes",
+  "evidence_sha256": {
+    "benchmark-results/phase34-p34model1-exact-1.json": "20d9a7cf0978d1e786b225747e7aff28a7ea0c95a29c93e8fd7e8c9b6ded29ae",
+    "benchmark-results/phase34-p34model1-exact-2.json": "20d9a7cf0978d1e786b225747e7aff28a7ea0c95a29c93e8fd7e8c9b6ded29ae",
+    "benchmark-results/phase34-p34model1-exact-3.json": "20d9a7cf0978d1e786b225747e7aff28a7ea0c95a29c93e8fd7e8c9b6ded29ae",
+    "benchmark-results/phase34-p34model1-gpu-1.json": "33ee31519144d3a5276af60b3682f132a5e23145d885d0901cb973cc63fe6d8c",
+    "benchmark-results/phase34-p34model1-gpu-2.json": "f6805169233b49e0a56335bca3876d593b15132d5d79490920d751604323e6ca",
+    "benchmark-results/phase34-p34model1-gpu-3.json": "44584dee4a53e279704e75256a3a32e4ef9e2951713397f6b262b2412e12efef",
+    "benchmark-results/phase34-p34model1-summary.json": "d0d1264f9838df0ea539dae48dadebafc2eb50cae75a23c0990564617b22e338"
+  },
+  "implementation_sha256": {
+    "scripts/run_phase22_integrated_scheduling.py": "e20c986f13cef7f1f6544d414279baa8db106d2f306e8be9087a2851a731fcd5",
+    "scripts/run_phase32_full_model_ab.ps1": "31dfc37123aca3c384d606f0b5c18107ce86da39c5210ed74c16f05ffbb9719e",
+    "scripts/run_phase34_location_choice_ab.ps1": "08a91f4c6c0c132f93833bfa7ebd28d9ac586754f1569ab9dee4ae95c3140859",
+    "scripts/verify_phase15_outputs.py": "a1c75ce1fcac1efc1a6a3e72e31818c6b53eb9272c55e38f842b5af76729526d",
+    "src/choiceforge/activitysim_mode_choice.py": "b154c137255c79e83ad842b18f7cc271f944514560fab974a56d06842afc59d3"
+  },
+  "phase": 34,
+  "runs": [
+    {
+      "checks": {
+        "all_proof_gates_true": true,
+        "atwork_mode_call_exact": true,
+        "atwork_mode_rows_exact": true,
+        "candidate_faster": true,
+        "exact_verifier_success": true,
+        "location_calls_exact": true,
+        "location_rows_exact": true,
+        "no_fallback": true,
+        "zero_decision_cells_changed": true,
+        "zero_decision_rows_changed": true
+      },
+      "trial": 1
+    },
+    {
+      "checks": {
+        "all_proof_gates_true": true,
+        "atwork_mode_call_exact": true,
+        "atwork_mode_rows_exact": true,
+        "candidate_faster": true,
+        "exact_verifier_success": true,
+        "location_calls_exact": true,
+        "location_rows_exact": true,
+        "no_fallback": true,
+        "zero_decision_cells_changed": true,
+        "zero_decision_rows_changed": true
+      },
+      "trial": 2
+    },
+    {
+      "checks": {
+        "all_proof_gates_true": true,
+        "atwork_mode_call_exact": true,
+        "atwork_mode_rows_exact": true,
+        "candidate_faster": true,
+        "exact_verifier_success": true,
+        "location_calls_exact": true,
+        "location_rows_exact": true,
+        "no_fallback": true,
+        "zero_decision_cells_changed": true,
+        "zero_decision_rows_changed": true
+      },
+      "trial": 3
+    }
+  ],
+  "success": true
+}

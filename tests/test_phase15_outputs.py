@@ -39,6 +39,25 @@ def _outputs_with_tours(
     return root
 
 
+def _outputs_with_person_locations(
+    root: Path,
+    *,
+    school_zone="7",
+    school_logsum="3.000000",
+    workplace_zone="9",
+    workplace_logsum="4.000000",
+) -> Path:
+    _outputs(root)
+    pd.DataFrame({
+        "person_id": [30],
+        "school_zone_id": [school_zone],
+        "school_location_logsum": [school_logsum],
+        "workplace_zone_id": [workplace_zone],
+        "workplace_location_logsum": [workplace_logsum],
+    }).to_csv(root / "final_persons.csv", index=False)
+    return root
+
+
 def test_phase15_accepts_exact_decisions_and_bounded_diagnostic_drift(tmp_path):
     reference = _outputs(tmp_path / "reference")
     candidate = _outputs(tmp_path / "candidate", logsum="1.000008")
@@ -80,4 +99,28 @@ def test_verifier_rejects_changed_tour_decision(tmp_path):
         tmp_path / "candidate", tour_mode="DRIVEALONEFREE"
     )
     with pytest.raises(RuntimeError, match="final_tours.csv changed"):
+        verify(reference, candidate)
+
+
+def test_verifier_accepts_bounded_person_location_diagnostics(tmp_path):
+    reference = _outputs_with_person_locations(tmp_path / "reference")
+    candidate = _outputs_with_person_locations(
+        tmp_path / "candidate",
+        school_logsum="3.000004",
+        workplace_logsum="4.000002",
+    )
+    result = verify(reference, candidate)
+    assert result["success"]
+    assert result["decision_cells_different"] == 0
+    assert result["diagnostic_outputs"]["final_persons.csv"][
+        "school_location_logsum"
+    ]["max_abs"] == pytest.approx(4e-6)
+
+
+def test_verifier_rejects_changed_person_location_choice(tmp_path):
+    reference = _outputs_with_person_locations(tmp_path / "reference")
+    candidate = _outputs_with_person_locations(
+        tmp_path / "candidate", workplace_zone="10"
+    )
+    with pytest.raises(RuntimeError, match="final_persons.csv changed"):
         verify(reference, candidate)
