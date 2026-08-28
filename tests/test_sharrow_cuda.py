@@ -8,6 +8,7 @@ import pytest
 
 from choiceforge.activitysim_expression import parse_activitysim_expression
 from choiceforge.sharrow_cuda import (
+    InputBinding,
     _bindings,
     clear_strict_cuda_cache,
     compare_strict_cpu_cuda,
@@ -303,6 +304,58 @@ def test_canonical_generator_parallelizes_features_without_reordering_utilities(
     )
     assert "fmaf(shared_features[term]" in fused_source
     assert "__fmul_rn(shared_features[term]" not in fused_source
+
+
+def test_direct_generator_can_fuse_row_sources_and_skim_coordinates():
+    document = specification_ir(pd.DataFrame({
+        "Expression": ["df.x + od_skims['DIST']"],
+        "A": [1.0],
+    }))
+    bindings = [
+        InputBinding(("column", "x"), "float", "float64", 0),
+        InputBinding(("skim", "od_skims", "DIST"), "float", "skim", 0, 2, 0),
+    ]
+    source, _ = generate_cuda_source(
+        document,
+        bindings,
+        capture_features=False,
+        group_skim_indices=True,
+        row_source_references={("column", "x"): "phase37_x"},
+        group_coordinate_references={0: ("phase37_origin", "phase37_destination", None)},
+        extra_kernel_parameters=("    const float* phase37_packet",),
+        row_prelude=(
+            "    const float phase37_x = phase37_packet[row];\n"
+            "    const long long phase37_origin = row;\n"
+            "    const long long phase37_destination = row + 1;"
+        ),
+    )
+    assert "const float* phase37_packet" in source
+    assert "const float phase37_x = phase37_packet[row]" in source
+    assert "(phase37_origin * skim_group_0_dest_count + phase37_destination)" in source
+    assert "float_inputs[row *" not in source
+    assert "skim_group_0_orig[row]" not in source
+    assert "skim_group_0_dest[row]" not in source
+
+    with pytest.raises(ValueError, match="unknown bindings"):
+        generate_cuda_source(
+            document,
+            bindings,
+            row_source_references={("column", "missing"): "missing"},
+        )
+    with pytest.raises(ValueError, match="requires the direct kernel"):
+        generate_cuda_source(
+            document,
+            bindings,
+            locality_tile_rows=2,
+            row_source_references={("column", "x"): "phase37_x"},
+        )
+    with pytest.raises(ValueError, match="unknown skim groups"):
+        generate_cuda_source(
+            document,
+            bindings,
+            group_skim_indices=True,
+            group_coordinate_references={7: ("origin", "destination", None)},
+        )
 
 
 def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():

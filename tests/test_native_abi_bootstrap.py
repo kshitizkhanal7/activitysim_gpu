@@ -88,6 +88,26 @@ def test_native_abi_matches_environment_discovered_strict_cuda_exactly():
     assert native.manifest["skim_coordinate_groups"] == 1
 
 
+def test_native_abi_minimal_row_state_allocates_only_one_contract_row():
+    import numpy as np
+
+    document = _document()
+    cube = cp.asarray(np.arange(9, dtype=np.float32).reshape(3, 3))
+    native = compile_native_strict_abi(
+        document,
+        {"scale": 1.25},
+        lambda source: NativeSkimCube(cube, 3, 1, 2),
+        rows=50_000,
+        minimal_row_state=True,
+    )
+    invocation = native.invocation
+    assert invocation.rows == 50_000
+    assert invocation.float_inputs.shape[0] == 1
+    assert invocation.int_inputs.shape[0] == 1
+    assert invocation.skim_coordinate_bytes == 16
+    assert native.manifest["codegen"]["minimal_row_state"] is True
+
+
 def test_native_abi_fails_closed_for_unknown_row_source():
     document = _document("df.unknown + scale")
     with pytest.raises(ValueError, match="neither declared row state"):

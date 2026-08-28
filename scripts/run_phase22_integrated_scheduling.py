@@ -32,6 +32,11 @@ def main() -> int:
     parser.add_argument("--config-overlay", type=Path, action="append")
     parser.add_argument("--resume", default="mandatory_tour_frequency")
     parser.add_argument(
+        "--resume-full-model",
+        action="store_true",
+        help="resume a cloned full-model pipeline after --resume for focused qualification",
+    )
+    parser.add_argument(
         "--full-model",
         action="store_true",
         help=(
@@ -69,6 +74,14 @@ def main() -> int:
         help=(
             "extend Phase 35 with compact raw trip/tour uploads, resident "
             "land-use state, and direct CUDA generation of the complete 11/45 ABI"
+        ),
+    )
+    parser.add_argument(
+        "--phase37-fused-trip-utility",
+        action="store_true",
+        help=(
+            "extend Phase 36 by deriving the complete row ABI and grouped skim "
+            "coordinates in registers inside the utility kernel"
         ),
     )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
@@ -145,6 +158,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase37_fused_trip_utility:
+        args.phase36_device_trip_abi = True
+        os.environ["CHOICEFORGE_PHASE37_FUSED_TRIP_UTILITY"] = "1"
     if args.phase36_device_trip_abi:
         args.phase35_resident_trip = True
         os.environ["CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI"] = "1"
@@ -974,6 +990,8 @@ def main() -> int:
     ])
     if args.full_model:
         cli.extend(["--households_sample_size", str(args.households_sample_size)])
+        if args.resume_full_model:
+            cli.extend(["-r", args.resume])
     else:
         cli.extend(["-r", args.resume])
     old_argv = sys.argv
@@ -1868,6 +1886,7 @@ def main() -> int:
         phase35_trip_destination = trip_destination_stage_telemetry()
     report = {
         "phase": (
+            37 if args.phase37_fused_trip_utility else
             36 if args.phase36_device_trip_abi else
             35 if args.phase35_resident_trip else
             34 if args.phase34_location_choice else
@@ -1875,6 +1894,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with Phase 36 compact raw inputs "
+            "consumed directly by one fused CUDA utility kernel, with no "
+            "materialized 11/45 device ABI or device coordinate vectors"
+            if args.phase37_fused_trip_utility else
             "full public ActivitySim model with the Phase 35 trip runtime plus "
             "compact raw trip/tour uploads, resident land use, and direct CUDA "
             "generation of the complete trip-mode 11/45 utility ABI"
@@ -2153,7 +2176,7 @@ def main() -> int:
                 ),
             }
         )
-    if args.phase36_device_trip_abi:
+    if args.phase36_device_trip_abi and not args.phase37_fused_trip_utility:
         native_events = phase35_trip_destination.get("native_logsum", [])
         report["proof_gates"].update(
             {
@@ -2184,6 +2207,59 @@ def main() -> int:
                     )
                 ),
                 "phase36_resident_land_state_used": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("resident_land_bytes", 0) > 0
+                        for item in native_events
+                    )
+                ),
+            }
+        )
+    if args.phase37_fused_trip_utility:
+        native_events = phase35_trip_destination.get("native_logsum", [])
+        report["proof_gates"].update(
+            {
+                "phase37_all_trip_utilities_fused": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("backend") == "phase37_fused_raw_utility"
+                        for item in native_events
+                    )
+                ),
+                "phase37_dense_device_abi_eliminated": (
+                    sum(
+                        item.get("dense_device_abi_bytes_eliminated", 0)
+                        for item in native_events
+                    ) == 1_692_078_048
+                ),
+                "phase37_coordinate_vectors_eliminated": (
+                    sum(
+                        item.get("coordinate_device_bytes_eliminated", 0)
+                        for item in native_events
+                    ) == 268_051_968
+                ),
+                "phase37_compact_input_contract_preserved": (
+                    sum(
+                        item.get("compact_device_input_bytes", 0)
+                        for item in native_events
+                    ) == 351_818_208
+                ),
+                "phase37_fused_kernels_used": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("fused_kernel_seconds", 0) > 0
+                        and item.get("device_preparation_kernel_seconds", 0) == 0
+                        for item in native_events
+                    )
+                ),
+                "phase37_bootstrap_row_state_is_minimal": (
+                    len(native_events) == 30
+                    and all(
+                        0 < item.get("minimal_bootstrap_bytes", 0) <= 1024
+                        for item in native_events
+                    )
+                ),
+                "phase37_resident_land_state_used": (
                     len(native_events) == 30
                     and all(
                         item.get("resident_land_bytes", 0) > 0

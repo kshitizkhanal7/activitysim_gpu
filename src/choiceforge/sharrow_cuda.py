@@ -606,6 +606,10 @@ def generate_cuda_source(
     sparse_zero_coefficients: bool = False,
     expression_float32: bool = False,
     fused_utility_accumulation: bool = False,
+    row_source_references: Mapping[tuple[str, ...], str] | None = None,
+    group_coordinate_references: Mapping[int, tuple[str, str, str | None]] | None = None,
+    extra_kernel_parameters: tuple[str, ...] = (),
+    row_prelude: str = "",
 ) -> tuple[str, str]:
     """Emit inspectable CUDA C++ from a strict IR document and typed schema."""
     _validate_document(document)
@@ -614,6 +618,8 @@ def generate_cuda_source(
     tiled = bool(locality_optimized or locality_tile_rows > 1)
     grouped_direct = bool(group_skim_indices and not tiled)
     sparse_direct = bool(sparse_zero_coefficients and not tiled)
+    if tiled and (row_source_references or group_coordinate_references or row_prelude):
+        raise ValueError("CUDA row-source fusion currently requires the direct kernel")
     if sparse_direct:
         if coefficient_values is None:
             raise ValueError("sparse coefficient generation requires resolved values")
@@ -629,6 +635,13 @@ def generate_cuda_source(
         )
         for binding in bindings
     }
+    if row_source_references:
+        unknown = set(row_source_references) - set(refs)
+        if unknown:
+            raise ValueError(
+                f"CUDA row-source overrides contain unknown bindings: {sorted(unknown)!r}"
+            )
+        refs.update(row_source_references)
     types = {binding.source: binding.value_kind for binding in bindings}
     feature_threads = (
         256 // locality_tile_rows if tiled
@@ -641,6 +654,16 @@ def generate_cuda_source(
     int_scalar_count = _storage_slot_count(bindings, {"scalar_int64"})
     skim_bindings = [binding for binding in bindings if binding.storage_kind == "skim"]
     skim_groups = _skim_groups(bindings)
+    if group_coordinate_references:
+        if not grouped_direct:
+            raise ValueError("CUDA coordinate fusion requires grouped direct skim indices")
+        known_groups = {group for group, _ in skim_groups}
+        unknown_groups = set(group_coordinate_references) - known_groups
+        if unknown_groups:
+            raise ValueError(
+                "CUDA coordinate overrides contain unknown skim groups: "
+                f"{sorted(unknown_groups)!r}"
+            )
     skim_parameters = []
     if grouped_direct:
         skim_parameters.extend(
@@ -671,7 +694,11 @@ def generate_cuda_source(
             skim_parameters.append(f"    long long {prefix}_dest_count")
             if binding.skim_rank == 3:
                 skim_parameters.append(f"    long long {prefix}_time_count")
-    skim_signature = (",\n" + ",\n".join(skim_parameters)) if skim_parameters else ""
+    all_extra_parameters = skim_parameters + list(extra_kernel_parameters)
+    skim_signature = (
+        ",\n" + ",\n".join(all_extra_parameters)
+        if all_extra_parameters else ""
+    )
     for index, term in enumerate(document["terms"]):
         code, _ = _emit_node(
             term["tree"], refs, types,
@@ -806,16 +833,36 @@ def generate_cuda_source(
             group_cases = []
             for group, binding in skim_groups:
                 prefix = f"skim_group_{group}"
+                coordinate_override = (
+                    group_coordinate_references.get(group)
+                    if group_coordinate_references else None
+                )
+                origin_ref = (
+                    coordinate_override[0] if coordinate_override
+                    else f"{prefix}_orig[row]"
+                )
+                destination_ref = (
+                    coordinate_override[1] if coordinate_override
+                    else f"{prefix}_dest[row]"
+                )
                 if binding.skim_rank == 3:
+                    period_ref = (
+                        coordinate_override[2]
+                        if coordinate_override else f"{prefix}_time[row]"
+                    )
+                    if period_ref is None:
+                        raise ValueError(
+                            f"CUDA skim group {group} requires a period override"
+                        )
                     index = (
-                        f"(({prefix}_orig[row] * {prefix}_dest_count + "
-                        f"{prefix}_dest[row]) * {prefix}_time_count + "
-                        f"{prefix}_time[row])"
+                        f"(({origin_ref} * {prefix}_dest_count + "
+                        f"{destination_ref}) * {prefix}_time_count + "
+                        f"{period_ref})"
                     )
                 else:
                     index = (
-                        f"({prefix}_orig[row] * {prefix}_dest_count + "
-                        f"{prefix}_dest[row])"
+                        f"({origin_ref} * {prefix}_dest_count + "
+                        f"{destination_ref})"
                     )
                 group_cases.append(
                     f"        case {group}: shared_skim_indices[{group}] = {index}; break;"
@@ -918,6 +965,7 @@ def generate_cuda_source(
     constexpr int INT_SCALAR_COUNT = {int_scalar_count};
     const long long row = (long long)blockIdx.x;
     if (row >= rows) return;
+{row_prelude}
 {shared_declaration}
 {group_load}
 {thread_nonfinite_declaration}

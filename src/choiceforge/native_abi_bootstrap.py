@@ -208,6 +208,7 @@ def compile_native_strict_abi(
     cube_loader: Callable[[tuple[str, ...]], NativeSkimCube],
     *,
     rows: int,
+    minimal_row_state: bool = False,
 ) -> NativeStrictAbiPlan:
     """Compile a strict resident invocation without dense preprocessor values."""
     _validate_document(document)
@@ -244,7 +245,10 @@ def compile_native_strict_abi(
         _NATIVE_KERNEL_CACHE[kernel_key] = kernel
     coefficients = cp.asarray(coefficients_host)
     float_scalars, int_scalars = _scalar_arrays(cp, bindings, scalar_values)
-    skim_arguments, coordinate_bytes = _skim_arguments(cp, bindings, cubes, rows)
+    allocation_rows = 1 if minimal_row_state else rows
+    skim_arguments, coordinate_bytes = _skim_arguments(
+        cp, bindings, cubes, allocation_rows
+    )
     def unique_sources(storage):
         by_slot = {}
         for item in bindings:
@@ -261,8 +265,12 @@ def compile_native_strict_abi(
         len(document["terms"]), len(skim_bindings),
         len({item.skim_group for item in skim_bindings}), 1, False, True,
     )
-    float_inputs = cp.empty((rows, len(float_sources)), dtype=cp.float32)
-    int_inputs = cp.empty((rows, len(int_sources)), dtype=cp.int64)
+    float_inputs = cp.empty(
+        (allocation_rows, len(float_sources)), dtype=cp.float32
+    )
+    int_inputs = cp.empty(
+        (allocation_rows, len(int_sources)), dtype=cp.int64
+    )
     features = cp.empty((1,), dtype=cp.float32)
     utilities = cp.empty((rows, len(document["alternatives"])), dtype=cp.float32)
     unique_cubes = {
@@ -309,6 +317,7 @@ def compile_native_strict_abi(
             "utility_accumulation": "sharrow_fused_float32",
             "grouped_skim_indices": True,
             "capture_features": False,
+            "minimal_row_state": bool(minimal_row_state),
         },
     }
     schema_sha256 = hashlib.sha256(

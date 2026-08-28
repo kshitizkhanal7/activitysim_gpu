@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 31 persistent-skim result does and does not prove;
+- what the completed Phase 37 fused trip-utility result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -4710,3 +4710,90 @@ fuse preparation with utility calculation when safe. It should also let many
 independent tour schedules advance on the GPU while preserving the required
 order of trips inside each tour. Changed populations, coefficients, land use,
 and travel-time matrices must all pass before calling that engine general.
+
+## 125. Phase 37: stop writing the GPU answer sheet at all
+
+Phase 36 built the 56-column answer sheet on the GPU. That removed the giant
+CPU factory, but it still wrote the completed sheet into GPU memory. The very
+next GPU kernel read it and threw it away after calculating utilities.
+
+Phase 37 fuses those two jobs. Imagine a cook reading ingredients and a recipe,
+calculating each needed quantity mentally, and putting only the finished meals
+on the counter. The cook no longer fills 56 temporary bowls first.
+
+One generated GPU kernel now reads the same compact 84-byte packet. It looks up
+resident parking, terminal, density, topology, and travel-time facts; derives
+all availability rules and temporary inputs in fast local variables; evaluates
+the 379 utility expressions; and writes only 21 final mode scores. The later
+nested-logit step still turns those scores into the model's combined logsum.
+
+## 126. How much temporary GPU work disappeared?
+
+For each possible destination row, Phase 36 temporarily stored 404 bytes of
+utility inputs and 64 bytes of skim coordinates. Phase 37 stores neither.
+
+| Removed device intermediate | Bytes in the full public run |
+|---|---:|
+| 11-float and 45-integer input arrays | 1,692,078,048 |
+| grouped origin/destination/time coordinates | 268,051,968 |
+| **total removed** | **1,960,130,016** |
+
+That is about 1.96 GB of temporary allocations and writes removed across the
+30 programs. It does not mean 1.96 GB less data is uploaded: the compact 351.8
+MB packet is still built and uploaded. It also does not automatically prove the
+whole model is faster. A fused kernel does more work in each GPU thread and can
+use more registers, so a fair stopwatch and hardware counters are still needed.
+
+## 127. How did we prove the fusion was real and correct?
+
+The ordinary compatibility input was deliberately reduced to **one dummy
+row**, only 468 bytes. If the new kernel secretly read an old full-size array,
+the test could not succeed safely. The generated CUDA text was also inspected
+by the program itself: any remaining row read from a legacy input or coordinate
+array stopped compilation.
+
+This safety design found a real bug. Two input names shared one numbered slot.
+The first compiler version replaced one name but left the alias pointing to the
+old input. The one-row setup exposed it. The generator was fixed to replace
+every alias, and all qualification runs were repeated.
+
+The evidence then climbed four steps:
+
+1. source-generator and one-row-bootstrap unit tests;
+2. a 500-household shadow run where Phase 36 and Phase 37 utilities were
+   compared inside the same process;
+3. a 500-household production run using only minimal legacy state; and
+4. the complete public run with 50,000 households and 1,454 zones.
+
+The large run completed all 34 ActivitySim steps and fused all 30 utility
+programs over 4,188,312 rows. It used zero CPU fallback. A separate verifier
+compared it with Phase 36: changed decision cells were **0**, destination and
+mode-logsum maximum differences were **0**, and all seven published CSV files
+were **byte-for-byte identical**.
+
+## 128. Is Phase 37 faster, and what should happen next?
+
+Phase 37's 30 fused utility kernels used 2.157 seconds in the recorded full run.
+Building their compact packets took 4.471 seconds, uploading took 0.081 second,
+and nested logit took 0.079 second. The complete set of ActivitySim model steps
+took 216.9 seconds.
+
+Those are honest measurements, but not a new speed claim. The GPU was not quiet
+enough for a controlled Phase 36-versus-Phase 37 pair, and an older Phase 36
+run happened to finish sooner. Comparing unmatched runs could falsely call the
+change either a win or a loss. The proved result is exact behavior plus removal
+of 1.96 GB of device intermediates.
+
+The next major phase should attack the remaining 4.47-second packet factory.
+Stable trip, tour, person, and household facts should be uploaded once into a
+normalized resident store. Each of the 30 programs would then send only row
+selection, facts that truly changed, and the controlled wait draws. The test
+plan should include changed households, coefficients, land use, and skim data;
+GPU peak-memory and occupancy counters; and three alternating quiet timing
+pairs with exact final-output checks.
+
+After that, the larger wall-time opportunity is a resident trip scheduler.
+Different tours can advance in parallel, but trips inside one tour must keep
+their exact order, retry behavior, and controlled random numbers. That is the
+ambitious path from a proven fused component toward a genuinely device-resident
+travel-model runtime.

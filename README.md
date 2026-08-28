@@ -735,3 +735,24 @@ run. A three-pair Phase 35-versus-Phase 36 harness is included for a quiet
 machine. See the [Phase 36 technical report](docs/phase36-device-generated-trip-abi.md),
 the [full proof report](benchmark-results/phase36-p36full1-gpu.json), and the
 [exact-output verification](benchmark-results/phase36-p36full1-exact.json).
+
+## Phase 37 fused trip-utility runtime
+
+Phase 37 removes Phase 36's temporary device ABI as well. One generated CUDA
+kernel reads the same 84-byte compact packet, derives every strict input and
+skim coordinate in registers, gathers resident land/skims, evaluates all 379
+terms, and writes only the 21 final utilities.
+
+The complete 50,000-household public run fused all 30 programs across 4,188,312
+rows. It eliminated 1,692,078,048 bytes of device ABI arrays plus 268,051,968
+bytes of coordinate arrays: **1,960,130,016 bytes of device intermediates**.
+Production retained only a 468-byte one-row legacy bootstrap per program, so a
+hidden dependency could not pass behind a full-size compatibility allocation.
+
+Every Phase 37 gate passed with zero fallback. Independent verification against
+Phase 36 found zero changed decision cells, zero logsum difference, and all
+seven published CSVs byte-for-byte identical. This is a replication-qualified
+memory-traffic result; a new speed claim is withheld until quiet matched pairs
+are available. See the [Phase 37 technical report](docs/phase37-fused-trip-utility.md),
+the [full proof report](benchmark-results/phase37-p37full1-gpu.json), and the
+[exact-output verification](benchmark-results/phase37-p37full1-exact.json).

@@ -261,22 +261,57 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
         data, dest_count, time_count, rank = cached
         return NativeSkimCube(data, dest_count, time_count, rank)
 
-    native = compile_native_strict_abi(
-        document, scalar_environment, cube_loader, rows=len(bundle["combined"])
-    )
-    plan = TripLogsumNativePlan(native.invocation)
-    populate_arguments = (
-        bundle["combined"], state.get_dataframe("land_use"),
-        state.get_dataframe("tours"), bundle["locals"], draws,
-    )
     phase36_device = (
         os.environ.get("CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI", "0") == "1"
     )
     phase36_shadow = (
         os.environ.get("CHOICEFORGE_PHASE36_DEVICE_TRIP_ABI_SHADOW", "0") == "1"
     )
+    phase37_fused = (
+        os.environ.get("CHOICEFORGE_PHASE37_FUSED_TRIP_UTILITY", "0") == "1"
+    )
+    phase37_shadow = (
+        os.environ.get("CHOICEFORGE_PHASE37_FUSED_TRIP_UTILITY_SHADOW", "0") == "1"
+    )
+    if phase37_fused and not phase36_device:
+        raise ValueError("Phase 37 fused trip utility requires the Phase 36 raw contract")
+    native = compile_native_strict_abi(
+        document,
+        scalar_environment,
+        cube_loader,
+        rows=len(bundle["combined"]),
+        minimal_row_state=bool(phase37_fused and not phase37_shadow),
+    )
+    plan = TripLogsumNativePlan(
+        native.invocation, document=document, bindings=native.bindings
+    )
+    populate_arguments = (
+        bundle["combined"], state.get_dataframe("land_use"),
+        state.get_dataframe("tours"), bundle["locals"], draws,
+    )
     shadow_metrics = {}
-    if phase36_device and phase36_shadow:
+    if phase37_fused and phase37_shadow:
+        cp = plan.cp
+        reference_utilities, _ = plan.populate_device(*populate_arguments)
+        reference_copy = cp.array(reference_utilities, copy=True)
+        utilities, telemetry = plan.populate_fused(*populate_arguments)
+        both_nan = cp.isnan(reference_copy) & cp.isnan(utilities)
+        equal = (reference_copy == utilities) | both_nan
+        difference = cp.where(equal, 0.0, cp.abs(reference_copy - utilities))
+        mismatches = int(cp.count_nonzero(~equal).get())
+        max_abs = float(cp.max(difference).get()) if difference.size else 0.0
+        shadow_metrics = {
+            "phase37_shadow_utility_mismatches": mismatches,
+            "phase37_shadow_utility_max_abs_difference": max_abs,
+        }
+        if max_abs > 1.0e-5:
+            raise AssertionError(
+                "Phase 37 fused utility shadow mismatch "
+                f"count={mismatches} max_abs={max_abs:.3e}"
+            )
+    elif phase37_fused:
+        utilities, telemetry = plan.populate_fused(*populate_arguments)
+    elif phase36_device and phase36_shadow:
         cp = plan.cp
         reference_utilities, _ = plan.populate(*populate_arguments)
         reference_copy = cp.array(reference_utilities, copy=True)
@@ -325,6 +360,14 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
             "compact_device_input_bytes": telemetry.compact_device_input_bytes,
             "dense_host_abi_bytes_avoided": telemetry.dense_host_abi_bytes_avoided,
             "resident_land_bytes": telemetry.resident_land_bytes,
+            "dense_device_abi_bytes_eliminated": (
+                telemetry.dense_device_abi_bytes_eliminated
+            ),
+            "coordinate_device_bytes_eliminated": (
+                telemetry.coordinate_device_bytes_eliminated
+            ),
+            "fused_kernel_seconds": telemetry.fused_kernel_seconds,
+            "minimal_bootstrap_bytes": telemetry.minimal_bootstrap_bytes,
             **shadow_metrics,
         }
     )
