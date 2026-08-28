@@ -64,6 +64,15 @@ RAW_FLOAT_SOURCES = frozenset({
     "column:totalWaitTaxi",
     "column:totalWaitSingleTNC",
     "column:totalWaitSharedTNC",
+    # Trip-mode logsum ABI (Phase 35). These names are generated directly
+    # from raw trip rows by TripLogsumNativePlan.
+    "column:total_terminal_time",
+    "column:total_parking_cost",
+    "column:origin_density_index",
+    "column:origTaxiWaitTime",
+    "column:origSingleTNCWaitTime",
+    "column:origSharedTNCWaitTime",
+    "column:i_tour_mode",
 })
 RAW_INT_SOURCES = frozenset({
     "name:sov_available",
@@ -102,12 +111,50 @@ RAW_INT_SOURCES = frozenset({
     "column:age",
     "column:auto_ownership",
     "column:is_joint",
+    # Trip-mode logsum ABI (Phase 35).
+    "column:trip_topology",
+    "name:outbound",
+    "name:inbound",
+    "name:drive_local_available_outbound",
+    "name:drive_local_available_inbound",
+    "name:drive_lrf_available_outbound",
+    "name:drive_lrf_available_inbound",
+    "name:drive_express_available_outbound",
+    "name:drive_express_available_inbound",
+    "name:drive_heavyrail_available_outbound",
+    "name:drive_heavyrail_available_inbound",
+    "name:drive_commuter_available_outbound",
+    "name:drive_commuter_available_inbound",
+    "name:tour_mode_is_auto",
+    "name:tour_mode_is_walk",
+    "name:tour_mode_is_bike",
+    "name:tour_mode_is_walk_transit",
+    "name:tour_mode_is_drive_transit",
+    "name:tour_mode_is_ride_hail",
+    "column:tour_mode_is_SOV",
+    "column:tour_mode_is_SR2",
+    "column:tour_mode_is_SR3P",
+    "column:first_trip",
+    "column:outbound",
+    "column:inbound",
+    "column:tour_mode_is_auto",
+    "column:tour_mode_is_walk",
+    "column:tour_mode_is_walk_transit",
+    "column:tour_mode_is_drive_transit",
+    "column:tour_mode_is_ride_hail",
 })
 
 RAW_SOURCE_ALIASES = {
     "column:age": "name:age",
     "column:auto_ownership": "name:auto_ownership",
     "column:is_joint": "name:is_joint",
+    "column:outbound": "name:outbound",
+    "column:inbound": "name:inbound",
+    "column:tour_mode_is_auto": "name:tour_mode_is_auto",
+    "column:tour_mode_is_walk": "name:tour_mode_is_walk",
+    "column:tour_mode_is_walk_transit": "name:tour_mode_is_walk_transit",
+    "column:tour_mode_is_drive_transit": "name:tour_mode_is_drive_transit",
+    "column:tour_mode_is_ride_hail": "name:tour_mode_is_ride_hail",
 }
 
 

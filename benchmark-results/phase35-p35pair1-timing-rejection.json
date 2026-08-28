@@ -1,0 +1,18 @@
+{
+  "phase": 35,
+  "run_tag": "p35pair1",
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "timing_accepted": false,
+  "reason": "An unrelated process occupied the GPU during the Phase 34 control and changed load before the Phase 35 candidate completed, violating the matched-run assumption.",
+  "observed_gpu_utilization_percent_during_control": 98,
+  "baseline_all_model_seconds": 570.9,
+  "candidate_all_model_seconds": 223.5,
+  "baseline_trip_mode_choice_seconds": 318.6,
+  "candidate_trip_mode_choice_seconds": 13.2,
+  "rejected_apparent_speedup": 2.554362416107383,
+  "permitted_use": "correctness, workload coverage, lifecycle, and no-fallback evidence only",
+  "prohibited_use": "Phase 35 incremental or whole-model speed claim",
+  "candidate_proof_report": "phase35-p35pair1-gpu-1.json",
+  "exact_output_report": "phase35-p35pair1-exact-1.json"
+}

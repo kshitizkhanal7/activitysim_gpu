@@ -55,6 +55,14 @@ def main() -> int:
             "and at-work location-choice logsum programs"
         ),
     )
+    parser.add_argument(
+        "--phase35-resident-trip",
+        action="store_true",
+        help=(
+            "extend Phase 34 with the persistent CUDA trip-scheduling "
+            "probability table, reusable workspace, and exact random ledger"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -129,6 +137,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase35_resident_trip:
+        args.phase34_location_choice = True
+        os.environ["CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION"] = "1"
     if args.phase34_location_choice:
         args.phase33_model_wide = True
     if args.phase33_model_wide and not args.full_model:
@@ -807,6 +818,12 @@ def main() -> int:
             )
 
             install_activitysim_atwork_mode_candidate()
+        if args.phase35_resident_trip and model_name_text == "trip_scheduling":
+            from choiceforge.activitysim_trip_scheduling import (
+                install_activitysim_trip_scheduling_candidate,
+            )
+
+            install_activitysim_trip_scheduling_candidate()
         location_candidate_enabled = (
             model_name_text == "non_mandatory_tour_destination"
             or (
@@ -862,11 +879,18 @@ def main() -> int:
         if args.full_model and model_name_text == "trip_mode_choice":
             from choiceforge.cuda_backend import _cupy
             from choiceforge.cuda_skims import clear_cuda_dataset_cache
+            from choiceforge.activitysim_destination import (
+                clear_trip_native_cube_cache,
+            )
 
             cp = _cupy()
             cp.cuda.Stream.null.synchronize()
             before = int(cp.get_default_memory_pool().used_bytes())
             release_started = time.perf_counter()
+            # Phase 35 memoizes aliases to the same shared skim arrays so its
+            # 30 purpose programs do not rebuild wrappers. Drop those aliases
+            # before clearing the owner cache at the final GPU skim consumer.
+            clear_trip_native_cube_cache()
             clear_cuda_dataset_cache()
             cp.cuda.Stream.null.synchronize()
             after = int(cp.get_default_memory_pool().used_bytes())
@@ -1823,13 +1847,26 @@ def main() -> int:
                 )
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
+    phase35_trip = None
+    phase35_trip_destination = None
+    if args.phase35_resident_trip:
+        from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
+        from choiceforge.activitysim_destination import trip_destination_stage_telemetry
+
+        phase35_trip = trip_scheduling_telemetry()
+        phase35_trip_destination = trip_destination_stage_telemetry()
     report = {
         "phase": (
+            35 if args.phase35_resident_trip else
             34 if args.phase34_location_choice else
             33 if args.phase33_model_wide else
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with the Phase 34 runtime plus a "
+            "persistent CUDA trip-scheduling service and a native raw-trip-to-"
+            "mode-logsum ABI that bypasses dense trip-destination preprocessing"
+            if args.phase35_resident_trip else
             "full public ActivitySim model with the Phase 33 runtime plus "
             "school, workplace, joint-tour, and at-work location logsum CUDA programs"
             if args.phase34_location_choice else
@@ -1886,6 +1923,8 @@ def main() -> int:
         "phase34_atwork_mode_rows": int(
             sum(item.get("rows", 0) for item in phase34_atwork_mode)
         ),
+        "phase35_trip_scheduling": phase35_trip,
+        "phase35_trip_destination_stages": phase35_trip_destination,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2052,6 +2091,49 @@ def main() -> int:
                 "atwork_mode_cuda_program_used": (
                     report["phase34_atwork_mode_cuda_calls"] == 1
                     and report["phase34_atwork_mode_rows"] > 0
+                ),
+            }
+        )
+    if args.phase35_resident_trip:
+        report["proof_gates"].update(
+            {
+                "phase35_trip_scheduling_cuda_used": (
+                    phase35_trip is not None
+                    and phase35_trip["candidate_used"]
+                    and phase35_trip["calls"] > 0
+                    and phase35_trip["chooser_rows"] > 0
+                ),
+                "phase35_trip_specification_resident": (
+                    phase35_trip is not None
+                    and phase35_trip["specification_rows"] == 1_368
+                    and phase35_trip["alternatives"] == 19
+                    and phase35_trip["resident_specification_bytes"] > 0
+                ),
+                "phase35_trip_zero_fallback": (
+                    phase35_trip is not None
+                    and phase35_trip["fallback_calls"] == 0
+                ),
+                "phase35_native_trip_logsum_all_30_programs_used": (
+                    phase35_trip_destination is not None
+                    and len(phase35_trip_destination.get("native_logsum", [])) == 30
+                    and sum(
+                        item["rows"]
+                        for item in phase35_trip_destination.get("native_logsum", [])
+                    ) == 4_188_312
+                ),
+                "phase35_dense_trip_logsum_preprocessor_bypassed": (
+                    phase35_trip_destination is not None
+                    and all(
+                        item["dense_preprocessor_rows_read"] == 0
+                        for item in phase35_trip_destination.get("native_logsum", [])
+                    )
+                ),
+                "phase35_native_trip_logsum_zero_fallback": (
+                    phase35_trip_destination is not None
+                    and all(
+                        item["fallback_calls"] == 0
+                        for item in phase35_trip_destination.get("native_logsum", [])
+                    )
                 ),
             }
         )

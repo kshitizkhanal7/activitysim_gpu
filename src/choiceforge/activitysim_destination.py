@@ -20,6 +20,38 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 _STRICT_IR_CACHE = {}
+_TRIP_DESTINATION_STAGE_TELEMETRY = []
+_TRIP_NATIVE_LOGSUM_TELEMETRY = []
+_TRIP_NATIVE_CUBE_CACHE = {}
+
+
+def reset_trip_destination_stage_telemetry():
+    """Clear process-local timings for the trip-number batched path."""
+    _TRIP_DESTINATION_STAGE_TELEMETRY.clear()
+    _TRIP_NATIVE_LOGSUM_TELEMETRY.clear()
+
+
+def clear_trip_native_cube_cache():
+    """Release Phase 35's aliases of shared resident CUDA skim cubes."""
+    _TRIP_NATIVE_CUBE_CACHE.clear()
+
+
+def trip_destination_stage_telemetry():
+    """Return aggregate timings without exposing the mutable event list."""
+    events = list(_TRIP_DESTINATION_STAGE_TELEMETRY)
+    totals = {
+        "calls": len(events),
+        "purposes": int(sum(item["purposes"] for item in events)),
+        "trip_rows": int(sum(item["trip_rows"] for item in events)),
+        "sample_rows": int(sum(item["sample_rows"] for item in events)),
+    }
+    for name in ("sampling", "preparation", "preprocessor", "logsums", "simulation", "total"):
+        totals[f"{name}_seconds"] = float(
+            sum(item[f"{name}_seconds"] for item in events)
+        )
+    totals["events"] = events
+    totals["native_logsum"] = list(_TRIP_NATIVE_LOGSUM_TELEMETRY)
+    return totals
 
 
 def _candidate_sink_metadata(choosers, trace_label, *, required):
@@ -98,6 +130,23 @@ def _single_preprocessor_settings(logsum_settings):
     return preprocessor
 
 
+def _controlled_random_draw_count(state, logsum_settings):
+    """Return the configured broadcast-draw count for the reviewed preprocessor."""
+    from activitysim.core import assign
+
+    preprocessor = _single_preprocessor_settings(logsum_settings)
+    if preprocessor is None:
+        raise DestinationBatchUnsupported("trip logsum preprocessor is not singular")
+    spec_name = preprocessor["SPEC"]
+    if not spec_name.endswith(".csv"):
+        spec_name += ".csv"
+    spec = assign.read_assignment_spec(
+        state.filesystem.get_config_file_path(spec_name)
+    )
+    marker = "rng.lognormal_for_df(df,"
+    return sum(marker in str(expression) for expression in spec["expression"])
+
+
 def _combined_preprocessor(
     state,
     frames,
@@ -106,6 +155,7 @@ def _combined_preprocessor(
     skims,
     logsum_settings,
     trace_label,
+    raw_capture=None,
 ):
     """Annotate stacked directions while preserving ActivitySim RNG draws.
 
@@ -144,6 +194,10 @@ def _combined_preprocessor(
             draws = rng.normal_for_df(frame, broadcast=True, size=n_randoms)
             directional_draws.append(pd.DataFrame(draws, index=frame.index))
         combined_locals["random_draws"] = pd.concat(directional_draws, axis=0)
+        if raw_capture is not None:
+            raw_capture["random_draws"] = np.asarray(
+                combined_locals["random_draws"], dtype=np.float64
+            )
 
         def rng_lognormal(draws, mu, sigma, broadcast=True, scale=False):
             if scale:
@@ -176,6 +230,67 @@ def _combined_preprocessor(
         state.settings.downcast_float,
     )
     return True
+
+
+def _native_trip_logsum_values(state, bundle, combined_skims, draws):
+    """Execute the reviewed raw-trip ABI and return host nested logsums."""
+    from choiceforge.cuda_skims import cuda_cube_from_activitysim
+    from choiceforge.native_abi_bootstrap import NativeSkimCube, compile_native_strict_abi
+    from choiceforge.nested_logit import mtc21_nested_logsums_cuda
+    from choiceforge.sharrow_ir import specification_ir
+    from choiceforge.trip_logsum_native import TripLogsumNativePlan
+
+    document = specification_ir(bundle["logsum_spec"].reset_index())
+    scalar_environment = state.get_global_constants().copy()
+    scalar_environment.update(bundle["locals"])
+
+    def cube_loader(source):
+        _, direction, key = source
+        wrapper_name = "od_skims" if direction == "od_skims_reverse" else direction
+        if wrapper_name not in combined_skims:
+            raise ValueError(f"trip native skim direction {direction!r} is absent")
+        wrapper = combined_skims[wrapper_name]
+        cache_key = (id(getattr(wrapper, "dataset", wrapper)), wrapper_name, key)
+        cached = _TRIP_NATIVE_CUBE_CACHE.get(cache_key)
+        if cached is None:
+            cached = cuda_cube_from_activitysim(wrapper, key)
+            _TRIP_NATIVE_CUBE_CACHE[cache_key] = cached
+        data, dest_count, time_count, rank = cached
+        return NativeSkimCube(data, dest_count, time_count, rank)
+
+    native = compile_native_strict_abi(
+        document, scalar_environment, cube_loader, rows=len(bundle["combined"])
+    )
+    plan = TripLogsumNativePlan(native.invocation)
+    utilities, telemetry = plan.populate(
+        bundle["combined"],
+        state.get_dataframe("land_use"),
+        state.get_dataframe("tours"),
+        bundle["locals"],
+        draws,
+    )
+    logsums, nested = mtc21_nested_logsums_cuda(
+        utilities,
+        bundle["nest_spec"],
+        tuple(document["alternatives"]),
+        return_telemetry=True,
+        numeric_policy="activitysim_pandas_float64",
+    )
+    _TRIP_NATIVE_LOGSUM_TELEMETRY.append(
+        {
+            "trace_label": str(bundle["trace_label"]),
+            "rows": telemetry.rows,
+            "compact_host_bytes": telemetry.compact_host_bytes,
+            "host_build_seconds": telemetry.host_build_seconds,
+            "upload_seconds": telemetry.upload_seconds,
+            "availability_kernel_seconds": telemetry.availability_kernel_seconds,
+            "utility_kernel_seconds": telemetry.utility_kernel_seconds,
+            "nested_kernel_seconds": nested.kernel_ms / 1000.0,
+            "dense_preprocessor_rows_read": 0,
+            "fallback_calls": 0,
+        }
+    )
+    return np.asarray(logsums)
 
 
 def compute_logsums_combined(
@@ -983,6 +1098,18 @@ def _simple_simulate_mtc21_logsums_cuda(
                     "scalar_inputs": telemetry.scalar_inputs,
                     "unique_skim_bindings": telemetry.unique_skim_bindings,
                     "skim_reference_uses": telemetry.skim_reference_uses,
+                    "float_input_sources": [
+                        ":".join(map(str, source))
+                        for source in entry["resident_invocation"].float_input_sources
+                    ],
+                    "int_input_sources": [
+                        ":".join(map(str, source))
+                        for source in entry["resident_invocation"].int_input_sources
+                    ],
+                    "skim_input_sources": [
+                        ":".join(map(str, source))
+                        for source in entry["resident_invocation"].skim_input_sources
+                    ],
                     "skim_loads_avoided_per_row": telemetry.skim_loads_avoided_per_row,
                     "skim_index_groups": telemetry.skim_index_groups,
                     "grouped_skim_indices": telemetry.grouped_skim_indices,
@@ -1162,9 +1289,12 @@ def _simple_simulate_mtc21_logsums_cuda(
                         persistent_plan=strict_cuda_persistent_plan,
                         reuse_buffers=strict_cuda_reuse_buffers,
                         fused_utility_accumulation=strict_cuda_sharrow_fma,
-                        capture_resident_invocation=(
-                            resident_invocation_sink is not None
-                        ),
+                        # Keep the immutable ABI descriptor even when no
+                        # downstream scheduling sink is installed. Phase 35
+                        # uses its declared sources to replace dense trip
+                        # preprocessing; the arrays already belong to this
+                        # invocation, so this does not make another copy.
+                        capture_resident_invocation=True,
                     )
                     cache_after = cuda_dataset_cache_stats()
                     cache_delta = {
@@ -1300,12 +1430,15 @@ def choose_trip_destinations_batched(
         )
 
     started = time.perf_counter()
+    sampling_seconds = 0.0
+    preparation_seconds = 0.0
     bundles = []
     empty_results = []
     for purpose, trips_segment in nth_trips.groupby(
         "primary_purpose", observed=True
     ):
         purpose_trace = tracing.extend_trace_label(trace_label, purpose)
+        stage_started = time.perf_counter()
         destination_sample = td.trip_destination_sample(
             state,
             primary_purpose=purpose,
@@ -1318,6 +1451,7 @@ def choose_trip_destinations_batched(
             chunk_size=chunk_size,
             trace_label=purpose_trace,
         )
+        sampling_seconds += time.perf_counter() - stage_started
         viable = trips_segment.index.isin(destination_sample.index.unique())
         trips_viable = trips_segment[viable]
         if trips_viable.empty:
@@ -1332,6 +1466,7 @@ def choose_trip_destinations_batched(
                 (purpose, pd.Series(index=trips_viable.index).to_frame("choice"), sample)
             )
             continue
+        stage_started = time.perf_counter()
         bundles.append(
             _prepare_logsum_bundle(
                 state,
@@ -1344,6 +1479,7 @@ def choose_trip_destinations_batched(
                 purpose_trace,
             )
         )
+        preparation_seconds += time.perf_counter() - stage_started
 
     if not bundles:
         return empty_results
@@ -1355,33 +1491,110 @@ def choose_trip_destinations_batched(
     all_combined = pd.concat(
         [bundle["combined"] for bundle in bundles], axis=0
     )
+    native_raw_capture = {}
+    native_shadow = os.environ.get("CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM", "0") == "1"
+    native_production = os.environ.get("CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION", "0") == "1"
     preprocess_started = time.perf_counter()
-    with chunk.chunk_log(
-        state,
-        tracing.extend_trace_label(trace_label, "batched_preprocessor"),
-        base=True,
-    ):
-        supported = _combined_preprocessor(
-            state,
-            all_frames,
-            all_combined,
-            bundles[0]["locals"],
-            combined_skims,
-            bundles[0]["logsum_settings"],
-            tracing.extend_trace_label(trace_label, "batched"),
+    if native_production:
+        # Preserve ActivitySim's exact keyed random-ledger sequence while
+        # bypassing every dense assignment expression. The reviewed public
+        # preprocessor contains exactly three broadcast lognormal draws.
+        random_draw_count = _controlled_random_draw_count(
+            state, bundles[0]["logsum_settings"]
         )
-    if not supported:
-        raise AssertionError("preflight accepted a destination preprocessor that later failed")
+        if random_draw_count != 3:
+            raise DestinationBatchUnsupported(
+                "Phase 35 native trip logsum requires exactly three controlled "
+                f"wait-time draws; configured preprocessor declares {random_draw_count}"
+            )
+        rng = state.get_rn_generator()
+        directional_draws = [
+            np.asarray(
+                rng.normal_for_df(
+                    frame, broadcast=True, size=random_draw_count
+                ),
+                dtype=np.float64,
+            )
+            for frame in all_frames
+        ]
+        native_raw_capture["random_draws"] = np.concatenate(
+            directional_draws, axis=0
+        )
+    else:
+        with chunk.chunk_log(
+            state,
+            tracing.extend_trace_label(trace_label, "batched_preprocessor"),
+            base=True,
+        ):
+            supported = _combined_preprocessor(
+                state,
+                all_frames,
+                all_combined,
+                bundles[0]["locals"],
+                combined_skims,
+                bundles[0]["logsum_settings"],
+                tracing.extend_trace_label(trace_label, "batched"),
+                raw_capture=native_raw_capture,
+            )
+        if not supported:
+            raise AssertionError("preflight accepted a destination preprocessor that later failed")
     preprocess_ms = (time.perf_counter() - preprocess_started) * 1000
 
+    logsums_started = time.perf_counter()
     cursor = 0
+    draw_cursor = 0
     for bundle in bundles:
         count = len(bundle["combined"])
         bundle["combined"] = all_combined.iloc[cursor : cursor + count].copy()
         cursor += count
-        _evaluate_logsum_bundle(state, bundle, combined_skims, model_settings)
+        draws = native_raw_capture.get("random_draws")
+        bundle_draws = None if draws is None else draws[draw_cursor : draw_cursor + count]
+        draw_cursor += count
+        if native_production:
+            values = _native_trip_logsum_values(
+                state, bundle, combined_skims, bundle_draws
+            )
+            sample_count = len(bundle["destination_sample"])
+            bundle["destination_sample"]["od_logsum"] = values[:sample_count]
+            bundle["destination_sample"]["dp_logsum"] = values[sample_count:]
+        else:
+            _evaluate_logsum_bundle(state, bundle, combined_skims, model_settings)
+            if native_shadow:
+                candidate = _native_trip_logsum_values(
+                    state, bundle, combined_skims, bundle_draws
+                )
+                sample_count = len(bundle["destination_sample"])
+                reference = np.r_[
+                    np.asarray(bundle["destination_sample"]["od_logsum"]),
+                    np.asarray(bundle["destination_sample"]["dp_logsum"]),
+                ]
+                equal = np.equal(candidate, reference) | (
+                    np.isnan(candidate) & np.isnan(reference)
+                )
+                mismatches = int(np.count_nonzero(~equal))
+                max_abs = float(np.nanmax(np.abs(candidate - reference))) if len(candidate) else 0.0
+                _TRIP_NATIVE_LOGSUM_TELEMETRY[-1].update(
+                    {
+                        "shadow_bit_mismatches": mismatches,
+                        "shadow_max_abs_difference": max_abs,
+                    }
+                )
+                # Nested logsum reduction is float64 and may differ in the
+                # final representable bit when the same exact float32 utility
+                # matrix is launched through a separately compiled native ABI.
+                # This is far below the established 1e-5 diagnostic boundary;
+                # keep a much tighter 1e-12 fail-closed native gate here.
+                if max_abs > 1.0e-12:
+                    first = int(np.flatnonzero(~equal)[0])
+                    raise AssertionError(
+                        "trip native logsum shadow mismatch "
+                        f"row={first} actual={candidate[first]!r} expected={reference[first]!r} "
+                        f"max_abs={max_abs:.3e}"
+                    )
+    logsums_seconds = time.perf_counter() - logsums_started
 
     results = []
+    simulation_started = time.perf_counter()
     for bundle in bundles:
         destinations = td.trip_destination_simulate(
             state,
@@ -1403,6 +1616,25 @@ def choose_trip_destinations_batched(
         else:
             sample = None
         results.append((bundle["purpose"], destinations, sample))
+    simulation_seconds = time.perf_counter() - simulation_started
+
+    total_seconds = time.perf_counter() - started
+    _TRIP_DESTINATION_STAGE_TELEMETRY.append(
+        {
+            "trace_label": str(trace_label),
+            "purposes": len(bundles),
+            "trip_rows": int(sum(len(bundle["trips"]) for bundle in bundles)),
+            "sample_rows": int(
+                sum(len(bundle["destination_sample"]) for bundle in bundles)
+            ),
+            "sampling_seconds": float(sampling_seconds),
+            "preparation_seconds": float(preparation_seconds),
+            "preprocessor_seconds": float(preprocess_ms / 1000),
+            "logsums_seconds": float(logsums_seconds),
+            "simulation_seconds": float(simulation_seconds),
+            "total_seconds": float(total_seconds),
+        }
+    )
 
     logger.info(
         "%s ChoiceForge trip-number batch purposes=%d rows=%d "
@@ -1411,7 +1643,7 @@ def choose_trip_destinations_batched(
         len(bundles),
         len(all_combined),
         preprocess_ms,
-        (time.perf_counter() - started) * 1000,
+        total_seconds * 1000,
     )
     if os.environ.get("CHOICEFORGE_STRICT_CUDA_CANDIDATE", "0") == "1":
         trip_num = int(nth_trips["trip_num"].iloc[0])

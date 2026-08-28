@@ -4482,3 +4482,143 @@ The goal is not "put everything on GPU" as a slogan. The goal is to remove the
 largest remaining data-motion and orchestration costs while keeping the public
 ActivitySim contract, controlled randomness, exact choices, bounded named
 diagnostics, explicit fallbacks, and reproducible evidence.
+
+## 115. Phase 35: follow a trip from destination to departure time
+
+Phase 35 moves farther down the model. After a person decides to make a tour,
+ActivitySim may need to choose intermediate stops, calculate the travel quality
+of each possible stop, and assign a departure time to each trip. These jobs are
+connected. An earlier trip affects where the next trip begins, and a failed
+time choice may need to be tried again.
+
+This is harder than evaluating one independent formula. Imagine planning a day
+with school, shopping, and home. You cannot schedule the ride home before you
+know when shopping ends. The different people and tours can run in parallel,
+but the steps inside one tour must keep their order.
+
+Phase 35 adds two GPU services:
+
+1. a persistent trip-scheduling service that keeps the 1,368-row by 19-choice
+   probability specification on the GPU; and
+2. a native trip-destination logsum service that builds the exact inputs needed
+   by the 21 travel-mode alternatives and evaluates them with generated CUDA.
+
+ActivitySim still decides the order of trips, owns retries, supplies controlled
+random numbers, updates tables, and writes results. The GPU accelerates repeated
+probability and utility arithmetic without changing the model's rules.
+
+## 116. What is an ABI, and why does it matter?
+
+ABI means **application binary interface**. Here it is simply an exact packing
+agreement between the data producer and the GPU kernel. The kernel expects 11
+decimal-number columns and 45 integer or true/false columns in a fixed order.
+Those columns describe things such as travel time, parking cost, age, vehicle
+ownership, tour type, direction, and whether a mode is available.
+
+Think of a school answer sheet with numbered boxes. If "age" moves from box 2
+to box 20 without telling the grader, every answer after it may be interpreted
+incorrectly. Phase 35 therefore checks the complete 11/45 contract. It stops
+instead of guessing if a source is unknown, a network lookup is missing, or the
+configured number of random wait-time draws is no longer exactly three.
+
+The native path also calculates mode availability on the GPU. For example, a
+car mode cannot be available without a household vehicle, and a transit mode
+cannot be available when the network data says no useful service exists. These
+are model rules, not optional performance shortcuts.
+
+## 117. How much real work ran on the GPU?
+
+The complete public benchmark contains 50,000 sampled households and 1,454
+zones. Phase 35 recorded the exact workload instead of merely checking an
+"enable GPU" switch.
+
+| New Phase 35 service | Calls | Rows |
+|---|---:|---:|
+| trip scheduling | 548 | 210,110 choosers |
+| trip-destination logsum | 30 | 4,188,312 directional rows |
+
+The scheduler kept a 1,368-row by 19-alternative specification resident. Its
+CUDA kernels used only 0.0288 second, while the complete service used 3.7520
+seconds. That difference is important: preparing indices and maintaining the
+exact random-number ledger cost more than the GPU arithmetic.
+
+The logsum path read **zero rows** from the former dense pandas preprocessor.
+CUDA created availability flags, evaluated utilities, and reduced the 21 mode
+scores into logsums. All 30 programs ran, and none silently fell back to CPU.
+
+## 118. Did it give the same answer?
+
+Yes. This is Phase 35's strongest completed result.
+
+Before becoming authoritative, the new native path ran beside the old one in
+shadow mode. It compared all 30 purpose batches. The largest logsum difference
+was smaller than 0.000000000001. A smaller production test then verified exact
+choices.
+
+Finally, a complete 50,000-household Phase 35 run was compared with its Phase
+34 control:
+
+- changed decision cells: **0**;
+- changed decision rows: **0**;
+- final CSV files that were byte-for-byte identical: **7 of 7**;
+- destination-logsum maximum difference: **0**;
+- mode-logsum maximum difference: **0**;
+- random-stream mismatches: **0**; and
+- fallback calls: **0**.
+
+The runtime also released 6.20 GB of shared GPU network memory exactly once,
+after the final GPU component. An early version failed that lifecycle check
+because Phase 35 held extra references to the same network arrays. The code was
+fixed, rerun, and verified. This is why a proof gate is more useful than simply
+seeing that a program reached its final line.
+
+## 119. Why we are not claiming a Phase 35 speedup yet
+
+The first full Phase 34-versus-Phase 35 stopwatch pair displayed 570.9 seconds
+versus 223.5 seconds, which looks like a huge 2.55x win. It is not valid proof.
+Another program was using 98% of the GPU during the control. The control's trip
+mode step alone grew to 318.6 seconds, then the competing load changed before
+the candidate finished. The two halves no longer had equal conditions.
+
+We keep that run for correctness evidence and reject its speed number. This is
+an important scientific habit: a flattering measurement is not automatically
+a trustworthy measurement.
+
+There is also an honest engineering limitation. Phase 35 removed the dense
+expression table, but it still created 1.79 GB of neatly packed ABI matrices on
+the CPU before sending them to the GPU. In the qualified candidate, that host
+construction took 6.86 seconds. Upload, availability kernels, utility kernels,
+and nesting together took about 2.91 seconds. We moved the equation, but not yet
+the whole data factory that feeds the equation.
+
+Phase 35 is therefore a **replication-qualified architecture**, not a proven
+incremental performance victory over Phase 34. Earlier Phase 34 evidence still
+supports the broader GPU-versus-regular-ActivitySim advantage. The narrower new
+claim must wait for clean direct pairs.
+
+## 120. What must happen next
+
+The next major phase should generate the 11/45 ABI on the GPU. Instead of
+building 1.79 GB of finished inputs on the CPU, it should send a much smaller
+raw packet containing trip, tour, person, and zone facts. Reusable land-use and
+network arrays should remain resident. One GPU preparation kernel can then form
+the final inputs and availability flags where they will be consumed.
+
+Trip scheduling should also move host indexing into a resident tour-chain state
+machine. Different tours can advance in parallel, while each tour preserves its
+own required order. ActivitySim's controlled random numbers and retry semantics
+must remain identical.
+
+A successful next phase needs all of the following:
+
+1. three clean 50,000-household Phase 35-versus-next-phase matched pairs;
+2. three clean comparisons against regular pinned ActivitySim;
+3. zero changed modeled decisions and bounded named diagnostics;
+4. zero silent fallback and exact workload counts;
+5. explicit host-to-device, device-to-host, and peak-memory measurements;
+6. tests with changed households, coefficients, and travel-time data; and
+7. one verified release of resident GPU memory after the final consumer.
+
+That path attacks the measured bottleneck instead of adding another tiny kernel.
+It also keeps the central promise of this project: faster travel modeling that
+can still be reproduced, inspected, and trusted.

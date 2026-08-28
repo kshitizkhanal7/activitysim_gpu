@@ -2,8 +2,8 @@ param(
     [ValidateRange(1, 5)][int]$Repetitions = 3,
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
-    [ValidateSet("phase17", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34)][int]$CandidatePhase = 32,
+    [ValidateSet("phase17", "phase34", "activitysim")][string]$Baseline = "phase17",
+    [ValidateSet(32, 33, 34, 35)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -76,16 +76,21 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     $baselineKernel = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-base-kernels-$trial"
     $candidateKernel = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-gpu-kernels-$trial"
     $candidateReport = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-gpu-$trial.json"
+    $baselineReport = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-base-$trial.json"
     $checkpoint = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-checkpoint-$trial.json"
+    $baselineCheckpoint = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-base-checkpoint-$trial.json"
     $verification = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-exact-$trial.json"
-    $baselineComplete = Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")
+    $baselineComplete = (
+        (Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")) -and
+        ($Baseline -ne "phase34" -or (Test-Path -LiteralPath $baselineReport))
+    )
     $candidateComplete = (
         (Test-Path -LiteralPath (Join-Path $candidateOutput "timing_log.csv")) -and
         (Test-Path -LiteralPath $candidateReport) -and
         (Test-Path -LiteralPath $verification)
     )
     if (-not $Resume) {
-        foreach ($path in @($baselineOutput, $candidateOutput, $baselineKernel, $candidateKernel, $candidateReport, $checkpoint, $verification)) {
+        foreach ($path in @($baselineOutput, $candidateOutput, $baselineKernel, $candidateKernel, $baselineReport, $candidateReport, $baselineCheckpoint, $checkpoint, $verification)) {
             if (Test-Path -LiteralPath $path) { throw "Refusing to overwrite: $path" }
         }
     } elseif ((Test-Path -LiteralPath $baselineOutput) -and -not $baselineComplete) {
@@ -104,24 +109,41 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         $env:CHOICEFORGE_PHASE17_RUN_ID = "$RunTag-base-$trial"
         $baselineStdout = Join-Path $project "$RunTag-base-$trial.stdout.log"
         $baselineStderr = Join-Path $project "$RunTag-base-$trial.stderr.log"
-        $baselineArguments = @("run")
-        if ($Baseline -eq "phase17") {
+        if ($Baseline -eq "phase34") {
+            $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
+            $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
+            $baselineArguments = @(
+                (Join-Path $repo "scripts\run_phase22_integrated_scheduling.py"),
+                "--project", $project, "--data", $data, "--output", $baselineOutput,
+                "--config-overlay", $overlay, "--config-overlay", $sharrowConfig,
+                "--full-model", "--phase34-location-choice",
+                "--households-sample-size", "$Households", "--native-abi-live",
+                "--reference-pipeline", (Join-Path $reference "pipeline.parquetpipeline"),
+                "--report", $baselineReport, "--checkpoint", $baselineCheckpoint,
+                "--kernel-reports", $baselineKernel
+            )
+            $baselineRun = Invoke-CheckedProcess $python $baselineArguments `
+                $repo $baselineStdout $baselineStderr
+        } else {
+            $baselineArguments = @("run")
+            if ($Baseline -eq "phase17") {
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
             $baselineArguments += @("-c", $overlay)
-        } else {
+            } else {
             # The regular control is pinned ActivitySim with Sharrow required and
             # no ChoiceForge component overlay or candidate hook.
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "0"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "0"
+            }
+            $baselineArguments += @(
+                "-c", "configs_sh", "-c", "configs",
+                "-d", "data_full", "-o", $baselineName,
+                "--households_sample_size", "$Households"
+            )
+            $baselineRun = Invoke-CheckedProcess $activitysim $baselineArguments `
+                $project $baselineStdout $baselineStderr
         }
-        $baselineArguments += @(
-            "-c", "configs_sh", "-c", "configs",
-            "-d", "data_full", "-o", $baselineName,
-            "--households_sample_size", "$Households"
-        )
-        $baselineRun = Invoke-CheckedProcess $activitysim $baselineArguments `
-            $project $baselineStdout $baselineStderr
     }
 
     if ($candidateComplete) {
@@ -142,6 +164,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         )
         if ($CandidatePhase -eq 33) { $candidateArguments += "--phase33-model-wide" }
         if ($CandidatePhase -eq 34) { $candidateArguments += "--phase34-location-choice" }
+        if ($CandidatePhase -eq 35) { $candidateArguments += "--phase35-resident-trip" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -213,15 +236,16 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
     $candidateMedian = [double]$candidateComponentValues[$middle]
     $gpuRole = switch ($modelName) {
         "mandatory_tour_scheduling" { "Phase32 native GPU retained" }
-        "school_location" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
-        "workplace_location" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
-        "joint_tour_destination" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
-        "atwork_subtour_destination" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
-        "atwork_subtour_mode_choice" { if ($CandidatePhase -eq 34) { "Phase34 generated GPU" } else { "not directly GPU-targeted" } }
+        "school_location" { if ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "workplace_location" { if ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "joint_tour_destination" { if ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "atwork_subtour_destination" { if ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "atwork_subtour_mode_choice" { if ($CandidatePhase -ge 34) { "Phase34 generated GPU" } else { "not directly GPU-targeted" } }
         "non_mandatory_tour_destination" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
         "non_mandatory_tour_scheduling" { if ($CandidatePhase -ge 33) { "Phase33 scheduling GPU retained" } else { "not directly GPU-targeted" } }
         "tour_mode_choice_simulate" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
-        "trip_destination" { "Phase17 generated GPU retained" }
+        "trip_destination" { if ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
+        "trip_scheduling" { if ($CandidatePhase -ge 35) { "Phase35 persistent GPU probability service" } else { "not directly GPU-targeted" } }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }
     }
@@ -238,7 +262,7 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
 $baselineLabel = if ($Baseline -eq "activitysim") {
     "regular pinned ActivitySim with Sharrow required"
 } else {
-    "already GPU-accelerated Phase 17 runtime"
+    if ($Baseline -eq "phase34") { "already GPU-accelerated Phase 34 runtime" } else { "already GPU-accelerated Phase 17 runtime" }
 }
 $summary = [ordered]@{
     phase = $CandidatePhase

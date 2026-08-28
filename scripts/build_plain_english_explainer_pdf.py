@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds, saves 69.5 seconds, and changes zero modeled decision cells in three matched fresh-process pairs against regular pinned ActivitySim. Boundaries, variance, and limits are explained inside.",
+            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds, saves 69.5 seconds, and changes zero modeled decision cells in three matched fresh-process pairs against regular pinned ActivitySim. Phase 35 then extends the trip runtime with zero changed decisions, while honestly withholding a new speed claim because concurrent GPU load invalidated its first stopwatch pair. Boundaries, variance, and limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

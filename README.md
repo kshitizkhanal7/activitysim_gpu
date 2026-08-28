@@ -692,3 +692,24 @@ and substantial run-to-run system variance.
 
 See the [Phase 34 technical report](docs/phase34-location-choice-runtime.md) and
 the [three-pair proof](benchmark-results/phase34-p34model1-summary.json).
+
+## Phase 35 resident trip runtime
+
+Phase 35 adds a persistent CUDA trip-scheduling probability service and a
+native trip-destination logsum path. A complete 50,000-household qualification
+ran 548 scheduling calls over 210,110 chooser rows and all 30 native logsum
+programs over 4,188,312 directional rows. It read zero dense preprocessor rows,
+used zero fallbacks, preserved the controlled random ledger, and produced all
+seven final CSVs byte-for-byte identically to its Phase 34 control.
+
+This phase proves coverage and replication, not yet incremental speed
+superiority. Its first matched timing was invalidated because an unrelated
+process held the GPU at 98% utilization and inflated the control's trip-mode
+step to 318.6 seconds. The apparent 2.55x result is explicitly rejected. The
+remaining bottleneck is now measured: the native path still constructs 1.79 GB
+of typed utility inputs on the CPU. The next large step is device-side ABI
+generation from a smaller resident person-tour-trip state packet.
+
+See the [Phase 35 technical report](docs/phase35-resident-trip-runtime.md), the
+[full proof report](benchmark-results/phase35-p35pair1-gpu-1.json), and the
+[exact-output verification](benchmark-results/phase35-p35pair1-exact-1.json).
