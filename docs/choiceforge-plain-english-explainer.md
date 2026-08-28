@@ -4163,3 +4163,176 @@ require all of the following at once:
 
 That is the shortest credible path from a useful 10.36% result toward a much
 larger end-to-end gain.
+
+## 104. Phase 33 takes the next three jobs together
+
+Phase 32 ended with a specific challenge: several nearby model steps still
+spent meaningful time outside the new runtime. Phase 33 tackles three of them
+as one substantial phase instead of declaring victory after one small kernel.
+
+The first is **non-mandatory tour destination**. A non-mandatory tour is a trip
+away from home for something that is not required every weekday, such as
+shopping, eating out, social activity, escorting someone, or other errands.
+The destination model asks, "Which sampled place gives this person the most
+attractive combination of travel time, cost, and opportunities?" It needs a
+mode logsum for each possible place. A logsum is one number summarizing how
+good all available travel modes are together.
+
+The second is **non-mandatory tour scheduling**. After choosing a purpose and
+place, the model chooses a start and end time that fits the person's calendar.
+The GPU evaluates millions of possible tour-time rows and performs the choice
+scan. ActivitySim still constructs feasible rows, supplies its controlled
+random numbers, and updates the calendar.
+
+The third is **primary tour mode choice**. For 160,479 tours, the model compares
+car, shared ride, transit, walk, bike, and related alternatives. The generated
+CUDA evaluator computes their utilities; ActivitySim keeps its probability,
+random-choice, and table rules.
+
+Together with the three earlier consumers, the runtime now covers six major
+places where repeated equations or large alternative sets suit a GPU:
+
+1. mandatory tour scheduling;
+2. non-mandatory tour destination;
+3. non-mandatory tour scheduling;
+4. primary tour mode choice;
+5. trip destination; and
+6. trip mode choice.
+
+This does not mean six separate copies of the road network. The read-only CUDA
+skim cubes - the GPU's road and transit atlas - remain available across the
+sequence and are released once after the last qualified consumer.
+
+## 105. How we prove the GPU work really happened
+
+A program can be configured to "use GPU" and still silently fall back to the
+CPU when it encounters an unsupported expression. Phase 33 does not accept a
+configuration label as proof. Each new call writes a small machine-readable
+report. The full run must contain exactly the expected call groups:
+
+| New GPU group | Calls in each run | Work covered |
+|---|---:|---:|
+| non-mandatory destination | 6 | 1,764,152 chooser-alternative rows |
+| non-mandatory scheduling | 7 | 75,428 tours and 9,250,836 alternatives |
+| primary tour mode | 9 | 160,479 tours |
+
+That is 22 newly checked CUDA calls in each candidate run. Every call must say
+that the candidate ran and no fallback occurred. The older mandatory and trip
+gates remain active too. A run fails if one expected group is missing, if a
+fallback appears, if all 34 steps do not finish, or if the shared CUDA data is
+not released at the expected boundary.
+
+The arithmetic bridges are intentionally narrow. For destinations and modes,
+the GPU replaces the repeated utility equations. It sends the compact result
+back to ActivitySim, which preserves the official model's nesting, random
+stream, and output assembly. For non-mandatory scheduling, a supported utility
+and choice scan run on CUDA while ActivitySim remains the owner of feasibility
+and timetable state. This design gives useful acceleration without secretly
+creating a different travel model.
+
+## 106. The Phase 33 result
+
+We again ran three matched pairs. Each control was regular pinned ActivitySim
+with its optimized Sharrow backend. Each candidate was the Phase 33 runtime.
+Every process started fresh and executed the same 34 steps, 50,000 sampled
+households, and all 1,454 zones.
+
+| Pair | Regular ActivitySim | Phase 33 | Seconds saved | Reduction | Speedup |
+|---|---:|---:|---:|---:|---:|
+| 1 | 225.7 s | 175.6 s | 50.1 s | 22.20% | 1.285x |
+| 2 | 206.6 s | 178.1 s | 28.5 s | 13.79% | 1.160x |
+| 3 | 204.5 s | 177.0 s | 27.5 s | 13.45% | 1.155x |
+| Middle result | **206.6 s** | **177.0 s** | **29.6 s** | **14.33%** | **1.167x** |
+
+In ordinary language, the middle regular run took about 3 minutes 27 seconds.
+The middle GPU run took 2 minutes 57 seconds. The typical saving was almost 30
+seconds. "1.167x" means the regular model took 1.167 times as long; it does not
+mean 167 times faster.
+
+All three candidates won. Pair 1 was unusually slow on the control side, so we
+do not advertise its 22.20% as the typical result. The middle value is the
+primary claim. This is also a stronger result than Phase 32's separate 10.36%
+experiment, but the two phases were measured in different three-pair runs.
+Their raw candidate times should not be treated as a direct paired Phase 32
+versus Phase 33 experiment.
+
+The important targeted component medians are:
+
+| Component | Regular | Phase 33 | Time saved | Speedup |
+|---|---:|---:|---:|---:|
+| mandatory scheduling | 24.3 s | 14.7 s | 9.6 s | 1.653x |
+| non-mandatory destination | 13.8 s | 11.8 s | 2.0 s | 1.169x |
+| non-mandatory scheduling | 9.8 s | 6.6 s | 3.2 s | 1.485x |
+| primary tour mode | 5.4 s | 5.3 s | 0.1 s | 1.019x |
+| trip destination | 41.0 s | 27.0 s | 14.0 s | 1.519x |
+| trip mode | 9.6 s | 10.1 s | -0.5 s | 0.950x |
+| **All 34 steps** | **206.6 s** | **177.0 s** | **29.6 s** | **1.167x** |
+
+This table is deliberately honest about neutral and negative results. Primary
+tour mode is basically neutral at this scale, and trip mode is half a second
+slower. A GPU kernel can calculate quickly while data packing, launch, and
+return costs cancel its benefit. Non-mandatory scheduling and both destination
+models create the useful savings. Small movements in untouched CPU steps are
+normal variation, not hidden GPU improvements.
+
+## 107. Same decisions, bounded diagnostic rounding
+
+Performance is accepted only after a separate program compares the candidate's
+finished files with its own matched control. It checks every published final
+CSV, row identity, column identity, missing value, and substantive cell. It
+allows numerical tolerance only for two explicitly named diagnostic
+columns.
+
+Across all three pairs:
+
+- changed modeled decision cells: **0**;
+- changed decision rows: **0**;
+- largest destination-logsum difference: **0.0000100000000032**, below the
+  **0.0001** limit; and
+- largest mode-choice-logsum difference: **0.0000038135214631**, below the
+  **0.00001** limit.
+
+Five final tables are byte-for-byte identical. The tours and trips tables have
+the same decisions but some diagnostic decimals print differently because CPU
+and GPU floating-point operations can round in different orders. The verifier
+does not call those diagnostics identical; it calls them bounded. None of
+those small differences changed a chosen location, time, mode, tour, or trip
+in this benchmark.
+
+There was also one failed attempt worth reporting. The first try at Candidate
+3 stopped with a Windows native access violation during ActivitySim's CPU CDAP
+step, before any Phase 33 kernel report existed. OpenBLAS had printed a thread-
+metadata warning, but we cannot prove the exact native cause. We archived that
+partial run and did not count it. A new fresh Candidate 3 process completed and
+passed every performance and correctness gate. The benchmark runner now has a
+safe resume mode that accepts only fully completed timing, proof, and exactness
+artifacts; it refuses partial output.
+
+## 108. What Phase 33 does not do, and the next ambitious phase
+
+Phase 33 is still a hybrid. The CPU runs the ActivitySim workflow, builds many
+tables, samples alternatives, creates some stateful scheduling inputs, writes
+files, and executes untouched models. The result applies to this public model,
+50,000-household sample, software lock, and RTX A4000. Another region, model
+configuration, GPU, or scale must be measured again.
+
+The next phase should target a whole remaining family, not one small equation.
+A practical ambitious package is:
+
+1. build one device-resident person-tour-trip state table rather than repeatedly
+   packing pandas rows;
+2. extend the shared location-choice service to school, workplace, joint-tour,
+   and at-work destinations;
+3. handle the sequential trip scheduler as a persistent GPU state machine or
+   explicitly reject it if dependency and launch costs make it slower;
+4. keep final ActivitySim tables and controlled random streams identical;
+5. test changed populations, coefficients, and skim worlds, not only this
+   frozen benchmark; and
+6. define a shared arithmetic contract for CPU/Sharrow/CUDA so close probability
+   boundaries have one specified meaning.
+
+Success should still be judged by three full matched runs, total 34-step time,
+zero decision changes, bounded declared diagnostics, no fallback, and explicit
+memory accounting. That is how the project can move from a credible 14.33%
+whole-model reduction toward a much larger device-resident runtime without
+trading away trust.

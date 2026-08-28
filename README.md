@@ -655,3 +655,21 @@ lower, or 1.0434x faster.
 
 See the [Phase 32 technical report](docs/phase32-whole-model-runtime.md) and the
 [direct three-pair proof](benchmark-results/phase32-p32cpu1-summary.json).
+
+## Phase 33 expanded model-wide GPU runtime
+
+Phase 33 adds non-mandatory tour destination, non-mandatory scheduling, and
+primary tour mode choice to the qualified CUDA runtime. Together with retained
+mandatory scheduling, trip destination, and trip mode, six model consumers now
+share the resident CUDA skim service.
+
+Three fresh matched 50,000-household pairs against regular pinned
+ActivitySim/Sharrow reduce median all-model time from 206.6 to 177.0 seconds:
+29.6 seconds saved, 14.33% lower, and **1.167x faster**. The candidate wins all
+three pairs. Each candidate proves all 6 new destination calls, 7 scheduling
+calls, and 9 tour-mode calls ran on CUDA without fallback. Independent final-
+output verification finds zero changed decision cells; declared diagnostic
+logsums remain inside 0.0001 and 0.00001 gates.
+
+See the [Phase 33 technical report](docs/phase33-model-wide-gpu-runtime.md) and
+the [three-pair proof](benchmark-results/phase33-p33model1-summary.json).

@@ -1,0 +1,3 @@
+inherit_settings: true
+DESTINATION_LOGSUM_BACKEND: choiceforge_tripnum_batched
+DESTINATION_NESTED_LOGIT_BACKEND: choiceforge_cuda_mtc21

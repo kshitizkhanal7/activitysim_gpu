@@ -1,0 +1,8 @@
+inherit_settings: true
+
+# Phase 33: use ActivitySim's explicit scheduling backend seam. ActivitySim
+# remains responsible for feasible TDD rows, the controlled random stream,
+# timetable mutation, and published tables; ChoiceForge evaluates the supported
+# utility specification and choice scan on CUDA.
+CHOICE_BACKEND: choiceforge
+CHOICEFORGE_PRECISION_GUARD: "off"

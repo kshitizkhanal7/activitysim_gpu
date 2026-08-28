@@ -1,0 +1,18 @@
+{
+  "phase": 33,
+  "run_tag": "p33model1",
+  "trial": 3,
+  "attempt": "first candidate attempt",
+  "process_exit_code": -1073741819,
+  "windows_interpretation": "native access violation",
+  "last_completed_boundary": "ActivitySim CPU initialization before cdap_simulate completed",
+  "phase33_kernel_reports_written": 0,
+  "counted_in_performance_result": false,
+  "counted_in_correctness_result": false,
+  "recovery": "partial output was archived; a new fresh candidate process completed against the existing matched trial-3 control",
+  "cause_boundary": "OpenBLAS emitted a thread-metadata warning, but the precise native cause is not proven",
+  "archived_stdout_bytes": 20621,
+  "archived_stdout_sha256": "2b181704ae7c91b5870c4ace2840c096db6ea6a9ea4eb458891f213e0454beb3",
+  "archived_stderr_bytes": 508,
+  "archived_stderr_sha256": "720ebcd2686dcd2cb142a3f39e0095e7b46ae7970b250580dc25f7c56614f3cb"
+}

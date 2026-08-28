@@ -20,24 +20,60 @@ from .activitysim_destination import _cached_strict_ir
 
 
 logger = logging.getLogger(__name__)
-_ORIGINAL_MODE_CHOICE_SIMULATE = None
+_ORIGINAL_TRIP_MODE_CHOICE_SIMULATE = None
+_ORIGINAL_TOUR_MODE_CHOICE_SIMULATE = None
 _REPORT_SEQUENCE = 0
 
 
 def install_activitysim_trip_mode_candidate() -> None:
     """Install the bridge after destination logsums have established the plans."""
-    global _ORIGINAL_MODE_CHOICE_SIMULATE
+    global _ORIGINAL_TRIP_MODE_CHOICE_SIMULATE
     from activitysim.abm.models import trip_mode_choice
 
-    if _ORIGINAL_MODE_CHOICE_SIMULATE is not None:
+    if _ORIGINAL_TRIP_MODE_CHOICE_SIMULATE is not None:
         return
-    _ORIGINAL_MODE_CHOICE_SIMULATE = trip_mode_choice.mode_choice_simulate
+    _ORIGINAL_TRIP_MODE_CHOICE_SIMULATE = trip_mode_choice.mode_choice_simulate
     trip_mode_choice.mode_choice_simulate = _mode_choice_simulate_cuda
     logger.info("installed ChoiceForge strict-CUDA trip-mode utility bridge")
 
 
+def install_activitysim_tour_mode_candidate() -> None:
+    """Install the same generated-CUDA evaluator for primary tour mode choice.
+
+    ActivitySim imports ``run_tour_mode_choice_simulate`` into the component
+    module, so both the defining utility module and the already-bound component
+    symbol are replaced. At-work mode choice keeps its original binding and is
+    outside this qualification boundary.
+    """
+    global _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE
+    from activitysim.abm.models import tour_mode_choice
+    from activitysim.abm.models.util import mode
+
+    if _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE is not None:
+        return
+    _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE = mode.run_tour_mode_choice_simulate
+    mode.run_tour_mode_choice_simulate = _tour_mode_choice_simulate_cuda
+    tour_mode_choice.run_tour_mode_choice_simulate = _tour_mode_choice_simulate_cuda
+    logger.info("installed ChoiceForge strict-CUDA tour-mode utility bridge")
+
+
 def _mode_choice_simulate_cuda(*args, **kwargs):
     """Replace only Sharrow utility evaluation for one mode-choice segment."""
+    return _generated_mode_choice_simulate(
+        _ORIGINAL_TRIP_MODE_CHOICE_SIMULATE, "trip_mode_choice", *args, **kwargs
+    )
+
+
+def _tour_mode_choice_simulate_cuda(*args, **kwargs):
+    """Replace only Sharrow utility evaluation for one tour-mode segment."""
+    return _generated_mode_choice_simulate(
+        _ORIGINAL_TOUR_MODE_CHOICE_SIMULATE, "tour_mode_choice", *args, **kwargs
+    )
+
+
+def _generated_mode_choice_simulate(original, component, *args, **kwargs):
+    if original is None:
+        raise RuntimeError(f"ChoiceForge {component} bridge was not installed")
     from activitysim.core import flow as activitysim_flow
 
     original_apply_flow = activitysim_flow.apply_flow
@@ -81,7 +117,8 @@ def _mode_choice_simulate_cuda(*args, **kwargs):
             download_ms = (time.perf_counter() - download_started) * 1000
             telemetry = generated.telemetry
             _write_report({
-                "phase": 17,
+                "phase": 33 if component == "tour_mode_choice" else 17,
+                "component": component,
                 "trace_label": trace_label,
                 "rows": len(choosers),
                 "terms": telemetry.terms,
@@ -106,9 +143,10 @@ def _mode_choice_simulate_cuda(*args, **kwargs):
                 "source_sha256": telemetry.source_sha256,
             })
             logger.info(
-                "%s ChoiceForge trip-mode utilities rows=%d plan_hit=%s "
+                "%s ChoiceForge %s utilities rows=%d plan_hit=%s "
                 "pack=%.3fms upload=%.3fms kernel=%.3fms download=%.3fms",
                 trace_label,
+                component,
                 len(choosers),
                 telemetry.plan_cache_hit,
                 telemetry.host_pack_ms,
@@ -119,7 +157,8 @@ def _mode_choice_simulate_cuda(*args, **kwargs):
             return utilities, None, None
         except Exception as exc:
             _write_report({
-                "phase": 17,
+                "phase": 33 if component == "tour_mode_choice" else 17,
+                "component": component,
                 "trace_label": trace_label,
                 "rows": len(choosers),
                 "candidate_used": False,
@@ -127,8 +166,9 @@ def _mode_choice_simulate_cuda(*args, **kwargs):
                 "fallback_reason": f"{type(exc).__name__}: {exc}",
             })
             logger.warning(
-                "%s strict-CUDA trip-mode utility fallback: %s",
+                "%s strict-CUDA %s utility fallback: %s",
                 trace_label,
+                component,
                 exc,
                 exc_info=True,
             )
@@ -136,7 +176,7 @@ def _mode_choice_simulate_cuda(*args, **kwargs):
 
     activitysim_flow.apply_flow = generated_apply_flow
     try:
-        return _ORIGINAL_MODE_CHOICE_SIMULATE(*args, **kwargs)
+        return original(*args, **kwargs)
     finally:
         activitysim_flow.apply_flow = original_apply_flow
 
@@ -156,11 +196,22 @@ def _strict_inputs(state, spec, dataframe, locals_d):
     environment.update(state.get_global_constants())
     environment.update(locals_d or {})
     targeted = 0
-    for name in ("od_skims", "odt_skims", "dot_skims"):
+    for name in (
+        "od_skims",
+        "do_skims",
+        "odt_skims",
+        "dot_skims",
+        "odr_skims",
+        "dor_skims",
+    ):
         value = (locals_d or {}).get(name)
         if value is not None and getattr(value, "df", None) is not None:
             environment[name] = cuda_wrapper_from_activitysim(value)
             targeted += 1
+    if (locals_d or {}).get("od_skims") is not None:
+        environment["od_skims_reverse"] = cuda_wrapper_from_activitysim(
+            locals_d["od_skims"], reverse=True
+        )
     if not targeted:
         raise ValueError("trip-mode candidate found no targeted skim wrapper")
     environment.update(column_arrays)

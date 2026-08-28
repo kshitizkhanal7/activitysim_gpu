@@ -11,7 +11,10 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from functools import lru_cache
+import json
 import logging
+import os
+from pathlib import Path
 import re
 import time
 from typing import Any, Callable
@@ -22,6 +25,7 @@ import numpy as np
 from .scheduling_compiler import CompiledCudaSchedulingModel, SchedulingSchema
 
 logger = logging.getLogger(__name__)
+_REPORT_SEQUENCE = 0
 
 
 class UnsupportedActivitySimPath(RuntimeError):
@@ -88,6 +92,26 @@ class SchedulingTelemetry:
             + self.gpu_ms
             + self.map_ms
         )
+
+
+def _write_scheduling_report(payload: dict) -> None:
+    report_dir = os.environ.get("CHOICEFORGE_SCHEDULING_REPORT_DIR")
+    if not report_dir:
+        return
+    global _REPORT_SEQUENCE
+    _REPORT_SEQUENCE += 1
+    run_id = re.sub(
+        r"[^A-Za-z0-9_.-]+",
+        "-",
+        os.environ.get("CHOICEFORGE_SCHEDULING_RUN_ID", ""),
+    ).strip("-")
+    prefix = f"{run_id}_" if run_id else ""
+    path = Path(report_dir) / f"{prefix}scheduling_{_REPORT_SEQUENCE:03d}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
 
 
 _STRING_EQUALITY = re.compile(
@@ -561,6 +585,16 @@ def interaction_sample_simulate_choiceforge(
         or has_trace_targets
     )
     if unsupported:
+        _write_scheduling_report({
+            "phase": 33,
+            "component": "tour_scheduling",
+            "trace_label": trace_label,
+            "choosers": int(len(choosers)),
+            "alternative_rows": int(len(alternatives)),
+            "candidate_used": False,
+            "fallback_used": True,
+            "fallback_reason": "call requires ActivitySim tracing/estimation/chunk behavior",
+        })
         return _fallback_or_raise(
             fallback, "call requires ActivitySim tracing/estimation/chunk behavior", call_args, call_kwargs
         )
@@ -681,6 +715,25 @@ def interaction_sample_simulate_choiceforge(
         telemetry.map_ms,
         telemetry.total_ms,
     )
+    _write_scheduling_report({
+        "phase": 33,
+        "component": "tour_scheduling",
+        "trace_label": trace_label,
+        "choosers": int(len(choosers)),
+        "rows": int(len(alternatives)),
+        "alternative_rows": int(len(alternatives)),
+        "candidate_used": True,
+        "fallback_used": False,
+        "precision_guard": precision_guard,
+        "lower_ms": telemetry.lower_ms,
+        "stateful_ms": telemetry.stateful_ms,
+        "pack_ms": telemetry.pack_ms,
+        "random_ms": telemetry.random_ms,
+        "gpu_ms": telemetry.gpu_ms,
+        "map_ms": telemetry.map_ms,
+        "total_ms": telemetry.total_ms,
+        "compact_bytes": int(telemetry.compact_bytes),
+    })
     if not return_telemetry:
         return choices
     return choices, telemetry

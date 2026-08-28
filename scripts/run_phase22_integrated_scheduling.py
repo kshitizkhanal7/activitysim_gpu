@@ -39,6 +39,14 @@ def main() -> int:
             "after the final qualified GPU consumer"
         ),
     )
+    parser.add_argument(
+        "--phase33-model-wide",
+        action="store_true",
+        help=(
+            "extend the qualified full-model CUDA boundary to non-mandatory "
+            "destination logsums, non-mandatory scheduling, and primary tour mode"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -113,6 +121,8 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase33_model_wide and not args.full_model:
+        parser.error("--phase33-model-wide requires --full-model")
     native_abi_enabled = bool(
         args.native_abi_live or args.native_abi_bootstrap_report
     )
@@ -127,6 +137,8 @@ def main() -> int:
     args.kernel_reports.mkdir(parents=True, exist_ok=True)
     phase17_mode_reports = args.kernel_reports / "mode"
     phase17_mode_reports.mkdir(parents=True, exist_ok=True)
+    phase33_scheduling_reports = args.kernel_reports / "scheduling"
+    phase33_scheduling_reports.mkdir(parents=True, exist_ok=True)
     if args.resident_replay_report:
         args.resident_replay_report.parent.mkdir(parents=True, exist_ok=True)
     if args.resident_schedule_report:
@@ -168,6 +180,9 @@ def main() -> int:
             # model steps. Keep the stable primary full-model policy here.
             "CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS": "0" if args.full_model else "1",
             "CHOICEFORGE_STRICT_CUDA_MODE_CHOICE": "1" if args.full_model else "0",
+            "CHOICEFORGE_STRICT_CUDA_TOUR_MODE_CHOICE": (
+                "1" if args.phase33_model_wide else "0"
+            ),
             # The strict CPU/CUDA shadow is a qualification tool, not part of
             # a production timing boundary. Full-model exactness is checked
             # out of band against every final table after the run.
@@ -178,6 +193,11 @@ def main() -> int:
                 phase17_mode_reports.resolve()
             ),
             "CHOICEFORGE_PHASE17_RUN_ID": "phase22-integrated-scheduling",
+            "CHOICEFORGE_SCHEDULING_REPORT_DIR": (
+                str(phase33_scheduling_reports.resolve())
+                if args.phase33_model_wide else ""
+            ),
+            "CHOICEFORGE_SCHEDULING_RUN_ID": "phase33-model-wide",
         }
     )
 
@@ -204,6 +224,7 @@ def main() -> int:
     )
     scheduler_initialization_seconds = time.perf_counter() - scheduler_started
     original_compute = vts._compute_logsums
+    original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
     original_network_los_load_data = activitysim_los.Network_LOS.load_data
@@ -752,8 +773,54 @@ def main() -> int:
         nonlocal full_model_native_release_freed_bytes
         nonlocal full_model_native_release_after_model
         nonlocal full_model_scheduler_checkpoint
-        result = original_runner_by_name(self, model_name)
-        if args.full_model and str(model_name) == "mandatory_tour_scheduling":
+        model_name_text = str(model_name)
+        if (
+            args.phase33_model_wide
+            and model_name_text == "tour_mode_choice_simulate"
+            and os.environ.get("CHOICEFORGE_STRICT_CUDA_TOUR_MODE_CHOICE", "0") == "1"
+        ):
+            from choiceforge.activitysim_mode_choice import (
+                install_activitysim_tour_mode_candidate,
+            )
+
+            install_activitysim_tour_mode_candidate()
+        if args.phase33_model_wide and model_name_text == "non_mandatory_tour_destination":
+            def phase33_location_logsums(
+                state,
+                choosers,
+                spec,
+                nest_spec,
+                skims=None,
+                locals_d=None,
+                chunk_size=0,
+                trace_label=None,
+                chunk_tag=None,
+                explicit_chunk_size=0,
+                **_kwargs,
+            ):
+                simulate.simple_simulate_logsums = original_simple_simulate_logsums
+                try:
+                    return _simple_simulate_mtc21_logsums_cuda(
+                        state,
+                        choosers,
+                        spec,
+                        nest_spec,
+                        skims or {},
+                        locals_d or {},
+                        trace_label
+                        or "non_mandatory_tour_destination.compute_logsums",
+                        explicit_chunk_size,
+                    )
+                finally:
+                    simulate.simple_simulate_logsums = phase33_location_logsums
+
+            simulate.simple_simulate_logsums = phase33_location_logsums
+        try:
+            result = original_runner_by_name(self, model_name)
+        finally:
+            if args.phase33_model_wide and model_name_text == "non_mandatory_tour_destination":
+                simulate.simple_simulate_logsums = original_simple_simulate_logsums
+        if args.full_model and model_name_text == "mandatory_tour_scheduling":
             full_model_scheduler_checkpoint = scheduler.checkpoint()
             # The scheduling-only hooks must end here, but its immutable CUDA
             # skim cubes are also inputs to trip destination and trip mode.
@@ -762,7 +829,7 @@ def main() -> int:
             vts._compute_logsums = original_compute
             vts.interaction_sample_simulate = original_activitysim_choice
             activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
-        if args.full_model and str(model_name) == "trip_mode_choice":
+        if args.full_model and model_name_text == "trip_mode_choice":
             from choiceforge.cuda_backend import _cupy
             from choiceforge.cuda_skims import clear_cuda_dataset_cache
 
@@ -861,6 +928,7 @@ def main() -> int:
         activitysim_los.Network_LOS.load_skim_info = original_network_los_load_skim_info
         activitysim_los.Network_LOS.load_data = original_network_los_load_data
         vts.interaction_sample_simulate = original_activitysim_choice
+        simulate.simple_simulate_logsums = original_simple_simulate_logsums
         activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
         Runner.__call__ = original_runner_call
         Runner.by_name = original_runner_by_name
@@ -882,6 +950,18 @@ def main() -> int:
     kernel_reports = [json.loads(path.read_text()) for path in kernel_report_paths]
     candidates = [item for item in kernel_reports if item.get("candidate_used")]
     fallbacks = [item for item in kernel_reports if item.get("fallback_used")]
+    phase33_destination = [
+        item for item in candidates
+        if str(item.get("trace_label", "")).startswith(
+            "non_mandatory_tour_destination."
+        )
+    ]
+    phase33_scheduling = [
+        item for item in candidates if item.get("component") == "tour_scheduling"
+    ]
+    phase33_tour_mode = [
+        item for item in candidates if item.get("component") == "tour_mode_choice"
+    ]
     timing_path = args.output / "timing_log.csv"
     model_timing_seconds = {}
     if timing_path.exists():
@@ -1685,8 +1765,11 @@ def main() -> int:
 
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     report = {
-        "phase": 32 if args.full_model else 22,
+        "phase": 33 if args.phase33_model_wide else (32 if args.full_model else 22),
         "scope": (
+            "full public ActivitySim model with six qualified GPU consumers and "
+            "one shared CUDA skim residency interval through trip mode choice"
+            if args.phase33_model_wide else
             "full public ActivitySim model with native mandatory scheduling and "
             "one shared CUDA skim residency interval through trip mode choice"
             if args.full_model else
@@ -1704,6 +1787,21 @@ def main() -> int:
             len(native_manifests) if native_abi_enabled else len(candidates)
         ),
         "fallback_calls": len(fallbacks),
+        "phase33_non_mandatory_destination_cuda_calls": len(phase33_destination),
+        "phase33_non_mandatory_destination_rows": int(
+            sum(item.get("rows", 0) for item in phase33_destination)
+        ),
+        "phase33_non_mandatory_scheduling_cuda_calls": len(phase33_scheduling),
+        "phase33_non_mandatory_scheduling_choosers": int(
+            sum(item.get("choosers", 0) for item in phase33_scheduling)
+        ),
+        "phase33_non_mandatory_scheduling_alternative_rows": int(
+            sum(item.get("alternative_rows", 0) for item in phase33_scheduling)
+        ),
+        "phase33_tour_mode_cuda_calls": len(phase33_tour_mode),
+        "phase33_tour_mode_rows": int(
+            sum(item.get("rows", 0) for item in phase33_tour_mode)
+        ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -1830,6 +1928,24 @@ def main() -> int:
                 ),
                 "zero_boundary_logsum_download": (
                     report["boundary_logsum_download_bytes"] == 0
+                ),
+            }
+        )
+    if args.phase33_model_wide:
+        report["proof_gates"].update(
+            {
+                "all_6_non_mandatory_destination_cuda_calls_used": (
+                    report["phase33_non_mandatory_destination_cuda_calls"] == 6
+                    and report["phase33_non_mandatory_destination_rows"] > 0
+                ),
+                "all_7_non_mandatory_scheduling_cuda_calls_used": (
+                    report["phase33_non_mandatory_scheduling_cuda_calls"] == 7
+                    and report["phase33_non_mandatory_scheduling_choosers"] > 0
+                    and report["phase33_non_mandatory_scheduling_alternative_rows"] > 0
+                ),
+                "all_9_primary_tour_mode_cuda_calls_used": (
+                    report["phase33_tour_mode_cuda_calls"] == 9
+                    and report["phase33_tour_mode_rows"] > 0
                 ),
             }
         )
