@@ -4040,3 +4040,126 @@ A second research track must define one arithmetic contract shared by the
 Sharrow reference and the CUDA compiler. Changed-scenario and probability-
 boundary fuzz tests must pass before the 57-entry qualified safety map can be
 removed for unfamiliar scenarios.
+
+## 101. The direct answer: GPU runtime versus regular ActivitySim
+
+The first Phase 32 experiment deliberately used a difficult control that
+already had two GPU features. That isolated the extra value of the new native
+scheduler, but it did not give the simplest answer a new reader wants: **How
+much faster is the completed project than regular ActivitySim?**
+
+We therefore ran a second, independent three-pair experiment. The regular
+control is the pinned public ActivitySim model with its normal optimized
+Sharrow expression engine. It has no ChoiceForge code overlay and no GPU hook.
+The candidate is the completed Phase 32 runtime. Both execute the same 34 model
+steps on the same 50,000 sampled households and all 1,454 zones. Each run starts
+in a new process, and the order alternates control then candidate.
+
+| Pair | Regular ActivitySim | GPU runtime | Seconds saved | Total reduction | Speedup |
+|---|---:|---:|---:|---:|---:|
+| 1 | 218.2 s | 192.3 s | 25.9 s | 11.87% | 1.135x |
+| 2 | 214.3 s | 192.9 s | 21.4 s | 9.99% | 1.111x |
+| 3 | 215.2 s | 200.3 s | 14.9 s | 6.92% | 1.074x |
+| Middle result | **215.2 s** | **192.9 s** | **22.3 s** | **10.36%** | **1.116x** |
+
+In plain English, a run that took about 3 minutes 35 seconds in regular
+ActivitySim took about 3 minutes 13 seconds with the GPU work. The typical
+saving was 22.3 seconds. A 1.116x speedup means the regular run took 1.116 times
+as long as the GPU run. It does **not** mean the model is 11.6 times faster.
+
+The GPU runtime won all three pairs, even though the third run was slower than
+its first two candidate runs. That spread is why the report shows every pair
+and uses the middle value instead of advertising the luckiest result.
+
+After every pair, an independent program compared the completed outputs. All
+three comparisons found zero changed modeled decisions. The diagnostic logsum
+numbers are not text-identical because CPU and GPU floating-point arithmetic
+can round at slightly different places. The largest destination difference is
+0.0000100 against an allowed 0.0001, and the largest mode-choice difference is
+0.00000290 against an allowed 0.00001. Both are at least several times smaller
+than their predeclared limits, and the same bounded result repeats in all three
+pairs. The speedup therefore did not come from skipping people, zones,
+alternatives, model steps, or correctness checks.
+
+## 102. Where the seconds changed
+
+ActivitySim records a timer for each of its 34 named steps. The table below
+shows the middle time from the three regular runs and the middle time from the
+three GPU runs. A speedup above 1 means faster; below 1 means slower. Tiny
+changes in ordinary CPU steps are normal timing noise, not secret GPU gains.
+
+| Component | Regular | GPU | Speedup | What the GPU does here |
+|---|---:|---:|---:|---|
+| initialize_landuse | 16.8 s | 18.2 s | 0.923x | nothing directly |
+| initialize_households | 5.7 s | 5.3 s | 1.075x | nothing directly |
+| compute_accessibility | 2.0 s | 2.0 s | 1.000x | nothing directly |
+| school_location | 9.6 s | 9.8 s | 0.980x | nothing directly |
+| workplace_location | 14.6 s | 14.4 s | 1.014x | nothing directly |
+| auto_ownership_simulate | 0.9 s | 0.9 s | 1.000x | nothing directly |
+| free_parking | 1.1 s | 1.1 s | 1.000x | nothing directly |
+| cdap_simulate | 6.8 s | 6.9 s | 0.986x | nothing directly |
+| mandatory_tour_frequency | 1.5 s | 1.6 s | 0.938x | nothing directly |
+| mandatory_tour_scheduling | 24.6 s | 15.3 s | **1.608x** | native GPU scheduler |
+| joint_tour_frequency | 1.3 s | 1.3 s | 1.000x | nothing directly |
+| joint_tour_composition | 0.7 s | 0.8 s | 0.875x | nothing directly |
+| joint_tour_participation | 2.4 s | 2.5 s | 0.960x | nothing directly |
+| joint_tour_destination | 3.4 s | 3.8 s | 0.895x | nothing directly |
+| joint_tour_scheduling | 1.4 s | 1.4 s | 1.000x | nothing directly |
+| non_mandatory_tour_frequency | 3.4 s | 3.6 s | 0.944x | nothing directly |
+| non_mandatory_tour_destination | 13.9 s | 14.3 s | 0.972x | nothing directly |
+| non_mandatory_tour_scheduling | 10.1 s | 10.0 s | 1.010x | nothing directly |
+| tour_mode_choice_simulate | 5.5 s | 5.6 s | 0.982x | nothing directly |
+| atwork_subtour_frequency | 1.1 s | 1.1 s | 1.000x | nothing directly |
+| atwork_subtour_destination | 4.2 s | 4.0 s | 1.050x | nothing directly |
+| atwork_subtour_scheduling | 1.7 s | 1.7 s | 1.000x | nothing directly |
+| atwork_subtour_mode_choice | 1.1 s | 1.2 s | 0.917x | nothing directly |
+| stop_frequency | 3.7 s | 3.9 s | 0.949x | nothing directly |
+| trip_purpose | 1.1 s | 1.2 s | 0.917x | nothing directly |
+| trip_destination | 42.6 s | 27.6 s | **1.543x** | generated GPU expressions |
+| trip_purpose_and_destination | 0.6 s | 0.7 s | 0.857x | nothing directly |
+| trip_scheduling | 7.4 s | 7.5 s | 0.987x | nothing directly |
+| trip_mode_choice | 10.2 s | 10.2 s | 1.000x | GPU path retained; neutral here |
+| write_data_dictionary | 1.7 s | 1.8 s | 0.944x | nothing directly |
+| track_skim_usage | 0.4 s | 0.5 s | 0.800x | nothing directly |
+| write_trip_matrices | 7.0 s | 7.0 s | 1.000x | nothing directly |
+| write_tables | 1.9 s | 2.0 s | 0.950x | nothing directly |
+| summarize | 4.8 s | 4.8 s | 1.000x | nothing directly |
+| **All 34 steps** | **215.2 s** | **192.9 s** | **1.116x** | complete workflow |
+
+Two components make the meaningful dent. Mandatory scheduling saves a middle
+9.3 seconds and trip destination saves 15.0 seconds. Trip mode choice is
+correct and GPU-enabled but does not improve the rounded component time in
+this run. The many small positive and negative movements elsewhere roughly
+cancel. Because component timers are rounded to one decimal place and each row
+has its own median, their numbers should not be added as if they were exact.
+
+## 103. What the result proves, and what comes next
+
+This proves that the GPU architecture accelerates a complete, public,
+full-step ActivitySim workflow on this RTX A4000 by a replicated median 10.36%
+with identical modeled decisions and bounded diagnostic rounding differences.
+It is stronger than a kernel-only benchmark because it includes initialization,
+data movement, every untouched CPU step, output writing, and cleanup.
+
+It does not prove that every ActivitySim model will be exactly 10.36% faster.
+It covers one public configuration, one 50,000-household sample, one software
+lock, and one GPU. It also does not claim a GPU-only model: most steps remain
+regular ActivitySim work, and the CPU still orchestrates the process.
+
+The next major phase should target a group large enough to change the whole
+stopwatch: non-mandatory tour destination and scheduling, tour mode choice,
+and trip scheduling. Together their regular middle time is about 36.9 seconds.
+The architecture should give them the same shared compiled expressions and
+resident network data instead of adding isolated kernels. Success should
+require all of the following at once:
+
+1. three fresh interleaved full-model pairs against regular ActivitySim;
+2. a statistically clear reduction in complete 34-step time;
+3. every published decision and diagnostic value replicated;
+4. no silent CPU fallback in the newly supported components;
+5. one authoritative network representation rather than duplicate giant
+   copies; and
+6. changed-scenario tests, not only the frozen benchmark scenario.
+
+That is the shortest credible path from a useful 10.36% result toward a much
+larger end-to-end gain.

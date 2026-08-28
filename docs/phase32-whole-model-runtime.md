@@ -33,6 +33,83 @@ an unoptimized toy loop. Phase 17 already accelerates trip destination and trip
 mode choice. The Phase 17 report separately establishes its replicated result
 against the pinned Sharrow-required ActivitySim control.
 
+## Direct comparison with regular ActivitySim
+
+The follow-up experiment answers the more useful deployment question directly:
+how much faster is the finished GPU runtime than a regular, pinned ActivitySim
+run? The control uses ActivitySim's normal optimized Sharrow expression backend,
+all 34 configured model steps, and no ChoiceForge overlay or GPU hooks. This is
+not a naive Python substitute.
+
+Three new interleaved, fresh-process pairs used the same 50,000 households and
+all 1,454 zones. The GPU runtime won every pair:
+
+| Pair | Regular ActivitySim | GPU runtime | Saved | Reduction | Speedup |
+|---|---:|---:|---:|---:|---:|
+| 1 | 218.2 s | 192.3 s | 25.9 s | 11.87% | 1.135x |
+| 2 | 214.3 s | 192.9 s | 21.4 s | 9.99% | 1.111x |
+| 3 | 215.2 s | 200.3 s | 14.9 s | 6.92% | 1.074x |
+| Median | **215.2 s** | **192.9 s** | **22.3 s** | **10.36%** | **1.116x** |
+
+Every post-run output comparison passed its declared gates. Across all three
+pairs there were zero changed modeled decision cells. Floating-point diagnostic
+text is not byte-identical: 18,180 destination-logsum cells differ, with a
+worst absolute difference of 0.0000100000000032 against a 0.0001 gate; the
+worst mode-choice-logsum difference is 0.00000289586 against a 0.00001 gate.
+Those same bounded differences repeat in all three pairs. This direct experiment
+is now the primary whole-model performance claim. The Phase 17 comparison above
+remains useful because it isolates the additional benefit of native GPU
+mandatory scheduling.
+
+### Every ActivitySim component
+
+The table reports the median ActivitySim timer for each named step. Negative
+savings mean the candidate was slower in that step. Untargeted rows mostly show
+normal run-to-run noise and must not be described as GPU speedups. The two large
+direct gains are mandatory scheduling and trip destination; trip mode choice is
+currently neutral at this scale.
+
+| Component | Regular ActivitySim | GPU runtime | Saved | Reduction | Speedup | GPU role |
+|---|---:|---:|---:|---:|---:|---|
+| initialize_landuse | 16.8 | 18.2 | -1.4 | -8.33% | 0.923x | not directly GPU-targeted |
+| initialize_households | 5.7 | 5.3 | 0.4 | 7.02% | 1.075x | not directly GPU-targeted |
+| compute_accessibility | 2.0 | 2.0 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| school_location | 9.6 | 9.8 | -0.2 | -2.08% | 0.980x | not directly GPU-targeted |
+| workplace_location | 14.6 | 14.4 | 0.2 | 1.37% | 1.014x | not directly GPU-targeted |
+| auto_ownership_simulate | 0.9 | 0.9 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| free_parking | 1.1 | 1.1 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| cdap_simulate | 6.8 | 6.9 | -0.1 | -1.47% | 0.986x | not directly GPU-targeted |
+| mandatory_tour_frequency | 1.5 | 1.6 | -0.1 | -6.67% | 0.938x | not directly GPU-targeted |
+| mandatory_tour_scheduling | 24.6 | 15.3 | 9.3 | 37.80% | **1.608x** | Phase 32 native GPU |
+| joint_tour_frequency | 1.3 | 1.3 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| joint_tour_composition | 0.7 | 0.8 | -0.1 | -14.29% | 0.875x | not directly GPU-targeted |
+| joint_tour_participation | 2.4 | 2.5 | -0.1 | -4.17% | 0.960x | not directly GPU-targeted |
+| joint_tour_destination | 3.4 | 3.8 | -0.4 | -11.76% | 0.895x | not directly GPU-targeted |
+| joint_tour_scheduling | 1.4 | 1.4 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| non_mandatory_tour_frequency | 3.4 | 3.6 | -0.2 | -5.88% | 0.944x | not directly GPU-targeted |
+| non_mandatory_tour_destination | 13.9 | 14.3 | -0.4 | -2.88% | 0.972x | not directly GPU-targeted |
+| non_mandatory_tour_scheduling | 10.1 | 10.0 | 0.1 | 0.99% | 1.010x | not directly GPU-targeted |
+| tour_mode_choice_simulate | 5.5 | 5.6 | -0.1 | -1.82% | 0.982x | not directly GPU-targeted |
+| atwork_subtour_frequency | 1.1 | 1.1 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| atwork_subtour_destination | 4.2 | 4.0 | 0.2 | 4.76% | 1.050x | not directly GPU-targeted |
+| atwork_subtour_scheduling | 1.7 | 1.7 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| atwork_subtour_mode_choice | 1.1 | 1.2 | -0.1 | -9.09% | 0.917x | not directly GPU-targeted |
+| stop_frequency | 3.7 | 3.9 | -0.2 | -5.41% | 0.949x | not directly GPU-targeted |
+| trip_purpose | 1.1 | 1.2 | -0.1 | -9.09% | 0.917x | not directly GPU-targeted |
+| trip_destination | 42.6 | 27.6 | 15.0 | 35.21% | **1.543x** | Phase 17 generated GPU retained |
+| trip_purpose_and_destination | 0.6 | 0.7 | -0.1 | -16.67% | 0.857x | not directly GPU-targeted |
+| trip_scheduling | 7.4 | 7.5 | -0.1 | -1.35% | 0.987x | not directly GPU-targeted |
+| trip_mode_choice | 10.2 | 10.2 | 0.0 | 0.00% | 1.000x | Phase 17 generated GPU retained |
+| write_data_dictionary | 1.7 | 1.8 | -0.1 | -5.88% | 0.944x | not directly GPU-targeted |
+| track_skim_usage | 0.4 | 0.5 | -0.1 | -25.00% | 0.800x | not directly GPU-targeted |
+| write_trip_matrices | 7.0 | 7.0 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+| write_tables | 1.9 | 2.0 | -0.1 | -5.26% | 0.950x | not directly GPU-targeted |
+| summarize | 4.8 | 4.8 | 0.0 | 0.00% | 1.000x | not directly GPU-targeted |
+
+The per-step timers are rounded to tenths by ActivitySim, so small differences
+should not be treated as precise causal estimates. The 22.3-second whole-model
+median saving is not the sum of independently rounded median rows.
+
 ## Correctness result
 
 Every candidate run passed all live gates:
@@ -130,7 +207,8 @@ On the pinned RTX A4000 environment:
 .\scripts\run_phase32_full_model_ab.ps1 `
   -Repetitions 3 `
   -Households 50000 `
-  -RunTag p32proof1
+  -RunTag p32cpu1 `
+  -Baseline activitysim
 ```
 
 The runner refuses to overwrite any output. It executes fresh processes in
@@ -140,6 +218,14 @@ proof gate, and runs complete-output verification after each pair.
 
 Primary evidence:
 
+- [`phase32-p32cpu1-summary.json`](../benchmark-results/phase32-p32cpu1-summary.json)
+- [`phase32-p32cpu1-gpu-1.json`](../benchmark-results/phase32-p32cpu1-gpu-1.json)
+- [`phase32-p32cpu1-gpu-2.json`](../benchmark-results/phase32-p32cpu1-gpu-2.json)
+- [`phase32-p32cpu1-gpu-3.json`](../benchmark-results/phase32-p32cpu1-gpu-3.json)
+- the three `phase32-p32cpu1-exact-*.json` output comparisons
+
+Incremental Phase 17 comparison evidence:
+
 - [`phase32-p32proof1-summary.json`](../benchmark-results/phase32-p32proof1-summary.json)
 - [`phase32-p32proof1-gpu-1.json`](../benchmark-results/phase32-p32proof1-gpu-1.json)
 - [`phase32-p32proof1-gpu-2.json`](../benchmark-results/phase32-p32proof1-gpu-2.json)
@@ -148,11 +234,13 @@ Primary evidence:
 
 ## Claim boundary and next major opportunity
 
-Phase 32 proves a repeatable 4.162% median reduction in all 34 model steps on
-this public 50,000-household benchmark, relative to the already accelerated
-Phase 17 runtime, with complete output replication. It does not prove the same
-percentage on another GPU, population size, network, or model configuration.
-It does not make ActivitySim CPU-free.
+Phase 32 proves a repeatable **10.36% median reduction (1.116x speedup)** in all
+34 model steps on this public 50,000-household benchmark relative to regular
+pinned ActivitySim, with complete output replication. It also proves the native
+mandatory scheduler adds a 4.162% median reduction beyond the already-GPU
+Phase 17 runtime. It does not prove the same percentage on another GPU,
+population size, network, or model configuration. It does not make ActivitySim
+CPU-free.
 
 The next major opportunity is no longer another scheduling micro-phase. It is
 a native model-wide skim and expression service for the largest remaining

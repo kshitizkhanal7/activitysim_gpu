@@ -638,13 +638,20 @@ trip-destination and trip-mode consumers inside all 34 public ActivitySim
 steps. The shared immutable CUDA skim cubes remain resident through the final
 GPU consumer and then release exactly 6,198,614,528 bytes once.
 
-Three fresh, interleaved 50,000-household pairs all favor Phase 32 over the
-already GPU-accelerated Phase 17 runtime. Median all-model time falls from
-197.0 to 188.8 seconds: 8.2 seconds saved, 4.162% lower, and **1.0434x faster**.
-Mandatory scheduling falls from a 24.7-second middle baseline to a 15.0-second
-middle candidate, 39.271% lower. All three complete-output comparisons have
-zero changed modeled decisions and zero diagnostic logsum differences; all
+Three fresh, interleaved 50,000-household pairs compare the completed GPU
+runtime directly with regular pinned ActivitySim using its optimized Sharrow
+backend. Median all-model time falls from 215.2 to 192.9 seconds: 22.3 seconds
+saved, 10.36% lower, and **1.116x faster**. Mandatory scheduling is 1.608x and
+trip destination is 1.543x; trip mode choice is neutral at 1.000x. The GPU
+candidate wins all three pairs. All three complete-output comparisons have zero
+changed modeled decisions. Diagnostic logsums are bounded rather than
+byte-identical: worst absolute differences are 0.0000100 for destination and
+0.00000290 for mode choice, inside 0.0001 and 0.00001 gates respectively. All
 candidate live gates pass with no fallback or bulk modeled download.
 
+A separate three-pair experiment isolates the native scheduler's incremental
+gain over the already-GPU Phase 17 runtime: 197.0 to 188.8 seconds, 4.162%
+lower, or 1.0434x faster.
+
 See the [Phase 32 technical report](docs/phase32-whole-model-runtime.md) and the
-[three-pair proof](benchmark-results/phase32-p32proof1-summary.json).
+[direct three-pair proof](benchmark-results/phase32-p32cpu1-summary.json).
