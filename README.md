@@ -781,3 +781,28 @@ runs, so Phase 38 makes no new stopwatch speed claim. See the
 [Phase 38 technical report](docs/phase38-normalized-trip-state.md), the
 [full proof report](benchmark-results/phase38-p38full1-gpu.json), and the
 [exact-output verification](benchmark-results/phase38-p38full1-exact.json).
+
+## Phase 39 exact CUDA trip-destination sampling utility
+
+Phase 39 attacks the full-zone sampling surface before ActivitySim retains its
+destination candidates. Across the complete public 50,000-household,
+1,454-zone run, 30 CUDA launches calculated 133,075,896 utilities for 91,524
+trip choosers and avoided an equally large pandas Cartesian table. ActivitySim
+kept ownership of its probability normalization, keyed random ledger,
+inverse-CDF ordering, duplicate collapse, and retry semantics. A conservative
+error envelope sent 10,721 precision-ambiguous chooser rows to exact live
+Sharrow adjudication while reusing the original draws; zero fallback occurred.
+
+This phase is a qualified **non-promotion**. All three fresh Phase 38/39 pairs
+passed exact modeled-output verification, but Phase 39 won only one. Median
+all-model time increased from 160.8 to 165.6 seconds (0.971x, 2.99% slower),
+and median `trip_destination` time increased from 18.8 to 23.5 seconds (0.800x,
+25.0% slower). The CUDA kernels themselves required only 0.706–0.813 second;
+the exact guard, CPU probability work, and 532 MB utility download consumed the
+gain. Phase 38 therefore remains the promoted runtime.
+
+See the [Phase 39 technical report](docs/phase39-cuda-trip-sampling.md), the
+[three-pair evidence](benchmark-results/phase39-p39guardproof-summary.json),
+and its per-pair exact verifications. The next credible step is a canonical
+Sharrow/CUDA arithmetic ABI plus a device-resident sampler that keeps utilities
+on the GPU through softmax, controlled selection, and duplicate collapse.

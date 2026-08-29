@@ -2,8 +2,8 @@ param(
     [ValidateRange(1, 5)][int]$Repetitions = 3,
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
-    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34, 35, 36, 37, 38)][int]$CandidatePhase = 32,
+    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "activitysim")][string]$Baseline = "phase17",
+    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -82,7 +82,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     $verification = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-exact-$trial.json"
     $baselineComplete = (
         (Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")) -and
-        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37") -or (Test-Path -LiteralPath $baselineReport))
+        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38") -or (Test-Path -LiteralPath $baselineReport))
     )
     $candidateComplete = (
         (Test-Path -LiteralPath (Join-Path $candidateOutput "timing_log.csv")) -and
@@ -109,7 +109,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         $env:CHOICEFORGE_PHASE17_RUN_ID = "$RunTag-base-$trial"
         $baselineStdout = Join-Path $project "$RunTag-base-$trial.stdout.log"
         $baselineStderr = Join-Path $project "$RunTag-base-$trial.stderr.log"
-        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37")) {
+        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38")) {
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
             $baselineArguments = @(
@@ -128,8 +128,10 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
                 $baselineArguments += "--phase35-resident-trip"
             } elseif ($Baseline -eq "phase36") {
                 $baselineArguments += "--phase36-device-trip-abi"
-            } else {
+            } elseif ($Baseline -eq "phase37") {
                 $baselineArguments += "--phase37-fused-trip-utility"
+            } else {
+                $baselineArguments += "--phase38-normalized-trip-state"
             }
             $baselineRun = Invoke-CheckedProcess $python $baselineArguments `
                 $repo $baselineStdout $baselineStderr
@@ -177,6 +179,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($CandidatePhase -eq 36) { $candidateArguments += "--phase36-device-trip-abi" }
         if ($CandidatePhase -eq 37) { $candidateArguments += "--phase37-fused-trip-utility" }
         if ($CandidatePhase -eq 38) { $candidateArguments += "--phase38-normalized-trip-state" }
+        if ($CandidatePhase -eq 39) { $candidateArguments += "--phase39-cuda-trip-sampling" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -256,7 +259,7 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         "non_mandatory_tour_destination" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
         "non_mandatory_tour_scheduling" { if ($CandidatePhase -ge 33) { "Phase33 scheduling GPU retained" } else { "not directly GPU-targeted" } }
         "tour_mode_choice_simulate" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
-        "trip_destination" { if ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
+        "trip_destination" { if ($CandidatePhase -ge 39) { "Phase39 CUDA sampling utility plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
         "trip_scheduling" { if ($CandidatePhase -ge 35) { "Phase35 persistent GPU probability service" } else { "not directly GPU-targeted" } }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }
@@ -271,10 +274,14 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         median_speedup = $baselineMedian / $candidateMedian
     }
 }
-$baselineLabel = if ($Baseline -eq "activitysim") {
-    "regular pinned ActivitySim with Sharrow required"
-} else {
-    if ($Baseline -eq "phase37") { "already GPU-accelerated Phase 37 runtime" } elseif ($Baseline -eq "phase36") { "already GPU-accelerated Phase 36 runtime" } elseif ($Baseline -eq "phase35") { "already GPU-accelerated Phase 35 runtime" } elseif ($Baseline -eq "phase34") { "already GPU-accelerated Phase 34 runtime" } else { "already GPU-accelerated Phase 17 runtime" }
+$baselineLabel = switch ($Baseline) {
+    "activitysim" { "regular pinned ActivitySim with Sharrow required" }
+    "phase38" { "already GPU-accelerated Phase 38 runtime" }
+    "phase37" { "already GPU-accelerated Phase 37 runtime" }
+    "phase36" { "already GPU-accelerated Phase 36 runtime" }
+    "phase35" { "already GPU-accelerated Phase 35 runtime" }
+    "phase34" { "already GPU-accelerated Phase 34 runtime" }
+    default { "already GPU-accelerated Phase 17 runtime" }
 }
 $summary = [ordered]@{
     phase = $CandidatePhase

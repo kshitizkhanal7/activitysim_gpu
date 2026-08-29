@@ -1559,18 +1559,35 @@ def choose_trip_destinations_batched(
     ):
         purpose_trace = tracing.extend_trace_label(trace_label, purpose)
         stage_started = time.perf_counter()
-        destination_sample = td.trip_destination_sample(
-            state,
-            primary_purpose=purpose,
-            trips=trips_segment,
-            alternatives=alternatives,
-            model_settings=model_settings,
-            size_term_matrix=size_term_matrix,
-            skim_hotel=skim_hotel,
-            estimator=estimator,
-            chunk_size=chunk_size,
-            trace_label=purpose_trace,
-        )
+        if os.environ.get("CHOICEFORGE_PHASE39_CUDA_TRIP_SAMPLING", "0") == "1":
+            from choiceforge.trip_destination_sampling import (
+                sample_trip_destinations_cuda,
+            )
+
+            destination_sample = sample_trip_destinations_cuda(
+                state,
+                primary_purpose=purpose,
+                trips=trips_segment,
+                alternatives=alternatives,
+                model_settings=model_settings,
+                size_term_matrix=size_term_matrix,
+                skim_hotel=skim_hotel,
+                estimator=estimator,
+                trace_label=purpose_trace,
+            )
+        else:
+            destination_sample = td.trip_destination_sample(
+                state,
+                primary_purpose=purpose,
+                trips=trips_segment,
+                alternatives=alternatives,
+                model_settings=model_settings,
+                size_term_matrix=size_term_matrix,
+                skim_hotel=skim_hotel,
+                estimator=estimator,
+                chunk_size=chunk_size,
+                trace_label=purpose_trace,
+            )
         sampling_seconds += time.perf_counter() - stage_started
         viable = trips_segment.index.isin(destination_sample.index.unique())
         trips_viable = trips_segment[viable]

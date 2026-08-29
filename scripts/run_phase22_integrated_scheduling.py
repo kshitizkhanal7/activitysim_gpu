@@ -92,6 +92,14 @@ def main() -> int:
             "directional trip state, and reusable resident device workspaces"
         ),
     )
+    parser.add_argument(
+        "--phase39-cuda-trip-sampling",
+        action="store_true",
+        help=(
+            "extend Phase 38 with direct CUDA evaluation of the public trip-"
+            "destination sampling utility while retaining ActivitySim probability/RNG semantics"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -166,6 +174,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase39_cuda_trip_sampling:
+        args.phase38_normalized_trip_state = True
+        os.environ["CHOICEFORGE_PHASE39_CUDA_TRIP_SAMPLING"] = "1"
     if args.phase38_normalized_trip_state:
         args.phase37_fused_trip_utility = True
         os.environ["CHOICEFORGE_PHASE38_NORMALIZED_TRIP_STATE"] = "1"
@@ -1889,14 +1900,20 @@ def main() -> int:
     batch_telemetry = [asdict(item) for item in scheduler.telemetry]
     phase35_trip = None
     phase35_trip_destination = None
+    phase39_sampling = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
 
         phase35_trip = trip_scheduling_telemetry()
         phase35_trip_destination = trip_destination_stage_telemetry()
+    if args.phase39_cuda_trip_sampling:
+        from choiceforge.trip_destination_sampling import phase39_sampling_telemetry
+
+        phase39_sampling = phase39_sampling_telemetry()
     report = {
         "phase": (
+            39 if args.phase39_cuda_trip_sampling else
             38 if args.phase38_normalized_trip_state else
             37 if args.phase37_fused_trip_utility else
             36 if args.phase36_device_trip_abi else
@@ -1906,6 +1923,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with CUDA trip-destination sampling "
+            "utility generation over the complete alternative universe, retained "
+            "ActivitySim probability/random semantics, and Phase 38 normalized logsums"
+            if args.phase39_cuda_trip_sampling else
             "full public ActivitySim model with normalized directional trip "
             "state, compact row coordinates/selectors, reusable device "
             "workspaces, and direct fused CUDA utility evaluation"
@@ -1980,6 +2001,7 @@ def main() -> int:
         ),
         "phase35_trip_scheduling": phase35_trip,
         "phase35_trip_destination_stages": phase35_trip_destination,
+        "phase39_trip_destination_sampling": phase39_sampling,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2088,6 +2110,88 @@ def main() -> int:
                         item.boundary_logsum_download_bytes
                         for item in scheduler.telemetry
                     ) == 0
+                ),
+            }
+        )
+    if args.phase39_cuda_trip_sampling:
+        sampling_events = phase39_sampling or []
+        phase39_shadow_requested = os.environ.get(
+            "CHOICEFORGE_PHASE39_UTILITY_SHADOW", "0"
+        ) in {"1", "exact"}
+        phase39_shadow_cells = sum(
+            item.get("shadow_utility_cells_compared", 0)
+            for item in sampling_events
+        )
+        report["proof_gates"].update(
+            {
+                "phase39_all_30_sampling_programs_use_cuda_utility": (
+                    len(sampling_events) == 30
+                    and all(
+                        item.get("backend")
+                        == "phase39_cuda_utility_activitysim_probability_rng"
+                        for item in sampling_events
+                    )
+                ),
+                "phase39_all_91524_trip_choosers_covered": (
+                    sum(item.get("chooser_rows", 0) for item in sampling_events)
+                    == 91_524
+                ),
+                "phase39_complete_1454_zone_universe_used": (
+                    len(sampling_events) == 30
+                    and all(item.get("alternatives") == 1_454 for item in sampling_events)
+                ),
+                "phase39_all_133075896_utility_cells_on_cuda": (
+                    sum(item.get("utility_cells", 0) for item in sampling_events)
+                    == 133_075_896
+                ),
+                "phase39_dense_host_cross_join_eliminated": (
+                    sum(
+                        item.get("host_cross_join_rows_avoided", 0)
+                        for item in sampling_events
+                    ) == 133_075_896
+                ),
+                "phase39_activitysim_keyed_random_draw_contract_retained": (
+                    sum(item.get("random_draws", 0) for item in sampling_events)
+                    == 2_745_720
+                ),
+                "phase39_sampled_rows_match_public_workload": (
+                    sum(item.get("sampled_rows", 0) for item in sampling_events)
+                    == 2_094_156
+                ),
+                "phase39_reviewed_specification_is_stable": (
+                    len(sampling_events) == 30
+                    and len({
+                        item.get("specification_sha256") for item in sampling_events
+                    }) == 10
+                    and all(item.get("contract_valid", False) for item in sampling_events)
+                ),
+                "phase39_sampling_has_zero_fallback": (
+                    len(sampling_events) == 30
+                    and sum(item.get("fallback_calls", 0) for item in sampling_events) == 0
+                ),
+                "phase39_error_envelope_is_active_for_every_cuda_result": (
+                    len(sampling_events) == 30
+                    and all(item.get("utility_error_bound_max", 0.0) > 0.0 for item in sampling_events)
+                ),
+                "phase39_full_utility_shadow_completed_when_requested": (
+                    not phase39_shadow_requested
+                    or phase39_shadow_cells == 133_075_896
+                ),
+                "phase39_utility_shadow_has_zero_envelope_violations": (
+                    sum(
+                        item.get("shadow_bound_violations", 0)
+                        for item in sampling_events
+                    ) == 0
+                ),
+                "phase39_precision_guard_is_sparse": (
+                    0 < sum(item.get("arithmetic_guard_rows", 0) for item in sampling_events)
+                    < 0.25 * sum(item.get("chooser_rows", 0) for item in sampling_events)
+                ),
+                "phase39_precision_guard_rechecks_complete_zone_rows": (
+                    sum(item.get("arithmetic_guard_cells", 0) for item in sampling_events)
+                    == 1_454 * sum(
+                        item.get("arithmetic_guard_rows", 0) for item in sampling_events
+                    )
                 ),
             }
         )
