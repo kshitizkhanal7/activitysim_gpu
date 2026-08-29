@@ -756,3 +756,28 @@ memory-traffic result; a new speed claim is withheld until quiet matched pairs
 are available. See the [Phase 37 technical report](docs/phase37-fused-trip-utility.md),
 the [full proof report](benchmark-results/phase37-p37full1-gpu.json), and the
 [exact-output verification](benchmark-results/phase37-p37full1-exact.json).
+
+## Phase 38 normalized directional trip state
+
+Phase 38 removes the next repeated-data boundary. Phase 37 sent an 84-byte
+packet for every sampled destination row, even though most facts were identical
+for all destinations belonging to one trip. Phase 38 sends 12 row-specific
+bytes (origin, destination, and a state selector) and stores 76 bytes once for
+each trip direction. Keeping outbound and inbound state separate preserves
+ActivitySim's independently advanced controlled wait draws.
+
+The complete 50,000-household, 1,454-zone public run covered all 30 utility
+programs and 4,188,312 directional rows. Its packet fell from 351,818,208 to
+64,171,392 bytes: **287,646,816 bytes removed, or 81.76%**. It normalized
+91,524 trips into 183,048 directional states and reused five grow-only GPU
+workspaces 120 times. The fused path continued to eliminate 1,960,130,016
+bytes of device ABI and coordinate intermediates.
+
+Every proof gate passed with zero fallback. Independent Phase 37 comparison
+found zero changed decision cells, zero logsum difference, and all seven final
+CSVs byte-for-byte identical. Packet construction was descriptively 4.4714 s
+in the Phase 37 artifact and 1.3616 s here, but those are not matched quiet
+runs, so Phase 38 makes no new stopwatch speed claim. See the
+[Phase 38 technical report](docs/phase38-normalized-trip-state.md), the
+[full proof report](benchmark-results/phase38-p38full1-gpu.json), and the
+[exact-output verification](benchmark-results/phase38-p38full1-exact.json).

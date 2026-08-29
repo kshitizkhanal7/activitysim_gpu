@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 37 fused trip-utility result does and does not prove;
+- what the completed Phase 38 normalized trip-state result does and does not prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -4797,3 +4797,85 @@ Different tours can advance in parallel, but trips inside one tour must keep
 their exact order, retry behavior, and controlled random numbers. That is the
 ambitious path from a proven fused component toward a genuinely device-resident
 travel-model runtime.
+
+## 129. Phase 38: stop repeating the same trip facts
+
+Phase 37 stopped writing a giant temporary answer sheet on the GPU, but its
+small input packet still repeated the same facts for every possible
+destination. Imagine a student answering 50 multiple-choice questions and
+writing their name, age, address, and school at the top of every answer. Most
+of that writing is unnecessary.
+
+Phase 38 separates what changes from what stays the same. Every possible
+destination row now carries only three small whole numbers: origin, destination,
+and a pointer to the correct trip state. Stable facts such as age, household
+size, car ownership, tour mode, duration, and value of time are written once
+per trip direction. The GPU follows the pointer when it needs them.
+
+Why "per direction" instead of simply "per trip"? ActivitySim gives outbound
+and inbound calculations their own three controlled wait draws. Those values
+can differ even for the same trip. Combining them would save a little more
+memory but could change the result, so Phase 38 deliberately keeps two states.
+
+## 130. How much smaller did the input become?
+
+| Full 50,000-household public run | Phase 37 | Phase 38 |
+|---|---:|---:|
+| possible destination rows | 4,188,312 | 4,188,312 |
+| bytes sent/stored as the compact input | 351,818,208 | 64,171,392 |
+| repeated bytes removed | - | 287,646,816 |
+
+That is an **81.76% reduction**. The Phase 38 total consists of 50,259,744
+bytes of row-specific coordinates and pointers plus 13,911,648 bytes for
+183,048 outbound/inbound states belonging to 91,524 trips.
+
+Five reusable GPU work areas grow when necessary and are refilled for later
+jobs. They were reused 120 times during the 30 utility programs. Phase 38 also
+keeps Phase 37's larger structural win: 1.96 billion bytes of temporary GPU
+answer-sheet and coordinate arrays are still gone.
+
+## 131. How do we know the smaller representation did not cheat?
+
+Before normalizing anything, the program checks that every candidate belonging
+to a trip agrees on all facts that are supposed to be stable. It separately
+checks each direction's controlled wait draws. A changed value, missing half,
+or unexpected ordering stops the run. There is no quiet CPU fallback.
+
+The proof then used several independent checks:
+
+1. unit tests deliberately changed stable facts and wait draws and confirmed
+   that the run stopped;
+2. a 500-household shadow run calculated utilities both old and new ways and
+   found zero differences;
+3. the complete 50,000-household, 1,454-zone model used the new path for all 30
+   programs and all 4,188,312 rows with zero fallback;
+4. an independent verifier found zero changed decisions, zero logsum difference,
+   and all seven published CSV files byte-for-byte identical; and
+5. all 158 repository tests passed.
+
+One early small run used the wrong-size reference file. The model and shadow
+comparison completed, but the reporting gate correctly rejected it. We did not
+count that run; we corrected the reference and repeated the proof.
+
+## 132. Is Phase 38 faster, and what should we build next?
+
+It unquestionably moves less data. Its recorded packet-building work took
+1.362 seconds instead of 4.471 seconds in the Phase 37 artifact, and upload took
+0.012 instead of 0.081 second. Those observations are encouraging, but the two
+runs were not alternating trials under identical quiet conditions. The GPU
+kernel itself also varied from 2.157 to 2.467 seconds. It would be bad science
+to turn unmatched measurements into a new speedup claim.
+
+The proved result is exact behavior plus an 81.76% smaller packet. The supplied
+test script can run three alternating Phase 37-versus-Phase 38 pairs when the
+machine is quiet. Those pairs are the next timing evidence to collect.
+
+The next *engineering* phase should be much larger. Instead of making another
+small table change, keep trip scheduling, failed-trip retries, destination
+iteration, and utility evaluation inside one resident GPU service. Different
+tours can run in parallel, but trips within one tour must remain in order and
+must use exactly the same controlled random numbers. That could remove pandas
+frame construction and CPU/GPU handoffs that still dominate the 32.6-second
+trip-destination step. It also needs mutation tests for changed people, land
+use, coefficients, and skims, hardware memory/occupancy measurements, exact
+complete outputs, and quiet matched timings before promotion.

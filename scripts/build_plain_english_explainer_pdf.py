@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds and changes zero modeled decision cells in three matched pairs. Phases 35 through 37 then extend the trip runtime with exact outputs. Phase 36 replaces a 1.79 GB dense CPU input factory with a 351.8 MB compact packet. Phase 37 fuses preparation and utility evaluation, removing another 1.96 GB of device intermediates while withholding a new speed claim until a quiet matched experiment is possible. Boundaries, variance, and limits are explained inside.",
+            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds and changes zero modeled decision cells in three matched pairs. Phases 35 through 38 then extend the trip runtime with exact outputs. Phase 36 replaces a 1.79 GB dense CPU input factory with a 351.8 MB compact packet. Phase 37 fuses preparation and utility evaluation, removing 1.96 GB of device intermediates. Phase 38 normalizes repeated directional trip facts and cuts that compact packet to 64.2 MB, with exact final outputs. A new speed claim still awaits quiet matched pairs. Boundaries, variance, and limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

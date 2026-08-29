@@ -84,6 +84,14 @@ def main() -> int:
             "coordinates in registers inside the utility kernel"
         ),
     )
+    parser.add_argument(
+        "--phase38-normalized-trip-state",
+        action="store_true",
+        help=(
+            "extend Phase 37 with row coordinates/selectors, deduplicated "
+            "directional trip state, and reusable resident device workspaces"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -158,6 +166,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase38_normalized_trip_state:
+        args.phase37_fused_trip_utility = True
+        os.environ["CHOICEFORGE_PHASE38_NORMALIZED_TRIP_STATE"] = "1"
     if args.phase37_fused_trip_utility:
         args.phase36_device_trip_abi = True
         os.environ["CHOICEFORGE_PHASE37_FUSED_TRIP_UTILITY"] = "1"
@@ -1886,6 +1897,7 @@ def main() -> int:
         phase35_trip_destination = trip_destination_stage_telemetry()
     report = {
         "phase": (
+            38 if args.phase38_normalized_trip_state else
             37 if args.phase37_fused_trip_utility else
             36 if args.phase36_device_trip_abi else
             35 if args.phase35_resident_trip else
@@ -1894,6 +1906,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with normalized directional trip "
+            "state, compact row coordinates/selectors, reusable device "
+            "workspaces, and direct fused CUDA utility evaluation"
+            if args.phase38_normalized_trip_state else
             "full public ActivitySim model with Phase 36 compact raw inputs "
             "consumed directly by one fused CUDA utility kernel, with no "
             "materialized 11/45 device ABI or device coordinate vectors"
@@ -2215,7 +2231,7 @@ def main() -> int:
                 ),
             }
         )
-    if args.phase37_fused_trip_utility:
+    if args.phase37_fused_trip_utility and not args.phase38_normalized_trip_state:
         native_events = phase35_trip_destination.get("native_logsum", [])
         report["proof_gates"].update(
             {
@@ -2263,6 +2279,90 @@ def main() -> int:
                     len(native_events) == 30
                     and all(
                         item.get("resident_land_bytes", 0) > 0
+                        for item in native_events
+                    )
+                ),
+            }
+        )
+    if args.phase38_normalized_trip_state:
+        native_events = phase35_trip_destination.get("native_logsum", [])
+        normalized_bytes = sum(
+            item.get("compact_device_input_bytes", 0) for item in native_events
+        )
+        report["proof_gates"].update(
+            {
+                "phase38_all_trip_utilities_use_normalized_state": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("backend") == "phase38_normalized_fused_utility"
+                        for item in native_events
+                    )
+                ),
+                "phase38_all_directional_rows_covered": (
+                    sum(item.get("rows", 0) for item in native_events)
+                    == 4_188_312
+                ),
+                "phase38_row_contract_exact": (
+                    sum(item.get("normalized_row_bytes", 0) for item in native_events)
+                    == 50_259_744
+                ),
+                "phase38_state_is_deduplicated": (
+                    len(native_events) == 30
+                    and all(
+                        0 < item.get("normalized_trip_rows", 0)
+                        and item.get("normalized_state_rows", 0)
+                        == 2 * item.get("normalized_trip_rows", 0)
+                        and item.get("normalized_state_rows", 0) < item.get("rows", 0)
+                        for item in native_events
+                    )
+                ),
+                "phase38_state_byte_contract_exact": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("normalized_state_bytes", 0)
+                        == 76 * item.get("normalized_state_rows", 0)
+                        for item in native_events
+                    )
+                ),
+                "phase38_smaller_than_phase37_packet": (
+                    0 < normalized_bytes < 351_818_208
+                    and sum(
+                        item.get("phase37_compact_bytes_eliminated", 0)
+                        for item in native_events
+                    ) == 351_818_208 - normalized_bytes
+                ),
+                "phase38_normalization_contract_validated": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("normalized_contract_valid", False)
+                        for item in native_events
+                    )
+                ),
+                "phase38_resident_workspaces_reused": (
+                    len(native_events) == 30
+                    and all(
+                        item.get("resident_workspace_arrays", 0) == 5
+                        for item in native_events
+                    )
+                    and sum(
+                        item.get("resident_workspace_hits", 0)
+                        for item in native_events
+                    ) > 0
+                ),
+                "phase38_fused_device_intermediates_remain_eliminated": (
+                    sum(
+                        item.get("dense_device_abi_bytes_eliminated", 0)
+                        for item in native_events
+                    ) == 1_692_078_048
+                    and sum(
+                        item.get("coordinate_device_bytes_eliminated", 0)
+                        for item in native_events
+                    ) == 268_051_968
+                ),
+                "phase38_bootstrap_row_state_is_minimal": (
+                    len(native_events) == 30
+                    and all(
+                        0 < item.get("minimal_bootstrap_bytes", 0) <= 1024
                         for item in native_events
                     )
                 ),

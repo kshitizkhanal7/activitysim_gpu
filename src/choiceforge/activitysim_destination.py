@@ -273,8 +273,16 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
     phase37_shadow = (
         os.environ.get("CHOICEFORGE_PHASE37_FUSED_TRIP_UTILITY_SHADOW", "0") == "1"
     )
+    phase38_normalized = (
+        os.environ.get("CHOICEFORGE_PHASE38_NORMALIZED_TRIP_STATE", "0") == "1"
+    )
+    phase38_shadow = (
+        os.environ.get("CHOICEFORGE_PHASE38_NORMALIZED_TRIP_STATE_SHADOW", "0") == "1"
+    )
     if phase37_fused and not phase36_device:
         raise ValueError("Phase 37 fused trip utility requires the Phase 36 raw contract")
+    if phase38_normalized and not phase37_fused:
+        raise ValueError("Phase 38 normalized trip state requires Phase 37 fusion")
     native = compile_native_strict_abi(
         document,
         scalar_environment,
@@ -290,7 +298,28 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
         state.get_dataframe("tours"), bundle["locals"], draws,
     )
     shadow_metrics = {}
-    if phase37_fused and phase37_shadow:
+    if phase38_normalized and phase38_shadow:
+        cp = plan.cp
+        reference_utilities, _ = plan.populate_fused(*populate_arguments)
+        reference_copy = cp.array(reference_utilities, copy=True)
+        utilities, telemetry = plan.populate_normalized(*populate_arguments)
+        both_nan = cp.isnan(reference_copy) & cp.isnan(utilities)
+        equal = (reference_copy == utilities) | both_nan
+        difference = cp.where(equal, 0.0, cp.abs(reference_copy - utilities))
+        mismatches = int(cp.count_nonzero(~equal).get())
+        max_abs = float(cp.max(difference).get()) if difference.size else 0.0
+        shadow_metrics = {
+            "phase38_shadow_utility_mismatches": mismatches,
+            "phase38_shadow_utility_max_abs_difference": max_abs,
+        }
+        if not np.isfinite(max_abs) or max_abs > 1.0e-5:
+            raise AssertionError(
+                "Phase 38 normalized utility shadow mismatch "
+                f"count={mismatches} max_abs={max_abs:.3e}"
+            )
+    elif phase38_normalized:
+        utilities, telemetry = plan.populate_normalized(*populate_arguments)
+    elif phase37_fused and phase37_shadow:
         cp = plan.cp
         reference_utilities, _ = plan.populate_device(*populate_arguments)
         reference_copy = cp.array(reference_utilities, copy=True)
@@ -304,7 +333,7 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
             "phase37_shadow_utility_mismatches": mismatches,
             "phase37_shadow_utility_max_abs_difference": max_abs,
         }
-        if max_abs > 1.0e-5:
+        if not np.isfinite(max_abs) or max_abs > 1.0e-5:
             raise AssertionError(
                 "Phase 37 fused utility shadow mismatch "
                 f"count={mismatches} max_abs={max_abs:.3e}"
@@ -368,6 +397,16 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
             ),
             "fused_kernel_seconds": telemetry.fused_kernel_seconds,
             "minimal_bootstrap_bytes": telemetry.minimal_bootstrap_bytes,
+            "normalized_trip_rows": telemetry.normalized_trip_rows,
+            "normalized_state_rows": telemetry.normalized_state_rows,
+            "normalized_row_bytes": telemetry.normalized_row_bytes,
+            "normalized_state_bytes": telemetry.normalized_state_bytes,
+            "phase37_compact_bytes_eliminated": (
+                telemetry.phase37_compact_bytes_eliminated
+            ),
+            "resident_workspace_hits": telemetry.resident_workspace_hits,
+            "resident_workspace_arrays": telemetry.resident_workspace_arrays,
+            "normalized_contract_valid": telemetry.normalized_contract_valid,
             **shadow_metrics,
         }
     )

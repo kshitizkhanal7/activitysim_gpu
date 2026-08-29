@@ -1,11 +1,13 @@
-"""Native raw-trip input generation for trip-destination mode-choice logsums.
+"""Native GPU runtime for trip-destination mode-choice logsums.
 
 The legacy path expands a large pandas preprocessor table before evaluating
-the 21-alternative trip-mode utility.  This module implements the reviewed
-Prototype MTC preprocessor contract directly: compact raw trip columns and
-three controlled normal draws are packed once, availability flags are formed
-on CUDA from resident skims, and the existing strict utility invocation reads
-the resulting 11-float/45-integer ABI. Unknown source labels fail closed.
+the 21-alternative trip-mode utility. Phases 36 and 37 replaced it with a
+compact raw packet and then fused ABI preparation with utility evaluation.
+Phase 38 additionally normalizes facts repeated for every sampled destination:
+each row carries only its coordinates and directional-state selector, while
+stable trip/tour/person/household facts and controlled waits are stored once
+per trip direction. Unknown layouts, changed stable facts, and changed waits
+fail closed.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import re
 import time
 
 import numpy as np
+import pandas as pd
 
 from .cuda_backend import _cupy
 
@@ -23,6 +26,7 @@ _AVAILABILITY_KERNEL_CACHE = {}
 _DEVICE_PREPARATION_KERNEL_CACHE = {}
 _FUSED_UTILITY_KERNEL_CACHE = {}
 _RESIDENT_LAND_CACHE = {}
+_NORMALIZED_DEVICE_WORKSPACE = {}
 
 
 _RAW_INT_COLUMNS = {
@@ -37,11 +41,83 @@ _RAW_INT_COLUMNS = {
     )
 }
 _RAW_FLOAT_COLUMNS = {"duration": 0, "value_of_time": 1}
+_ROW_COORD_COLUMNS = {"origin": 0, "destination": 1}
+_STABLE_INT_COLUMNS = {
+    name: position
+    for position, name in enumerate(
+        name for name in _RAW_INT_COLUMNS if name not in _ROW_COORD_COLUMNS
+    )
+}
+
+
+def _equal_with_missing(actual, expected):
+    actual = np.asarray(actual)
+    expected = np.asarray(expected)
+    try:
+        equal = np.asarray(actual == expected, dtype=bool)
+    except (TypeError, ValueError):
+        equal = np.zeros(actual.shape, dtype=bool)
+    return equal | (np.asarray(pd.isna(actual)) & np.asarray(pd.isna(expected)))
+
+
+def _normalized_row_layout(frame, draws, stable_columns):
+    """Return directional state representatives and fail-closed row selectors."""
+    rows = len(frame)
+    draws = np.asarray(draws)
+    if rows == 0 or rows % 2:
+        raise ValueError("Phase 38 requires a nonempty paired directional frame")
+    if draws.shape != (rows, 3):
+        raise ValueError("Phase 38 requires exactly three draws for every row")
+    half = rows // 2
+    row_ids = np.asarray(frame.index)
+    if not _equal_with_missing(row_ids[:half], row_ids[half:]).all():
+        raise ValueError("Phase 38 directional frames have different trip row order")
+    _, first_indices, first_selectors = np.unique(
+        row_ids[:half], return_index=True, return_inverse=True
+    )
+    state_rows_per_direction = len(first_indices)
+    if state_rows_per_direction > np.iinfo(np.int32).max:
+        raise ValueError("Phase 38 normalized state exceeds int32 selectors")
+    state_first_indices = np.r_[first_indices, first_indices + half]
+    state_selectors = np.r_[
+        first_selectors, first_selectors + state_rows_per_direction
+    ].astype(np.int32, copy=False)
+
+    # These values originate at trip/tour/person/household grain. A duplicate
+    # trip row that changes any of them would make normalization unsafe.
+    trip_selectors = np.r_[first_selectors, first_selectors]
+    for column in stable_columns:
+        values = np.asarray(frame[column])
+        representative = values[first_indices]
+        if not _equal_with_missing(values, representative[trip_selectors]).all():
+            raise ValueError(
+                f"Phase 38 stable column {column!r} varies within a trip"
+            )
+    representative_draws = draws[state_first_indices]
+    if not _equal_with_missing(draws, representative_draws[state_selectors]).all():
+        raise ValueError("Phase 38 controlled wait draws vary within directional state")
+    return state_first_indices, state_selectors, state_rows_per_direction
+
+
+def _upload_normalized(cp, name, host):
+    """Upload into a process-resident, grow-only device workspace."""
+    host = np.ascontiguousarray(host)
+    trailing_shape = tuple(host.shape[1:])
+    key = (name, host.dtype.str, trailing_shape)
+    cached = _NORMALIZED_DEVICE_WORKSPACE.get(key)
+    hit = cached is not None and cached.shape[0] >= host.shape[0]
+    if not hit:
+        cached = cp.empty(host.shape, dtype=host.dtype)
+        _NORMALIZED_DEVICE_WORKSPACE[key] = cached
+    view = cached[: host.shape[0]]
+    view.set(host)
+    return view, hit
 
 
 def clear_trip_device_state_cache():
-    """Drop Phase 36 aliases to immutable resident land-use arrays."""
+    """Drop resident land aliases and Phase 38 normalized workspaces."""
     _RESIDENT_LAND_CACHE.clear()
+    _NORMALIZED_DEVICE_WORKSPACE.clear()
 
 _AVAILABILITY = {
     "name:sov_available": ("SOV_TIME", 0, None),
@@ -150,6 +226,14 @@ class TripLogsumNativeTelemetry:
     coordinate_device_bytes_eliminated: int = 0
     fused_kernel_seconds: float = 0.0
     minimal_bootstrap_bytes: int = 0
+    normalized_trip_rows: int = 0
+    normalized_state_rows: int = 0
+    normalized_row_bytes: int = 0
+    normalized_state_bytes: int = 0
+    phase37_compact_bytes_eliminated: int = 0
+    resident_workspace_hits: int = 0
+    resident_workspace_arrays: int = 0
+    normalized_contract_valid: bool = False
 
 
 class TripLogsumNativePlan:
@@ -201,6 +285,8 @@ class TripLogsumNativePlan:
         self._skim_time_count = None
         self._fused_utility_kernel = None
         self._fused_extra_args = None
+        self._normalized_utility_kernel = None
+        self._normalized_extra_args = None
 
     def _skim_argument(self, key):
         wanted = ("skim", "odt_skims", key)
@@ -523,13 +609,14 @@ class TripLogsumNativePlan:
             odt_dimensions[1],
         )
 
-    def _compile_fused_utility(self):
-        """Compile a Phase 37 kernel that derives the ABI in registers."""
+    def _compile_fused_utility(self, *, normalized=False):
+        """Compile a fused kernel for Phase 37 rows or Phase 38 normalized state."""
+        phase = "Phase 38" if normalized else "Phase 37"
         if self.document is None or self.bindings is None:
-            raise ValueError("Phase 37 fusion requires reviewed IR and typed bindings")
+            raise ValueError(f"{phase} fusion requires reviewed IR and typed bindings")
         from .sharrow_cuda import generate_cuda_source
 
-        ri = _RAW_INT_COLUMNS
+        ri = _STABLE_INT_COLUMNS if normalized else _RAW_INT_COLUMNS
         rf = _RAW_FLOAT_COLUMNS
         float_variables = {
             label: f"phase37_float_{position}"
@@ -539,11 +626,24 @@ class TripLogsumNativePlan:
             label: f"phase37_int_{position}"
             for position, label in enumerate(self.int_labels)
         }
-        prelude = [
-            f"    const long long phase37_rib = row * {len(_RAW_INT_COLUMNS)};",
-            f"    const long long phase37_rfb = row * {len(_RAW_FLOAT_COLUMNS)};",
-            f"    const long long origin = phase37_raw_ints[phase37_rib + {ri['origin']}];",
-            f"    const long long destination = phase37_raw_ints[phase37_rib + {ri['destination']}];",
+        if normalized:
+            prelude = [
+                "    const long long phase37_state_row = phase38_row_state[row];",
+                f"    const long long phase37_rib = phase37_state_row * {len(_STABLE_INT_COLUMNS)};",
+                f"    const long long phase37_rfb = phase37_state_row * {len(_RAW_FLOAT_COLUMNS)};",
+                "    const long long phase37_wait_base = phase37_state_row * 3;",
+                f"    const long long origin = phase38_row_coordinates[row * {len(_ROW_COORD_COLUMNS)} + {_ROW_COORD_COLUMNS['origin']}];",
+                f"    const long long destination = phase38_row_coordinates[row * {len(_ROW_COORD_COLUMNS)} + {_ROW_COORD_COLUMNS['destination']}];",
+            ]
+        else:
+            prelude = [
+                f"    const long long phase37_rib = row * {len(_RAW_INT_COLUMNS)};",
+                f"    const long long phase37_rfb = row * {len(_RAW_FLOAT_COLUMNS)};",
+                "    const long long phase37_wait_base = row * 3;",
+                f"    const long long origin = phase37_raw_ints[phase37_rib + {ri['origin']}];",
+                f"    const long long destination = phase37_raw_ints[phase37_rib + {ri['destination']}];",
+            ]
+        prelude.extend([
             f"    const long long period = phase37_raw_ints[phase37_rib + {ri['period']}];",
             f"    const bool outbound = phase37_raw_ints[phase37_rib + {ri['outbound']}] != 0;",
             f"    const bool first = phase37_raw_ints[phase37_rib + {ri['first']}] != 0;",
@@ -555,7 +655,7 @@ class TripLogsumNativePlan:
             "    const double origin_duration = first ? ((!outbound) ? duration * (!free_parking) : 0.0) : 1.0;",
             "    const double destination_duration = last ? ((!outbound) ? duration * (!free_parking) : 0.0) : 1.0;",
             "    const long long phase37_skim_index = (origin * phase37_dest_count + destination) * phase37_time_count + period;",
-        ]
+        ])
         float_expressions = {
             "column:total_terminal_time": (
                 "((outbound && first) ? 0.0 : phase37_terminal[origin]) + "
@@ -573,9 +673,9 @@ class TripLogsumNativePlan:
             ),
             "column:origin_walk_time": "phase37_walk_time",
             "column:destination_walk_time": "phase37_walk_time",
-            "column:origTaxiWaitTime": "phase37_waits[row * 3]",
-            "column:origSingleTNCWaitTime": "phase37_waits[row * 3 + 1]",
-            "column:origSharedTNCWaitTime": "phase37_waits[row * 3 + 2]",
+            "column:origTaxiWaitTime": "phase37_waits[phase37_wait_base]",
+            "column:origSingleTNCWaitTime": "phase37_waits[phase37_wait_base + 1]",
+            "column:origSharedTNCWaitTime": "phase37_waits[phase37_wait_base + 2]",
             "column:i_tour_mode": "mode",
             "column:origin_density_index": (
                 "outbound ? phase37_density[origin] : phase37_density[destination]"
@@ -646,10 +746,10 @@ class TripLogsumNativePlan:
             **availability_expressions,
         }
         if set(float_expressions) != set(self.float_labels):
-            raise ValueError("Phase 37 fused float contract is incomplete")
+            raise ValueError(f"{phase} fused float contract is incomplete")
         if set(int_expressions) != set(self.int_labels):
             missing = sorted(set(self.int_labels) - set(int_expressions))
-            raise ValueError(f"Phase 37 fused integer contract is incomplete: {missing}")
+            raise ValueError(f"{phase} fused integer contract is incomplete: {missing}")
         for label in self.float_labels:
             prelude.append(
                 f"    const float {float_variables[label]} = (float)({float_expressions[label]});"
@@ -685,11 +785,17 @@ class TripLogsumNativePlan:
             )
             previous = group_coordinates.setdefault(binding.skim_group, coordinates)
             if previous != coordinates:
-                raise ValueError("Phase 37 skim group mixes coordinate directions")
+                raise ValueError(f"{phase} skim group mixes coordinate directions")
         extra_parameters = (
             "    const int* phase37_raw_ints",
             "    const double* phase37_raw_floats",
             "    const float* phase37_waits",
+        ) + (
+            (
+                "    const int* phase38_row_coordinates",
+                "    const int* phase38_row_state",
+            ) if normalized else ()
+        ) + (
             "    const double* phase37_terminal",
             "    const double* phase37_parking",
             "    const double* phase37_density",
@@ -735,7 +841,7 @@ class TripLogsumNativePlan:
         ]
         if unresolved:
             raise ValueError(
-                f"Phase 37 fused source retains legacy row reads: {unresolved}"
+                f"{phase} fused source retains legacy row reads: {unresolved}"
             )
         kernel = _FUSED_UTILITY_KERNEL_CACHE.get(source)
         if kernel is None:
@@ -891,6 +997,233 @@ class TripLogsumNativePlan:
             constants["walkSpeed"]
         )
         return raw_ints, raw_floats, waits, land, mode_masks, walk_time
+
+    def _normalized_packet(self, frame, land_use, tours, constants, draws):
+        """Build Phase 38 row coordinates plus deduplicated directional state."""
+        stable_columns = (
+            "trip_period", str(constants["orig_col_name"]), "outbound",
+            "trip_num", "trip_count", "tour_type", "free_parking_at_work",
+            "tour_mode", "parent_tour_id", "auto_ownership", "age",
+            "number_of_participants", "hhsize", "duration", "value_of_time",
+        )
+        state_first, row_state, unique_trip_rows = _normalized_row_layout(
+            frame, draws, stable_columns
+        )
+        state = frame.iloc[state_first]
+        origin = _values(frame, "_choiceforge_origin", np.int64)
+        destination = _values(frame, "_choiceforge_destination", np.int64)
+        row_coordinates = np.column_stack((
+            self._checked_int32(origin, "origin"),
+            self._checked_int32(destination, "destination"),
+        )).astype(np.int32, copy=False)
+
+        period = _period(_values(state, "trip_period"))
+        original_origin = _values(
+            state, str(constants["orig_col_name"]), np.int64
+        )
+        outbound = _values(state, "outbound", bool)
+        first = _values(state, "trip_num", np.int64) == 1
+        last = _values(state, "trip_num", np.int64) == _values(
+            state, "trip_count", np.int64
+        )
+        free = (_values(state, "tour_type").astype(str) == "work") & _values(
+            state, "free_parking_at_work", bool
+        )
+        mode_map = constants["I_MODE_MAP"]
+        try:
+            mode = np.asarray(
+                [mode_map[str(item)] for item in _values(state, "tour_mode")],
+                dtype=np.int64,
+            )
+        except KeyError as exc:
+            raise ValueError(
+                f"Phase 38 tour mode is unsupported: {exc.args[0]!r}"
+            ) from exc
+        parent = tours["tour_mode"].reindex(
+            _values(state, "parent_tour_id")
+        ).fillna("").to_numpy()
+        parent_mode = np.select(
+            [np.isin(parent, ["DRIVEALONEFREE", "DRIVEALONEPAY"]), parent == "BIKE"],
+            [1, 2],
+            default=0,
+        )
+        participants = _values(state, "number_of_participants", np.int64)
+        state_int_values = {
+            "period": period,
+            "outbound": outbound,
+            "first": first,
+            "last": last,
+            "free_parking": free,
+            "tour_mode": mode,
+            "parent_mode": parent_mode,
+            "is_atwork_subtour": ~np.asarray(state["parent_tour_id"].isna()),
+            "auto_ownership": _values(state, "auto_ownership", np.int64),
+            "age": _values(state, "age", np.int64),
+            "participants": participants,
+            "hhsize": _values(state, "hhsize", np.int64),
+        }
+        state_ints = np.column_stack([
+            self._checked_int32(state_int_values[name], name)
+            for name in _STABLE_INT_COLUMNS
+        ]).astype(np.int32, copy=False)
+        state_floats = np.column_stack((
+            _values(state, "duration", np.float64),
+            _values(state, "value_of_time", np.float64),
+        )).astype(np.float64, copy=False)
+        if not np.isfinite(state_floats).all():
+            raise ValueError("Phase 38 normalized floating-point state is not finite")
+        bands = _density_band(land_use, original_origin)
+        state_draws = np.asarray(draws, dtype=np.float64)[state_first]
+        state_waits = np.column_stack([
+            _wait(
+                state_draws[:, number],
+                _mapped(constants[f"{family}_waitTime_mean"], bands),
+                _mapped(constants[f"{family}_waitTime_sd"], bands),
+                float(constants["min_waitTime"]),
+                float(constants["max_waitTime"]),
+            )
+            for number, family in enumerate(("Taxi", "TNC_single", "TNC_shared"))
+        ]).astype(np.float32, copy=False)
+
+        land = self._resident_land(land_use)
+        for label, zones in (
+            ("origin", origin), ("destination", destination),
+            ("original_origin", original_origin),
+        ):
+            if zones.size and (
+                zones.min() < 0 or zones.max() >= land["size"]
+                or not np.all(land["valid"][zones])
+            ):
+                raise ValueError(f"Phase 38 {label} contains an unknown land-use zone")
+        if origin.size and (
+            origin.max() >= self._skim_dest_count
+            or destination.max() >= self._skim_dest_count
+            or period.min() < 0 or period.max() >= self._skim_time_count
+        ):
+            raise ValueError("Phase 38 normalized skim coordinate is outside the cube")
+        mode_masks = (
+            self._mode_mask(constants["I_AUTO_MODES"]),
+            self._mode_mask(constants["I_WALK_TRANSIT_MODES"]),
+            self._mode_mask(constants["I_DRIVE_TRANSIT_MODES"]),
+            self._mode_mask(constants["I_RIDE_HAIL_MODES"]),
+            self._mode_mask(constants["I_SOV_MODES"]),
+            self._mode_mask(constants["I_SR2_MODES"]),
+            self._mode_mask(constants["I_SR3P_MODES"]),
+        )
+        walk_time = float(constants["shortWalk"]) * 60.0 / float(
+            constants["walkSpeed"]
+        )
+        return (
+            row_coordinates, row_state, state_ints, state_floats, state_waits,
+            unique_trip_rows, land, mode_masks, walk_time,
+        )
+
+    def populate_normalized(self, frame, land_use, tours, constants, draws):
+        """Run Phase 38 from normalized directional state and resident buffers."""
+        started = time.perf_counter()
+        rows = len(frame)
+        if rows != self.invocation.rows:
+            raise ValueError("trip native frame length differs from invocation")
+        if self._normalized_utility_kernel is None:
+            (
+                self._normalized_utility_kernel,
+                self._normalized_extra_args,
+            ) = self._compile_fused_utility(normalized=True)
+        (
+            row_coordinates, row_state, state_ints, state_floats, state_waits,
+            unique_trip_rows, land, mode_masks, walk_time,
+        ) = self._normalized_packet(frame, land_use, tours, constants, draws)
+        built = time.perf_counter()
+        device_arrays = []
+        workspace_hits = 0
+        for name, host in (
+            ("row_coordinates", row_coordinates),
+            ("row_state", row_state),
+            ("state_ints", state_ints),
+            ("state_floats", state_floats),
+            ("state_waits", state_waits),
+        ):
+            device, hit = _upload_normalized(self.cp, name, host)
+            device_arrays.append(device)
+            workspace_hits += int(hit)
+        self.cp.cuda.Stream.null.synchronize()
+        uploaded = time.perf_counter()
+        (
+            row_coordinates_device, row_state_device, state_ints_device,
+            state_floats_device, state_waits_device,
+        ) = device_arrays
+        extra_arguments = (
+            state_ints_device, state_floats_device, state_waits_device,
+            row_coordinates_device, row_state_device,
+            *land["device"], np.int64(self._skim_dest_count),
+            np.int64(self._skim_time_count), np.float64(walk_time),
+            *mode_masks, np.int32(constants["I_WALK_MODE"]),
+            np.int32(constants["I_BIKE_MODE"]), *self._normalized_extra_args,
+        )
+        self._normalized_utility_kernel(
+            self.invocation.grid,
+            self.invocation.block,
+            (
+                self.invocation.float_inputs,
+                self.invocation.int_inputs,
+                self.invocation.float_scalars,
+                self.invocation.int_scalars,
+                self.invocation.coefficients,
+                self.invocation.features,
+                self.invocation.utilities,
+                np.int64(rows),
+            ) + self.invocation.skim_arguments + extra_arguments,
+            shared_mem=self.invocation.shared_mem,
+        )
+        self.cp.cuda.Stream.null.synchronize()
+        completed = time.perf_counter()
+        row_bytes = int(row_coordinates.nbytes + row_state.nbytes)
+        state_bytes = int(
+            state_ints.nbytes + state_floats.nbytes + state_waits.nbytes
+        )
+        compact_bytes = row_bytes + state_bytes
+        phase37_bytes = int(
+            rows * (
+                len(_RAW_INT_COLUMNS) * 4 + len(_RAW_FLOAT_COLUMNS) * 8 + 3 * 4
+            )
+        )
+        coordinate_contract, _ = self._coordinate_contract()
+        coordinate_columns = sum(
+            2 + int(rank == 3) for _, rank, *_ in coordinate_contract
+        )
+        dense_device_bytes = int(
+            rows * (len(self.float_labels) * 4 + len(self.int_labels) * 8)
+        )
+        coordinate_bytes = int(rows * coordinate_columns * 8)
+        minimal_bootstrap = int(
+            self.invocation.float_inputs.nbytes
+            + self.invocation.int_inputs.nbytes
+            + self.invocation.skim_coordinate_bytes
+        )
+        return self.invocation.utilities, TripLogsumNativeTelemetry(
+            rows=rows,
+            compact_host_bytes=compact_bytes,
+            host_build_seconds=built - started,
+            upload_seconds=uploaded - built,
+            availability_kernel_seconds=0.0,
+            utility_kernel_seconds=completed - uploaded,
+            backend="phase38_normalized_fused_utility",
+            compact_device_input_bytes=compact_bytes,
+            dense_host_abi_bytes_avoided=dense_device_bytes + coordinate_bytes,
+            resident_land_bytes=land["bytes"],
+            dense_device_abi_bytes_eliminated=dense_device_bytes,
+            coordinate_device_bytes_eliminated=coordinate_bytes,
+            fused_kernel_seconds=completed - uploaded,
+            minimal_bootstrap_bytes=minimal_bootstrap,
+            normalized_trip_rows=int(unique_trip_rows),
+            normalized_state_rows=int(len(state_ints)),
+            normalized_row_bytes=row_bytes,
+            normalized_state_bytes=state_bytes,
+            phase37_compact_bytes_eliminated=phase37_bytes - compact_bytes,
+            resident_workspace_hits=workspace_hits,
+            resident_workspace_arrays=len(device_arrays),
+            normalized_contract_valid=True,
+        )
 
     def populate_fused(self, frame, land_use, tours, constants, draws):
         """Evaluate utilities without materializing the 11/45 device ABI."""
