@@ -108,6 +108,14 @@ def main() -> int:
             "inverse-CDF, and duplicate sampling plus sparse exact adjudication"
         ),
     )
+    parser.add_argument(
+        "--phase41-exact-trip-sampling",
+        action="store_true",
+        help=(
+            "extend Phase 40 with a shared OpenBLAS/CUDA float32 arithmetic ABI "
+            "and eliminate the CPU exact-adjudication pass"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -182,6 +190,10 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase41_exact_trip_sampling:
+        args.phase40_resident_trip_sampling = True
+        args.phase38_normalized_trip_state = True
+        os.environ["CHOICEFORGE_PHASE41_EXACT_TRIP_SAMPLING"] = "1"
     if args.phase40_resident_trip_sampling:
         args.phase38_normalized_trip_state = True
         os.environ["CHOICEFORGE_PHASE40_RESIDENT_TRIP_SAMPLING"] = "1"
@@ -1913,6 +1925,7 @@ def main() -> int:
     phase35_trip_destination = None
     phase39_sampling = None
     phase40_sampling = None
+    phase41_sampling = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1923,12 +1936,17 @@ def main() -> int:
         from choiceforge.trip_destination_sampling import phase39_sampling_telemetry
 
         phase39_sampling = phase39_sampling_telemetry()
-    if args.phase40_resident_trip_sampling:
+    if args.phase41_exact_trip_sampling:
+        from choiceforge.trip_destination_resident import phase41_sampling_telemetry
+
+        phase41_sampling = phase41_sampling_telemetry()
+    elif args.phase40_resident_trip_sampling:
         from choiceforge.trip_destination_resident import phase40_sampling_telemetry
 
         phase40_sampling = phase40_sampling_telemetry()
     report = {
         "phase": (
+            41 if args.phase41_exact_trip_sampling else
             40 if args.phase40_resident_trip_sampling else
             39 if args.phase39_cuda_trip_sampling else
             38 if args.phase38_normalized_trip_state else
@@ -1940,6 +1958,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with exact shared OpenBLAS/CUDA "
+            "trip-destination arithmetic and guard-free resident sampling"
+            if args.phase41_exact_trip_sampling else
             "full public ActivitySim model with resident CUDA trip-destination "
             "utility, probability, preserved-order inverse-CDF, duplicate counting, "
             "compact result transfer, and sparse exact Sharrow adjudication"
@@ -2024,6 +2045,7 @@ def main() -> int:
         "phase35_trip_destination_stages": phase35_trip_destination,
         "phase39_trip_destination_sampling": phase39_sampling,
         "phase40_trip_destination_sampling": phase40_sampling,
+        "phase41_trip_destination_sampling": phase41_sampling,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2217,7 +2239,60 @@ def main() -> int:
                 ),
             }
         )
-    if args.phase40_resident_trip_sampling:
+    if args.phase41_exact_trip_sampling:
+        resident_sampling = phase41_sampling or []
+        report["proof_gates"].update(
+            {
+                "phase41_all_30_sampling_programs_use_exact_resident_cuda": (
+                    len(resident_sampling) == 30
+                    and all(
+                        item.get("backend")
+                        == "phase41_resident_cuda_sampling_exact_shared_arithmetic"
+                        for item in resident_sampling
+                    )
+                ),
+                "phase41_all_91524_trip_choosers_covered": (
+                    sum(item.get("chooser_rows", 0) for item in resident_sampling)
+                    == 91_524
+                ),
+                "phase41_all_133075896_utility_cells_stay_device_resident": (
+                    sum(item.get("utility_cells", 0) for item in resident_sampling)
+                    == 133_075_896
+                    and sum(item.get("utility_host_bytes", -1) for item in resident_sampling)
+                    == 0
+                ),
+                "phase41_cpu_exact_guard_eliminated": (
+                    len(resident_sampling) == 30
+                    and sum(item.get("arithmetic_guard_rows", -1) for item in resident_sampling) == 0
+                    and sum(item.get("exact_guard_seconds", -1.0) for item in resident_sampling) < 0.05
+                    and all(
+                        item.get("exact_guard_evaluator") == "none_exact_shared_arithmetic"
+                        for item in resident_sampling
+                    )
+                ),
+                "phase41_shared_arithmetic_abi_is_single_and_versioned": (
+                    len(resident_sampling) == 30
+                    and len({item.get("arithmetic_abi_version") for item in resident_sampling}) == 1
+                    and len({item.get("arithmetic_abi_sha256") for item in resident_sampling}) == 1
+                    and len({item.get("probability_abi_version") for item in resident_sampling}) == 1
+                    and len({item.get("probability_abi_sha256") for item in resident_sampling}) == 1
+                    and all(item.get("exact_shared_arithmetic", False) for item in resident_sampling)
+                ),
+                "phase41_activitysim_keyed_random_draw_contract_retained": (
+                    sum(item.get("random_draws", 0) for item in resident_sampling)
+                    == 2_745_720
+                ),
+                "phase41_sampled_rows_match_public_workload": (
+                    sum(item.get("sampled_rows", 0) for item in resident_sampling)
+                    == 2_094_156
+                ),
+                "phase41_sampling_has_zero_fallback": (
+                    len(resident_sampling) == 30
+                    and sum(item.get("fallback_calls", 0) for item in resident_sampling) == 0
+                ),
+            }
+        )
+    elif args.phase40_resident_trip_sampling:
         resident_sampling = phase40_sampling or []
         phase40_guard_rows = sum(
             item.get("arithmetic_guard_rows", 0) for item in resident_sampling

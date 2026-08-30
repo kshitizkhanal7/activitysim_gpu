@@ -1,0 +1,29 @@
+{
+  "rows": 200000,
+  "comparisons": {
+    "sequential": {
+      "bit_mismatches": 87580,
+      "max_abs_difference": 0.0009765625
+    },
+    "group4_left": {
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    "group4_tree": {
+      "bit_mismatches": 57840,
+      "max_abs_difference": 0.00048828125
+    },
+    "lane4_tree": {
+      "bit_mismatches": 135902,
+      "max_abs_difference": 0.0009765625
+    },
+    "lane4_left": {
+      "bit_mismatches": 137258,
+      "max_abs_difference": 0.0009765625
+    },
+    "openblas_literal": {
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    }
+  }
+}

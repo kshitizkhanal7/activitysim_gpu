@@ -1,0 +1,58 @@
+{
+  "phase": 41,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "arithmetic_probe_rows": 200000,
+  "utility_shadow_cells": 133075896,
+  "utility_shadow_bit_mismatches": 0,
+  "probability_probe_rows": 5000,
+  "probability_probe_cells": 7270000,
+  "probability_pairwise_bit_mismatches": 0,
+  "candidate_guard_rows": [
+    0,
+    0,
+    0
+  ],
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "destination_logsum_max_abs": [
+    1.1999999998124622e-05,
+    1.1999999998124622e-05,
+    1.1999999998124622e-05
+  ],
+  "mode_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "median_phase40_all_model_seconds": 165.79999999999995,
+  "median_phase41_all_model_seconds": 158.29999999999998,
+  "median_all_model_speedup": 1.0473783954516738,
+  "median_trip_destination": {
+    "model_name": "trip_destination",
+    "gpu_role": "Phase41 exact shared-ABI resident CUDA sampling",
+    "median_baseline_seconds": 23.1,
+    "median_candidate_seconds": 15.1,
+    "median_seconds_saved": 8.000000000000002,
+    "median_reduction_percent": 34.63203463203464,
+    "median_speedup": 1.5298013245033113
+  },
+  "proof_gates": {
+    "openblas_probe_is_bit_exact": true,
+    "full_utility_shadow_covers_every_cell": true,
+    "full_utility_shadow_is_bit_exact": true,
+    "numpy_probability_pairwise_probe_is_bit_exact": true,
+    "three_candidate_reports_pass_every_gate": true,
+    "all_candidates_have_zero_cpu_guard_rows": true,
+    "all_candidates_use_one_versioned_utility_and_probability_abi": true,
+    "all_candidates_cover_complete_public_workload": true,
+    "three_independent_output_verifiers_pass": true,
+    "candidate_wins_every_matched_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true
+}

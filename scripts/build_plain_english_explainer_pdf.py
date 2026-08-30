@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.348x", STYLES["metric_num"]),
-                Paragraph("69.5 s", STYLES["metric_num"]),
+                Paragraph("1.530x", STYLES["metric_num"]),
+                Paragraph("7.5 s", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("median whole-model<br/>speedup", STYLES["metric_label"]),
-                Paragraph("median whole-model<br/>seconds saved", STYLES["metric_label"]),
+                Paragraph("median trip-destination<br/>speedup vs Phase 40", STYLES["metric_label"]),
+                Paragraph("median whole-model<br/>seconds saved vs Phase 40", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: Phase 34 cuts the median complete 34-step public model from 269.1 to 199.6 seconds and changes zero modeled decision cells in three matched pairs. Phases 35 through 38 then extend the trip runtime with exact outputs. Phase 36 replaces a 1.79 GB dense CPU input factory with a 351.8 MB compact packet. Phase 37 fuses preparation and utility evaluation, removing 1.96 GB of device intermediates. Phase 38 normalizes repeated directional trip facts and cuts that compact packet to 64.2 MB, with exact final outputs. A new speed claim still awaits quiet matched pairs. Boundaries, variance, and limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 41 finally gives Sharrow, NumPy, and CUDA explicit matching arithmetic rules. In three fresh 50,000-household pairs it cuts median trip-destination time from 23.1 to 15.1 seconds and the full model from 165.8 to 158.3 seconds, with zero changed modeled decision cells. Assumptions, failed experiments, variance, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 28, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 30, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

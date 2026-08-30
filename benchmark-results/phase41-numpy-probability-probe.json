@@ -1,0 +1,33 @@
+{
+  "values": 1100000,
+  "comparisons": {
+    "libdevice_f32": {
+      "bit_mismatches": 593798,
+      "mismatch_input_min": -103.97189331054688,
+      "mismatch_input_max": 88.7162857055664,
+      "mismatches_ge_minus_80": 421472,
+      "mismatches_ge_minus_20": 179424,
+      "max_abs_difference": 4.056481920730334e+31
+    },
+    "libdevice_f64_to_f32": {
+      "bit_mismatches": 519582,
+      "mismatch_input_min": -103.97189331054688,
+      "mismatch_input_max": 88.71049499511719,
+      "mismatches_ge_minus_80": 352031,
+      "mismatches_ge_minus_20": 149813,
+      "max_abs_difference": 4.056481920730334e+31
+    },
+    "numpy_avx2": {
+      "bit_mismatches": 143002,
+      "mismatch_input_min": -103.97189331054688,
+      "mismatch_input_max": -59.26408386230469,
+      "mismatches_ge_minus_80": 1,
+      "mismatches_ge_minus_20": 0,
+      "max_abs_difference": 1.5407439555097887e-33
+    }
+  },
+  "pairwise_rows": 5000,
+  "pairwise_cells": 7270000,
+  "pairwise_bit_mismatches": 0,
+  "pairwise_max_abs_difference": 0.0
+}

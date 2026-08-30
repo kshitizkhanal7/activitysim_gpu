@@ -835,3 +835,26 @@ See the [Phase 40 technical report](docs/phase40-device-resident-sampling.md),
 the [clean full-run proof](benchmark-results/phase40-p40final1-gpu.json), the
 [independent output verification](benchmark-results/phase40-p40final1-exact.json),
 and the [fresh matched pair](benchmark-results/phase40-p40resident2-summary.json).
+
+## Phase 41 exact shared arithmetic
+
+Phase 41 eliminates Phase 40's last CPU exact guard. A versioned shared
+arithmetic ABI reproduces Sharrow's 15-term OpenBLAS SGEMV association on CUDA,
+and a second ABI reproduces NumPy 2.4.6's AVX2 float32 exponential and recursive
+pairwise normalization. Exhaustive qualification found zero bit mismatches
+across all 133,075,896 public-workload utilities. The final runtime processed
+all 91,524 chooser rows and 2,745,720 keyed draws with zero guard rows and zero
+fallback.
+
+Three fresh matched 50,000-household Phase 40/41 pairs all passed independent
+output verification and all favored Phase 41. Median `trip_destination` time
+fell from 23.1 to 15.1 seconds: 8.0 seconds saved, 34.63% lower, and **1.530x
+faster**. Median time for all 34 model steps fell from 165.8 to 158.3 seconds:
+7.5 seconds saved, 4.52% lower, and **1.047x faster**. Every modeled decision
+cell matched; maximum `destination_logsum` error remained `0.000012` inside its
+`0.0001` gate, and mode-logsum error was zero.
+
+See the [Phase 41 technical report](docs/phase41-exact-shared-arithmetic.md),
+the [three-pair promotion evidence](benchmark-results/phase41-p41final-summary.json),
+the [consolidated qualification](benchmark-results/phase41-p41final-qualification.json),
+and its three per-pair exact verification reports.

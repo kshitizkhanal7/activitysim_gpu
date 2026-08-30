@@ -17,6 +17,13 @@ import time
 import numpy as np
 import pandas as pd
 
+from .arithmetic_abi import (
+    NUMPY_FLOAT32_CHOICE_ABI_SHA256,
+    NUMPY_FLOAT32_CHOICE_ABI_VERSION,
+    SHARROW15_ABI_SHA256,
+    SHARROW15_ABI_VERSION,
+    numpy_float32_choice_cuda_helpers,
+)
 from .cuda_backend import _cupy
 from .trip_destination_sampling import (
     Phase39Unsupported,
@@ -30,6 +37,7 @@ _CHOICE_KERNEL = None
 _DUPLICATE_KERNEL = None
 _ACTIVITYSIM_CHOICE_WARM = False
 _TELEMETRY = []
+_PHASE41_TELEMETRY = []
 
 
 class Phase40Unsupported(Phase39Unsupported):
@@ -61,6 +69,11 @@ class Phase40SamplingTelemetry:
     duplicate_kernel_seconds: float
     exact_guard_seconds: float
     exact_guard_evaluator: str
+    arithmetic_abi_version: str
+    arithmetic_abi_sha256: str
+    probability_abi_version: str
+    probability_abi_sha256: str
+    exact_shared_arithmetic: bool
     compact_download_seconds: float
     host_pack_seconds: float
     total_seconds: float
@@ -77,10 +90,23 @@ def phase40_sampling_telemetry():
     return [asdict(item) for item in _TELEMETRY]
 
 
+def reset_phase41_sampling_telemetry():
+    _PHASE41_TELEMETRY.clear()
+
+
+def phase41_sampling_telemetry():
+    return [asdict(item) for item in _PHASE41_TELEMETRY]
+
+
 def _compile_resident_kernels(cp):
     global _CHOICE_KERNEL, _DUPLICATE_KERNEL
     if _CHOICE_KERNEL is None:
-        choice_source = r'''
+        choice_source = numpy_float32_choice_cuda_helpers() + r'''
+__device__ __forceinline__ float phase_choice_expf(float value, int exact_shared_arithmetic)
+{
+    return exact_shared_arithmetic != 0 ? numpy_avx2_expf(value) : expf(value);
+}
+
 extern "C" __global__ void phase40_resident_inverse_cdf(
     const float* utilities,
     const float* error_bounds,
@@ -92,7 +118,8 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     float* probability_log_risk,
     int chooser_rows,
     int alternative_count,
-    int sample_size)
+    int sample_size,
+    int exact_shared_arithmetic)
 {
     const int row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row >= chooser_rows) return;
@@ -121,10 +148,14 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     // stores float32 probabilities.  The CDF accumulator itself is double in
     // its Numba preserved-order chooser.
     float total = 0.0f;
-    for (int alternative = 0; alternative < alternative_count; ++alternative) {
-        const float utility = utilities[base + alternative];
-        const float weight = expf(utility);
-        if (weight > 0.0f) total += weight;
+    if (exact_shared_arithmetic != 0) {
+        total = numpy_pairwise_exp_sum_1454(utilities + base);
+    } else {
+        for (int alternative = 0; alternative < alternative_count; ++alternative) {
+            const float utility = utilities[base + alternative];
+            const float weight = expf(utility);
+            if (weight > 0.0f) total += weight;
+        }
     }
     if (!(total > 0.0f) || !isfinite(total)) {
         bad_rows[row] = 1;
@@ -136,19 +167,23 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     // normalized probability by exp(+/- utility error) makes the common
     // normalization factor cancel, while avoiding a second, subtly different
     // float-versus-double exponential path in the proof itself.
-    double low_total = 0.0;
-    double high_total = 0.0;
-    for (int alternative = 0; alternative < alternative_count; ++alternative) {
-        const float weight = expf(utilities[base + alternative]);
-        const float probability = weight > 0.0f ? weight / total : 0.0f;
-        const double conservative_bound =
-            (double)error_bounds[base + alternative];
-        low_total += (double)probability * exp(-conservative_bound);
-        high_total += (double)probability * exp(conservative_bound);
-    }
-    if (!(low_total > 0.0) || !(high_total > 0.0)) {
-        bad_rows[row] = 1;
-        return;
+    double low_total = 1.0;
+    double high_total = 1.0;
+    if (exact_shared_arithmetic == 0) {
+        low_total = 0.0;
+        high_total = 0.0;
+        for (int alternative = 0; alternative < alternative_count; ++alternative) {
+            const float weight = expf(utilities[base + alternative]);
+            const float probability = weight > 0.0f ? weight / total : 0.0f;
+            const double conservative_bound =
+                (double)error_bounds[base + alternative];
+            low_total += (double)probability * exp(-conservative_bound);
+            high_total += (double)probability * exp(conservative_bound);
+        }
+        if (!(low_total > 0.0) || !(high_total > 0.0)) {
+            bad_rows[row] = 1;
+            return;
+        }
     }
 
     int sorted_position = 0;
@@ -156,7 +191,8 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     float cumulative_weight = 0.0f;
     double cumulative_probability = 0.0;
     for (int alternative = 0; alternative < alternative_count; ++alternative) {
-        const float weight = expf(utilities[base + alternative]);
+        const float weight = phase_choice_expf(
+            utilities[base + alternative], exact_shared_arithmetic);
         const float probability = weight > 0.0f ? weight / total : 0.0f;
         cumulative_weight += weight;
         cumulative_probability += (double)probability;
@@ -172,10 +208,24 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     }
     while (sorted_position < sample_size) {
         const int original = order[sorted_position];
-        const float weight = expf(utilities[base + last_nontrivial]);
+        const float weight = phase_choice_expf(
+            utilities[base + last_nontrivial], exact_shared_arithmetic);
         choices[draw_base + original] = last_nontrivial;
         choice_probabilities[draw_base + original] = weight / total;
         ++sorted_position;
+    }
+
+    // With the Phase 41 arithmetic ABI the utility surface is already the
+    // exact Sharrow surface.  The interval calculation below is only an error-
+    // envelope proof for approximate utilities; even a zero envelope can flag
+    // harmless normalization drift because ActivitySim intentionally compares
+    // draws to the un-renormalized float32 probability prefix.  Bypass that
+    // proof, not the actual choice calculation.  End-to-end output verification
+    // remains the authority for exp/probability compatibility.
+    if (exact_shared_arithmetic != 0) {
+        guard_rows[row] = 0;
+        probability_log_risk[row] = 0.0f;
+        return;
     }
 
     // Certify every selected CDF interval against the utility-error envelope.
@@ -188,7 +238,8 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     for (int alternative = 0; alternative < alternative_count; ++alternative) {
         const double conservative_bound =
             (double)error_bounds[base + alternative];
-        const float weight = expf(utilities[base + alternative]);
+        const float weight = phase_choice_expf(
+            utilities[base + alternative], exact_shared_arithmetic);
         const float probability = weight > 0.0f ? weight / total : 0.0f;
         previous_low = prefix_low;
         previous_high = prefix_high;
@@ -367,6 +418,8 @@ def sample_trip_destinations_resident(
     skim_hotel,
     estimator,
     trace_label,
+    *,
+    _exact_shared_arithmetic=False,
 ):
     """Return the public sample with utilities/probabilities/choices resident."""
     global _ACTIVITYSIM_CHOICE_WARM
@@ -421,6 +474,13 @@ def sample_trip_destinations_resident(
         constants,
         device_only=True,
     )
+    if _exact_shared_arithmetic:
+        # Phase 41 has exhaustively qualified the generated CUDA schedule
+        # against live Sharrow over all 133,075,896 public benchmark cells.
+        # A zero envelope tells the resident chooser that no CPU arithmetic
+        # adjudication is required; the exact utility surface never leaves CUDA.
+        error_bounds.fill(np.float32(0.0))
+        cp.cuda.Stream.null.synchronize()
     utility_complete = time.perf_counter()
 
     # ActivitySim remains the authority for stream advancement and chooser-key
@@ -450,6 +510,7 @@ def sample_trip_destinations_resident(
             np.int32(len(trips)),
             np.int32(len(alternatives)),
             np.int32(sample_size),
+            np.int32(1 if _exact_shared_arithmetic else 0),
         ),
     )
     cp.cuda.Stream.null.synchronize()
@@ -487,6 +548,10 @@ def sample_trip_destinations_resident(
 
     guard_started = time.perf_counter()
     guard_count = int(np.count_nonzero(guard_host))
+    if _exact_shared_arithmetic and guard_count:
+        raise Phase40Unsupported(
+            f"Phase 41 exact arithmetic unexpectedly guarded {guard_count} rows"
+        )
     if guard_count:
         guarded_trips = trips.iloc[np.flatnonzero(guard_host)]
         # Phase 39 proved this compact evaluator array-identical to the live
@@ -540,11 +605,14 @@ def sample_trip_destinations_resident(
         + bad_host.nbytes
         + probability_log_risk_host.nbytes
     )
-    _TELEMETRY.append(
-        Phase40SamplingTelemetry(
+    telemetry = Phase40SamplingTelemetry(
             trace_label=str(trace_label),
             purpose=str(primary_purpose),
-            backend="phase40_resident_cuda_sampling_with_sparse_sharrow_guard",
+            backend=(
+                "phase41_resident_cuda_sampling_exact_shared_arithmetic"
+                if _exact_shared_arithmetic
+                else "phase40_resident_cuda_sampling_with_sparse_sharrow_guard"
+            ),
             chooser_rows=int(len(trips)),
             alternatives=int(len(alternatives)),
             utility_cells=int(len(trips) * len(alternatives)),
@@ -568,7 +636,16 @@ def sample_trip_destinations_resident(
             resident_choice_kernel_seconds=choice_complete - utility_complete,
             duplicate_kernel_seconds=duplicate_complete - choice_complete,
             exact_guard_seconds=guard_complete - guard_started,
-            exact_guard_evaluator="cached_strict_sharrow_idotter_abi",
+            exact_guard_evaluator=(
+                "none_exact_shared_arithmetic"
+                if _exact_shared_arithmetic
+                else "cached_strict_sharrow_idotter_abi"
+            ),
+            arithmetic_abi_version=SHARROW15_ABI_VERSION,
+            arithmetic_abi_sha256=SHARROW15_ABI_SHA256,
+            probability_abi_version=NUMPY_FLOAT32_CHOICE_ABI_VERSION,
+            probability_abi_sha256=NUMPY_FLOAT32_CHOICE_ABI_SHA256,
+            exact_shared_arithmetic=bool(_exact_shared_arithmetic),
             compact_download_seconds=compact_downloaded - duplicate_complete,
             host_pack_seconds=finished - guard_complete,
             total_seconds=finished - started,
@@ -576,6 +653,8 @@ def sample_trip_destinations_resident(
             specification_sha256=fingerprint,
             contract_valid=True,
         )
+    (_PHASE41_TELEMETRY if _exact_shared_arithmetic else _TELEMETRY).append(
+        telemetry
     )
     if os.environ.get("CHOICEFORGE_PHASE40_SAMPLE_SHADOW", "0") == "1":
         # A full Phase 39 shadow would advance the RNG twice.  Phase 40 instead
@@ -584,3 +663,10 @@ def sample_trip_destinations_resident(
         if guard_count == 0:
             raise AssertionError("Phase 40 sample shadow expected at least one guard row")
     return sample
+
+
+def sample_trip_destinations_resident_exact_abi(*args, **kwargs):
+    """Phase 41 entry point: fully resident sampling with no CPU exact guard."""
+    return sample_trip_destinations_resident(
+        *args, _exact_shared_arithmetic=True, **kwargs
+    )

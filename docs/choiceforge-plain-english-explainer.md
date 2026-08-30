@@ -5145,3 +5145,118 @@ skims, and random draws; complete output comparison; zero fallback; bounded
 diagnostics; and at least three fresh alternating Phase 38/candidate pairs that
 the candidate wins. Phase 40 gives that future compiler a proven resident
 sampler to plug into.
+
+## 147. Phase 41: make the CPU and GPU follow the same arithmetic recipe
+
+Phase 40's GPU was already fast, but it had to send 13,607 uncertain rows to
+the CPU. That CPU check consumed about 7.33 seconds. Phase 41 removes it by
+answering a deceptively simple question: **in exactly what order does Sharrow
+add 15 numbers?**
+
+Addition with rounded computer numbers is not perfectly associative. In school
+math, `(a + b) + c` equals `a + (b + c)`. In float32 computer math, either
+route can round at a different point and produce a last-bit difference. Those
+last bits can matter when a random draw is almost exactly on the boundary
+between two destinations.
+
+We discovered that Sharrow's 15-number dot product was not a plain left-to-
+right loop. Numba sent it to an OpenBLAS matrix-vector routine. On this machine,
+that routine adds three groups of four products from left to right, then adds
+the final three products one by one. Phase 41 puts that recipe in a named,
+versioned arithmetic contract and generates the CUDA statements from it.
+
+## 148. How did we prove the utility recipe was correct?
+
+First, a controlled experiment tried the candidate addition recipes on 200,000
+random rows. The four-at-a-time left-associated recipe had zero bit
+mismatches. Ordinary sequential, tree, and lane recipes had tens of thousands.
+
+Then we used the real public travel model. The GPU and live Sharrow separately
+calculated every trip-and-zone utility:
+
+| Test | Result |
+|---|---:|
+| real utility cells compared | 133,075,896 |
+| cells with even one different bit | 0 |
+| largest difference | 0 |
+
+That is much stronger than saying the answers were "close." For this reviewed
+program and environment, every utility bit matched.
+
+## 149. Why were exact utilities still not enough?
+
+The first guard-free experiment still changed 15 trip destinations. The reason
+was the next formula:
+
+`probability = exp(utility) / sum(exp(all 1,454 utilities))`
+
+CUDA's ordinary `expf` function and NumPy's float32 exponential use different
+approximations. NumPy also adds a long row with a recursive pairwise tree,
+while the first GPU version used a sequential total. Both answers looked very
+close, but a few controlled random draws sat close enough to a boundary to
+notice.
+
+We therefore added a second shared contract. It copies NumPy 2.4.6's AVX2
+float32 exponential polynomial and generates NumPy's exact 1,454-item pairwise
+sum tree. On 5,000 synthetic full rows (7,270,000 exponentiated values), the final
+GPU totals matched NumPy bit for bit on every row. After this change, the full
+travel model returned to zero changed decisions.
+
+## 150. What did the final Phase 41 run prove?
+
+We ran three fresh pairs. Every pair ran Phase 40 first and Phase 41 second on
+the same 50,000-household public benchmark. Every Phase 41 candidate had:
+
+- 30 GPU sampling programs;
+- 91,524 trip chooser rows;
+- 133,075,896 utility cells;
+- 2,745,720 ActivitySim-controlled random draws;
+- zero CPU guard rows;
+- zero fallback calls; and
+- zero changed modeled decision cells.
+
+All six non-trip output files were byte-for-byte identical. The largest
+`destination_logsum` difference was `0.000012`, safely below the `0.0001`
+limit, and the mode-choice-logsum difference was zero.
+
+## 151. How much faster is Phase 41?
+
+| Complete public benchmark | Phase 40 | Phase 41 | Result |
+|---|---:|---:|---:|
+| middle `trip_destination` time | 23.1 s | 15.1 s | 8.0 s saved; 1.53x |
+| middle whole-model time | 165.8 s | 158.3 s | 7.5 s saved; 1.047x |
+| matched pairs won | - | 3 of 3 | promoted |
+
+Inside the sampler, the median complete GPU-to-compact-result boundary was
+about 1.71 seconds. Phase 40's final clean boundary was 10.48 seconds. That is
+about 6.12 times faster at the directly changed boundary. The old 7.33-second
+CPU guard section now takes roughly 0.00012 second because it has no rows and
+does no arithmetic work.
+
+Compared only as context with the older regular ActivitySim middle result,
+158.3 versus 206.6 seconds is about 1.31 times faster for the whole model, and
+15.1 versus 41.0 seconds is about 2.72 times faster for `trip_destination`.
+Those larger figures describe the accumulated project, not Phase 41 alone.
+
+## 152. What are the assumptions, implications, and next step?
+
+The exact contracts are deliberately specific. They were qualified on an
+NVIDIA RTX A4000, the public 1,454-zone model, NumPy 2.4.6's AVX2 path, and the
+reviewed SciPy/OpenBLAS and Numba versions. A different CPU instruction set,
+NumPy release, OpenBLAS kernel, alternative count, or model equation may need a
+new generated schedule and a new proof. Unsupported cases stop instead of
+quietly falling back.
+
+This does not make Phases 1 through 40 pointless. Those phases supplied the
+expression compiler, strict references, RNG tests, output verifier, resident
+skims, compact trip state, full-zone utility kernel, and resident sampler that
+made Phase 41 possible. Phase 41 replaces one bottleneck inside that system; it
+does not replace the system.
+
+The larger implication is important: CPU/GPU replication does not always need
+a slow CPU safety pass. Arithmetic library behavior can be made explicit,
+versioned, generated, and tested. The next ambitious project is to generalize
+this from one 15-expression program to a real Sharrow GPU backend or dedicated
+expression compiler that can emit matching CPU and CUDA programs for many
+ActivitySim models. It should cache contracts by hash and automatically rerun
+mutation tests for coefficients, skims, land use, people, and random draws.
