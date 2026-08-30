@@ -1006,12 +1006,56 @@ class TripLogsumNativePlan:
             "tour_mode", "parent_tour_id", "auto_ownership", "age",
             "number_of_participants", "hhsize", "duration", "value_of_time",
         )
-        state_first, row_state, unique_trip_rows = _normalized_row_layout(
-            frame, draws, stable_columns
-        )
-        state = frame.iloc[state_first]
-        origin = _values(frame, "_choiceforge_origin", np.int64)
-        destination = _values(frame, "_choiceforge_destination", np.int64)
+        if getattr(frame, "phase42_compact_directional", False):
+            base = frame.base
+            half = len(base)
+            draws_array = np.asarray(draws)
+            if half == 0 or len(frame) != 2 * half:
+                raise ValueError("Phase 42 compact direction packet has invalid rows")
+            if draws_array.shape != (2 * half, 3):
+                raise ValueError("Phase 42 requires three draws per directional row")
+            row_ids = np.asarray(base.index)
+            _, first_indices, selectors = np.unique(
+                row_ids, return_index=True, return_inverse=True
+            )
+            unique_trip_rows = len(first_indices)
+            if unique_trip_rows > np.iinfo(np.int32).max:
+                raise ValueError("Phase 42 normalized state exceeds int32 selectors")
+            for column in stable_columns:
+                values = np.asarray(base[column])
+                representative = values[first_indices]
+                if not _equal_with_missing(values, representative[selectors]).all():
+                    raise ValueError(
+                        f"Phase 42 stable column {column!r} varies within a trip"
+                    )
+            state_base = base.iloc[first_indices]
+            state = pd.concat((state_base, state_base), axis=0, copy=False)
+            # Rows are OD alternatives followed by DP alternatives.  Each
+            # direction has the same sample-row identity and one wait vector
+            # per trip, exactly matching ActivitySim's broadcast RNG contract.
+            row_state = np.r_[
+                selectors, selectors + unique_trip_rows
+            ].astype(np.int32, copy=False)
+            state_draw_indices = np.r_[
+                first_indices, first_indices + half
+            ]
+            state_draws = draws_array[state_draw_indices]
+            if not _equal_with_missing(
+                draws_array, state_draws[row_state]
+            ).all():
+                raise ValueError(
+                    "Phase 42 controlled wait draws vary within directional state"
+                )
+            origin = np.asarray(frame.origin, dtype=np.int64)
+            destination = np.asarray(frame.destination, dtype=np.int64)
+        else:
+            state_first, row_state, unique_trip_rows = _normalized_row_layout(
+                frame, draws, stable_columns
+            )
+            state = frame.iloc[state_first]
+            state_draws = np.asarray(draws, dtype=np.float64)[state_first]
+            origin = _values(frame, "_choiceforge_origin", np.int64)
+            destination = _values(frame, "_choiceforge_destination", np.int64)
         row_coordinates = np.column_stack((
             self._checked_int32(origin, "origin"),
             self._checked_int32(destination, "destination"),
@@ -1073,7 +1117,6 @@ class TripLogsumNativePlan:
         if not np.isfinite(state_floats).all():
             raise ValueError("Phase 38 normalized floating-point state is not finite")
         bands = _density_band(land_use, original_origin)
-        state_draws = np.asarray(draws, dtype=np.float64)[state_first]
         state_waits = np.column_stack([
             _wait(
                 state_draws[:, number],

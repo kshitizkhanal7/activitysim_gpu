@@ -116,6 +116,14 @@ def main() -> int:
             "and eliminate the CPU exact-adjudication pass"
         ),
     )
+    parser.add_argument(
+        "--phase42-numeric-compiler",
+        action="store_true",
+        help=(
+            "generalize Phase 41 into a hash-addressed numeric-policy compiler "
+            "and compact/cache the repeated native trip-logsum boundaries"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -190,6 +198,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase42_numeric_compiler:
+        args.phase41_exact_trip_sampling = True
+        os.environ["CHOICEFORGE_PHASE42_NUMERIC_COMPILER"] = "1"
     if args.phase41_exact_trip_sampling:
         args.phase40_resident_trip_sampling = True
         args.phase38_normalized_trip_state = True
@@ -1926,6 +1937,7 @@ def main() -> int:
     phase39_sampling = None
     phase40_sampling = None
     phase41_sampling = None
+    phase42_compiler = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1940,12 +1952,17 @@ def main() -> int:
         from choiceforge.trip_destination_resident import phase41_sampling_telemetry
 
         phase41_sampling = phase41_sampling_telemetry()
-    elif args.phase40_resident_trip_sampling:
+    if args.phase40_resident_trip_sampling and not args.phase41_exact_trip_sampling:
         from choiceforge.trip_destination_resident import phase40_sampling_telemetry
 
         phase40_sampling = phase40_sampling_telemetry()
+    if args.phase42_numeric_compiler:
+        from choiceforge.activitysim_destination import phase42_compiler_telemetry
+
+        phase42_compiler = phase42_compiler_telemetry()
     report = {
         "phase": (
+            42 if args.phase42_numeric_compiler else
             41 if args.phase41_exact_trip_sampling else
             40 if args.phase40_resident_trip_sampling else
             39 if args.phase39_cuda_trip_sampling else
@@ -1958,6 +1975,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a generalized versioned numeric-policy "
+            "compiler and compact cached trip-logsum boundaries"
+            if args.phase42_numeric_compiler else
             "full public ActivitySim model with exact shared OpenBLAS/CUDA "
             "trip-destination arithmetic and guard-free resident sampling"
             if args.phase41_exact_trip_sampling else
@@ -2046,6 +2066,7 @@ def main() -> int:
         "phase39_trip_destination_sampling": phase39_sampling,
         "phase40_trip_destination_sampling": phase40_sampling,
         "phase41_trip_destination_sampling": phase41_sampling,
+        "phase42_numeric_compiler": phase42_compiler,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2292,7 +2313,43 @@ def main() -> int:
                 ),
             }
         )
-    elif args.phase40_resident_trip_sampling:
+    if args.phase42_numeric_compiler:
+        compiler = phase42_compiler or {}
+        native_events = (phase35_trip_destination or {}).get("native_logsum", [])
+        report["proof_gates"].update(
+            {
+                "phase42_general_numeric_compiler_is_versioned": (
+                    compiler.get("compiler_version")
+                    == "choiceforge-numeric-policy-compiler-v1"
+                    and len(compiler.get("numeric_abi_sha256", "")) == 64
+                ),
+                "phase42_all_30_directional_bundles_use_compact_contract": (
+                    compiler.get("compact_directional_bundles") == 30
+                ),
+                "phase42_ten_purpose_contracts_compile_once_then_reuse": (
+                    compiler.get("logsum_contract_cache_misses") == 10
+                    and compiler.get("logsum_contract_cache_hits") == 20
+                ),
+                "phase42_ten_simulation_specs_resolve_once_then_reuse": (
+                    compiler.get("simulation_spec_cache_misses") == 10
+                    and compiler.get("simulation_spec_cache_hits") == 20
+                ),
+                "phase42_native_codegen_compiles_ten_abis_then_reuses_twenty": (
+                    compiler.get("native_codegen_cache", {}).get("misses") == 10
+                    and compiler.get("native_codegen_cache", {}).get("hits") == 20
+                    and sum(
+                        bool(item.get("native_codegen_cache_hit"))
+                        for item in native_events
+                    ) == 20
+                ),
+                "phase42_strict_ir_compiles_ten_documents_then_reuses_twenty": (
+                    len(native_events) == 30
+                    and sum(bool(item.get("strict_ir_cache_hit")) for item in native_events)
+                    == 20
+                ),
+            }
+        )
+    if args.phase40_resident_trip_sampling and not args.phase41_exact_trip_sampling:
         resident_sampling = phase40_sampling or []
         phase40_guard_rows = sum(
             item.get("arithmetic_guard_rows", 0) for item in resident_sampling

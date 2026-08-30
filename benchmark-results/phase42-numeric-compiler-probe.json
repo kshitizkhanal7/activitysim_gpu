@@ -1,0 +1,111 @@
+{
+  "phase": 42,
+  "compiler_version": "choiceforge-numeric-policy-compiler-v1",
+  "qualified_numeric_abi_sha256": "a995581add26a19967491f1be988ec5ef824df9a1a2f1084fe9106c07a47713d",
+  "reduction_probes": [
+    {
+      "term_count": 1,
+      "rows": 257,
+      "policy_sha256": "fc6ddefe4dd67c30c15e05131288220a625573602c1f5730cef9bb810e9a68b2",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "term_count": 3,
+      "rows": 257,
+      "policy_sha256": "c830eb3e83d46900928a99f6afc365ef33e90db8b1a071437da579f3217e381d",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "term_count": 5,
+      "rows": 257,
+      "policy_sha256": "65dc1a7f174c05563944c9f3978d66675c0ca32f04f25ea17ff5b330bf4ec85f",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "term_count": 15,
+      "rows": 257,
+      "policy_sha256": "7171decb1a37ed7746a39ea862bc7e086b5b61ca44644915e6374f4608c58833",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "term_count": 17,
+      "rows": 257,
+      "policy_sha256": "7f479ab103f799d017c5b81f81efc4fdad364b070121da7b0cc2a95eaab11d39",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "term_count": 31,
+      "rows": 257,
+      "policy_sha256": "541275a62d18aebe1f4f5854e7c895e21ade37ae5beed959f771df3398a1df88",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    }
+  ],
+  "probability_probes": [
+    {
+      "alternative_count": 1,
+      "rows": 257,
+      "weight_cells": 257,
+      "policy_sha256": "b8f35648398e1021173c6c290cd290df2fa00f6834f97652b0abf3c6735cc436",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "alternative_count": 7,
+      "rows": 257,
+      "weight_cells": 1799,
+      "policy_sha256": "aa38fca9b43f35c8f4e4b2f38ad4bd75885df76eaf1fe3dffdd4922c2f6029f8",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "alternative_count": 8,
+      "rows": 257,
+      "weight_cells": 2056,
+      "policy_sha256": "6f56a3f0248129555d7ec1a9f8b79d5a015d3f2c8c3c321b4cd2fba40acc4f04",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "alternative_count": 129,
+      "rows": 257,
+      "weight_cells": 33153,
+      "policy_sha256": "30e53cc3be68a6a19d53887d432e9db1cfd0909e184a3f7dd793ba3c892936c5",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "alternative_count": 257,
+      "rows": 257,
+      "weight_cells": 66049,
+      "policy_sha256": "1fdad771cd48d1707c77af55b54faf7bee55ef715b8e2bb073129ddd704656cc",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    },
+    {
+      "alternative_count": 1454,
+      "rows": 257,
+      "weight_cells": 373678,
+      "policy_sha256": "0cb879f43f5bffda71c3f40dfb4b10a2a277f05ad970b1af533c9374b34d1f23",
+      "bit_mismatches": 0,
+      "max_abs_difference": 0.0
+    }
+  ],
+  "mutation_hashes": {
+    "qualified": "a995581add26a19967491f1be988ec5ef824df9a1a2f1084fe9106c07a47713d",
+    "ordered_left": "447235e8e6d16b1dc384b9397e71e88bb76504cad1640bc48680f9fdb7901b2d",
+    "1453_alternatives": "f566d98fa8bb641582238f5803711298bc73bdc78bf7fda5875b89511e9e5164"
+  },
+  "proof_gates": {
+    "six_reduction_shapes_are_bit_exact": true,
+    "six_probability_shapes_are_bit_exact": true,
+    "reduction_mutation_changes_abi_hash": true,
+    "alternative_count_mutation_changes_abi_hash": true
+  },
+  "success": true
+}

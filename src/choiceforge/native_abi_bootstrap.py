@@ -36,6 +36,25 @@ from .sharrow_cuda import (
 
 
 _NATIVE_KERNEL_CACHE: dict[str, Any] = {}
+_NATIVE_CODEGEN_CACHE: dict[str, tuple[str, str]] = {}
+_NATIVE_CODEGEN_HITS = 0
+_NATIVE_CODEGEN_MISSES = 0
+
+
+def native_codegen_cache_stats() -> dict[str, int]:
+    """Return auditable process-local Phase 42 compiler-cache counters."""
+    return {
+        "entries": len(_NATIVE_CODEGEN_CACHE),
+        "hits": _NATIVE_CODEGEN_HITS,
+        "misses": _NATIVE_CODEGEN_MISSES,
+    }
+
+
+def clear_native_codegen_cache() -> None:
+    global _NATIVE_CODEGEN_HITS, _NATIVE_CODEGEN_MISSES
+    _NATIVE_CODEGEN_CACHE.clear()
+    _NATIVE_CODEGEN_HITS = 0
+    _NATIVE_CODEGEN_MISSES = 0
 
 
 @dataclass(frozen=True)
@@ -209,6 +228,7 @@ def compile_native_strict_abi(
     *,
     rows: int,
     minimal_row_state: bool = False,
+    cache_codegen: bool = False,
 ) -> NativeStrictAbiPlan:
     """Compile a strict resident invocation without dense preprocessor values."""
     _validate_document(document)
@@ -220,18 +240,48 @@ def compile_native_strict_abi(
         document, scalar_environment, cube_loader
     )
     coefficients_host = _host_coefficients(document, {})
-    source, source_sha256 = generate_cuda_source(
-        document,
-        bindings,
-        capture_features=False,
-        locality_tile_rows=1,
-        locality_optimized=False,
-        group_skim_indices=True,
-        coefficient_values=coefficients_host,
-        sparse_zero_coefficients=False,
-        expression_float32=True,
-        fused_utility_accumulation=True,
-    )
+    binding_document = _binding_schema(bindings)
+    codegen_key = hashlib.sha256(
+        json.dumps(
+            {
+                "compiler": "native-strict-abi-codegen-cache-v1",
+                "ir_sha256": document["sha256"],
+                "bindings": binding_document,
+                "capture_features": False,
+                "locality_tile_rows": 1,
+                "locality_optimized": False,
+                "group_skim_indices": True,
+                "sparse_zero_coefficients": False,
+                "expression_float32": True,
+                "fused_utility_accumulation": True,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    global _NATIVE_CODEGEN_HITS, _NATIVE_CODEGEN_MISSES
+    cached_codegen = _NATIVE_CODEGEN_CACHE.get(codegen_key) if cache_codegen else None
+    if cached_codegen is None:
+        source, source_sha256 = generate_cuda_source(
+            document,
+            bindings,
+            capture_features=False,
+            locality_tile_rows=1,
+            locality_optimized=False,
+            group_skim_indices=True,
+            coefficient_values=coefficients_host,
+            sparse_zero_coefficients=False,
+            expression_float32=True,
+            fused_utility_accumulation=True,
+        )
+        if cache_codegen:
+            _NATIVE_CODEGEN_CACHE[codegen_key] = (source, source_sha256)
+            _NATIVE_CODEGEN_MISSES += 1
+        codegen_cache_hit = False
+    else:
+        source, source_sha256 = cached_codegen
+        _NATIVE_CODEGEN_HITS += 1
+        codegen_cache_hit = True
     kernel_key = f"{document['sha256']}:{source_sha256}"
     kernel = _NATIVE_KERNEL_CACHE.get(kernel_key)
     compiled = kernel is None
@@ -304,7 +354,6 @@ def compile_native_strict_abi(
         skim_input_ranks=tuple(item.skim_rank for item in skim_bindings),
         skim_input_groups=tuple(item.skim_group for item in skim_bindings),
     )
-    binding_document = _binding_schema(bindings)
     schema_payload = {
         "contract": "hashed_ir_plus_named_raw_sources_no_dense_preprocessor",
         "ir_sha256": document["sha256"],
@@ -327,6 +376,8 @@ def compile_native_strict_abi(
         **schema_payload,
         "schema_sha256": schema_sha256,
         "generated_source_sha256": source_sha256,
+        "codegen_cache_key": codegen_key,
+        "codegen_cache_hit": codegen_cache_hit,
         "compiled_this_call": compiled,
         "dense_preprocessor_rows_read": 0,
         "dense_preprocessor_values_read": 0,

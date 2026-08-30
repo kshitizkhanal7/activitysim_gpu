@@ -858,3 +858,30 @@ See the [Phase 41 technical report](docs/phase41-exact-shared-arithmetic.md),
 the [three-pair promotion evidence](benchmark-results/phase41-p41final-summary.json),
 the [consolidated qualification](benchmark-results/phase41-p41final-qualification.json),
 and its three per-pair exact verification reports.
+
+## Phase 42 general numeric compiler and compact cached runtime
+
+Phase 42 generalizes Phase 41's exact arithmetic into a declarative,
+hash-addressed numeric compiler. One validated policy now generates the CPU
+reference reduction and CUDA reduction/probability code for arbitrary positive
+term and alternative counts. A live RTX A4000 probe covered six reduction
+shapes and six probability shapes with zero bit mismatches; mutations to the
+addition schedule or alternative count changed the ABI hash as required.
+
+The production trip runtime now passes one compact directional view instead of
+duplicating the complete sampled pandas table. It compiles ten purpose
+contracts, strict IR documents, and native ABIs once and reuses each 20 times;
+the same 10/20 pattern applies to final simulation specifications. Three fresh
+50,000-household Phase 41/42 pairs all ran the full 34-step public ActivitySim
+model, all favored Phase 42, and all had zero changed decision cells and zero
+logsum difference.
+
+Median `trip_destination` time fell from 14.9 to 10.7 seconds: **1.393x faster**
+and 28.19% less time. Median all-model time fell from 156.7 to 151.8 seconds:
+**1.032x faster** and 4.9 seconds saved. Stretch targets of 8 seconds and 150
+seconds were not met and remain explicitly false in the evidence.
+
+See the [Phase 42 technical report](docs/phase42-general-numeric-compiler.md),
+the [three-pair evidence](benchmark-results/phase42-p42final-summary.json), the
+[consolidated qualification](benchmark-results/phase42-p42final-qualification.json),
+and the [multi-shape compiler probe](benchmark-results/phase42-numeric-compiler-probe.json).

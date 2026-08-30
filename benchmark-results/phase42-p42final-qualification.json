@@ -1,0 +1,81 @@
+{
+  "phase": 42,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "matched_pairs": 3,
+  "compiler_version": "choiceforge-numeric-policy-compiler-v1",
+  "numeric_abi_sha256": "a995581add26a19967491f1be988ec5ef824df9a1a2f1084fe9106c07a47713d",
+  "compiler_probe_reduction_shapes": [
+    1,
+    3,
+    5,
+    15,
+    17,
+    31
+  ],
+  "compiler_probe_probability_shapes": [
+    1,
+    7,
+    8,
+    129,
+    257,
+    1454
+  ],
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "destination_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "mode_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "median_phase41_all_model_seconds": 156.7,
+  "median_phase42_all_model_seconds": 151.79999999999998,
+  "median_all_model_seconds_saved": 4.900000000000006,
+  "median_all_model_reduction_percent": 3.1269942565411655,
+  "median_all_model_speedup": 1.0322793148880105,
+  "median_trip_destination": {
+    "model_name": "trip_destination",
+    "gpu_role": "Phase42 generalized ABI compiler plus compact cached GPU boundaries",
+    "median_baseline_seconds": 14.9,
+    "median_candidate_seconds": 10.7,
+    "median_seconds_saved": 4.200000000000001,
+    "median_reduction_percent": 28.187919463087255,
+    "median_speedup": 1.3925233644859814
+  },
+  "median_phase42_trip_destination_stages": {
+    "sampling_seconds": 1.673965600086376,
+    "preparation_seconds": 1.5402799998410046,
+    "preprocessor_seconds": 1.0445520000066608,
+    "logsums_seconds": 3.1654698001220822,
+    "simulation_seconds": 1.8121470999903977,
+    "total_seconds": 9.312258600490168
+  },
+  "aspirational_targets": {
+    "trip_destination_under_8_seconds": false,
+    "all_model_under_150_seconds": false,
+    "note": "targets were optimization goals, not proof gates, and are reported without weakening them"
+  },
+  "proof_gates": {
+    "numeric_compiler_probe_passes": true,
+    "three_candidate_reports_pass_every_gate": true,
+    "one_versioned_numeric_abi_in_all_candidates": true,
+    "all_candidates_use_thirty_compact_directional_bundles": true,
+    "all_candidates_compile_ten_logsum_contracts_then_reuse_twenty": true,
+    "all_candidates_compile_ten_simulation_specs_then_reuse_twenty": true,
+    "all_candidates_compile_ten_native_abis_then_reuse_twenty": true,
+    "all_candidates_cover_complete_public_trip_workload": true,
+    "three_independent_output_verifiers_pass": true,
+    "candidate_wins_every_matched_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true
+}

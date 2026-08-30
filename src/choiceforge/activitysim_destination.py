@@ -13,6 +13,7 @@ import hashlib
 import os
 import re
 import time
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -23,12 +24,45 @@ _STRICT_IR_CACHE = {}
 _TRIP_DESTINATION_STAGE_TELEMETRY = []
 _TRIP_NATIVE_LOGSUM_TELEMETRY = []
 _TRIP_NATIVE_CUBE_CACHE = {}
+_TRIP_LOGSUM_CONTRACT_CACHE = {}
+_TRIP_SIMULATION_SPEC_CACHE = {}
+_PHASE42_CONTRACT_HITS = 0
+_PHASE42_CONTRACT_MISSES = 0
+_PHASE42_COMPACT_BUNDLES = 0
+_PHASE42_SIMULATION_SPEC_HITS = 0
+_PHASE42_SIMULATION_SPEC_MISSES = 0
+
+
+@dataclass(frozen=True)
+class Phase42DirectionalFrame:
+    """Zero-copy paired OD/DP view consumed by the normalized GPU runtime."""
+
+    base: pd.DataFrame
+    origin: np.ndarray
+    destination: np.ndarray
+    phase42_compact_directional: bool = True
+
+    def __len__(self):
+        return int(self.origin.size)
+
+    @property
+    def index(self):
+        return np.concatenate(
+            (self.base.index.to_numpy(copy=False), self.base.index.to_numpy(copy=False))
+        )
 
 
 def reset_trip_destination_stage_telemetry():
     """Clear process-local timings for the trip-number batched path."""
+    global _PHASE42_CONTRACT_HITS, _PHASE42_CONTRACT_MISSES, _PHASE42_COMPACT_BUNDLES
+    global _PHASE42_SIMULATION_SPEC_HITS, _PHASE42_SIMULATION_SPEC_MISSES
     _TRIP_DESTINATION_STAGE_TELEMETRY.clear()
     _TRIP_NATIVE_LOGSUM_TELEMETRY.clear()
+    _PHASE42_CONTRACT_HITS = 0
+    _PHASE42_CONTRACT_MISSES = 0
+    _PHASE42_COMPACT_BUNDLES = 0
+    _PHASE42_SIMULATION_SPEC_HITS = 0
+    _PHASE42_SIMULATION_SPEC_MISSES = 0
 
 
 def clear_trip_native_cube_cache():
@@ -37,6 +71,28 @@ def clear_trip_native_cube_cache():
     from choiceforge.trip_logsum_native import clear_trip_device_state_cache
 
     clear_trip_device_state_cache()
+
+
+def phase42_compiler_telemetry():
+    """Report the generalized compiler and compact-boundary proof counters."""
+    from choiceforge.arithmetic_abi import (
+        PHASE42_NUMERIC_ABI_SHA256,
+        PHASE42_NUMERIC_COMPILER_VERSION,
+    )
+    from choiceforge.native_abi_bootstrap import native_codegen_cache_stats
+
+    return {
+        "compiler_version": PHASE42_NUMERIC_COMPILER_VERSION,
+        "numeric_abi_sha256": PHASE42_NUMERIC_ABI_SHA256,
+        "logsum_contract_cache_entries": len(_TRIP_LOGSUM_CONTRACT_CACHE),
+        "logsum_contract_cache_hits": _PHASE42_CONTRACT_HITS,
+        "logsum_contract_cache_misses": _PHASE42_CONTRACT_MISSES,
+        "compact_directional_bundles": _PHASE42_COMPACT_BUNDLES,
+        "simulation_spec_cache_entries": len(_TRIP_SIMULATION_SPEC_CACHE),
+        "simulation_spec_cache_hits": _PHASE42_SIMULATION_SPEC_HITS,
+        "simulation_spec_cache_misses": _PHASE42_SIMULATION_SPEC_MISSES,
+        "native_codegen_cache": native_codegen_cache_stats(),
+    }
 
 
 def trip_destination_stage_telemetry():
@@ -240,10 +296,24 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
     from choiceforge.cuda_skims import cuda_cube_from_activitysim
     from choiceforge.native_abi_bootstrap import NativeSkimCube, compile_native_strict_abi
     from choiceforge.nested_logit import mtc21_nested_logsums_cuda
-    from choiceforge.sharrow_ir import specification_ir
     from choiceforge.trip_logsum_native import TripLogsumNativePlan
 
-    document = specification_ir(bundle["logsum_spec"].reset_index())
+    phase42_compiler = (
+        os.environ.get("CHOICEFORGE_PHASE42_NUMERIC_COMPILER", "0") == "1"
+    )
+    if phase42_compiler:
+        document = bundle["logsum_document"]
+        if document is None:
+            raise ValueError("Phase 42 bundle is missing its compiled numeric IR")
+        ir_cache_hit = bool(bundle["logsum_document_cache_hit"])
+        ir_compile_ms = 0.0
+    else:
+        from choiceforge.sharrow_ir import specification_ir
+
+        ir_started = time.perf_counter()
+        document = specification_ir(bundle["logsum_spec"].reset_index())
+        ir_cache_hit = False
+        ir_compile_ms = (time.perf_counter() - ir_started) * 1000.0
     scalar_environment = state.get_global_constants().copy()
     scalar_environment.update(bundle["locals"])
 
@@ -289,6 +359,7 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
         cube_loader,
         rows=len(bundle["combined"]),
         minimal_row_state=bool(phase37_fused and not phase37_shadow),
+        cache_codegen=phase42_compiler,
     )
     plan = TripLogsumNativePlan(
         native.invocation, document=document, bindings=native.bindings
@@ -407,6 +478,12 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
             "resident_workspace_hits": telemetry.resident_workspace_hits,
             "resident_workspace_arrays": telemetry.resident_workspace_arrays,
             "normalized_contract_valid": telemetry.normalized_contract_valid,
+            "strict_ir_cache_hit": ir_cache_hit,
+            "strict_ir_compile_ms": ir_compile_ms,
+            "native_codegen_cache_hit": native.manifest.get(
+                "codegen_cache_hit", False
+            ),
+            "native_codegen_cache_key": native.manifest.get("codegen_cache_key"),
             **shadow_metrics,
         }
     )
@@ -586,6 +663,79 @@ def compute_logsums_combined(
     return destination_sample
 
 
+def _trip_logsum_contract(state, primary_purpose, model_settings, trace_label):
+    """Cache immutable purpose-specific model compilation inputs.
+
+    ActivitySim reads and resolves the same ten specifications once for each
+    trip number.  Phase 42 makes the already-hashed model contract the cache
+    key and reuses it; chooser rows and random draws are never cached.
+    """
+    from activitysim.core import config, simulate, tracing
+
+    global _PHASE42_CONTRACT_HITS, _PHASE42_CONTRACT_MISSES
+    key = (
+        id(state.filesystem),
+        str(model_settings.LOGSUM_SETTINGS),
+        str(primary_purpose),
+    )
+    cached = _TRIP_LOGSUM_CONTRACT_CACHE.get(key)
+    if cached is not None:
+        _PHASE42_CONTRACT_HITS += 1
+        return cached, True
+    from choiceforge.sharrow_ir import specification_ir
+
+    logsum_settings = state.filesystem.read_model_settings(
+        model_settings.LOGSUM_SETTINGS
+    )
+    coefficients = state.filesystem.get_segment_coefficients(
+        logsum_settings, primary_purpose
+    )
+    nest_spec = config.get_logit_model_settings(logsum_settings)
+    nest_spec = simulate.eval_nest_coefficients(
+        nest_spec, coefficients, trace_label
+    )
+    logsum_spec = state.filesystem.read_model_spec(file_name=logsum_settings["SPEC"])
+    logsum_spec = simulate.eval_coefficients(
+        state, logsum_spec, coefficients, estimator=None
+    )
+    locals_dict = dict(config.get_model_constants(logsum_settings))
+    locals_dict.update(coefficients)
+    document = specification_ir(logsum_spec.reset_index())
+    cached = {
+        "logsum_settings": logsum_settings,
+        "coefficients": coefficients,
+        "nest_spec": nest_spec,
+        "logsum_spec": logsum_spec,
+        "locals": locals_dict,
+        "document": document,
+    }
+    _TRIP_LOGSUM_CONTRACT_CACHE[key] = cached
+    _PHASE42_CONTRACT_MISSES += 1
+    return cached, False
+
+
+def _phase42_simulation_spec(original, *args, **kwargs):
+    """Cache only the immutable trip-destination final-choice specification."""
+    global _PHASE42_SIMULATION_SPEC_HITS, _PHASE42_SIMULATION_SPEC_MISSES
+    if kwargs.get("spec_id") != "SPEC" or kwargs.get("segment_name") is None:
+        return original(*args, **kwargs)
+    state = args[0] if args else kwargs.get("state")
+    key = (
+        id(getattr(state, "filesystem", state)),
+        str(kwargs.get("spec_file_name")),
+        str(kwargs.get("coefficients_file_name")),
+        str(kwargs.get("segment_name")),
+    )
+    cached = _TRIP_SIMULATION_SPEC_CACHE.get(key)
+    if cached is not None:
+        _PHASE42_SIMULATION_SPEC_HITS += 1
+        return cached
+    value = original(*args, **kwargs)
+    _TRIP_SIMULATION_SPEC_CACHE[key] = value
+    _PHASE42_SIMULATION_SPEC_MISSES += 1
+    return value
+
+
 def _prepare_logsum_bundle(
     state,
     primary_purpose,
@@ -599,62 +749,119 @@ def _prepare_logsum_bundle(
     """Lower one purpose segment to directional chooser frames."""
     from activitysim.core import config, simulate, tracing
 
+    global _PHASE42_COMPACT_BUNDLES
+    phase42_compact = (
+        os.environ.get("CHOICEFORGE_PHASE42_NUMERIC_COMPILER", "0") == "1"
+        and os.environ.get(
+            "CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION", "0"
+        ) == "1"
+    )
+
     trips_merged = pd.merge(
         trips, tours_merged, left_on="tour_id", right_index=True, how="left"
     )
     if not trips_merged.index.equals(trips.index):
         raise AssertionError("trip merge changed chooser order")
-    choosers = pd.merge(
-        destination_sample,
-        trips_merged.reset_index(),
-        left_index=True,
-        right_on="trip_id",
-        how="left",
-        suffixes=("", "_r"),
-    ).set_index("trip_id")
+    if phase42_compact:
+        choosers = destination_sample.join(
+            trips_merged, how="left", rsuffix="_r", sort=False
+        )
+    else:
+        choosers = pd.merge(
+            destination_sample,
+            trips_merged.reset_index(),
+            left_index=True,
+            right_on="trip_id",
+            how="left",
+            suffixes=("", "_r"),
+        ).set_index("trip_id")
     if not choosers.index.equals(destination_sample.index):
         raise AssertionError("destination merge changed alternative order")
 
-    logsum_settings = state.filesystem.read_model_settings(
-        model_settings.LOGSUM_SETTINGS
-    )
-    coefficients = state.filesystem.get_segment_coefficients(
-        logsum_settings, primary_purpose
-    )
     bundle_trace = tracing.extend_trace_label(
         trace_label, "compute_logsums_tripnum_batched"
     )
-    nest_spec = config.get_logit_model_settings(logsum_settings)
-    nest_spec = simulate.eval_nest_coefficients(
-        nest_spec, coefficients, bundle_trace
-    )
-    logsum_spec = state.filesystem.read_model_spec(file_name=logsum_settings["SPEC"])
-    logsum_spec = simulate.eval_coefficients(
-        state, logsum_spec, coefficients, estimator=None
-    )
-    locals_dict = dict(config.get_model_constants(logsum_settings))
-    locals_dict.update(coefficients)
+    if phase42_compact:
+        contract, contract_cache_hit = _trip_logsum_contract(
+            state, primary_purpose, model_settings, bundle_trace
+        )
+        logsum_settings = contract["logsum_settings"]
+        coefficients = contract["coefficients"]
+        nest_spec = contract["nest_spec"]
+        logsum_spec = contract["logsum_spec"]
+        locals_dict = contract["locals"]
+        logsum_document = contract["document"]
+    else:
+        logsum_settings = state.filesystem.read_model_settings(
+            model_settings.LOGSUM_SETTINGS
+        )
+        coefficients = state.filesystem.get_segment_coefficients(
+            logsum_settings, primary_purpose
+        )
+        nest_spec = config.get_logit_model_settings(logsum_settings)
+        nest_spec = simulate.eval_nest_coefficients(
+            nest_spec, coefficients, bundle_trace
+        )
+        logsum_spec = state.filesystem.read_model_spec(file_name=logsum_settings["SPEC"])
+        logsum_spec = simulate.eval_coefficients(
+            state, logsum_spec, coefficients, estimator=None
+        )
+        locals_dict = dict(config.get_model_constants(logsum_settings))
+        locals_dict.update(coefficients)
+        logsum_document = None
+        contract_cache_hit = False
 
     origin_column = "_choiceforge_origin"
     destination_column = "_choiceforge_destination"
-    od = choosers.copy()
-    dp = choosers.copy()
-    od[origin_column] = od[model_settings.TRIP_ORIGIN].to_numpy()
-    od[destination_column] = od[model_settings.ALT_DEST_COL_NAME].to_numpy()
-    dp[origin_column] = dp[model_settings.ALT_DEST_COL_NAME].to_numpy()
-    dp[destination_column] = dp[model_settings.PRIMARY_DEST].to_numpy()
+    if phase42_compact:
+        combined_origin = np.concatenate(
+            (
+                choosers[model_settings.TRIP_ORIGIN].to_numpy(copy=False),
+                choosers[model_settings.ALT_DEST_COL_NAME].to_numpy(copy=False),
+            )
+        )
+        combined_destination = np.concatenate(
+            (
+                choosers[model_settings.ALT_DEST_COL_NAME].to_numpy(copy=False),
+                choosers[model_settings.PRIMARY_DEST].to_numpy(copy=False),
+            )
+        )
+        combined = Phase42DirectionalFrame(
+            base=choosers,
+            origin=combined_origin,
+            destination=combined_destination,
+        )
+        # ActivitySim's keyed RNG reads canonical row identity, not unrelated
+        # chooser columns.  A narrow frame preserves the exact ledger while
+        # avoiding two more copies of every sampled-alternative column.
+        random_frame = pd.DataFrame(index=choosers.index.copy())
+        directional_frames = (random_frame, random_frame)
+        od = dp = None
+        _PHASE42_COMPACT_BUNDLES += 1
+    else:
+        od = choosers.copy()
+        dp = choosers.copy()
+        od[origin_column] = od[model_settings.TRIP_ORIGIN].to_numpy()
+        od[destination_column] = od[model_settings.ALT_DEST_COL_NAME].to_numpy()
+        dp[origin_column] = dp[model_settings.ALT_DEST_COL_NAME].to_numpy()
+        dp[destination_column] = dp[model_settings.PRIMARY_DEST].to_numpy()
+        combined = pd.concat((od, dp), axis=0)
+        directional_frames = (od, dp)
     return {
         "purpose": primary_purpose,
         "trips": trips,
         "destination_sample": destination_sample,
         "od": od,
         "dp": dp,
-        "combined": pd.concat((od, dp), axis=0),
+        "combined": combined,
+        "directional_frames": directional_frames,
         "logsum_settings": logsum_settings,
         "coefficients": coefficients,
         "nest_spec": nest_spec,
         "logsum_spec": logsum_spec,
         "locals": locals_dict,
+        "logsum_document": logsum_document,
+        "logsum_document_cache_hit": contract_cache_hit,
         "trace_label": bundle_trace,
     }
 
@@ -1656,13 +1863,20 @@ def choose_trip_destinations_batched(
     combined_skims = _generic_logsum_skims(state)
     all_frames = []
     for bundle in bundles:
-        all_frames.extend((bundle["od"], bundle["dp"]))
-    all_combined = pd.concat(
-        [bundle["combined"] for bundle in bundles], axis=0
-    )
+        all_frames.extend(bundle["directional_frames"])
     native_raw_capture = {}
     native_shadow = os.environ.get("CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM", "0") == "1"
     native_production = os.environ.get("CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION", "0") == "1"
+    # Native production consumes each purpose's compact frame directly.  The
+    # legacy preprocessor requires one stacked frame, but constructing it and
+    # then copying thirty slices back out was pure memory traffic in Phases
+    # 35-41.
+    phase42_compact = (
+        os.environ.get("CHOICEFORGE_PHASE42_NUMERIC_COMPILER", "0") == "1"
+    )
+    all_combined = None if native_production and phase42_compact else pd.concat(
+        [bundle["combined"] for bundle in bundles], axis=0
+    )
     preprocess_started = time.perf_counter()
     if native_production:
         # Preserve ActivitySim's exact keyed random-ledger sequence while
@@ -1714,7 +1928,8 @@ def choose_trip_destinations_batched(
     draw_cursor = 0
     for bundle in bundles:
         count = len(bundle["combined"])
-        bundle["combined"] = all_combined.iloc[cursor : cursor + count].copy()
+        if all_combined is not None:
+            bundle["combined"] = all_combined.iloc[cursor : cursor + count].copy()
         cursor += count
         draws = native_raw_capture.get("random_draws")
         bundle_draws = None if draws is None else draws[draw_cursor : draw_cursor + count]
@@ -1764,27 +1979,41 @@ def choose_trip_destinations_batched(
 
     results = []
     simulation_started = time.perf_counter()
-    for bundle in bundles:
-        destinations = td.trip_destination_simulate(
-            state,
-            primary_purpose=bundle["purpose"],
-            trips=bundle["trips"],
-            destination_sample=bundle["destination_sample"],
-            model_settings=model_settings,
-            want_logsums=want_logsums,
-            size_term_matrix=size_term_matrix,
-            skim_hotel=skim_hotel,
-            estimator=estimator,
-            trace_label=bundle["trace_label"].replace(
-                ".compute_logsums_tripnum_batched", ""
-            ),
+    from activitysim.core import simulate as activitysim_simulate
+
+    original_spec_for_segment = activitysim_simulate.spec_for_segment
+    if phase42_compact:
+        activitysim_simulate.spec_for_segment = lambda *call_args, **call_kwargs: (
+            _phase42_simulation_spec(
+                original_spec_for_segment, *call_args, **call_kwargs
+            )
         )
-        sample = bundle["destination_sample"]
-        if want_sample_table:
-            sample.set_index(model_settings.ALT_DEST_COL_NAME, append=True, inplace=True)
-        else:
-            sample = None
-        results.append((bundle["purpose"], destinations, sample))
+    try:
+        for bundle in bundles:
+            destinations = td.trip_destination_simulate(
+                state,
+                primary_purpose=bundle["purpose"],
+                trips=bundle["trips"],
+                destination_sample=bundle["destination_sample"],
+                model_settings=model_settings,
+                want_logsums=want_logsums,
+                size_term_matrix=size_term_matrix,
+                skim_hotel=skim_hotel,
+                estimator=estimator,
+                trace_label=bundle["trace_label"].replace(
+                    ".compute_logsums_tripnum_batched", ""
+                ),
+            )
+            sample = bundle["destination_sample"]
+            if want_sample_table:
+                sample.set_index(
+                    model_settings.ALT_DEST_COL_NAME, append=True, inplace=True
+                )
+            else:
+                sample = None
+            results.append((bundle["purpose"], destinations, sample))
+    finally:
+        activitysim_simulate.spec_for_segment = original_spec_for_segment
     simulation_seconds = time.perf_counter() - simulation_started
 
     total_seconds = time.perf_counter() - started
@@ -1810,7 +2039,7 @@ def choose_trip_destinations_batched(
         "preprocessor=%.3fms total=%.3fms",
         trace_label,
         len(bundles),
-        len(all_combined),
+        sum(len(bundle["combined"]) for bundle in bundles),
         preprocess_ms,
         total_seconds * 1000,
     )

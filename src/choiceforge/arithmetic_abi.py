@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
+from typing import Literal
 
 import numba as nb
 import numpy as np
@@ -45,6 +47,172 @@ SHARROW15_ABI_SHA256 = hashlib.sha256(
 ).hexdigest()
 
 NUMPY_FLOAT32_CHOICE_ABI_VERSION = "numpy246-avx2-exp-pairwise128-v1"
+
+
+@dataclass(frozen=True)
+class Float32ReductionPolicy:
+    """Portable description of every float32 utility addition.
+
+    A policy is data rather than handwritten CUDA.  Its hash changes when the
+    term count, grouping, association, or FMA rule changes, so a cached kernel
+    cannot silently inherit another model's arithmetic semantics.
+    """
+
+    term_count: int
+    groups: tuple[tuple[int, ...], ...]
+    association: Literal["grouped-left", "ordered-left"]
+    contract_fma: bool = False
+
+    def __post_init__(self):
+        if self.term_count <= 0:
+            raise ValueError("a reduction policy requires at least one term")
+        flattened = tuple(position for group in self.groups for position in group)
+        if flattened != tuple(range(self.term_count)):
+            raise ValueError(
+                "reduction groups must cover every term exactly once in source order"
+            )
+        if self.association == "ordered-left" and any(
+            len(group) != 1 for group in self.groups
+        ):
+            raise ValueError("ordered-left requires one term per group")
+        if self.contract_fma:
+            raise ValueError("the qualified portable compiler forbids contracted FMA")
+
+    @property
+    def sha256(self) -> str:
+        return hashlib.sha256(
+            json.dumps(
+                {
+                    "schema": "choiceforge-float32-reduction-v1",
+                    "term_count": self.term_count,
+                    "groups": self.groups,
+                    "association": self.association,
+                    "contract_fma": self.contract_fma,
+                    "rounding": "ieee754-nearest-even-after-each-operation",
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+
+
+@dataclass(frozen=True)
+class Float32ProbabilityPolicy:
+    """Versioned exponential and probability-reduction contract."""
+
+    alternative_count: int
+    exp_policy: Literal["numpy-2.4.6-avx2-fma3"] = "numpy-2.4.6-avx2-fma3"
+    pairwise_block_size: int = 128
+
+    def __post_init__(self):
+        if self.alternative_count <= 0:
+            raise ValueError("a probability policy requires at least one alternative")
+        if self.pairwise_block_size != 128:
+            raise ValueError("only NumPy's qualified 128-value block is supported")
+
+    @property
+    def tree(self):
+        return _pairwise_tree(0, self.alternative_count)
+
+    @property
+    def sha256(self) -> str:
+        return hashlib.sha256(
+            json.dumps(
+                {
+                    "schema": "choiceforge-float32-probability-v1",
+                    "alternative_count": self.alternative_count,
+                    "exp_policy": self.exp_policy,
+                    "pairwise_block_size": self.pairwise_block_size,
+                    "tree": self.tree,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+
+
+@dataclass(frozen=True)
+class NumericPolicyCompiler:
+    """One shared, hash-addressed CPU/CUDA arithmetic compiler."""
+
+    reduction: Float32ReductionPolicy
+    probability: Float32ProbabilityPolicy
+    compiler_version: str = "choiceforge-numeric-policy-compiler-v1"
+
+    @property
+    def abi_sha256(self) -> str:
+        return hashlib.sha256(
+            json.dumps(
+                {
+                    "compiler_version": self.compiler_version,
+                    "reduction_sha256": self.reduction.sha256,
+                    "probability_sha256": self.probability.sha256,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+
+    def cuda_reduction(
+        self, *, intermediate: str = "intermediate", coefficients: str = "coefficients"
+    ) -> str:
+        return float32_reduction_cuda(
+            self.reduction,
+            intermediate=intermediate,
+            coefficients=coefficients,
+        )
+
+    def cuda_probability_helpers(self) -> str:
+        return numpy_float32_choice_cuda_helpers(
+            self.probability.alternative_count
+        )
+
+
+def grouped_left_reduction(term_count: int, group_width: int = 4):
+    """Build the explicit OpenBLAS-style group schedule for any term count."""
+    if group_width <= 0:
+        raise ValueError("group width must be positive")
+    term_count = int(term_count)
+    groups = []
+    full_stop = term_count - (term_count % group_width)
+    groups.extend(
+        tuple(range(start, start + group_width))
+        for start in range(0, full_stop, group_width)
+    )
+    groups.extend((position,) for position in range(full_stop, term_count))
+    return Float32ReductionPolicy(
+        term_count=term_count,
+        groups=tuple(groups),
+        association="grouped-left",
+    )
+
+
+def ordered_left_reduction(term_count: int):
+    return Float32ReductionPolicy(
+        term_count=int(term_count),
+        groups=tuple((position,) for position in range(int(term_count))),
+        association="ordered-left",
+    )
+
+
+def reduce_float32(features, coefficients, policy: Float32ReductionPolicy):
+    """Reference evaluator generated from the same reduction policy as CUDA."""
+    values = np.asarray(features, dtype=np.float32)
+    weights = np.asarray(coefficients, dtype=np.float32)
+    if values.shape[-1] != policy.term_count or weights.shape != (policy.term_count,):
+        raise ValueError("feature/coefficient shape does not match reduction policy")
+    rows = values.reshape(-1, policy.term_count)
+    output = np.empty(rows.shape[0], dtype=np.float32)
+    for row_number, row in enumerate(rows):
+        accumulator = np.float32(0.0)
+        for group in policy.groups:
+            partial = np.float32(0.0)
+            for position in group:
+                product = np.float32(row[position] * weights[position])
+                partial = np.float32(partial + product)
+            accumulator = np.float32(accumulator + partial)
+        output[row_number] = accumulator
+    return output.reshape(values.shape[:-1])
 
 
 def _pairwise_tree(start: int, count: int):
@@ -94,8 +262,26 @@ def sharrow15_cuda_reduction(
     *, intermediate: str = "intermediate", coefficients: str = "coefficients"
 ) -> str:
     """Generate the CUDA statements for the canonical reduction schedule."""
+    return float32_reduction_cuda(
+        Float32ReductionPolicy(
+            term_count=15,
+            groups=SHARROW15_REDUCTION_GROUPS,
+            association="grouped-left",
+        ),
+        intermediate=intermediate,
+        coefficients=coefficients,
+    )
+
+
+def float32_reduction_cuda(
+    policy: Float32ReductionPolicy,
+    *,
+    intermediate: str = "intermediate",
+    coefficients: str = "coefficients",
+) -> str:
+    """Generate CUDA from a validated reduction policy."""
     lines = ["float utility = 0.0f;", "float absolute_product_sum = 0.0f;"]
-    for group_number, group in enumerate(SHARROW15_REDUCTION_GROUPS):
+    for group_number, group in enumerate(policy.groups):
         lines.append(f"float abi_group_{group_number} = 0.0f;")
         for position in group:
             lines.extend(
@@ -117,8 +303,9 @@ def numpy_float32_choice_cuda_helpers(alternative_count: int = 1454) -> str:
     its reduction tree at compile time avoids CUDA device recursion while
     preserving NumPy's exact association order.
     """
-    if alternative_count != 1454:
-        raise ValueError("the qualified NumPy choice ABI requires 1,454 alternatives")
+    alternative_count = int(alternative_count)
+    if alternative_count <= 0:
+        raise ValueError("the NumPy choice ABI requires at least one alternative")
     tree = _pairwise_tree(0, alternative_count)
     leaves = []
 
@@ -168,6 +355,13 @@ __device__ __forceinline__ float numpy_avx2_expf(float value)
 __device__ __forceinline__ float numpy_pairwise_exp_small(
     const float* values, int start, int count)
 {
+    if (count < 8) {
+        float small = 0.0f;
+        for (int offset = 0; offset < count; ++offset) {
+            small += numpy_avx2_expf(values[start + offset]);
+        }
+        return small;
+    }
     float lanes[8];
     #pragma unroll
     for (int lane = 0; lane < 8; ++lane) {
@@ -188,11 +382,19 @@ __device__ __forceinline__ float numpy_pairwise_exp_small(
     return result;
 }
 
-__device__ __forceinline__ float numpy_pairwise_exp_sum_1454(const float* values)
+__device__ __forceinline__ float __PAIRWISE_FUNCTION__(const float* values)
 {
     __LEAVES__
     return __ROOT__;
 }
 '''.replace("__LEAVES__", "\n    ".join(leaf_lines)).replace(
         "__ROOT__", root_expression
-    )
+    ).replace("__PAIRWISE_FUNCTION__", f"numpy_pairwise_exp_sum_{alternative_count}")
+
+
+PHASE42_NUMERIC_COMPILER = NumericPolicyCompiler(
+    reduction=grouped_left_reduction(15),
+    probability=Float32ProbabilityPolicy(1_454),
+)
+PHASE42_NUMERIC_COMPILER_VERSION = PHASE42_NUMERIC_COMPILER.compiler_version
+PHASE42_NUMERIC_ABI_SHA256 = PHASE42_NUMERIC_COMPILER.abi_sha256

@@ -5260,3 +5260,154 @@ this from one 15-expression program to a real Sharrow GPU backend or dedicated
 expression compiler that can emit matching CPU and CUDA programs for many
 ActivitySim models. It should cache contracts by hash and automatically rerun
 mutation tests for coefficients, skims, land use, people, and random draws.
+
+## 153. Phase 42: from one exact recipe to a small compiler
+
+Phase 41 knew one important recipe: 15 utility terms and 1,454 alternatives.
+Phase 42 changes the recipe into data that a compiler can read. In plain
+English, the policy says:
+
+- how many numbers are multiplied;
+- exactly which partial products are added together and in what order;
+- which float32 exponential recipe to use;
+- how the long probability total is split into a tree; and
+- whether arithmetic shortcuts such as fused multiply-add are allowed.
+
+The compiler checks the policy, gives it a SHA-256 fingerprint, writes a CPU
+reference evaluator, and writes matching CUDA source. SHA-256 is like a very
+sensitive digital fingerprint: changing the addition order or even the number
+of alternatives changes the fingerprint. A cached kernel is reused only when
+that fingerprint matches.
+
+This does not mean the compiler understands every possible mathematical
+expression. It means the exact utility-reduction and probability-normalization
+parts that caused our replication problem are now reusable instead of being
+handwritten for one model shape.
+
+## 154. How did we test that “general” is more than a name?
+
+We compiled and ran the policies on the real RTX A4000 for several shapes:
+
+| GPU test | Shapes tested | Answer |
+|---|---|---:|
+| utility addition | 1, 3, 5, 15, 17, and 31 terms | zero different bits |
+| exponential probability total | 1, 7, 8, 129, 257, and 1,454 choices | zero different bits |
+
+Each shape used 257 random rows. We compared the 32 individual bits of every
+float32 result, not just rounded decimal text. We also made two deliberate
+mutations. Changing grouped addition to ordinary left-to-right addition changed
+the compiler fingerprint. Changing 1,454 alternatives to 1,453 did too.
+
+This is useful evidence, not infinite proof. It establishes that one generator
+works across small, boundary, and public-model sizes. A brand-new CPU math
+library or expression type still needs its own reviewed policy and test.
+
+## 155. The other Phase 42 idea: stop rebuilding giant tables
+
+The arithmetic kernel was no longer the only cost. ActivitySim visits trip
+destination three times: roughly first stops, second stops, and third stops.
+For each visit it handles ten trip purposes. Older code repeatedly built a
+large outbound-plus-inbound pandas table even though most columns repeated.
+
+Phase 42 passes a compact view instead: one base sampled table plus two small
+coordinate arrays. Before CUDA uses it, the code checks that the stable trip
+information really is stable, that each directional row has exactly three
+controlled random draws, and that equivalent directional states have the same
+draws. Only the small representative state is then packed for the GPU.
+
+Think of sending one class roster plus two seating charts instead of printing
+the entire roster again for every seating arrangement.
+
+## 156. What does “compile once and reuse” mean here?
+
+There are ten purpose models, and the same ten models are used in each of the
+three trip-number passes. In every final Phase 42 run we observed:
+
+| Item | Built on first pass | Reused later | Total uses |
+|---|---:|---:|---:|
+| purpose/logsum contract | 10 | 20 | 30 |
+| strict expression document | 10 | 20 | 30 |
+| native CUDA ABI source | 10 | 20 | 30 |
+| final simulation specification | 10 | 20 | 30 |
+| compact directional bundle | - | - | 30 |
+
+The cache stores instructions and compiled structure, not travelers' answers.
+Trips, probabilities, destinations, and random draws are still calculated for
+the current run. ActivitySim still owns and advances its keyed random-number
+ledger, which is essential for replication.
+
+## 157. What did the complete public benchmark prove?
+
+We ran three new pairs. Every pair started Phase 41 and Phase 42 in fresh
+processes and completed all 34 ActivitySim steps for 50,000 households and
+1,454 zones. The trip workload contained 91,524 trip rows and 2,094,156
+retained destination-sample rows.
+
+Every Phase 42 report passed its runtime gates. Three separate output
+verifiers found:
+
+- zero changed modeled decision cells;
+- zero changed modeled decision rows;
+- zero `destination_logsum` difference; and
+- zero `mode_choice_logsum` difference.
+
+Phase 42 was faster in all three matched pairs, not only in the middle result.
+That matters because whole-model timings naturally move by a few tenths of a
+second as the operating system and storage do other work.
+
+## 158. How much faster is Phase 42?
+
+| Complete public benchmark | Phase 41 | Phase 42 | Result |
+|---|---:|---:|---:|
+| middle `trip_destination` time | 14.9 s | 10.7 s | 4.2 s saved; 1.393x |
+| middle whole-model time | 156.7 s | 151.8 s | 4.9 s saved; 1.032x |
+| matched pairs won | - | 3 of 3 | promoted |
+| changed decision cells | - | 0 in every pair | exact |
+
+The trip component used 28.19% less time. The complete model used 3.13% less
+time because trip destination is only one part of 34 steps. In context, the
+latest 151.8-second model is about 1.36 times faster than the older regular
+ActivitySim median of 206.6 seconds. The latest 10.7-second trip destination is
+about 3.83 times faster than the older 41.0-second regular result. Those larger
+ratios describe the accumulated project, not Phase 42 alone.
+
+## 159. Where does the remaining trip time go?
+
+The code directly measured the middle Phase 42 trip boundary:
+
+| Work inside trip destination | Middle time |
+|---|---:|
+| full-zone GPU sampling | 1.674 s |
+| prepare compact inputs | 1.540 s |
+| run remaining preprocessor work | 1.045 s |
+| calculate trip mode logsums | 3.165 s |
+| make final sampled-destination choices | 1.812 s |
+| complete measured boundary | 9.312 s |
+
+ActivitySim's outer component timer reads 10.7 seconds because it includes
+framework work around this measured boundary. The table tells us why another
+tiny kernel is unlikely to transform the whole model: the remaining time is
+spread across preparation, preprocessing, logsums, final simulation, Python
+orchestration, and other model components.
+
+## 160. Did Phase 42 meet every goal, and what comes next?
+
+No. We set ambitious stretch goals of trip destination below 8 seconds and the
+whole model below 150 seconds. The qualified medians are 10.7 and 151.8
+seconds, so both stretch-goal flags remain false. We did not lower the goals
+after seeing the result. Phase 42 is still a successful promotion because it
+won all three pairs, preserved exact results, made the target component 28%
+faster, and converted a special arithmetic trick into reusable infrastructure.
+
+The next large phase should use the shared expression IR to compile the sparse
+final-simulation and preprocessor work, retain selected probabilities and
+logsums on the GPU, and replace more pandas group/merge work with compact
+indexed arrays. The measured targets are about 1.045 seconds of preprocessing,
+1.812 seconds of final simulation, and parts of 1.540 seconds of preparation.
+
+Success must still mean more than a fast stopwatch. The next phase needs fresh
+matched whole-model pairs, one fingerprinted policy per compiled program,
+fail-closed handling of unsupported expressions, ActivitySim-owned random
+draws, and independent exact comparison of every substantive output. That is
+how this grows toward an upstream Sharrow GPU backend without trading away
+trust.

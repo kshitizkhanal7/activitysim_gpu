@@ -1,5 +1,6 @@
 import numba as nb
 import numpy as np
+import pytest
 
 from choiceforge.arithmetic_abi import (
     NUMPY_FLOAT32_CHOICE_ABI_SHA256,
@@ -9,6 +10,12 @@ from choiceforge.arithmetic_abi import (
     sharrow15_cpu_reduce,
     sharrow15_cuda_reduction,
     numpy_float32_choice_cuda_helpers,
+    Float32ProbabilityPolicy,
+    Float32ReductionPolicy,
+    NumericPolicyCompiler,
+    grouped_left_reduction,
+    ordered_left_reduction,
+    reduce_float32,
 )
 
 
@@ -54,3 +61,53 @@ def test_numpy_float32_choice_codegen_is_versioned_and_fixed_shape():
     assert source.count("const float leaf_") == 16
     assert "numpy_pairwise_exp_sum_1454" in source
     assert "fmaf(quadrant, -6.93145752e-1f, value)" in source
+
+
+@pytest.mark.parametrize("term_count", [1, 3, 4, 5, 15, 16, 31])
+def test_general_reduction_compiler_matches_its_declared_schedule(term_count):
+    rng = np.random.default_rng(420000 + term_count)
+    features = rng.normal(size=(37, term_count)).astype(np.float32)
+    coefficients = rng.normal(size=term_count).astype(np.float32)
+    policy = grouped_left_reduction(term_count)
+    actual = reduce_float32(features, coefficients, policy)
+    expected = []
+    for row in features:
+        total = np.float32(0)
+        for group in policy.groups:
+            partial = np.float32(0)
+            for position in group:
+                partial = np.float32(
+                    partial + np.float32(row[position] * coefficients[position])
+                )
+            total = np.float32(total + partial)
+        expected.append(total)
+    assert np.array_equal(actual.view(np.uint32), np.asarray(expected).view(np.uint32))
+
+
+def test_policy_hash_changes_for_semantic_mutations():
+    grouped = grouped_left_reduction(15)
+    ordered = ordered_left_reduction(15)
+    assert grouped.sha256 != ordered.sha256
+    compiler = NumericPolicyCompiler(grouped, Float32ProbabilityPolicy(1454))
+    changed_alternatives = NumericPolicyCompiler(
+        grouped, Float32ProbabilityPolicy(1453)
+    )
+    assert compiler.abi_sha256 != changed_alternatives.abi_sha256
+
+
+def test_general_probability_codegen_supports_changed_alternative_counts():
+    for alternatives in (1, 7, 8, 129, 1453, 1454):
+        source = numpy_float32_choice_cuda_helpers(alternatives)
+        assert f"numpy_pairwise_exp_sum_{alternatives}" in source
+        assert "if (count < 8)" in source
+
+
+def test_general_compiler_fails_closed_on_invalid_policies_and_shapes():
+    with pytest.raises(ValueError, match="cover every term"):
+        Float32ReductionPolicy(3, ((0, 2),), "grouped-left")
+    with pytest.raises(ValueError, match="one term per group"):
+        Float32ReductionPolicy(2, ((0, 1),), "ordered-left")
+    with pytest.raises(ValueError, match="at least one alternative"):
+        Float32ProbabilityPolicy(0)
+    with pytest.raises(ValueError, match="shape"):
+        reduce_float32(np.ones((2, 4)), np.ones(3), grouped_left_reduction(3))
