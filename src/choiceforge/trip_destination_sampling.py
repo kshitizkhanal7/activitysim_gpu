@@ -339,6 +339,8 @@ def _gpu_utilities(
     skim_hotel,
     spec,
     constants,
+    *,
+    device_only=False,
 ):
     cp = _cupy()
     coefficients, fingerprint = _specification_contract(spec)
@@ -418,6 +420,15 @@ def _gpu_utilities(
     )
     cp.cuda.Stream.null.synchronize()
     completed = time.perf_counter()
+    if device_only:
+        return utilities, utility_error_bounds, fingerprint, {
+            "prepared": prepared,
+            "uploaded": uploaded,
+            "completed": completed,
+            "downloaded": completed,
+            "utility_host_bytes": 0,
+            "first_debug": None,
+        }
     host = cp.asnumpy(utilities)
     host_error_bounds = cp.asnumpy(utility_error_bounds)
     downloaded = time.perf_counter()

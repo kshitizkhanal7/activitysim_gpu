@@ -4980,3 +4980,168 @@ utility during qualification; prove the random ledger and all final decisions;
 measure GPU memory and occupancy; and win at least three fresh matched
 Phase 38/candidate runs. Only that larger device-resident boundary has a
 credible path from a fast kernel to a meaningfully faster travel model.
+
+## 138. Phase 40: keep the whole destination sampler on the GPU
+
+Phase 39 sent the giant score sheet back to the CPU. Phase 40 stops doing that.
+The GPU now keeps all 133,075,896 trip-and-zone scores in its own memory while
+it performs the next three jobs:
+
+1. turn scores into probabilities;
+2. place ActivitySim's controlled random numbers on the probability line and
+   select 30 possible destinations for each trip; and
+3. combine repeated selections of the same destination.
+
+ActivitySim still creates the random numbers. This matters because its random
+system is like a carefully labeled deck of cards: every household, person,
+tour, and trip must receive the same card in every reproducible run. Phase 40
+uploads those exact cards to the GPU instead of inventing a new random stream.
+
+The GPU returns the small list of selected destinations, their probabilities,
+and duplicate counts. It does not return the enormous table of every score and
+every error range.
+
+## 139. What does "device resident" mean?
+
+The GPU is often called a device, and ordinary computer memory is called host
+memory. "Device resident" means data stays in GPU memory while several related
+operations use it.
+
+Imagine cooking in one kitchen but carrying every ingredient across the street
+between each recipe step. Even if the stove is extremely fast, the walking can
+erase the advantage. Phase 39 did the computer version of that: it calculated
+scores on the GPU and carried about 532 megabytes of scores back to the CPU.
+
+Phase 40 keeps the ingredients beside the GPU stove. Because it also keeps the
+error table there, it avoids 1,064,607,168 bytes of dense downloads - a little
+over one billion bytes. It downloads about 36.2 megabytes of compact results
+instead. The random-number upload is about 22.0 megabytes.
+
+## 140. How does probability sampling work here?
+
+Each destination has a utility score. A larger score means the destination is
+more attractive under the model's rules. The sampler exponentiates the scores
+and divides each result by the total:
+
+`probability = exp(utility) / sum of exp(all utilities)`
+
+The probabilities form adjacent sections of a line from zero toward one. A
+controlled random draw lands somewhere on that line, and the section containing
+the draw identifies the chosen zone. This is inverse cumulative distribution
+sampling. Phase 40 sorts each trip's 30 draws for an efficient walk across the
+1,454 zones, then restores the original draw order exactly as ActivitySim does.
+
+The same destination can be drawn several times. ActivitySim keeps its first
+appearance and records how many times it was picked. A second CUDA kernel now
+performs that duplicate-counting rule.
+
+## 141. Why does Phase 40 still need an exact checker?
+
+GPU and CPU programs can round the same decimal calculation in slightly
+different ways. Most tiny differences do nothing. A difference matters when a
+random draw is very close to the boundary between two destinations.
+
+Phase 40 surrounds every GPU utility with a conservative error range. It asks
+whether each draw selects the same zone for every value inside those ranges. A
+row that cannot prove this goes to a small exact evaluator that copies
+Sharrow's 15-number dot-product shape and arithmetic rules. Phase 39 had already
+compared this evaluator with live Sharrow and found every guarded utility bit
+for bit identical.
+
+There is a second subtlety. The chosen zone can stay the same while its reported
+probability changes slightly. ActivitySim later uses the logarithm of that
+probability in a diagnostic called `destination_logsum`. Phase 40 therefore
+also calculates a safe selected-probability risk. Rows above `0.00009` use the
+exact evaluator even when their selected zone is stable.
+
+## 142. What went wrong during development, and how was it fixed?
+
+The first full Phase 40 attempt selected every destination correctly, but one
+trip's `destination_logsum` differed by `0.000238`. Our allowed difference is
+`0.0001`, so the run failed. This is why checking final outputs matters.
+
+One attempted fix used an extremely strict probability rule. It made every
+published file byte identical, but it sent 91,518 of 91,524 chooser rows back
+to exact CPU arithmetic. The trip-destination step grew to 75.2 seconds. We
+rejected it.
+
+A much looser CDF range reduced the guard to 5,951 rows and the sampling work to
+7.05 seconds, but another diagnostic outlier appeared at `0.000213`. A rule for
+same-zone work samples fixed the output but guarded 23,185 rows and became
+slower. We rejected both variants too.
+
+The final rule combines the conservative choice-boundary proof with the
+`0.00009` selected-probability risk. It exact-checks 13,607 rows, or 14.87% of
+the workload. This is a useful lesson: the fastest-looking internal experiment
+is not the winner unless the complete model still meets its accuracy promise.
+
+## 143. What did the final full run prove?
+
+| Question | Result |
+|---|---:|
+| Did all 34 ActivitySim steps finish? | yes |
+| How many destination-sampling GPU programs ran? | 30 |
+| How many trip chooser rows were covered? | 91,524 |
+| How many trip-and-zone scores were evaluated? | 133,075,896 |
+| How many controlled random draws were preserved? | 2,745,720 |
+| How many utility bytes returned to the CPU? | 0 |
+| How many dense download bytes were avoided? | 1,064,607,168 |
+| How many rows needed exact arithmetic? | 13,607 (14.87%) |
+| How many fallback calls occurred? | 0 |
+| How many modeled decision cells changed? | 0 |
+| Largest destination-logsum difference | 0.000012 |
+| Allowed destination-logsum difference | 0.0001 |
+| Mode-choice-logsum difference | 0 |
+
+Six final files unrelated to trip diagnostics were byte-for-byte identical.
+The remaining diagnostic difference was 8.3 times smaller than the allowed
+limit. The clean run passed every proof gate.
+
+## 144. Was Phase 40 faster?
+
+There are two honest answers because there are two comparisons.
+
+Against the already GPU-accelerated Phase 38 runtime, no. In one fresh matched
+pair, Phase 38 took 162.8 seconds for all model steps and the Phase 40 candidate
+took 169.0 seconds. The trip-destination step took 19.0 versus 24.4 seconds. The final code later
+recorded 165.0 seconds overall and 23.0 seconds for trip destination, but that
+was not another alternating pair. Phase 38 therefore remains the version to use
+when the only goal is the lowest measured time.
+
+Against the regular pinned ActivitySim CPU baseline already measured in three
+pairs, the whole GPU project is still substantially faster. The CPU middle
+result was 206.6 seconds overall and 41.0 seconds for trip destination. Compared
+descriptively with the final Phase 40 run, that is about 1.25 times faster for
+the whole model and 1.78 times faster for trip destination. Those gains belong
+to all the GPU phases together, not to Phase 40 alone.
+
+## 145. Why is Phase 40 still a major result if it did not beat Phase 38?
+
+It proves that the whole full-zone sampler can live on the GPU without changing
+modeled decisions. More than one billion bytes of unnecessary dense movement
+are gone. The random ledger, probability order, duplicate rules, and complete
+model outputs remain under explicit tests.
+
+It also identifies the remaining obstacle precisely. The GPU utility, choice,
+and duplicate kernels together take only about 2.44 seconds. Exact arithmetic
+for the 13,607 guarded rows takes about 7.33 seconds. Transfer is no longer the
+main problem; identical CPU/GPU arithmetic is.
+
+## 146. What should the next generation build?
+
+The next project should give Sharrow and CUDA one shared arithmetic language.
+A dedicated expression compiler could specify the data type, multiplication,
+addition order, exponential, probability sum, and boundary comparison once,
+then generate both CPU and GPU programs. An upstream Sharrow GPU backend could
+provide the same guarantee inside Sharrow itself.
+
+If ordinary CUDA rows become bit-identical to the CPU authority, the 7.33-second
+exact guard can disappear. That is the clearest remaining route to making the
+device-resident architecture faster than Phase 38, not merely smaller and more
+GPU-native.
+
+The promotion test must remain strict: altered people, land use, coefficients,
+skims, and random draws; complete output comparison; zero fallback; bounded
+diagnostics; and at least three fresh alternating Phase 38/candidate pairs that
+the candidate wins. Phase 40 gives that future compiler a proven resident
+sampler to plug into.

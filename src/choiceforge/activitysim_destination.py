@@ -1559,7 +1559,23 @@ def choose_trip_destinations_batched(
     ):
         purpose_trace = tracing.extend_trace_label(trace_label, purpose)
         stage_started = time.perf_counter()
-        if os.environ.get("CHOICEFORGE_PHASE39_CUDA_TRIP_SAMPLING", "0") == "1":
+        if os.environ.get("CHOICEFORGE_PHASE40_RESIDENT_TRIP_SAMPLING", "0") == "1":
+            from choiceforge.trip_destination_resident import (
+                sample_trip_destinations_resident,
+            )
+
+            destination_sample = sample_trip_destinations_resident(
+                state,
+                primary_purpose=purpose,
+                trips=trips_segment,
+                alternatives=alternatives,
+                model_settings=model_settings,
+                size_term_matrix=size_term_matrix,
+                skim_hotel=skim_hotel,
+                estimator=estimator,
+                trace_label=purpose_trace,
+            )
+        elif os.environ.get("CHOICEFORGE_PHASE39_CUDA_TRIP_SAMPLING", "0") == "1":
             from choiceforge.trip_destination_sampling import (
                 sample_trip_destinations_cuda,
             )

@@ -3,7 +3,7 @@ param(
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
     [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39)][int]$CandidatePhase = 32,
+    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -180,6 +180,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($CandidatePhase -eq 37) { $candidateArguments += "--phase37-fused-trip-utility" }
         if ($CandidatePhase -eq 38) { $candidateArguments += "--phase38-normalized-trip-state" }
         if ($CandidatePhase -eq 39) { $candidateArguments += "--phase39-cuda-trip-sampling" }
+        if ($CandidatePhase -eq 40) { $candidateArguments += "--phase40-resident-trip-sampling" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -259,7 +260,7 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         "non_mandatory_tour_destination" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
         "non_mandatory_tour_scheduling" { if ($CandidatePhase -ge 33) { "Phase33 scheduling GPU retained" } else { "not directly GPU-targeted" } }
         "tour_mode_choice_simulate" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
-        "trip_destination" { if ($CandidatePhase -ge 39) { "Phase39 CUDA sampling utility plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
+        "trip_destination" { if ($CandidatePhase -ge 40) { "Phase40 resident CUDA sampling plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 39) { "Phase39 CUDA sampling utility plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
         "trip_scheduling" { if ($CandidatePhase -ge 35) { "Phase35 persistent GPU probability service" } else { "not directly GPU-targeted" } }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }

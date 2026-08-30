@@ -100,6 +100,14 @@ def main() -> int:
             "destination sampling utility while retaining ActivitySim probability/RNG semantics"
         ),
     )
+    parser.add_argument(
+        "--phase40-resident-trip-sampling",
+        action="store_true",
+        help=(
+            "extend Phase 38 with device-resident full-zone utility, probability, "
+            "inverse-CDF, and duplicate sampling plus sparse exact adjudication"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -174,6 +182,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase40_resident_trip_sampling:
+        args.phase38_normalized_trip_state = True
+        os.environ["CHOICEFORGE_PHASE40_RESIDENT_TRIP_SAMPLING"] = "1"
     if args.phase39_cuda_trip_sampling:
         args.phase38_normalized_trip_state = True
         os.environ["CHOICEFORGE_PHASE39_CUDA_TRIP_SAMPLING"] = "1"
@@ -1901,6 +1912,7 @@ def main() -> int:
     phase35_trip = None
     phase35_trip_destination = None
     phase39_sampling = None
+    phase40_sampling = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1911,8 +1923,13 @@ def main() -> int:
         from choiceforge.trip_destination_sampling import phase39_sampling_telemetry
 
         phase39_sampling = phase39_sampling_telemetry()
+    if args.phase40_resident_trip_sampling:
+        from choiceforge.trip_destination_resident import phase40_sampling_telemetry
+
+        phase40_sampling = phase40_sampling_telemetry()
     report = {
         "phase": (
+            40 if args.phase40_resident_trip_sampling else
             39 if args.phase39_cuda_trip_sampling else
             38 if args.phase38_normalized_trip_state else
             37 if args.phase37_fused_trip_utility else
@@ -1923,6 +1940,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with resident CUDA trip-destination "
+            "utility, probability, preserved-order inverse-CDF, duplicate counting, "
+            "compact result transfer, and sparse exact Sharrow adjudication"
+            if args.phase40_resident_trip_sampling else
             "full public ActivitySim model with CUDA trip-destination sampling "
             "utility generation over the complete alternative universe, retained "
             "ActivitySim probability/random semantics, and Phase 38 normalized logsums"
@@ -2002,6 +2023,7 @@ def main() -> int:
         "phase35_trip_scheduling": phase35_trip,
         "phase35_trip_destination_stages": phase35_trip_destination,
         "phase39_trip_destination_sampling": phase39_sampling,
+        "phase40_trip_destination_sampling": phase40_sampling,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2192,6 +2214,69 @@ def main() -> int:
                     == 1_454 * sum(
                         item.get("arithmetic_guard_rows", 0) for item in sampling_events
                     )
+                ),
+            }
+        )
+    if args.phase40_resident_trip_sampling:
+        resident_sampling = phase40_sampling or []
+        phase40_guard_rows = sum(
+            item.get("arithmetic_guard_rows", 0) for item in resident_sampling
+        )
+        report["proof_gates"].update(
+            {
+                "phase40_all_30_sampling_programs_use_resident_cuda": (
+                    len(resident_sampling) == 30
+                    and all(
+                        item.get("backend")
+                        == "phase40_resident_cuda_sampling_with_sparse_sharrow_guard"
+                        for item in resident_sampling
+                    )
+                ),
+                "phase40_all_91524_trip_choosers_covered": (
+                    sum(item.get("chooser_rows", 0) for item in resident_sampling)
+                    == 91_524
+                ),
+                "phase40_complete_1454_zone_universe_used": (
+                    len(resident_sampling) == 30
+                    and all(item.get("alternatives") == 1_454 for item in resident_sampling)
+                ),
+                "phase40_all_133075896_utility_cells_stay_device_resident": (
+                    sum(item.get("utility_cells", 0) for item in resident_sampling)
+                    == 133_075_896
+                    and sum(item.get("utility_host_bytes", -1) for item in resident_sampling)
+                    == 0
+                ),
+                "phase40_eliminates_dense_utility_and_bound_downloads": (
+                    sum(
+                        item.get("dense_utility_download_bytes_avoided", 0)
+                        for item in resident_sampling
+                    ) == 1_064_607_168
+                ),
+                "phase40_activitysim_keyed_random_draw_contract_retained": (
+                    sum(item.get("random_draws", 0) for item in resident_sampling)
+                    == 2_745_720
+                ),
+                "phase40_sampled_rows_match_public_workload": (
+                    sum(item.get("sampled_rows", 0) for item in resident_sampling)
+                    == 2_094_156
+                ),
+                "phase40_precision_guard_is_sparse_and_complete": (
+                    0 < phase40_guard_rows < 0.25 * 91_524
+                    and sum(
+                        item.get("arithmetic_guard_cells", 0)
+                        for item in resident_sampling
+                    ) == 1_454 * phase40_guard_rows
+                ),
+                "phase40_sampling_has_zero_fallback": (
+                    len(resident_sampling) == 30
+                    and sum(item.get("fallback_calls", 0) for item in resident_sampling) == 0
+                ),
+                "phase40_reviewed_specification_is_stable": (
+                    len(resident_sampling) == 30
+                    and len({
+                        item.get("specification_sha256") for item in resident_sampling
+                    }) == 10
+                    and all(item.get("contract_valid", False) for item in resident_sampling)
                 ),
             }
         )

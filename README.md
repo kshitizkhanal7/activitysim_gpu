@@ -806,3 +806,32 @@ See the [Phase 39 technical report](docs/phase39-cuda-trip-sampling.md), the
 and its per-pair exact verifications. The next credible step is a canonical
 Sharrow/CUDA arithmetic ABI plus a device-resident sampler that keeps utilities
 on the GPU through softmax, controlled selection, and duplicate collapse.
+
+## Phase 40 device-resident trip-destination sampler
+
+Phase 40 implements that larger boundary. Across the complete public
+50,000-household run, CUDA retained all 133,075,896 full-zone utilities through
+probability normalization, preserved-order inverse-CDF selection, and duplicate
+counting. ActivitySim supplied 2,745,720 keyed random draws, while the host
+received only compact sample results. The path returned zero utility bytes and
+avoided 1,064,607,168 bytes of dense utility/error-bound downloads.
+
+A conservative CDF proof plus a selected-probability risk guard sent 13,607 of
+91,524 chooser rows (14.87%) to the cached exact Sharrow arithmetic ABI with the
+same draws. Independent verification found zero changed decision cells; six
+non-trip CSVs were byte-identical, maximum `destination_logsum` error was
+`0.000012` against a `0.0001` gate, and mode-logsum error was zero. Every full-
+model proof gate passed and fallback remained zero.
+
+This is a residency and replication success, not an incremental speed
+promotion. A fresh matched Phase 38/40 pair measured 162.8 versus 169.0 seconds
+for all model steps and 19.0 versus 24.4 seconds for `trip_destination`. The
+final cached-oracle run improved to 165.0 and 23.0 seconds, while the exact guard
+still consumed 7.329 seconds. Phase 38 remains the fastest promoted runtime.
+Compared descriptively with the existing regular ActivitySim median, the full
+GPU project is 1.25x faster overall and 1.78x faster on `trip_destination`.
+
+See the [Phase 40 technical report](docs/phase40-device-resident-sampling.md),
+the [clean full-run proof](benchmark-results/phase40-p40final1-gpu.json), the
+[independent output verification](benchmark-results/phase40-p40final1-exact.json),
+and the [fresh matched pair](benchmark-results/phase40-p40resident2-summary.json).
