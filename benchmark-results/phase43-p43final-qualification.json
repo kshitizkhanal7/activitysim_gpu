@@ -1,0 +1,91 @@
+{
+  "phase": 43,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "matched_pairs": 3,
+  "trip_rows": 91524,
+  "sampled_destination_rows": 2094156,
+  "expanded_directional_draw_rows_avoided": 4005264,
+  "activitysim_rng_calls": 9,
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "destination_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "mode_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "direct_trip_boundary_seconds": {
+    "phase42": [
+      9.481063599698246,
+      9.261496599763632,
+      9.199717999901623
+    ],
+    "phase43": [
+      8.641540199983865,
+      8.526426599826664,
+      8.377558199921623
+    ],
+    "median_phase42": 9.261496599763632,
+    "median_phase43": 8.526426599826664,
+    "median_speedup": 1.0862107931535951
+  },
+  "final_simulation_seconds": {
+    "phase42": [
+      1.8086790996603668,
+      1.8171432001981884,
+      1.8259806998539716
+    ],
+    "phase43": [
+      1.158456299919635,
+      1.1518997997045517,
+      1.1492022997699678
+    ],
+    "median_phase42": 1.8171432001981884,
+    "median_phase43": 1.1518997997045517,
+    "median_speedup": 1.577518461817828,
+    "phase43_choice_seconds": [
+      0.046271999133750796,
+      0.04631649982184172,
+      0.046388899674639106
+    ]
+  },
+  "median_trip_destination_component": {
+    "model_name": "trip_destination",
+    "gpu_role": "Phase43 unique-trip controlled random state plus Phase42 compiler",
+    "median_baseline_seconds": 10.6,
+    "median_candidate_seconds": 9.9,
+    "median_seconds_saved": 0.6999999999999993,
+    "median_reduction_percent": 6.603773584905654,
+    "median_speedup": 1.0707070707070707
+  },
+  "complete_model": {
+    "median_phase42_seconds": 152.4,
+    "median_phase43_seconds": 152.1,
+    "median_seconds_saved": 0.30000000000001137,
+    "median_speedup": 1.0019723865877712,
+    "candidate_won_every_pair": false,
+    "interpretation": "The phase-specific trip boundary wins all three pairs; whole-model pair noise is larger than this sub-second optimization."
+  },
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "all_compact_packets_cover_exact_public_workload": true,
+    "all_thirty_final_choice_calls_consume_compact_draws": true,
+    "three_independent_output_verifiers_are_byte_exact": true,
+    "direct_trip_boundary_improves_in_every_pair": true,
+    "final_simulation_boundary_improves_in_every_pair": true,
+    "median_public_trip_destination_component_improves": true,
+    "median_complete_model_does_not_regress": true,
+    "summary_declares_every_pair_exact": true,
+    "summary_declares_every_target_component_pair_won": true
+  },
+  "success": true
+}

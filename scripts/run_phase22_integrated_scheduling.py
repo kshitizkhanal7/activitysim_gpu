@@ -124,6 +124,14 @@ def main() -> int:
             "and compact/cache the repeated native trip-logsum boundaries"
         ),
     )
+    parser.add_argument(
+        "--phase43-compact-trip-state",
+        action="store_true",
+        help=(
+            "extend Phase 42 with unique-trip controlled draws and a compact "
+            "directional random-state ABI"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -198,6 +206,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase43_compact_trip_state:
+        args.phase42_numeric_compiler = True
+        os.environ["CHOICEFORGE_PHASE43_COMPACT_TRIP_STATE"] = "1"
     if args.phase42_numeric_compiler:
         args.phase41_exact_trip_sampling = True
         os.environ["CHOICEFORGE_PHASE42_NUMERIC_COMPILER"] = "1"
@@ -1938,6 +1949,7 @@ def main() -> int:
     phase40_sampling = None
     phase41_sampling = None
     phase42_compiler = None
+    phase43_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1960,8 +1972,13 @@ def main() -> int:
         from choiceforge.activitysim_destination import phase42_compiler_telemetry
 
         phase42_compiler = phase42_compiler_telemetry()
+    if args.phase43_compact_trip_state:
+        from choiceforge.activitysim_destination import phase43_runtime_telemetry
+
+        phase43_runtime = phase43_runtime_telemetry()
     report = {
         "phase": (
+            43 if args.phase43_compact_trip_state else
             42 if args.phase42_numeric_compiler else
             41 if args.phase41_exact_trip_sampling else
             40 if args.phase40_resident_trip_sampling else
@@ -1975,6 +1992,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with unique-trip controlled random "
+            "state feeding the Phase 42 compiled resident runtime"
+            if args.phase43_compact_trip_state else
             "full public ActivitySim model with a generalized versioned numeric-policy "
             "compiler and compact cached trip-logsum boundaries"
             if args.phase42_numeric_compiler else
@@ -2067,6 +2087,7 @@ def main() -> int:
         "phase40_trip_destination_sampling": phase40_sampling,
         "phase41_trip_destination_sampling": phase41_sampling,
         "phase42_numeric_compiler": phase42_compiler,
+        "phase43_compact_trip_state": phase43_runtime,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2346,6 +2367,26 @@ def main() -> int:
                     len(native_events) == 30
                     and sum(bool(item.get("strict_ir_cache_hit")) for item in native_events)
                     == 20
+                ),
+            }
+        )
+    if args.phase43_compact_trip_state:
+        compact = phase43_runtime or {}
+        report["proof_gates"].update(
+            {
+                "phase43_compact_draw_rows_match_complete_directional_workload": (
+                    compact.get("compact_draw_rows") == 183_048
+                    and compact.get("normal_draws_per_row") == 3
+                ),
+                "phase43_avoids_all_repeated_sample_draw_rows": (
+                    compact.get("expanded_draw_rows_avoided") == 4_005_264
+                ),
+                "phase43_batches_all_random_state_into_nine_activitysim_rng_calls": (
+                    compact.get("rng_calls") == 9
+                ),
+                "phase43_final_choice_draws_cover_every_trip_exactly_once": (
+                    compact.get("choice_draw_rows") == 91_524
+                    and compact.get("choice_draws_consumed") == 91_524
                 ),
             }
         )

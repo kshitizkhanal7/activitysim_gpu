@@ -5411,3 +5411,113 @@ fail-closed handling of unsupported expressions, ActivitySim-owned random
 draws, and independent exact comparison of every substantive output. That is
 how this grows toward an upstream Sharrow GPU backend without trading away
 trust.
+
+## 161. Phase 43 starts by measuring the last choice step
+
+After Phase 42, we did not guess which little piece to accelerate. We timed the
+final step that chooses one sampled destination for each trip. It took about
+1.83 seconds. Roughly 0.58 seconds calculated how attractive destinations
+were, but 0.72 seconds was spent asking ActivitySim for keyed random numbers
+and turning them into choices. Probability math itself took only 0.02 seconds.
+
+A keyed random number is like a reproducible raffle ticket attached to one
+trip ID. If we run the same model again, that trip receives the same sequence
+of tickets. This is essential: without it, a faster program could make
+different choices merely because it asked for random numbers in a different
+order.
+
+## 162. Why millions of sample rows did not need millions of tickets
+
+The benchmark has 91,524 intermediate trips. The destination sampler keeps
+2,094,156 possible destination rows because each trip can have many options.
+The three wait-time disturbances and final choice ticket belong to the trip,
+not separately to every possible destination.
+
+ActivitySim safely expanded trip-level random values over all those option
+rows. That is convenient for general pandas code, but our compact GPU runtime
+already knows which options belong to each trip. Phase 43 therefore asks
+ActivitySim for random state on unique trips and keeps it compact. Across the
+complete run it:
+
+- keeps 183,048 directional trip rows for outbound and destination-to-end
+  directions;
+- avoids 4,005,264 repeated directional option rows;
+- creates one final choice ticket for each of 91,524 trips; and
+- replaces 66 small purpose-level requests with nine trip-batch requests.
+
+ActivitySim still owns the generator and seeds. We changed the shape of the
+request, not the values or meaning of the raffle tickets.
+
+## 163. How can batching random requests give identical answers?
+
+Inside one trip-number pass, each trip belongs to exactly one purpose, such as
+work, school, shopping, or escort. Phase 43 first proves that option rows are
+contiguous, trip order matches, and no trip ID appears in two purpose groups.
+Only then may it combine the ten groups.
+
+For each of three trip-number passes, it asks for outbound normals,
+destination-to-end normals, and final uniform choice tickets. That is three
+requests per pass and nine total. Because ActivitySim's ledger is keyed by trip
+ID, one combined request advances the same per-trip channel as the trip's one
+original purpose request. If these assumptions fail, the compact path stops
+instead of guessing.
+
+The final-choice adapter also keeps ActivitySim's probability checks, error
+handling, exact `choice_maker` function, table indexes, and output types. It
+only supplies the ticket that ActivitySim already generated. A mismatched
+index immediately uses the original path.
+
+## 164. What did Phase 43 achieve?
+
+| Measured work | Phase 42 | Phase 43 | Result |
+|---|---:|---:|---:|
+| final destination simulation | 1.817 s | 1.152 s | 1.578x faster |
+| complete measured trip boundary | 9.261 s | 8.526 s | 1.086x faster |
+| ActivitySim `trip_destination` component | 10.6 s | 9.9 s | 1.071x faster |
+| all 34 model steps | 152.4 s | 152.1 s | 1.002x; within noise |
+
+We ran three fresh Phase 42/43 pairs. The measured trip boundary was faster in
+all three, and final simulation was faster in all three. In every pair, all
+seven final tables were byte-for-byte identical. There were zero changed
+decision cells and zero destination- or mode-logsum differences. The full
+test suite passed 179 tests.
+
+The whole model did not show a strong new speedup: one pair was faster overall
+and two were slower because unrelated steps varied by more than 0.7 seconds.
+The median moved by only 0.3 seconds. So the honest claim is a replicated 6.6%
+trip-destination component improvement, not proof that the entire model is now
+meaningfully faster.
+
+## 165. Does Phase 43 add a new GPU kernel?
+
+Not by itself. Earlier phases put sampling, logsums, scheduling, and other
+heavy math on the GPU. Phase 43 makes that GPU runtime better by removing
+redundant CPU table expansion and random-manager calls at its boundary. This
+matters because a fast GPU kernel can still be hidden behind slow preparation,
+copying, and orchestration.
+
+This distinction is important when reading performance claims. The 1.578x
+final-simulation improvement comes from compact exact orchestration around the
+GPU-resident pipeline, not from pretending a CPU operation is a GPU kernel.
+
+## 166. What remains for the next ambitious phase?
+
+About 0.58 seconds still evaluates the 14 sparse final destination utility
+terms. More time constructs joined interaction tables, groups options by trip,
+pads different-length option lists into rectangles, and maps a selected
+position back to a destination.
+
+The next large project should compile those 14 terms from the same shared
+expression language, represent each trip's options with compact start/end
+offsets, and fuse utility, exact probabilities, and selection without giant
+pandas tables. It should first run in shadow mode beside ActivitySim, compare
+every utility and choice, fingerprint its arithmetic rules, and reject unknown
+expressions. Only after exact shadow results should it become authoritative
+and repeat three matched complete-model runs.
+
+That could remove most of the remaining 1.15-second final simulation and part
+of preparation. It cannot by itself transform a 152-second model, because
+trip destination is now only about 6.5% of total time. A large whole-model dent
+will require applying the compact compiled runtime to several other costly
+components, especially initialization, location choice, tour scheduling, and
+trip mode choice.

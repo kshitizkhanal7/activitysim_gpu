@@ -31,6 +31,11 @@ _PHASE42_CONTRACT_MISSES = 0
 _PHASE42_COMPACT_BUNDLES = 0
 _PHASE42_SIMULATION_SPEC_HITS = 0
 _PHASE42_SIMULATION_SPEC_MISSES = 0
+_PHASE43_COMPACT_DRAW_ROWS = 0
+_PHASE43_EXPANDED_DRAW_ROWS_AVOIDED = 0
+_PHASE43_RNG_CALLS = 0
+_PHASE43_CHOICE_DRAW_ROWS = 0
+_PHASE43_CHOICE_DRAWS_CONSUMED = 0
 
 
 @dataclass(frozen=True)
@@ -41,6 +46,7 @@ class Phase42DirectionalFrame:
     origin: np.ndarray
     destination: np.ndarray
     phase42_compact_directional: bool = True
+    phase43_compact_draws: bool = False
 
     def __len__(self):
         return int(self.origin.size)
@@ -56,6 +62,9 @@ def reset_trip_destination_stage_telemetry():
     """Clear process-local timings for the trip-number batched path."""
     global _PHASE42_CONTRACT_HITS, _PHASE42_CONTRACT_MISSES, _PHASE42_COMPACT_BUNDLES
     global _PHASE42_SIMULATION_SPEC_HITS, _PHASE42_SIMULATION_SPEC_MISSES
+    global _PHASE43_COMPACT_DRAW_ROWS, _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED
+    global _PHASE43_RNG_CALLS, _PHASE43_CHOICE_DRAW_ROWS
+    global _PHASE43_CHOICE_DRAWS_CONSUMED
     _TRIP_DESTINATION_STAGE_TELEMETRY.clear()
     _TRIP_NATIVE_LOGSUM_TELEMETRY.clear()
     _PHASE42_CONTRACT_HITS = 0
@@ -63,6 +72,11 @@ def reset_trip_destination_stage_telemetry():
     _PHASE42_COMPACT_BUNDLES = 0
     _PHASE42_SIMULATION_SPEC_HITS = 0
     _PHASE42_SIMULATION_SPEC_MISSES = 0
+    _PHASE43_COMPACT_DRAW_ROWS = 0
+    _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED = 0
+    _PHASE43_RNG_CALLS = 0
+    _PHASE43_CHOICE_DRAW_ROWS = 0
+    _PHASE43_CHOICE_DRAWS_CONSUMED = 0
 
 
 def clear_trip_native_cube_cache():
@@ -92,6 +106,18 @@ def phase42_compiler_telemetry():
         "simulation_spec_cache_hits": _PHASE42_SIMULATION_SPEC_HITS,
         "simulation_spec_cache_misses": _PHASE42_SIMULATION_SPEC_MISSES,
         "native_codegen_cache": native_codegen_cache_stats(),
+    }
+
+
+def phase43_runtime_telemetry():
+    """Report compact controlled-random state without exposing model values."""
+    return {
+        "compact_draw_rows": _PHASE43_COMPACT_DRAW_ROWS,
+        "expanded_draw_rows_avoided": _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED,
+        "rng_calls": _PHASE43_RNG_CALLS,
+        "normal_draws_per_row": 3,
+        "choice_draw_rows": _PHASE43_CHOICE_DRAW_ROWS,
+        "choice_draws_consumed": _PHASE43_CHOICE_DRAWS_CONSUMED,
     }
 
 
@@ -736,6 +762,87 @@ def _phase42_simulation_spec(original, *args, **kwargs):
     return value
 
 
+def _phase43_compact_draws_for_bundles(
+    state, bundles, draw_count, *, include_choice_draws=False
+):
+    """Generate ActivitySim's OD/DP draws on unique trip rows only.
+
+    ``normal_for_df(..., broadcast=True)`` internally deduplicates the input
+    index, advances each trip channel by ``draw_count``, and then expands the
+    values back to every sampled alternative. The normalized native runtime
+    needs only the pre-expansion state, so Phase 43 supplies that index directly.
+    """
+    global _PHASE43_COMPACT_DRAW_ROWS, _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED
+    global _PHASE43_RNG_CALLS, _PHASE43_CHOICE_DRAW_ROWS
+    indexes = []
+    expanded_rows = 0
+    for bundle in bundles:
+        sample_ids = bundle["destination_sample"].index.to_numpy(copy=False)
+        if sample_ids.size == 0:
+            raise DestinationBatchUnsupported("Phase 43 compact draws require sampled rows")
+        starts = np.flatnonzero(np.r_[True, sample_ids[1:] != sample_ids[:-1]])
+        trip_index = bundle["trips"].index
+        if not np.array_equal(sample_ids[starts], trip_index.to_numpy(copy=False)):
+            raise DestinationBatchUnsupported(
+                "Phase 43 sampled alternatives are not contiguous in chooser order"
+            )
+        indexes.append(trip_index)
+        expanded_rows += 2 * len(bundle["destination_sample"])
+    index_name = indexes[0].name
+    if any(index.name != index_name for index in indexes):
+        raise DestinationBatchUnsupported("Phase 43 chooser index channels differ")
+    unique_index = pd.Index(
+        np.concatenate([index.to_numpy(copy=False) for index in indexes]),
+        name=index_name,
+    )
+    if unique_index.has_duplicates:
+        raise DestinationBatchUnsupported("Phase 43 purpose trip rows overlap")
+    unique_frame = pd.DataFrame(index=unique_index)
+    rng = state.get_rn_generator()
+    directional = [
+        np.asarray(
+            rng.normal_for_df(unique_frame, broadcast=False, size=draw_count),
+            dtype=np.float64,
+        )
+        for _direction in range(2)
+    ]
+    if any(values.shape != (len(unique_frame), draw_count) for values in directional):
+        raise DestinationBatchUnsupported("Phase 43 RNG returned an unexpected shape")
+    choice_draws = None
+    if include_choice_draws:
+        choice_draws = np.asarray(
+            rng.random_for_df(unique_frame), dtype=np.float64
+        ).reshape(-1)
+        if choice_draws.shape != (len(unique_frame),):
+            raise DestinationBatchUnsupported(
+                "Phase 43 choice RNG returned an unexpected shape"
+            )
+        _PHASE43_CHOICE_DRAW_ROWS += len(unique_frame)
+        _PHASE43_RNG_CALLS += 1
+    results = []
+    cursor = 0
+    for index in indexes:
+        stop = cursor + len(index)
+        results.append(np.concatenate((directional[0][cursor:stop], directional[1][cursor:stop])))
+        if choice_draws is not None:
+            bundles[len(results) - 1]["compact_choice_draws"] = choice_draws[
+                cursor:stop
+            ]
+        cursor = stop
+    compact_rows = 2 * len(unique_frame)
+    _PHASE43_COMPACT_DRAW_ROWS += compact_rows
+    _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED += int(expanded_rows - compact_rows)
+    _PHASE43_RNG_CALLS += 2
+    return results
+
+
+def _phase43_compact_directional_draws(state, bundle, draw_count):
+    """Single-bundle adapter retained for focused contract tests."""
+    return _phase43_compact_draws_for_bundles(
+        state, [bundle], draw_count
+    )[0]
+
+
 def _prepare_logsum_bundle(
     state,
     primary_purpose,
@@ -755,6 +862,9 @@ def _prepare_logsum_bundle(
         and os.environ.get(
             "CHOICEFORGE_PHASE35_NATIVE_TRIP_LOGSUM_PRODUCTION", "0"
         ) == "1"
+    )
+    phase43_compact_draws = (
+        os.environ.get("CHOICEFORGE_PHASE43_COMPACT_TRIP_STATE", "0") == "1"
     )
 
     trips_merged = pd.merge(
@@ -830,6 +940,7 @@ def _prepare_logsum_bundle(
             base=choosers,
             origin=combined_origin,
             destination=combined_destination,
+            phase43_compact_draws=phase43_compact_draws,
         )
         # ActivitySim's keyed RNG reads canonical row identity, not unrelated
         # chooser columns.  A narrow frame preserves the exact ledger while
@@ -1890,19 +2001,29 @@ def choose_trip_destinations_batched(
                 "Phase 35 native trip logsum requires exactly three controlled "
                 f"wait-time draws; configured preprocessor declares {random_draw_count}"
             )
-        rng = state.get_rn_generator()
-        directional_draws = [
-            np.asarray(
-                rng.normal_for_df(
-                    frame, broadcast=True, size=random_draw_count
-                ),
-                dtype=np.float64,
+        if os.environ.get("CHOICEFORGE_PHASE43_COMPACT_TRIP_STATE", "0") == "1":
+            compact_draws = _phase43_compact_draws_for_bundles(
+                state,
+                bundles,
+                random_draw_count,
+                include_choice_draws=True,
             )
-            for frame in all_frames
-        ]
-        native_raw_capture["random_draws"] = np.concatenate(
-            directional_draws, axis=0
-        )
+            for bundle, values in zip(bundles, compact_draws):
+                bundle["compact_random_draws"] = values
+        else:
+            rng = state.get_rn_generator()
+            directional_draws = [
+                np.asarray(
+                    rng.normal_for_df(
+                        frame, broadcast=True, size=random_draw_count
+                    ),
+                    dtype=np.float64,
+                )
+                for frame in all_frames
+            ]
+            native_raw_capture["random_draws"] = np.concatenate(
+                directional_draws, axis=0
+            )
     else:
         with chunk.chunk_log(
             state,
@@ -1931,9 +2052,12 @@ def choose_trip_destinations_batched(
         if all_combined is not None:
             bundle["combined"] = all_combined.iloc[cursor : cursor + count].copy()
         cursor += count
-        draws = native_raw_capture.get("random_draws")
-        bundle_draws = None if draws is None else draws[draw_cursor : draw_cursor + count]
-        draw_cursor += count
+        if "compact_random_draws" in bundle:
+            bundle_draws = bundle["compact_random_draws"]
+        else:
+            draws = native_raw_capture.get("random_draws")
+            bundle_draws = None if draws is None else draws[draw_cursor : draw_cursor + count]
+            draw_cursor += count
         if native_production:
             values = _native_trip_logsum_values(
                 state, bundle, combined_skims, bundle_draws
@@ -1981,6 +2105,115 @@ def choose_trip_destinations_batched(
     simulation_started = time.perf_counter()
     from activitysim.core import simulate as activitysim_simulate
 
+    simulation_profile = {
+        "interaction_seconds": 0.0,
+        "utility_seconds": 0.0,
+        "probability_seconds": 0.0,
+        "choice_seconds": 0.0,
+        "interaction_calls": 0,
+        "compact_choice_calls": 0,
+    }
+    phase43_profile = (
+        os.environ.get("CHOICEFORGE_PHASE43_COMPACT_TRIP_STATE", "0") == "1"
+    )
+    if phase43_profile:
+        from activitysim.core import interaction_simulate as activitysim_interaction
+        from activitysim.core import logit as activitysim_logit
+
+        original_interaction = td.interaction_sample_simulate
+        original_eval_interaction = activitysim_interaction.eval_interaction_utilities
+        original_utils_to_probs = activitysim_logit.utils_to_probs
+        original_make_choices = activitysim_logit.make_choices
+        phase43_active_choice = {"index": None, "draws": None}
+
+        def timed_eval_interaction(*args, **kwargs):
+            started_profile = time.perf_counter()
+            try:
+                return original_eval_interaction(*args, **kwargs)
+            finally:
+                simulation_profile["utility_seconds"] += (
+                    time.perf_counter() - started_profile
+                )
+
+        def timed_utils_to_probs(*args, **kwargs):
+            started_profile = time.perf_counter()
+            try:
+                return original_utils_to_probs(*args, **kwargs)
+            finally:
+                simulation_profile["probability_seconds"] += (
+                    time.perf_counter() - started_profile
+                )
+
+        def timed_make_choices(*args, **kwargs):
+            started_profile = time.perf_counter()
+            try:
+                probs = args[1] if len(args) > 1 else kwargs.get("probs")
+                active_index = phase43_active_choice["index"]
+                active_draws = phase43_active_choice["draws"]
+                if (
+                    active_index is None
+                    or active_draws is None
+                    or not probs.index.equals(active_index)
+                ):
+                    return original_make_choices(*args, **kwargs)
+
+                # Preserve ActivitySim's validation, choice_maker arithmetic,
+                # pandas result types, and bad-choice behavior. Only the keyed
+                # random lookup is replaced by the already-advanced compact
+                # ledger values for exactly this purpose bundle.
+                state_arg = args[0] if args else kwargs["state"]
+                trace_label_arg = (
+                    args[2] if len(args) > 2 else kwargs.get("trace_label")
+                )
+                trace_choosers = (
+                    args[3] if len(args) > 3 else kwargs.get("trace_choosers")
+                )
+                allow_bad_probs = (
+                    args[4] if len(args) > 4 else kwargs.get("allow_bad_probs", False)
+                )
+                bad_probs = probs.sum(axis=1).sub(
+                    np.ones(len(probs.index))
+                ).abs() > 0.001 * np.ones(len(probs.index))
+                if bad_probs.any() and not allow_bad_probs:
+                    activitysim_logit.report_bad_choices(
+                        state_arg,
+                        bad_probs,
+                        probs,
+                        state_arg.settings.skip_failed_choices,
+                        trace_label=trace_label_arg,
+                        msg="probabilities do not add up to 1",
+                        trace_choosers=trace_choosers,
+                    )
+                choices = pd.Series(
+                    activitysim_logit.choice_maker(probs.values, active_draws),
+                    index=probs.index,
+                )
+                choices[bad_probs] = -99
+                rands = pd.Series(active_draws, index=probs.index)
+                global _PHASE43_CHOICE_DRAWS_CONSUMED
+                _PHASE43_CHOICE_DRAWS_CONSUMED += len(active_draws)
+                simulation_profile["compact_choice_calls"] += 1
+                return choices, rands
+            finally:
+                simulation_profile["choice_seconds"] += (
+                    time.perf_counter() - started_profile
+                )
+
+        def timed_interaction(*args, **kwargs):
+            started_profile = time.perf_counter()
+            simulation_profile["interaction_calls"] += 1
+            try:
+                return original_interaction(*args, **kwargs)
+            finally:
+                simulation_profile["interaction_seconds"] += (
+                    time.perf_counter() - started_profile
+                )
+
+        activitysim_interaction.eval_interaction_utilities = timed_eval_interaction
+        activitysim_logit.utils_to_probs = timed_utils_to_probs
+        activitysim_logit.make_choices = timed_make_choices
+        td.interaction_sample_simulate = timed_interaction
+
     original_spec_for_segment = activitysim_simulate.spec_for_segment
     if phase42_compact:
         activitysim_simulate.spec_for_segment = lambda *call_args, **call_kwargs: (
@@ -1990,6 +2223,11 @@ def choose_trip_destinations_batched(
         )
     try:
         for bundle in bundles:
+            if phase43_profile:
+                phase43_active_choice["index"] = bundle["trips"].index
+                phase43_active_choice["draws"] = bundle.get(
+                    "compact_choice_draws"
+                )
             destinations = td.trip_destination_simulate(
                 state,
                 primary_purpose=bundle["purpose"],
@@ -2014,6 +2252,11 @@ def choose_trip_destinations_batched(
             results.append((bundle["purpose"], destinations, sample))
     finally:
         activitysim_simulate.spec_for_segment = original_spec_for_segment
+        if phase43_profile:
+            td.interaction_sample_simulate = original_interaction
+            activitysim_interaction.eval_interaction_utilities = original_eval_interaction
+            activitysim_logit.utils_to_probs = original_utils_to_probs
+            activitysim_logit.make_choices = original_make_choices
     simulation_seconds = time.perf_counter() - simulation_started
 
     total_seconds = time.perf_counter() - started
@@ -2030,6 +2273,12 @@ def choose_trip_destinations_batched(
             "preprocessor_seconds": float(preprocess_ms / 1000),
             "logsums_seconds": float(logsums_seconds),
             "simulation_seconds": float(simulation_seconds),
+            "simulation_profile": {
+                **simulation_profile,
+                "outer_seconds": float(
+                    simulation_seconds - simulation_profile["interaction_seconds"]
+                ),
+            },
             "total_seconds": float(total_seconds),
         }
     )

@@ -885,3 +885,26 @@ See the [Phase 42 technical report](docs/phase42-general-numeric-compiler.md),
 the [three-pair evidence](benchmark-results/phase42-p42final-summary.json), the
 [consolidated qualification](benchmark-results/phase42-p42final-qualification.json),
 and the [multi-shape compiler probe](benchmark-results/phase42-numeric-compiler-probe.json).
+
+## Phase 43 compact controlled-random trip state
+
+Phase 43 profiles and removes repeated keyed-random work around the
+GPU-resident trip runtime. Across three trip-number batches, ActivitySim now
+generates OD normals, DP normals, and final-choice uniforms on the 91,524
+unique trip rows in nine total RNG calls. The normalized ABI no longer expands
+six normals across 2,094,156 sampled alternatives: 4,005,264 repeated
+directional rows are avoided. ActivitySim's validation and `choice_maker`
+arithmetic remain authoritative.
+
+Three fresh Phase 42/43 full-model pairs produced seven byte-identical final
+tables each. The direct trip boundary improved in every pair; its median fell
+from 9.261 to 8.526 seconds (**1.086x**), final simulation fell from 1.817 to
+1.152 seconds (**1.578x**), and the published `trip_destination` component fell
+from 10.6 to 9.9 seconds (**1.071x**). Complete-model medians were 152.4 and
+152.1 seconds, too close to separate from unrelated run noise, so the promoted
+claim is the replicated component improvement rather than a resolved
+whole-model gain.
+
+See the [Phase 43 technical report](docs/phase43-compact-random-state.md), the
+[three-pair evidence](benchmark-results/phase43-p43final-summary.json), and the
+[consolidated qualification](benchmark-results/phase43-p43final-qualification.json).

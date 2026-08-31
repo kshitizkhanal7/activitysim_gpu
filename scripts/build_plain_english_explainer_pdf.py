@@ -307,12 +307,12 @@ def cover_story():
         [
             [
                 Paragraph("1.393x", STYLES["metric_num"]),
-                Paragraph("4.9 s", STYLES["metric_num"]),
+                Paragraph("1.578x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
                 Paragraph("median trip-destination<br/>speedup vs Phase 41", STYLES["metric_label"]),
-                Paragraph("median whole-model<br/>seconds saved vs Phase 41", STYLES["metric_label"]),
+                Paragraph("Phase 43 final-simulation<br/>speedup vs Phase 42", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,11 +350,11 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns the exact Sharrow/NumPy/CUDA arithmetic rules into a hash-addressed compiler and removes repeated host table/compile work. In three fresh 50,000-household pairs it cuts median trip-destination time from 14.9 to 10.7 seconds and the full model from 156.7 to 151.8 seconds, with zero changed modeled decision cells or logsums. Assumptions, failed experiments, variance, and portability limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phase 43 then removes millions of repeated random-state rows and cuts final destination simulation from 1.817 to 1.152 seconds. Three fresh 50,000-household pairs retain seven byte-identical output tables each. The small whole-model change is reported as noise rather than overstated. Assumptions, failed experiments, variance, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated August 30, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated August 31, 2026", STYLES["small"]),
         PageBreak(),
     ]
 
@@ -440,6 +440,7 @@ def markdown_story(text: str):
                 or stripped.startswith("## 86. Phase 30")
                 or stripped.startswith("## 92. Phase 31")
                 or stripped.startswith("## 160. Did Phase 42")
+                or stripped.startswith("## 161. Phase 43")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

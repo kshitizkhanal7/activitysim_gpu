@@ -1012,7 +1012,10 @@ class TripLogsumNativePlan:
             draws_array = np.asarray(draws)
             if half == 0 or len(frame) != 2 * half:
                 raise ValueError("Phase 42 compact direction packet has invalid rows")
-            if draws_array.shape != (2 * half, 3):
+            if (
+                not getattr(frame, "phase43_compact_draws", False)
+                and draws_array.shape != (2 * half, 3)
+            ):
                 raise ValueError("Phase 42 requires three draws per directional row")
             row_ids = np.asarray(base.index)
             _, first_indices, selectors = np.unique(
@@ -1039,13 +1042,20 @@ class TripLogsumNativePlan:
             state_draw_indices = np.r_[
                 first_indices, first_indices + half
             ]
-            state_draws = draws_array[state_draw_indices]
-            if not _equal_with_missing(
-                draws_array, state_draws[row_state]
-            ).all():
-                raise ValueError(
-                    "Phase 42 controlled wait draws vary within directional state"
-                )
+            if getattr(frame, "phase43_compact_draws", False):
+                if draws_array.shape != (2 * unique_trip_rows, 3):
+                    raise ValueError(
+                        "Phase 43 compact draws do not match directional trip state"
+                    )
+                state_draws = draws_array
+            else:
+                state_draws = draws_array[state_draw_indices]
+                if not _equal_with_missing(
+                    draws_array, state_draws[row_state]
+                ).all():
+                    raise ValueError(
+                        "Phase 42 controlled wait draws vary within directional state"
+                    )
             origin = np.asarray(frame.origin, dtype=np.int64)
             destination = np.asarray(frame.destination, dtype=np.int64)
         else:
