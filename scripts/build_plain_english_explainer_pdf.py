@@ -307,12 +307,12 @@ def cover_story():
         [
             [
                 Paragraph("1.393x", STYLES["metric_num"]),
-                Paragraph("1.578x", STYLES["metric_num"]),
+                Paragraph("1.328x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
                 Paragraph("median trip-destination<br/>speedup vs Phase 41", STYLES["metric_label"]),
-                Paragraph("Phase 43 final-simulation<br/>speedup vs Phase 42", STYLES["metric_label"]),
+                Paragraph("Phase 44 final-choice<br/>speedup vs Phase 43", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phase 43 then removes millions of repeated random-state rows and cuts final destination simulation from 1.817 to 1.152 seconds. Three fresh 50,000-household pairs retain seven byte-identical output tables each. The small whole-model change is reported as noise rather than overstated. Assumptions, failed experiments, variance, and portability limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phase 43 removes millions of repeated random-state rows. Phase 44 replaces the last generic pandas choice plumbing with a validated ragged runtime, cutting the final boundary from 1.092 to 0.822 seconds. Three fresh 50,000-household pairs retain seven byte-identical output tables each and improve the complete model in every pair. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
@@ -441,6 +441,7 @@ def markdown_story(text: str):
                 or stripped.startswith("## 92. Phase 31")
                 or stripped.startswith("## 160. Did Phase 42")
                 or stripped.startswith("## 161. Phase 43")
+                or stripped.startswith("## 167. Phase 44")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

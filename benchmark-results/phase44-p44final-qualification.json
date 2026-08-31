@@ -1,0 +1,78 @@
+{
+  "phase": 44,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "matched_pairs": 3,
+  "final_programs": 30,
+  "trip_rows": 91524,
+  "sampled_destination_rows": 2094156,
+  "expression_slots": 16,
+  "effective_utility_terms": 14,
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "destination_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "mode_logsum_max_abs": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "final_choice_boundary_seconds": {
+    "phase43": [
+      1.088809500215575,
+      1.0916716989595443,
+      1.1079760999418795
+    ],
+    "phase44": [
+      0.8205004998017102,
+      0.8252210998907685,
+      0.8220930001698434
+    ],
+    "median_phase43": 1.0916716989595443,
+    "median_phase44": 0.8220930001698434,
+    "median_seconds_saved": 0.26957869878970087,
+    "median_speedup": 1.327917521173403,
+    "phase44_stage_medians": {
+      "frame_seconds": 0.09301900025457144,
+      "utility_seconds": 0.5820229998789728,
+      "padding_seconds": 0.02802579989656806,
+      "probability_seconds": 0.04523469996638596,
+      "choice_seconds": 0.05711140017956495
+    }
+  },
+  "median_trip_destination_component": {
+    "model_name": "trip_destination",
+    "gpu_role": "Phase44 compact ragged final simulation plus Phase43 random state",
+    "median_baseline_seconds": 10.1,
+    "median_candidate_seconds": 9.5,
+    "median_seconds_saved": 0.5999999999999996,
+    "median_reduction_percent": 5.940594059405937,
+    "median_speedup": 1.063157894736842
+  },
+  "complete_model": {
+    "median_phase43_seconds": 158.10000000000002,
+    "median_phase44_seconds": 156.39999999999995,
+    "median_seconds_saved": 1.700000000000074,
+    "median_speedup": 1.0108695652173918,
+    "candidate_won_every_pair": true
+  },
+  "claim_boundary": "Phase 44 removes generic final-choice table mechanics around the authoritative Sharrow CPU utility compiler; it retains the earlier GPU sampling/logsum runtime and does not claim that the final 16-slot expression evaluator itself executes on the GPU.",
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "all_thirty_compact_programs_cover_public_workload": true,
+    "reviewed_sixteen_slot_fourteen_term_abi_used_everywhere": true,
+    "three_independent_output_verifiers_are_byte_exact": true,
+    "compact_final_boundary_improves_in_every_pair": true,
+    "trip_destination_component_improves_in_every_pair": true,
+    "complete_model_improves_in_every_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true
+}

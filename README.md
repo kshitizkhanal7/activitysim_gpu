@@ -908,3 +908,26 @@ whole-model gain.
 See the [Phase 43 technical report](docs/phase43-compact-random-state.md), the
 [three-pair evidence](benchmark-results/phase43-p43final-summary.json), and the
 [consolidated qualification](benchmark-results/phase43-p43final-qualification.json).
+
+## Phase 44 compact exact final choice
+
+Phase 44 replaces the generic pandas mechanics around the last sampled
+trip-destination choice with a validated ragged-offset runtime. It sends a
+narrow exact interaction frame through Sharrow's authoritative reviewed
+16-slot/14-effective-term compiler, pads variable-length alternatives with a
+Numba kernel, and retains ActivitySim's probability, keyed-random, and choice
+semantics. All 30 programs, 91,524 trips, and 2,094,156 sampled alternatives
+are covered. Unsupported expression or shape contracts fail closed.
+
+Three fresh matched Phase 43/44 pairs produced seven byte-identical published
+tables each and favored Phase 44 at the final boundary, target component, and
+whole-model levels. The compact final boundary improved from a 1.092-second
+median to 0.822 seconds (**1.328x**). Median `trip_destination` time fell from
+10.1 to 9.5 seconds (**1.063x**), while all-model time fell from 158.1 to 156.4
+seconds (**1.011x**, 1.7 seconds saved). The final expression evaluator remains
+Sharrow CPU code; the GPU claim belongs to the previously qualified sampling
+and logsum runtime retained underneath it.
+
+See the [Phase 44 technical report](docs/phase44-compact-final-choice.md), the
+[three-pair evidence](benchmark-results/phase44-p44final-summary.json), and the
+[consolidated qualification](benchmark-results/phase44-p44final-qualification.json).

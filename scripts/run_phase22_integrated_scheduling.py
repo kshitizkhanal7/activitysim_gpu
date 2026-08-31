@@ -132,6 +132,14 @@ def main() -> int:
             "directional random-state ABI"
         ),
     )
+    parser.add_argument(
+        "--phase44-compact-final-simulation",
+        action="store_true",
+        help=(
+            "extend Phase 43 with the reviewed 16-slot/14-effective-term "
+            "Sharrow compiler on a compact ragged final-choice boundary"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -206,6 +214,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase44_compact_final_simulation:
+        args.phase43_compact_trip_state = True
+        os.environ["CHOICEFORGE_PHASE44_COMPACT_FINAL"] = "1"
     if args.phase43_compact_trip_state:
         args.phase42_numeric_compiler = True
         os.environ["CHOICEFORGE_PHASE43_COMPACT_TRIP_STATE"] = "1"
@@ -1950,6 +1961,7 @@ def main() -> int:
     phase41_sampling = None
     phase42_compiler = None
     phase43_runtime = None
+    phase44_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1976,8 +1988,13 @@ def main() -> int:
         from choiceforge.activitysim_destination import phase43_runtime_telemetry
 
         phase43_runtime = phase43_runtime_telemetry()
+    if args.phase44_compact_final_simulation:
+        from choiceforge.activitysim_destination import phase44_final_runtime_telemetry
+
+        phase44_runtime = phase44_final_runtime_telemetry()
     report = {
         "phase": (
+            44 if args.phase44_compact_final_simulation else
             43 if args.phase43_compact_trip_state else
             42 if args.phase42_numeric_compiler else
             41 if args.phase41_exact_trip_sampling else
@@ -1992,6 +2009,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with compact ragged final-choice "
+            "state feeding Sharrow's reviewed 16-slot utility compiler"
+            if args.phase44_compact_final_simulation else
             "full public ActivitySim model with unique-trip controlled random "
             "state feeding the Phase 42 compiled resident runtime"
             if args.phase43_compact_trip_state else
@@ -2088,6 +2108,7 @@ def main() -> int:
         "phase41_trip_destination_sampling": phase41_sampling,
         "phase42_numeric_compiler": phase42_compiler,
         "phase43_compact_trip_state": phase43_runtime,
+        "phase44_compact_final_simulation": phase44_runtime,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2387,6 +2408,29 @@ def main() -> int:
                 "phase43_final_choice_draws_cover_every_trip_exactly_once": (
                     compact.get("choice_draw_rows") == 91_524
                     and compact.get("choice_draws_consumed") == 91_524
+                ),
+            }
+        )
+    if args.phase44_compact_final_simulation:
+        compact_final = phase44_runtime or {}
+        compact_events = compact_final.get("events", [])
+        report["proof_gates"].update(
+            {
+                "phase44_all_thirty_final_programs_use_compact_ragged_runtime": (
+                    compact_final.get("calls") == 30
+                ),
+                "phase44_complete_final_choice_workload_covered": (
+                    compact_final.get("chooser_rows") == 91_524
+                    and compact_final.get("alternative_rows") == 2_094_156
+                ),
+                "phase44_reviewed_expression_abi_used_everywhere": (
+                    len(compact_events) == 30
+                    and all(item.get("expression_slots") == 16 for item in compact_events)
+                    and all(item.get("effective_utility_terms") == 14 for item in compact_events)
+                ),
+                "phase44_ragged_choice_width_is_public_sample_contract": (
+                    len(compact_events) == 30
+                    and all(item.get("max_alternatives") <= 30 for item in compact_events)
                 ),
             }
         )

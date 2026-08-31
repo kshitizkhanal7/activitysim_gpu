@@ -36,6 +36,7 @@ _PHASE43_EXPANDED_DRAW_ROWS_AVOIDED = 0
 _PHASE43_RNG_CALLS = 0
 _PHASE43_CHOICE_DRAW_ROWS = 0
 _PHASE43_CHOICE_DRAWS_CONSUMED = 0
+_PHASE44_FINAL_RUNTIME_TELEMETRY = []
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ def reset_trip_destination_stage_telemetry():
     global _PHASE43_CHOICE_DRAWS_CONSUMED
     _TRIP_DESTINATION_STAGE_TELEMETRY.clear()
     _TRIP_NATIVE_LOGSUM_TELEMETRY.clear()
+    _PHASE44_FINAL_RUNTIME_TELEMETRY.clear()
     _PHASE42_CONTRACT_HITS = 0
     _PHASE42_CONTRACT_MISSES = 0
     _PHASE42_COMPACT_BUNDLES = 0
@@ -118,6 +120,17 @@ def phase43_runtime_telemetry():
         "normal_draws_per_row": 3,
         "choice_draw_rows": _PHASE43_CHOICE_DRAW_ROWS,
         "choice_draws_consumed": _PHASE43_CHOICE_DRAWS_CONSUMED,
+    }
+
+
+def phase44_final_runtime_telemetry():
+    """Return compact final-simulation ABI events and aggregate counts."""
+    events = list(_PHASE44_FINAL_RUNTIME_TELEMETRY)
+    return {
+        "calls": len(events),
+        "chooser_rows": int(sum(item["chooser_rows"] for item in events)),
+        "alternative_rows": int(sum(item["alternative_rows"] for item in events)),
+        "events": events,
     }
 
 
@@ -2121,6 +2134,20 @@ def choose_trip_destinations_batched(
         from activitysim.core import logit as activitysim_logit
 
         original_interaction = td.interaction_sample_simulate
+        if os.environ.get("CHOICEFORGE_PHASE44_COMPACT_FINAL", "0") == "1":
+            from choiceforge.trip_destination_final import (
+                compact_interaction_sample_simulate,
+            )
+
+            interaction_target = lambda *call_args, **call_kwargs: (
+                compact_interaction_sample_simulate(
+                    *call_args,
+                    **call_kwargs,
+                    telemetry=_PHASE44_FINAL_RUNTIME_TELEMETRY,
+                )
+            )
+        else:
+            interaction_target = original_interaction
         original_eval_interaction = activitysim_interaction.eval_interaction_utilities
         original_utils_to_probs = activitysim_logit.utils_to_probs
         original_make_choices = activitysim_logit.make_choices
@@ -2203,7 +2230,7 @@ def choose_trip_destinations_batched(
             started_profile = time.perf_counter()
             simulation_profile["interaction_calls"] += 1
             try:
-                return original_interaction(*args, **kwargs)
+                return interaction_target(*args, **kwargs)
             finally:
                 simulation_profile["interaction_seconds"] += (
                     time.perf_counter() - started_profile

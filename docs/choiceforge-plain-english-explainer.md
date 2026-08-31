@@ -5521,3 +5521,117 @@ trip destination is now only about 6.5% of total time. A large whole-model dent
 will require applying the compact compiled runtime to several other costly
 components, especially initialization, location choice, tour scheduling, and
 trip mode choice.
+
+## 167. Phase 44 builds the compact final-choice machine
+
+Phase 43 ended with one last general-purpose ActivitySim step. For every trip,
+it combined traveler facts with roughly 23 sampled destinations, calculated
+their attractiveness, padded the unequal option lists into a rectangle, made
+one reproducible random choice, and translated the winning position back into
+a zone number. The math was not the only cost. Building and reshaping large
+pandas tables also took time.
+
+Phase 44 replaces that table plumbing with a small, purpose-built runtime. It
+does this for all 30 purpose-and-trip-number calls, covering 91,524 trips and
+2,094,156 sampled destination rows. It does not change the model question or
+remove any legal options.
+
+## 168. What is a ragged array, and why does it help?
+
+"Ragged" means the rows do not all have the same length. One trip may have 18
+sampled destinations while another has 27. A spreadsheet-like rectangle must
+add blank cells so every row has the same width. A ragged representation keeps
+all real options next to each other and stores a short list of starting points:
+
+```text
+starts:  [0, 18, 45, 68]
+options: [18 for trip A][27 for trip B][23 for trip C]
+```
+
+Trip B's options are positions 18 through 44. This offset list replaces a
+group-by operation that repeatedly asks pandas which rows belong to which
+trip. Phase 44 first proves that rows are contiguous and in chooser order. A
+Numba-compiled loop then creates ActivitySim's required rectangle directly,
+using exactly the same `-999` value for fake padded options.
+
+## 169. What is the 16-slot expression program?
+
+An expression is a small formula, such as "distance from the trip origin" or
+"log of destination size." The public final-choice file has 16 ordered slots.
+Two slots temporarily store distances; the other 14 contribute real utility
+terms. Together they describe destination size, unavailable zero-size zones,
+directional distance, closeness to tour endpoints, correction for sampling,
+and mode-choice logsums.
+
+"Utility" is only a score: a higher score means a destination is more
+attractive to the model. ActivitySim turns all scores into probabilities and
+uses a controlled random ticket to choose one destination.
+
+Phase 44 checks the exact text, order, count, and coefficient shape before it
+runs. If a future model changes one expression, the optimized path stops
+instead of silently assuming the old meaning. Sharrow still evaluates the
+formula using its trusted float32 CPU compiler. Phase 44 makes the data around
+that evaluator smaller and more direct.
+
+## 170. Is Phase 44 itself a new GPU kernel?
+
+No, and that distinction matters. Earlier phases already run the enormous
+full-zone destination sampling and trip logsum calculations on the GPU. Phase
+44 improves the last boundary around that GPU pipeline. Its new padding loop
+is Numba-compiled CPU code, and the 16-slot evaluator remains Sharrow CPU code
+so its arithmetic stays identical.
+
+This is still useful. A GPU can finish heavy math quickly and then sit idle
+while Python builds tables around the result. Removing that overhead makes the
+whole GPU system faster. But we do not label CPU work as GPU work merely
+because it is located next to a GPU kernel.
+
+## 171. How did we prove the result?
+
+We ran three fresh matched pairs. In each pair, Phase 43 was the control and
+Phase 44 was the candidate. Both used the same public Prototype MTC extended
+model, 50,000 households, 1,454 zones, GPU stack, Sharrow requirement, and
+random-number rules.
+
+| Measured work | Phase 43 | Phase 44 | Result |
+|---|---:|---:|---:|
+| compact final-choice boundary | 1.092 s | 0.822 s | 1.328x faster |
+| `trip_destination` component | 10.1 s | 9.5 s | 1.063x faster |
+| all 34 model steps | 158.1 s | 156.4 s | 1.011x faster |
+| matched pairs won | - | 3 of 3 | repeatable direction |
+| changed decision cells | - | 0 in every pair | exact |
+
+The boundary saved about 0.270 seconds, the complete trip-destination step
+saved 0.6 seconds, and the median full model saved 1.7 seconds. The unusually
+large 7.2-second gain in the first whole-model pair included unrelated steps
+also becoming faster, so we do not credit all of it to Phase 44. The stable
+boundary measurement and three component wins are the stronger evidence.
+
+For every pair, an independent checker compared all published results. All
+seven CSV files were byte-for-byte identical. It found zero changed modeled
+decisions, zero destination-logsum difference, and zero mode-logsum difference.
+Every runtime proof gate passed, and the complete test suite passed 183 tests.
+
+## 172. What do these results mean, and what comes next?
+
+Phase 44 proves that exact GPU acceleration is a systems problem, not only a
+kernel problem. Fast kernels, compact data layouts, controlled randomness,
+expression contracts, and complete-output tests all have to work together. It
+also turns the remaining final-choice work into five clearly measured pieces:
+about 0.093 seconds to build narrow frames, 0.582 seconds for Sharrow utility
+evaluation, 0.028 seconds for padding, 0.045 seconds for probabilities, and
+0.057 seconds for choice mapping.
+
+The next direct target is the 0.582-second Sharrow evaluator. A future GPU
+backend cannot simply calculate similar numbers; one tiny rounding change can
+move a random choice across a probability boundary. The safe next phase is to
+translate the reviewed 16-slot program into the shared expression language,
+generate a strict CPU reference and CUDA version from one arithmetic policy,
+compare every utility bit and final choice in shadow mode, and reject unknown
+expressions. Only then should the GPU version become authoritative.
+
+Even perfect removal of that 0.582 seconds cannot transform a 156-second model
+by itself. A major whole-model gain requires reusing the same compact compiled
+runtime in several expensive components, such as location choice, tour
+scheduling, and trip mode choice. Phase 44 supplies both a proven pattern and
+an honest measurement of the remaining ceiling.

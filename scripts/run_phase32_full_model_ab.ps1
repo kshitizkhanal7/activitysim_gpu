@@ -2,8 +2,8 @@ param(
     [ValidateRange(1, 5)][int]$Repetitions = 3,
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
-    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43)][int]$CandidatePhase = 32,
+    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "activitysim")][string]$Baseline = "phase17",
+    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -82,7 +82,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     $verification = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-exact-$trial.json"
     $baselineComplete = (
         (Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")) -and
-        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42") -or (Test-Path -LiteralPath $baselineReport))
+        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43") -or (Test-Path -LiteralPath $baselineReport))
     )
     $candidateComplete = (
         (Test-Path -LiteralPath (Join-Path $candidateOutput "timing_log.csv")) -and
@@ -109,7 +109,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         $env:CHOICEFORGE_PHASE17_RUN_ID = "$RunTag-base-$trial"
         $baselineStdout = Join-Path $project "$RunTag-base-$trial.stdout.log"
         $baselineStderr = Join-Path $project "$RunTag-base-$trial.stderr.log"
-        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42")) {
+        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43")) {
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
             $baselineArguments = @(
@@ -136,8 +136,10 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
                 $baselineArguments += "--phase40-resident-trip-sampling"
             } elseif ($Baseline -eq "phase41") {
                 $baselineArguments += "--phase41-exact-trip-sampling"
-            } else {
+            } elseif ($Baseline -eq "phase42") {
                 $baselineArguments += "--phase42-numeric-compiler"
+            } else {
+                $baselineArguments += "--phase43-compact-trip-state"
             }
             $baselineRun = Invoke-CheckedProcess $python $baselineArguments `
                 $repo $baselineStdout $baselineStderr
@@ -190,6 +192,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($CandidatePhase -eq 41) { $candidateArguments += "--phase41-exact-trip-sampling" }
         if ($CandidatePhase -eq 42) { $candidateArguments += "--phase42-numeric-compiler" }
         if ($CandidatePhase -eq 43) { $candidateArguments += "--phase43-compact-trip-state" }
+        if ($CandidatePhase -eq 44) { $candidateArguments += "--phase44-compact-final-simulation" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -269,7 +272,7 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         "non_mandatory_tour_destination" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
         "non_mandatory_tour_scheduling" { if ($CandidatePhase -ge 33) { "Phase33 scheduling GPU retained" } else { "not directly GPU-targeted" } }
         "tour_mode_choice_simulate" { if ($CandidatePhase -ge 33) { "Phase33 generated GPU retained" } else { "not directly GPU-targeted" } }
-        "trip_destination" { if ($CandidatePhase -ge 43) { "Phase43 unique-trip controlled random state plus Phase42 compiler" } elseif ($CandidatePhase -ge 42) { "Phase42 generalized ABI compiler plus compact cached GPU boundaries" } elseif ($CandidatePhase -ge 41) { "Phase41 exact shared-ABI resident CUDA sampling" } elseif ($CandidatePhase -ge 40) { "Phase40 resident CUDA sampling plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 39) { "Phase39 CUDA sampling utility plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
+        "trip_destination" { if ($CandidatePhase -ge 44) { "Phase44 compact ragged final simulation plus Phase43 random state" } elseif ($CandidatePhase -ge 43) { "Phase43 unique-trip controlled random state plus Phase42 compiler" } elseif ($CandidatePhase -ge 42) { "Phase42 generalized ABI compiler plus compact cached GPU boundaries" } elseif ($CandidatePhase -ge 41) { "Phase41 exact shared-ABI resident CUDA sampling" } elseif ($CandidatePhase -ge 40) { "Phase40 resident CUDA sampling plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 39) { "Phase39 CUDA sampling utility plus Phase38 normalized logsums" } elseif ($CandidatePhase -ge 38) { "Phase38 normalized resident trip state" } elseif ($CandidatePhase -ge 37) { "Phase37 fused raw-state utility" } elseif ($CandidatePhase -ge 36) { "Phase36 device-generated trip ABI" } elseif ($CandidatePhase -ge 35) { "Phase35 native raw-trip GPU ABI" } else { "Phase17 generated GPU retained" } }
         "trip_scheduling" { if ($CandidatePhase -ge 35) { "Phase35 persistent GPU probability service" } else { "not directly GPU-targeted" } }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }
@@ -290,6 +293,7 @@ $baselineLabel = switch ($Baseline) {
     "phase40" { "Phase 40 resident CUDA runtime with sparse CPU exact guard" }
     "phase41" { "Phase 41 exact shared-arithmetic resident CUDA runtime" }
     "phase42" { "Phase 42 general numeric compiler and compact cached runtime" }
+    "phase43" { "Phase 43 compact controlled-random trip runtime" }
     "phase37" { "already GPU-accelerated Phase 37 runtime" }
     "phase36" { "already GPU-accelerated Phase 36 runtime" }
     "phase35" { "already GPU-accelerated Phase 35 runtime" }
@@ -312,8 +316,8 @@ $summary = [ordered]@{
     median_speedup = $baselineValues[$middle] / $candidateValues[$middle]
     component_comparison = $componentComparison
     candidate_won_every_pair = (@($runs | Where-Object all_model_seconds_saved -le 0).Count -eq 0)
-    target_component = if ($CandidatePhase -eq 43) { "trip_destination" } else { $null }
-    candidate_won_target_component_every_pair = if ($CandidatePhase -eq 43) {
+    target_component = if ($CandidatePhase -in @(43, 44)) { "trip_destination" } else { $null }
+    candidate_won_target_component_every_pair = if ($CandidatePhase -in @(43, 44)) {
         @(
             $runs | Where-Object {
                 [double]$_.candidate_component_seconds["trip_destination"] -ge
@@ -322,17 +326,17 @@ $summary = [ordered]@{
         ).Count -eq 0
     } else { $null }
     every_pair_exact = $true
-    claim_boundary = if ($CandidatePhase -eq 43) {
-        "replicated trip_destination component gain over Phase 42; whole-model median reported without claiming a resolved gain; all substantive outputs byte-identical"
+    claim_boundary = if ($CandidatePhase -in @(43, 44)) {
+        "replicated trip_destination component gain over $baselineLabel; whole-model timing reported separately; all substantive outputs independently verified"
     } else {
         "whole-model gain over $baselineLabel; all substantive modeled outputs exact and declared diagnostic logsums bounded"
     }
 }
 $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Encoding utf8
 $summary | ConvertTo-Json -Depth 8
-if ($CandidatePhase -eq 43) {
+if ($CandidatePhase -in @(43, 44)) {
     if (-not $summary.candidate_won_target_component_every_pair) {
-        throw "Phase 43 candidate did not win trip_destination in every matched pair"
+        throw "Phase $CandidatePhase candidate did not win trip_destination in every matched pair"
     }
 } elseif (-not $summary.candidate_won_every_pair) {
     throw "Phase $CandidatePhase candidate did not win every matched pair"
