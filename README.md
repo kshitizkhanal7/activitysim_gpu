@@ -931,3 +931,34 @@ and logsum runtime retained underneath it.
 See the [Phase 44 technical report](docs/phase44-compact-final-choice.md), the
 [three-pair evidence](benchmark-results/phase44-p44final-summary.json), and the
 [consolidated qualification](benchmark-results/phase44-p44final-qualification.json).
+
+## Phase 45 model-wide resident destination runtime
+
+Phase 45 applies one reviewed CUDA sampling compiler and one compact final
+sampled-choice adapter to school location, workplace location, joint-tour
+destination, non-mandatory-tour destination, and at-work subtour destination.
+Nineteen sampling programs cover 201,390 choosers, 274,223,637 dense utility
+cells, 6,041,700 keyed random draws, and 4,696,676 retained sample rows.
+
+The grouped float32 utility ABI and host-precomputed 1,454-value NumPy `log1p`
+feature are bit-identical to Sharrow in the exhaustive largest-program shadow.
+A measured 5e-7 CDF gate sends only 7,313 rows (3.63%) through exact NumPy
+normalization; dense utilities stay resident and no program falls back.
+
+Three fresh matched Phase 44/45 pairs all produced zero changed decision cells
+and all favored Phase 45 end to end. Median time for the five target components
+fell from 37.1 to 34.5 seconds (**1.075x**); median all-model time fell from
+152.1 to 149.7 seconds (**1.016x**, 2.4 seconds saved). School location improved
+from 8.0 to 6.7 seconds (**1.194x**) and non-mandatory destination from 11.3 to
+10.2 seconds (**1.108x**). Joint-tour destination regressed 3.3 to 3.5 seconds
+because its small workload cannot fully amortize compilation; this is included
+in the aggregate result.
+
+Compared only as context with the older established 206.6-second regular
+ActivitySim/Sharrow median, the latest 149.7-second runtime is **1.380x faster**
+and 27.5% lower. That is not a fresh Phase 45 CPU pair; the promoted causal
+claim is the matched Phase 44→45 result.
+
+See the [Phase 45 technical report](docs/phase45-modelwide-destination-runtime.md),
+the [three-pair evidence](benchmark-results/phase45-p45final-summary.json), and
+the [consolidated qualification](benchmark-results/phase45-p45final-qualification.json).

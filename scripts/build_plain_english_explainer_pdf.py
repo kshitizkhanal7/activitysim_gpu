@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.393x", STYLES["metric_num"]),
-                Paragraph("1.328x", STYLES["metric_num"]),
+                Paragraph("1.075x", STYLES["metric_num"]),
+                Paragraph("1.016x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("median trip-destination<br/>speedup vs Phase 41", STYLES["metric_label"]),
-                Paragraph("Phase 44 final-choice<br/>speedup vs Phase 43", STYLES["metric_label"]),
+                Paragraph("five destination components<br/>speedup vs Phase 44", STYLES["metric_label"]),
+                Paragraph("all 34 model steps<br/>speedup vs Phase 44", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -338,7 +338,7 @@ def cover_story():
         Paragraph("BEGINNER EXPLAINER", STYLES["cover_kicker"]),
         Paragraph("ChoiceForge", STYLES["cover_title"]),
         Paragraph(
-            "How a GPU kernel can accelerate a real travel demand modeling component - from the first idea through a public ActivitySim proof.",
+            "How GPU kernels can accelerate a real travel demand model - from the first idea through a public ActivitySim proof.",
             STYLES["cover_sub"],
         ),
         HRFlowable(width="100%", thickness=3, color=GOLD, spaceBefore=4, spaceAfter=20),
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phase 43 removes millions of repeated random-state rows. Phase 44 replaces the last generic pandas choice plumbing with a validated ragged runtime, cutting the final boundary from 1.092 to 0.822 seconds. Three fresh 50,000-household pairs retain seven byte-identical output tables each and improve the complete model in every pair. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43 and 44 remove repeated random-state rows and generic pandas choice plumbing. Phase 45 applies one reviewed CUDA sampler to five destination families and 274 million utility cells. Three fresh 50,000-household pairs preserve every modeled decision while reducing the five target components from 37.1 to 34.5 seconds and all 34 model steps from 152.1 to 149.7 seconds. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

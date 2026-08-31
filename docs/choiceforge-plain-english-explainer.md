@@ -5635,3 +5635,149 @@ by itself. A major whole-model gain requires reusing the same compact compiled
 runtime in several expensive components, such as location choice, tour
 scheduling, and trip mode choice. Phase 44 supplies both a proven pattern and
 an honest measurement of the remaining ceiling.
+
+## 173. Phase 45 takes the destination sampler model-wide
+
+Phase 44 improved one late trip-destination choice. Phase 45 asks a larger
+question: can one GPU destination machine serve several parts of ActivitySim?
+It now serves five families:
+
+- where students attend school;
+- where workers work;
+- where a household's joint tour goes;
+- where non-mandatory tours such as shopping or social trips go; and
+- where a short tour made during work goes.
+
+These five families invoke 19 sampling programs. At 50,000 households they
+cover 201,390 decision makers and 274,223,637 possible person-zone score cells.
+The GPU calculates those dense scores, normalizes them, processes 6,041,700
+reproducible random tickets, and removes duplicate sampled zones. A compact
+shared adapter then handles the 4,696,676 sampled rows used for final choice.
+
+## 174. What does destination sampling mean?
+
+The model has 1,454 zones. Fully calculating every expensive downstream detail
+for every person and every zone would waste time. Sampling is a two-stage
+shortcut that preserves statistical meaning:
+
+1. Give every legal zone a simple preliminary attractiveness score.
+2. Use that score to draw 30 candidate zones for each person or tour.
+3. Calculate richer logsums and details only for those sampled candidates.
+4. Correct for the sampling probability so the final model is not biased
+   toward zones that happened to be sampled more often.
+
+Phase 45 accelerates the enormous first two steps. It does not reduce the
+number of zones, change the 30 draws, or replace ActivitySim's random-number
+ledger.
+
+## 175. What formulas does the GPU evaluate?
+
+The preliminary score uses a small reviewed vocabulary. Distance is divided
+into pieces: the first mile can have one penalty, miles 1-2 another, miles 2-5
+another, and so on. Larger destinations are generally more attractive, so the
+model uses `log(1 + size)`. School and workplace models add shadow prices,
+which are balancing adjustments that help simulated workers and students fit
+available jobs and school places. Workplace choice also lets high-income
+travelers respond differently to distance.
+
+The program has 7 terms for tour destinations, 9 for school, and 11 for work.
+Phase 45 rejects an unknown formula instead of pretending it understands it.
+That fail-closed rule is essential: a fast answer to a different formula is
+not an optimization.
+
+## 176. Why was exact arithmetic difficult?
+
+Computers store decimal-looking numbers as binary floating-point values. When
+several values are multiplied and added, changing the grouping of additions
+can change the last bit. Sharrow's CPU program groups its dot product like the
+installed OpenBLAS library. The GPU therefore uses the same grouped-left
+schedule rather than a mathematically equivalent but differently rounded sum.
+
+The `log(1 + size × shadow price)` feature caused a remaining one-bit mismatch.
+It depends only on the 1,454 destinations, not on every traveler. Phase 45 now
+lets NumPy calculate those 1,454 values once using the original column types,
+then uploads them. This replaces hundreds of millions of repeated logarithms
+and makes the largest 38,525,184-cell workplace utility shadow bit-for-bit
+identical to Sharrow.
+
+## 177. Why is there still a tiny CPU guard?
+
+Identical scores do not quite guarantee identical random choices. NumPy and
+CUDA can round the exponential and division used for probabilities one bit
+differently. Usually this changes nothing. It matters only when a random ticket
+is extremely close to the boundary between two zones.
+
+We compared the GPU and NumPy paths and measured the largest choice-changing
+boundary displacement as 0.000000217. Production uses a wider 0.0000005 gate.
+Only 7,313 of 201,390 rows - 3.63% - enter it. For those rows, the program downloads
+their already-exact scores and asks NumPy to repeat only final normalization and
+choice. It does not rebuild a pandas interaction table or rerun Sharrow. The
+remaining 96.37% stay on the GPU path.
+
+This guard is not a hidden fallback. It is a measured adjudication rule with a
+reported row count and an independent end-to-end output test.
+
+## 178. What did the three official comparisons show?
+
+Each pair started a fresh Phase 44 control, then a fresh Phase 45 candidate, on
+the same public 50,000-household, 1,454-zone, 34-step ActivitySim model.
+
+| Pair | Phase 44 | Phase 45 | Time saved | Whole-model speedup |
+|---|---:|---:|---:|---:|
+| 1 | 151.5 s | 150.3 s | 1.2 s | 1.008x |
+| 2 | 152.5 s | 149.2 s | 3.3 s | 1.022x |
+| 3 | 152.1 s | 149.7 s | 2.4 s | 1.016x |
+| Middle result | **152.1 s** | **149.7 s** | **2.4 s** | **1.016x** |
+
+| Model component | Phase 44 | Phase 45 | Result |
+|---|---:|---:|---:|
+| school location | 8.0 s | 6.7 s | 1.194x faster |
+| workplace location | 11.7 s | 11.3 s | 1.035x faster |
+| joint-tour destination | 3.3 s | 3.5 s | 0.943x; 0.2 s slower |
+| non-mandatory-tour destination | 11.3 s | 10.2 s | 1.108x faster |
+| at-work subtour destination | 2.8 s | 2.6 s | 1.077x faster |
+| all five targets together | **37.1 s** | **34.5 s** | **1.075x faster** |
+
+The small joint-tour program cannot fully pay back its first-program setup
+cost, so it became 0.2 seconds slower. We report it because honest performance
+work includes regressions. The five targets together improved in every pair,
+and the complete model improved in every pair.
+
+## 179. How accurate are the Phase 45 results?
+
+An independent checker compared every published modeled decision in all three
+pairs. It found zero changed decision cells each time. Mode-choice logsums were
+identical. Maximum differences were about 0.00000191 for school and workplace
+location logsums and 0.000003 for tour-destination logsums, below the declared
+0.00001 and 0.0001 limits.
+
+This means the locations, destinations, schedules, modes, and trips chosen by
+the model are the same. A few diagnostic decimal strings differ in their last
+digits because selected probabilities differ by at most one float32 unit.
+
+## 180. How much faster is the project than regular ActivitySim now?
+
+The latest fresh causal comparison is Phase 44 versus Phase 45: 152.1 versus
+149.7 seconds. An older established regular ActivitySim/Sharrow experiment had
+a 206.6-second middle result. Comparing those numbers only as context, the
+latest runtime is about 1.380 times faster, saves 56.9 seconds, and is 27.5%
+lower. Because those runs were conducted in different phases, this is not a
+fresh matched CPU-versus-Phase-45 experiment and must not be presented as one.
+
+## 181. What should the next major phase do?
+
+The next phase should build a persistent model-wide destination service rather
+than another tiny component patch. It should:
+
+- compile the 7-, 9-, and 11-term GPU programs before timed model steps;
+- retain destination features, coefficients, and scratch buffers across all 19 calls;
+- batch small joint-tour segments so setup cost is shared;
+- move the final sampled-choice utility and probability path onto the same
+  strict GPU arithmetic system; and
+- keep ActivitySim's keyed randomness, fail-closed formula checks, exhaustive
+  shadows, three fresh matched pairs, and independent final-output verification.
+
+That attacks both the one regressing small component and the remaining CPU
+boundary. It also creates an upstreamable backend shape: one versioned
+expression compiler and resident service, rather than a collection of model-
+specific shortcuts.

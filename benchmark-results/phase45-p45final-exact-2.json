@@ -1,0 +1,83 @@
+{
+  "decision_columns_exact": true,
+  "decision_cells_different": 0,
+  "decision_rows_different": 0,
+  "byte_identical_outputs": [
+    "final_accessibility.csv",
+    "final_households.csv",
+    "final_joint_tour_participants.csv",
+    "final_land_use.csv",
+    "final_trips.csv"
+  ],
+  "byte_identical_non_trip_outputs": [
+    "final_accessibility.csv",
+    "final_households.csv",
+    "final_joint_tour_participants.csv",
+    "final_land_use.csv"
+  ],
+  "diagnostic_columns": {
+    "destination_logsum": {
+      "text_cells_different": 6357,
+      "max_abs": 3.000000003083869e-06,
+      "mean_abs": 6.914932262092708e-08,
+      "gate": 0.0001
+    },
+    "mode_choice_logsum": {
+      "text_cells_different": 0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "gate": 1e-05
+    },
+    "school_location_logsum": {
+      "text_cells_different": 3986,
+      "max_abs": 1.9073486363652137e-06,
+      "mean_abs": 7.909068105521543e-08,
+      "gate": 1e-05
+    },
+    "workplace_location_logsum": {
+      "text_cells_different": 4722,
+      "max_abs": 1.9073486328125e-06,
+      "mean_abs": 6.411187740505187e-08,
+      "gate": 1e-05
+    }
+  },
+  "diagnostic_outputs": {
+    "final_persons.csv": {
+      "school_location_logsum": {
+        "text_cells_different": 3986,
+        "max_abs": 1.9073486363652137e-06,
+        "mean_abs": 7.909068105521543e-08,
+        "gate": 1e-05
+      },
+      "workplace_location_logsum": {
+        "text_cells_different": 4722,
+        "max_abs": 1.9073486328125e-06,
+        "mean_abs": 6.411187740505187e-08,
+        "gate": 1e-05
+      }
+    },
+    "final_tours.csv": {
+      "destination_logsum": {
+        "text_cells_different": 6357,
+        "max_abs": 3.000000003083869e-06,
+        "mean_abs": 6.914932262092708e-08,
+        "gate": 0.0001
+      },
+      "mode_choice_logsum": {
+        "text_cells_different": 0,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "gate": 1e-05
+      }
+    }
+  },
+  "diagnostic_column": "destination_logsum",
+  "diagnostic_text_cells_different": 6357,
+  "diagnostic_max_abs": 3.000000003083869e-06,
+  "diagnostic_mean_abs": 6.914932262092708e-08,
+  "diagnostic_gate": 0.0001,
+  "mode_choice_logsum_max_abs": 0.0,
+  "mode_choice_logsum_gate": 1e-05,
+  "success": true,
+  "claim_boundary": "all modeled decision columns in every published table are exact; declared logsum diagnostics are bounded, not byte-identical"
+}

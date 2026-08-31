@@ -140,6 +140,14 @@ def main() -> int:
             "Sharrow compiler on a compact ragged final-choice boundary"
         ),
     )
+    parser.add_argument(
+        "--phase45-modelwide-choice",
+        action="store_true",
+        help=(
+            "extend Phase 44 with one compact sampled-choice runtime shared by "
+            "school/workplace location and joint/nonmandatory/at-work destination"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -214,6 +222,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase45_modelwide_choice:
+        args.phase44_compact_final_simulation = True
+        os.environ["CHOICEFORGE_PHASE45_MODELWIDE_CHOICE"] = "1"
     if args.phase44_compact_final_simulation:
         args.phase43_compact_trip_state = True
         os.environ["CHOICEFORGE_PHASE44_COMPACT_FINAL"] = "1"
@@ -327,6 +338,8 @@ def main() -> int:
         }
     )
 
+    from activitysim.abm.models import location_choice as activitysim_location_choice
+    from activitysim.abm.models.util import tour_destination as activitysim_tour_destination
     from activitysim.abm.models.util import vectorize_tour_scheduling as vts
     from activitysim.core import los as activitysim_los
     from activitysim.core import simulate
@@ -356,6 +369,14 @@ def main() -> int:
     original_network_los_load_data = activitysim_los.Network_LOS.load_data
     original_runner_call = Runner.__call__
     original_runner_by_name = Runner.by_name
+    original_location_choice_simulate = (
+        activitysim_location_choice.interaction_sample_simulate
+    )
+    original_location_choice_sample = activitysim_location_choice.interaction_sample
+    original_tour_destination_simulate = (
+        activitysim_tour_destination.interaction_sample_simulate
+    )
+    original_tour_destination_sample = activitysim_tour_destination.interaction_sample
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
@@ -372,6 +393,7 @@ def main() -> int:
     full_model_native_release_seconds = 0.0
     full_model_native_release_freed_bytes = 0
     full_model_native_release_after_model = None
+    phase45_choice_events = []
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or native_abi_enabled:
@@ -907,6 +929,12 @@ def main() -> int:
             "non_mandatory_tour_destination",
             "atwork_subtour_destination",
         }
+        phase45_location_steps = {"school_location", "workplace_location"}
+        phase45_destination_steps = {
+            "joint_tour_destination",
+            "non_mandatory_tour_destination",
+            "atwork_subtour_destination",
+        }
         if (
             args.phase33_model_wide
             and model_name_text == "tour_mode_choice_simulate"
@@ -967,11 +995,87 @@ def main() -> int:
                     simulate.simple_simulate_logsums = generated_location_logsums
 
             simulate.simple_simulate_logsums = generated_location_logsums
+        if args.phase45_modelwide_choice and (
+            model_name_text in phase45_location_steps
+            or model_name_text in phase45_destination_steps
+        ):
+            from functools import partial
+            from choiceforge.modelwide_choice import compact_interaction_sample_simulate
+
+            compact_choice = partial(
+                compact_interaction_sample_simulate,
+                telemetry=phase45_choice_events,
+                component=model_name_text,
+            )
+            from choiceforge.modelwide_sampling import sample_destinations_resident
+
+            def resident_sample(
+                state,
+                choosers,
+                alternatives,
+                spec,
+                sample_size,
+                alt_col_name,
+                allow_zero_probs=False,
+                log_alt_losers=False,
+                skims=None,
+                locals_d=None,
+                chunk_size=0,
+                chunk_tag=None,
+                trace_label=None,
+                zone_layer=None,
+                explicit_chunk_size=0,
+                compute_settings=None,
+                stable_alt_positions=None,
+                n_total_alts=None,
+            ):
+                if (
+                    allow_zero_probs
+                    or log_alt_losers
+                    or chunk_size
+                    or explicit_chunk_size
+                    or stable_alt_positions is not None
+                    or n_total_alts is not None
+                ):
+                    raise ValueError(
+                        "Phase 45 resident sampling requires the qualified "
+                        "unchunked inverse-CDF public-model contract"
+                    )
+                return sample_destinations_resident(
+                    state,
+                    choosers,
+                    alternatives,
+                    spec,
+                    sample_size,
+                    alt_col_name,
+                    skims=skims,
+                    trace_label=trace_label,
+                    component=model_name_text,
+                    locals_d=locals_d,
+                    zone_layer=zone_layer,
+                    compute_settings=compute_settings,
+                    work_high_segment_id=int((locals_d or {}).get("WORK_HIGH_SEGMENT_ID", 3)),
+                )
+
+            if model_name_text in phase45_location_steps:
+                activitysim_location_choice.interaction_sample_simulate = compact_choice
+                activitysim_location_choice.interaction_sample = resident_sample
+            else:
+                activitysim_tour_destination.interaction_sample_simulate = compact_choice
+                activitysim_tour_destination.interaction_sample = resident_sample
         try:
             result = original_runner_by_name(self, model_name)
         finally:
             if args.phase33_model_wide and location_candidate_enabled:
                 simulate.simple_simulate_logsums = original_simple_simulate_logsums
+            activitysim_location_choice.interaction_sample_simulate = (
+                original_location_choice_simulate
+            )
+            activitysim_location_choice.interaction_sample = original_location_choice_sample
+            activitysim_tour_destination.interaction_sample_simulate = (
+                original_tour_destination_simulate
+            )
+            activitysim_tour_destination.interaction_sample = original_tour_destination_sample
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
             full_model_scheduler_checkpoint = scheduler.checkpoint()
             # The scheduling-only hooks must end here, but its immutable CUDA
@@ -1093,6 +1197,14 @@ def main() -> int:
         activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
         Runner.__call__ = original_runner_call
         Runner.by_name = original_runner_by_name
+        activitysim_location_choice.interaction_sample_simulate = (
+            original_location_choice_simulate
+        )
+        activitysim_location_choice.interaction_sample = original_location_choice_sample
+        activitysim_tour_destination.interaction_sample_simulate = (
+            original_tour_destination_simulate
+        )
+        activitysim_tour_destination.interaction_sample = original_tour_destination_sample
 
     actual = pd.read_parquet(
         args.output
@@ -1962,6 +2074,8 @@ def main() -> int:
     phase42_compiler = None
     phase43_runtime = None
     phase44_runtime = None
+    phase45_runtime = None
+    phase45_sampling = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -1992,8 +2106,15 @@ def main() -> int:
         from choiceforge.activitysim_destination import phase44_final_runtime_telemetry
 
         phase44_runtime = phase44_final_runtime_telemetry()
+    if args.phase45_modelwide_choice:
+        from choiceforge.modelwide_choice import summarize_telemetry
+        from choiceforge.modelwide_sampling import phase45_sampling_telemetry
+
+        phase45_runtime = summarize_telemetry(phase45_choice_events)
+        phase45_sampling = phase45_sampling_telemetry()
     report = {
         "phase": (
+            45 if args.phase45_modelwide_choice else
             44 if args.phase44_compact_final_simulation else
             43 if args.phase43_compact_trip_state else
             42 if args.phase42_numeric_compiler else
@@ -2009,6 +2130,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with one compact sampled-choice "
+            "runtime shared across five location and destination families"
+            if args.phase45_modelwide_choice else
             "full public ActivitySim model with compact ragged final-choice "
             "state feeding Sharrow's reviewed 16-slot utility compiler"
             if args.phase44_compact_final_simulation else
@@ -2109,6 +2233,8 @@ def main() -> int:
         "phase42_numeric_compiler": phase42_compiler,
         "phase43_compact_trip_state": phase43_runtime,
         "phase44_compact_final_simulation": phase44_runtime,
+        "phase45_modelwide_choice": phase45_runtime,
+        "phase45_modelwide_sampling": phase45_sampling,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2431,6 +2557,40 @@ def main() -> int:
                 "phase44_ragged_choice_width_is_public_sample_contract": (
                     len(compact_events) == 30
                     and all(item.get("max_alternatives") <= 30 for item in compact_events)
+                ),
+            }
+        )
+    if args.phase45_modelwide_choice:
+        modelwide = phase45_runtime or {}
+        target_groups = {
+            "school_location",
+            "workplace_location",
+            "joint_tour_destination",
+            "non_mandatory_tour_destination",
+            "atwork_subtour_destination",
+        }
+        events = modelwide.get("events", [])
+        report["proof_gates"].update(
+            {
+                "phase45_all_five_target_families_use_shared_runtime": (
+                    set(modelwide.get("groups", {})) == target_groups
+                ),
+                "phase45_complete_sampled_choice_workload_covered": (
+                    modelwide.get("calls", 0) > 0
+                    and modelwide.get("chooser_rows", 0) > 0
+                    and modelwide.get("alternative_rows", 0) > 0
+                ),
+                "phase45_all_calls_preserve_public_sample_contract": (
+                    bool(events)
+                    and all(item.get("max_alternatives", 0) <= 30 for item in events)
+                ),
+                "phase45_all_nineteen_sampling_programs_use_resident_cuda": (
+                    len(phase45_sampling or []) == 19
+                    and all(not item.get("fallback") for item in phase45_sampling or [])
+                ),
+                "phase45_dense_sampling_workload_stays_device_resident": (
+                    sum(item.get("utility_cells", 0) for item in phase45_sampling or [])
+                    > 100_000_000
                 ),
             }
         )

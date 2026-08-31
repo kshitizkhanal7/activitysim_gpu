@@ -1,0 +1,146 @@
+{
+  "phase": 45,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "matched_pairs": 3,
+  "target_families": [
+    "school_location",
+    "workplace_location",
+    "joint_tour_destination",
+    "non_mandatory_tour_destination",
+    "atwork_subtour_destination"
+  ],
+  "sampling_programs": 19,
+  "chooser_rows": 201390,
+  "dense_utility_cells": 274223637,
+  "keyed_random_draws": 6041700,
+  "sampled_alternative_rows": 4696676,
+  "exact_guard_rows": [
+    7313,
+    7313,
+    7313
+  ],
+  "exact_guard_fraction": [
+    0.03631262724067729,
+    0.03631262724067729,
+    0.03631262724067729
+  ],
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "diagnostic_max_abs": {
+    "school_location_logsum": [
+      1.9073486363652137e-06,
+      1.9073486363652137e-06,
+      1.9073486363652137e-06
+    ],
+    "workplace_location_logsum": [
+      1.9073486328125e-06,
+      1.9073486328125e-06,
+      1.9073486328125e-06
+    ],
+    "destination_logsum": [
+      3.000000003083869e-06,
+      3.000000003083869e-06,
+      3.000000003083869e-06
+    ],
+    "mode_choice_logsum": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "target_component_aggregate_seconds": {
+    "phase44": [
+      37.099999999999994,
+      37.0,
+      37.099999999999994
+    ],
+    "phase45": [
+      34.800000000000004,
+      34.3,
+      34.5
+    ],
+    "median_phase44": 37.099999999999994,
+    "median_phase45": 34.5,
+    "median_speedup": 1.0753623188405796
+  },
+  "component_medians": {
+    "school_location": {
+      "model_name": "school_location",
+      "gpu_role": "Phase45 resident CUDA sampling plus compact final choice",
+      "median_baseline_seconds": 8,
+      "median_candidate_seconds": 6.7,
+      "median_seconds_saved": 1.2999999999999998,
+      "median_reduction_percent": 16.249999999999996,
+      "median_speedup": 1.1940298507462686
+    },
+    "workplace_location": {
+      "model_name": "workplace_location",
+      "gpu_role": "Phase45 resident CUDA sampling plus compact final choice",
+      "median_baseline_seconds": 11.7,
+      "median_candidate_seconds": 11.3,
+      "median_seconds_saved": 0.3999999999999986,
+      "median_reduction_percent": 3.4188034188034067,
+      "median_speedup": 1.0353982300884954
+    },
+    "joint_tour_destination": {
+      "model_name": "joint_tour_destination",
+      "gpu_role": "Phase45 resident CUDA sampling plus compact final choice",
+      "median_baseline_seconds": 3.3,
+      "median_candidate_seconds": 3.5,
+      "median_seconds_saved": -0.20000000000000018,
+      "median_reduction_percent": -6.060606060606066,
+      "median_speedup": 0.9428571428571428
+    },
+    "non_mandatory_tour_destination": {
+      "model_name": "non_mandatory_tour_destination",
+      "gpu_role": "Phase45 resident CUDA sampling plus compact final choice",
+      "median_baseline_seconds": 11.3,
+      "median_candidate_seconds": 10.2,
+      "median_seconds_saved": 1.1000000000000014,
+      "median_reduction_percent": 9.734513274336296,
+      "median_speedup": 1.107843137254902
+    },
+    "atwork_subtour_destination": {
+      "model_name": "atwork_subtour_destination",
+      "gpu_role": "Phase45 resident CUDA sampling plus compact final choice",
+      "median_baseline_seconds": 2.8,
+      "median_candidate_seconds": 2.6,
+      "median_seconds_saved": 0.19999999999999973,
+      "median_reduction_percent": 7.1428571428571335,
+      "median_speedup": 1.0769230769230769
+    }
+  },
+  "complete_model": {
+    "median_phase44_seconds": 152.09999999999997,
+    "median_phase45_seconds": 149.69999999999996,
+    "median_seconds_saved": 2.4000000000000057,
+    "median_reduction_percent": 1.5779092702169666,
+    "median_speedup": 1.0160320641282565,
+    "candidate_won_every_pair": true
+  },
+  "older_regular_activitysim_context": {
+    "median_seconds": 206.6,
+    "phase45_median_seconds": 149.69999999999996,
+    "descriptive_speedup": 1.3800935203740818,
+    "warning": "Older established control, not a fresh Phase 45 matched pair."
+  },
+  "claim_boundary": "Phase 45 compiles the reviewed public destination-sampling utility surface and inverse-CDF selection on CUDA for five model families. ActivitySim retains keyed random draws; NumPy adjudicates only measured CDF-boundary rows. Final sampled-choice utility remains the authoritative Sharrow CPU evaluator inside a compact runtime.",
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "all_nineteen_sampling_programs_cover_public_workload": true,
+    "all_five_final_choice_families_use_compact_runtime": true,
+    "all_dense_programs_use_cuda_without_fallback": true,
+    "sparse_exact_boundary_guard_is_below_five_percent": true,
+    "three_independent_verifiers_have_exact_decisions": true,
+    "all_declared_logsums_remain_inside_tolerance": true,
+    "target_component_aggregate_improves_in_every_pair": true,
+    "complete_model_improves_in_every_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true
+}

@@ -34,6 +34,7 @@ from .trip_destination_sampling import (
 
 
 _CHOICE_KERNEL = None
+_CHOICE_KERNELS = {}
 _DUPLICATE_KERNEL = None
 _ACTIVITYSIM_CHOICE_WARM = False
 _TELEMETRY = []
@@ -98,10 +99,11 @@ def phase41_sampling_telemetry():
     return [asdict(item) for item in _PHASE41_TELEMETRY]
 
 
-def _compile_resident_kernels(cp):
+def _compile_resident_kernels(cp, alternative_count=1454):
     global _CHOICE_KERNEL, _DUPLICATE_KERNEL
-    if _CHOICE_KERNEL is None:
-        choice_source = numpy_float32_choice_cuda_helpers() + r'''
+    alternative_count = int(alternative_count)
+    if alternative_count not in _CHOICE_KERNELS:
+        choice_source = numpy_float32_choice_cuda_helpers(alternative_count) + r'''
 __device__ __forceinline__ float phase_choice_expf(float value, int exact_shared_arithmetic)
 {
     return exact_shared_arithmetic != 0 ? numpy_avx2_expf(value) : expf(value);
@@ -169,7 +171,7 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     // float-versus-double exponential path in the proof itself.
     double low_total = 1.0;
     double high_total = 1.0;
-    if (exact_shared_arithmetic == 0) {
+    if (exact_shared_arithmetic != 1) {
         low_total = 0.0;
         high_total = 0.0;
         for (int alternative = 0; alternative < alternative_count; ++alternative) {
@@ -215,6 +217,9 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
         ++sorted_position;
     }
 
+    // Mode 1 is the Phase 41 exact arithmetic ABI.  Mode 2 deliberately uses
+    // the same NumPy-compatible exp/pairwise normalization while retaining
+    // the interval guard for an approximately evaluated utility surface.
     // With the Phase 41 arithmetic ABI the utility surface is already the
     // exact Sharrow surface.  The interval calculation below is only an error-
     // envelope proof for approximate utilities; even a zero envelope can flag
@@ -222,8 +227,35 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     // draws to the un-renormalized float32 probability prefix.  Bypass that
     // proof, not the actual choice calculation.  End-to-end output verification
     // remains the authority for exp/probability compatibility.
-    if (exact_shared_arithmetic != 0) {
+    if (exact_shared_arithmetic == 1) {
         guard_rows[row] = 0;
+        probability_log_risk[row] = 0.0f;
+        return;
+    }
+
+    // Mode 3 has a bit-identical utility surface but a shifted CUDA
+    // exp/divide path that can differ from NumPy by one float32 ulp.  Guard
+    // only draws close enough to a CDF boundary for that drift to matter.
+    if (exact_shared_arithmetic == 3) {
+        const double cdf_rounding_reserve = 5.0e-7;
+        double prefix = 0.0;
+        bool guarded = false;
+        for (int alternative = 0; alternative < alternative_count; ++alternative) {
+            const float weight = phase_choice_expf(
+                utilities[base + alternative], exact_shared_arithmetic);
+            const float probability = weight > 0.0f ? weight / total : 0.0f;
+            const double previous = prefix;
+            prefix += (double)probability;
+            for (int draw = 0; draw < sample_size; ++draw) {
+                if (choices[draw_base + draw] != alternative) continue;
+                const double random_draw = random_draws[draw_base + draw];
+                if (fabs(prefix - random_draw) <= cdf_rounding_reserve ||
+                    fabs(random_draw - previous) <= cdf_rounding_reserve) {
+                    guarded = true;
+                }
+            }
+        }
+        guard_rows[row] = guarded ? 1 : 0;
         probability_log_risk[row] = 0.0f;
         return;
     }
@@ -254,7 +286,12 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
                 ? 0.0
                 : previous_high / (previous_high + suffix_low_before);
             const double random_draw = random_draws[draw_base + draw];
-            if (!(cdf_low > random_draw && previous_cdf_high <= random_draw)) {
+            // The interval algebra bounds the utility surface.  Reserve an
+            // additional ten parts per million for the shifted float32
+            // exp/divide/CDF implementation used by the model-wide sampler.
+            const double cdf_rounding_reserve = 1.0e-5;
+            if (!(cdf_low - cdf_rounding_reserve > random_draw &&
+                  previous_cdf_high + cdf_rounding_reserve <= random_draw)) {
                 guarded = true;
             }
             const double selected_low =
@@ -282,12 +319,19 @@ extern "C" __global__ void phase40_resident_inverse_cdf(
     probability_log_risk[row] = (float)row_probability_risk;
 }
 '''
-        _CHOICE_KERNEL = cp.RawKernel(
+        choice_source = choice_source.replace(
+            "numpy_pairwise_exp_sum_1454",
+            f"numpy_pairwise_exp_sum_{alternative_count}",
+        )
+        choice_kernel = cp.RawKernel(
             choice_source,
             "phase40_resident_inverse_cdf",
             options=("--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=false"),
         )
-        _CHOICE_KERNEL.compile()
+        choice_kernel.compile()
+        _CHOICE_KERNELS[alternative_count] = choice_kernel
+        if alternative_count == 1454:
+            _CHOICE_KERNEL = choice_kernel
     if _DUPLICATE_KERNEL is None:
         duplicate_source = r'''
 extern "C" __global__ void phase40_duplicate_counts(
@@ -321,19 +365,17 @@ extern "C" __global__ void phase40_duplicate_counts(
             options=("--std=c++11",),
         )
         _DUPLICATE_KERNEL.compile()
-    return _CHOICE_KERNEL, _DUPLICATE_KERNEL
+    return _CHOICE_KERNELS[alternative_count], _DUPLICATE_KERNEL
 
 
 def _host_duplicate_contract(choices):
     """Return ActivitySim first-occurrence flags and total duplicate counts."""
     choices = np.asarray(choices)
-    first = np.ones(choices.shape, dtype=np.uint8)
-    counts = np.ones(choices.shape, dtype=np.uint32)
-    for row in range(choices.shape[0]):
-        for draw in range(choices.shape[1]):
-            equal = choices[row] == choices[row, draw]
-            counts[row, draw] = int(np.count_nonzero(equal))
-            first[row, draw] = not bool(np.any(equal[:draw]))
+    equal = choices[:, :, None] == choices[:, None, :]
+    counts = equal.sum(axis=2, dtype=np.uint32)
+    prior = np.tril(np.ones((choices.shape[1], choices.shape[1]), dtype=bool), k=-1)
+    first = ~np.any(equal & prior[None, :, :], axis=2)
+    first = first.astype(np.uint8, copy=False)
     return first, counts
 
 
