@@ -153,16 +153,25 @@ def trip_destination_stage_telemetry():
 
 
 def _candidate_sink_metadata(choosers, trace_label, *, required):
-    """Read scheduling-only row identity only when a device sink needs it."""
+    """Read exact row identity plus scheduling coordinates when available."""
     if not required:
         return {}
-    return {
+    result = {
         "chooser_ids": np.asarray(choosers.index, dtype=np.int64),
-        "start": np.asarray(choosers["start"], dtype=np.int16),
-        "end": np.asarray(choosers["end"], dtype=np.int16),
-        "out_period": np.asarray(choosers["out_period"].astype(str)),
-        "in_period": np.asarray(choosers["in_period"].astype(str)),
     }
+    scheduling = ("start", "end", "out_period", "in_period")
+    present = tuple(name in choosers for name in scheduling)
+    scheduling_sink = str(trace_label).startswith("mandatory_tour_scheduling")
+    if scheduling_sink and not all(present):
+        raise ValueError("device sink has a partial scheduling-coordinate ABI")
+    if all(present):
+        result.update({
+            "start": np.asarray(choosers["start"], dtype=np.int16),
+            "end": np.asarray(choosers["end"], dtype=np.int16),
+            "out_period": np.asarray(choosers["out_period"].astype(str)),
+            "in_period": np.asarray(choosers["in_period"].astype(str)),
+        })
+    return result
 
 
 def _cached_strict_ir(spec_frame):
@@ -1499,11 +1508,12 @@ def _simple_simulate_mtc21_logsums_cuda(
                     sink_metadata = {
                         "trace_label": trace_label,
                         "chooser_ids": entry["chooser_ids"],
-                        "start": entry["start"],
-                        "end": entry["end"],
-                        "out_period": entry["out_period"],
-                        "in_period": entry["in_period"],
                     }
+                    for optional_name in (
+                        "start", "end", "out_period", "in_period"
+                    ):
+                        if optional_name in entry:
+                            sink_metadata[optional_name] = entry[optional_name]
                     device_logsum_sink(
                         logsums,
                         sink_metadata,

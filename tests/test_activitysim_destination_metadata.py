@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import pytest
 
 from choiceforge.activitysim_destination import (
     _candidate_sink_metadata,
@@ -36,6 +37,25 @@ def test_scheduling_candidate_captures_device_sink_identity():
     assert metadata["end"].tolist() == [9, 15]
     assert metadata["out_period"].tolist() == ["EA", "AM"]
     assert metadata["in_period"].tolist() == ["AM", "PM"]
+
+
+def test_destination_device_sink_captures_only_repeated_row_identity():
+    choosers = pd.DataFrame({"zone_id": [4, 9, 3]}, index=[10, 10, 11])
+
+    metadata = _candidate_sink_metadata(
+        choosers, "school_location.logsums", required=True
+    )
+
+    assert set(metadata) == {"chooser_ids"}
+    assert metadata["chooser_ids"].tolist() == [10, 10, 11]
+
+
+def test_device_sink_rejects_partial_scheduling_coordinates():
+    choosers = pd.DataFrame({"start": [5]}, index=[10])
+    with pytest.raises(ValueError, match="partial scheduling-coordinate"):
+        _candidate_sink_metadata(
+            choosers, "mandatory_tour_scheduling.changed_abi", required=True
+        )
 
 
 def test_phase43_generates_unique_directional_draw_state_without_expansion():

@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.258x", STYLES["metric_num"]),
-                Paragraph("2^32", STYLES["metric_num"]),
+                Paragraph("10.822x", STYLES["metric_num"]),
+                Paragraph("55.50 MB", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("resident boundary<br/>speedup vs Phase 47", STYLES["metric_label"]),
-                Paragraph("float32 bit patterns<br/>exhaustively scanned", STYLES["metric_label"]),
+                Paragraph("exact inter-stage<br/>handoff speedup", STYLES["metric_label"]),
+                Paragraph("CPU/GPU transfer<br/>avoided per run", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43 and 44 remove repeated random-state rows and generic pandas choice plumbing. Phase 45 applies one reviewed CUDA sampler to five destination families and 274 million utility cells. Phase 46 adds a persistent service and exact keyed MT19937 generation on GPU. Phase 47 compiles all 4,696,676 final sampled-alternative utilities to strict CUDA. Phase 48 keeps normalization, probability choice, compact logsum reduction, and continued random state on the GPU. It exhaustively scans all 2^32 float32 patterns, matches every live arithmetic bit, preserves seven published files in every run, and improves the resident boundary from a 0.4002-second median to 0.3182 seconds. Whole-model timing is reported but not promoted because only two of three lifecycle pairs win. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43 and 44 remove repeated random-state rows and generic pandas choice plumbing. Phase 45 applies one reviewed CUDA sampler to five destination families and 274 million utility cells. Phase 46 adds a persistent service and exact keyed MT19937 generation on GPU. Phase 47 compiles all 4,696,676 final sampled-alternative utilities to strict CUDA. Phase 48 keeps normalization, probability choice, compact logsum reduction, and continued random state on the GPU. Phase 49 connects the mode-logsum reducer directly to final choice, removes 55.50 MB of redundant transfer, and makes that exact handoff 10.822x faster over 31 repetitions. Three fresh full-model pairs preserve all published outputs; the 1.004x lifecycle median is reported but not promoted because only two pairs win. Assumptions, failures, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

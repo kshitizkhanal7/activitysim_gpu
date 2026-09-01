@@ -173,6 +173,15 @@ def main() -> int:
             "and continued keyed RNG state in one fail-closed CUDA backend"
         ),
     )
+    parser.add_argument(
+        "--phase49-destination-supergraph",
+        action="store_true",
+        help=(
+            "connect sampled-destination mode logsums directly to final CUDA "
+            "utility with exact repeated-index validation and no redundant "
+            "host round trip"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -247,6 +256,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase49_destination_supergraph:
+        args.phase48_resident_destination_graph = True
+        os.environ["CHOICEFORGE_PHASE49_DESTINATION_SUPERGRAPH"] = "1"
     if args.phase48_resident_destination_graph:
         args.phase47_device_final_choice = True
         os.environ["CHOICEFORGE_PHASE48_RESIDENT_DESTINATION_GRAPH"] = "1"
@@ -407,6 +419,7 @@ def main() -> int:
         activitysim_location_choice.interaction_sample_simulate
     )
     original_location_choice_sample = activitysim_location_choice.interaction_sample
+    original_run_location_choice = activitysim_location_choice.run_location_choice
     original_tour_destination_simulate = (
         activitysim_tour_destination.interaction_sample_simulate
     )
@@ -432,6 +445,7 @@ def main() -> int:
     phase46_prewarm = None
     phase47_prewarm = None
     phase48_prewarm = None
+    phase49_bridge = None
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or native_abi_enabled:
@@ -1018,6 +1032,7 @@ def main() -> int:
             ):
                 simulate.simple_simulate_logsums = original_simple_simulate_logsums
                 try:
+                    materialize = False
                     return _simple_simulate_mtc21_logsums_cuda(
                         state,
                         choosers,
@@ -1028,11 +1043,33 @@ def main() -> int:
                         trace_label
                         or f"{model_name_text}.compute_logsums",
                         explicit_chunk_size,
+                        device_logsum_sink=(
+                            (lambda values, metadata: phase49_bridge.publish(
+                                values,
+                                metadata,
+                                host_materialized=materialize,
+                            ))
+                            if args.phase49_destination_supergraph else None
+                        ),
+                        materialize_device_sink_result=materialize,
                     )
                 finally:
                     simulate.simple_simulate_logsums = generated_location_logsums
 
             simulate.simple_simulate_logsums = generated_location_logsums
+        if args.phase49_destination_supergraph and model_name_text in phase45_location_steps:
+            def resident_run_location_choice(*run_args, **run_kwargs):
+                choices_df, sample_df = original_run_location_choice(
+                    *run_args, **run_kwargs
+                )
+                if "mode_choice_logsum" not in choices_df:
+                    raise RuntimeError("Phase 49 location output logsum column is absent")
+                choices_df["mode_choice_logsum"] = phase49_bridge.consume_selected(
+                    choices_df.index
+                )
+                return choices_df, sample_df
+
+            activitysim_location_choice.run_location_choice = resident_run_location_choice
         if args.phase45_modelwide_choice and (
             model_name_text in phase45_location_steps
             or model_name_text in phase45_destination_steps
@@ -1112,10 +1149,13 @@ def main() -> int:
                 original_location_choice_simulate
             )
             activitysim_location_choice.interaction_sample = original_location_choice_sample
+            activitysim_location_choice.run_location_choice = original_run_location_choice
             activitysim_tour_destination.interaction_sample_simulate = (
                 original_tour_destination_simulate
             )
             activitysim_tour_destination.interaction_sample = original_tour_destination_sample
+        if args.phase49_destination_supergraph and model_name_text in location_logsum_steps:
+            phase49_bridge.assert_empty()
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
             full_model_scheduler_checkpoint = scheduler.checkpoint()
             # The scheduling-only hooks must end here, but its immutable CUDA
@@ -1236,6 +1276,13 @@ def main() -> int:
 
                 phase46_service.phase48_resident_graph = True
                 phase48_prewarm = prewarm_phase48_public_runtime()
+                if args.phase49_destination_supergraph:
+                    from choiceforge.destination_supergraph import (
+                        DestinationSupergraphBridge,
+                    )
+
+                    phase49_bridge = DestinationSupergraphBridge(phase46_service.cp)
+                    phase46_service.destination_supergraph_bridge = phase49_bridge
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
@@ -1261,6 +1308,7 @@ def main() -> int:
             original_location_choice_simulate
         )
         activitysim_location_choice.interaction_sample = original_location_choice_sample
+        activitysim_location_choice.run_location_choice = original_run_location_choice
         activitysim_tour_destination.interaction_sample_simulate = (
             original_tour_destination_simulate
         )
@@ -2139,6 +2187,7 @@ def main() -> int:
     phase46_runtime = None
     phase47_runtime = None
     phase48_runtime = None
+    phase49_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -2187,8 +2236,12 @@ def main() -> int:
         from choiceforge.modelwide_graph import summarize_phase48_telemetry
 
         phase48_runtime = summarize_phase48_telemetry()
+    if args.phase49_destination_supergraph:
+        phase49_bridge.assert_empty()
+        phase49_runtime = phase49_bridge.summary()
     report = {
         "phase": (
+            49 if args.phase49_destination_supergraph else
             48 if args.phase48_resident_destination_graph else
             47 if args.phase47_device_final_choice else
             46 if args.phase46_persistent_destination else
@@ -2208,6 +2261,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with an exact device-resident "
+            "destination supergraph from mode-logsum reduction through final "
+            "utility, probability, choice, compact logsums, and continued RNG"
+            if args.phase49_destination_supergraph else
             "full public ActivitySim model with a fail-closed resident CUDA "
             "destination graph for final normalization, guarded selection, "
             "compact logsums, and continued keyed MT19937 state"
@@ -2330,6 +2387,7 @@ def main() -> int:
         "phase47_prewarm": phase47_prewarm,
         "phase48_resident_destination_graph": phase48_runtime,
         "phase48_prewarm": phase48_prewarm,
+        "phase49_destination_supergraph": phase49_runtime,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2808,6 +2866,26 @@ def main() -> int:
                 "phase48_sparse_exact_guard_preserves_public_decisions": (
                     bool(graph_events)
                     and all(item.get("pre_guard_mismatches") == 0 for item in graph_events)
+                ),
+            }
+        )
+    if args.phase49_destination_supergraph:
+        supergraph = phase49_runtime or {}
+        report["proof_gates"].update(
+            {
+                "phase49_all_mode_logsum_calls_handoff_on_device": (
+                    supergraph.get("calls") == 19
+                    and supergraph.get("rows") == 4_696_676
+                    and supergraph.get("pending_packets") == 0
+                ),
+                "phase49_every_handoff_has_exact_repeated_row_identity": (
+                    supergraph.get("all_row_identities_exact") is True
+                ),
+                "phase49_eliminates_all_redundant_final_logsum_uploads": (
+                    supergraph.get("host_to_device_bytes_avoided") == 18_786_704
+                ),
+                "phase49_tour_destination_logsums_never_visit_host": (
+                    supergraph.get("device_to_host_bytes_avoided", 0) > 17_000_000
                 ),
             }
         )

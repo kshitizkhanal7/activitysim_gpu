@@ -273,6 +273,7 @@ def finish_resident_final_choice(
     prepared,
     utility_complete,
     shadow_reference=None,
+    resident_mode_logsum_device=None,
 ):
     """Finish Phase 47 utility through a resident exact probability graph."""
     from activitysim.core import logit
@@ -488,6 +489,15 @@ def finish_resident_final_choice(
     shadow_complete = time.perf_counter()
 
     selected_rows = offsets[:-1] + selected_positions.astype(np.int64)
+    destination_bridge = getattr(service, "destination_supergraph_bridge", None)
+    if destination_bridge is not None:
+        if resident_mode_logsum_device is None:
+            raise RuntimeError("Phase 49 resident logsum device vector is absent")
+        destination_bridge.capture_selected(
+            np.asarray(choosers.index, dtype=np.int64),
+            selected_rows,
+            component=str(component),
+        )
     choices = pd.Series(
         alternatives[choice_column].to_numpy(copy=False)[selected_rows],
         index=choosers.index,

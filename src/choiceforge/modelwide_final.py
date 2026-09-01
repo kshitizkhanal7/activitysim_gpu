@@ -273,9 +273,15 @@ def device_compact_interaction_sample_simulate(
         choosers.get("income_segment", pd.Series(0, index=choosers.index)),
         dtype=np.int32,
     )
-    mode_logsum = np.ascontiguousarray(
-        alternatives["mode_choice_logsum"], dtype=np.float32
-    )
+    destination_bridge = getattr(service, "destination_supergraph_bridge", None)
+    if destination_bridge is None:
+        mode_logsum_device = cp.asarray(np.ascontiguousarray(
+            alternatives["mode_choice_logsum"], dtype=np.float32
+        ))
+    else:
+        mode_logsum_device = destination_bridge.consume(
+            alternatives, consumer_trace=str(trace_label)
+        )
     with np.errstate(divide="ignore", invalid="ignore"):
         correction = np.ascontiguousarray(
             np.minimum(
@@ -311,7 +317,7 @@ def device_compact_interaction_sample_simulate(
             cp.asarray(size_log),
             cp.asarray(shadow_utility),
             cp.asarray(income),
-            cp.asarray(mode_logsum),
+            mode_logsum_device,
             cp.asarray(correction),
             cp.asarray(coefficients),
             padded,
@@ -358,6 +364,9 @@ def device_compact_interaction_sample_simulate(
                 locals_d or {},
                 str(trace_label),
                 compute_settings,
+            ),
+            resident_mode_logsum_device=(
+                mode_logsum_device if destination_bridge is not None else None
             ),
         )
 

@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 48 resident destination graph proves and what it still cannot claim;
+- what the completed Phase 49 inter-stage destination graph proves and what it still cannot claim;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -360,7 +360,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 48 repository now passes 201 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, and Phase 48's resumed MT19937 state, exact probability reduction, exhaustive exponential correction, and domain guard.
+At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 49 repository now passes 209 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, Phase 48's resumed MT19937 state and exhaustive exponential correction, and Phase 49's exact repeated-row device handoff and compact selected-output restoration.
 
 ## 7. What was benchmarked?
 
@@ -941,7 +941,7 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 48 repository passes 201, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, and Phase 48 probability, random-state, and arithmetic-domain checks.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 49 repository passes 209, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, Phase 48 probability and random-state checks, and Phase 49 inter-stage packet and selected-output checks.
 
 This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer but failed its 50,000-household scale gate. Phase 16 recovered a repeated large destination-component win. Phase 17 added persistent plans and trip-mode continuation, strengthening that component win and making the five-run whole-model median faster. The strict path remains opt-in because the whole-model interval still includes zero and replication on other hardware and models is unfinished.
 
@@ -974,7 +974,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 48 repository passes 201 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 49 repository passes 209 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -6360,3 +6360,119 @@ The practical order is:
 The target should be a repeated multi-second reduction across the five
 destination components. Only a boundary that large has a fair chance to rise
 above whole-model noise and make a meaningful dent in total ActivitySim time.
+
+## 213. What did Phase 49 actually build?
+
+Phase 49 built the first cross-stage part of that destination supergraph. A
+mode-choice logsum is a single score summarizing how easy it is to reach one
+possible destination using all available travel modes. The GPU already made
+that score. Phase 48 then brought every score back to the CPU, put it in a
+pandas table, and sent the same information back to the GPU for final choice.
+
+Phase 49 keeps that vector on the graphics card. It hands the result directly
+from the mode-logsum calculation to the final destination formula. Think of
+two workers at the same workbench: previously the first worker mailed a part
+to another building, where it was labeled and mailed back. Now the first
+worker passes it across the bench.
+
+## 214. How does the system know it passed the right rows?
+
+Travel tables often repeat an ID because one person or tour has several
+possible destinations. Merely checking that two arrays have the same length is
+not enough. The sequence `[7, 7, 9]` is different from `[7, 9, 9]`, even though
+both have three rows.
+
+Each Phase 49 packet carries the complete repeated ID sequence. The final
+stage must present exactly the same IDs in exactly the same order. A missing
+packet, reordered duplicate, changed number of rows, stale packet, or packet
+left at the end stops the model. The fast path never guesses which rows match.
+
+Tests deliberately try missing, reordered, malformed, and unconsumed packets
+and require them to fail.
+
+## 215. Why do school and workplace need a special return path?
+
+The three tour-destination families only need the final chosen zone. School
+and workplace also publish the chosen destination's mode-choice logsum for
+later analysis. Returning no logsums would therefore change a required output.
+
+Phase 49 first chooses the destination on the GPU. It then gathers just one
+original 64-bit logsum per selected person and returns those compact values.
+Stable person IDs put them back into the correct output rows. Across the public
+run, this returns 107,794 values, or 862,352 bytes, instead of returning every
+logsum for 2,543,709 school and workplace alternatives.
+
+The final utility uses a 32-bit copy, but the published value comes from the
+original 64-bit device vector. That distinction preserves the output bits.
+
+## 216. How much data movement did Phase 49 remove?
+
+Across all 19 calls, the former bridge downloaded 37,573,408 bytes of 64-bit
+logsums and uploaded 18,786,704 bytes of 32-bit copies. Phase 49 eliminates
+both full transfers, then returns 862,352 bytes of selected school/workplace
+output.
+
+The net reduction is 55,497,760 bytes per complete run. In friendlier units,
+that is about 55.5 megabytes of copying removed from a small boundary.
+
+| Transfer | Phase 48 | Phase 49 |
+|---|---:|---:|
+| all logsum values from GPU to CPU | 37.57 MB | 0 |
+| selected published values | included above | 0.86 MB |
+| final-utility values from CPU to GPU | 18.79 MB | 0 |
+| net bytes avoided | - | 55.50 MB |
+
+## 217. Was the handoff really faster and exact?
+
+Yes at the directly measured boundary. A qualifier used the exact row counts
+of all 19 public calls and repeated both paths 31 times. The old path copied
+GPU-to-CPU, converted to 32-bit numbers, and copied back. The new path converted
+on the GPU and returned only selected published outputs.
+
+| Measurement | Phase 48 bridge | Phase 49 bridge | Result |
+|---|---:|---:|---:|
+| median time | 13.265 ms | 1.226 ms | 10.822x faster |
+| time reduction | - | 90.759% | repeated 31 times |
+| 32-bit result mismatches | - | 0 | bit-identical |
+| alternative rows covered | 4,696,676 | 4,696,676 | complete workload shape |
+
+This is a strong boundary result. It is not evidence that the whole travel
+model became ten times faster; the boundary was only about 13 milliseconds to
+begin with.
+
+## 218. Did it make the complete ActivitySim model faster?
+
+Three fresh Phase 48/49 pairs ran the full 34-step, 50,000-household public
+model. All three pairs produced zero changed decision cells in seven published
+files.
+
+The whole-model median changed from 144.100 to 143.517 seconds: an observed
+0.583-second, 0.405%, or 1.004x improvement. The candidates changed by
++0.284, +0.583, and -0.016 seconds relative to their paired controls. Because
+the third candidate was very slightly slower, we do not call this replicated
+whole-model superiority.
+
+The apparent 0.583-second median is also far larger than the approximately
+0.012-second boundary saving. That tells us normal lifecycle variation, not the
+handoff alone, dominates the whole-model number. The honest promoted claim is
+10.822x for the handoff, exact full outputs, and no proven large lifecycle dent.
+
+## 219. What remains for the ambitious supergraph?
+
+Phase 49 removed an unnecessary trip across the CPU/GPU boundary, but it did
+not remove the much larger work that creates dense logsum inputs. The current
+19 calls still make large pandas rows, resolve formula bindings, pack dozens
+of columns, and upload them before the mode utility kernel runs.
+
+The audit found about 1.14 seconds of binding resolution, 0.77 seconds of host
+packing, 0.31 seconds of upload, and 2.65 seconds of mode-utility kernels, with
+about 1.95 billion bytes of dense inputs. The next phase should describe each
+person or tour once, keep sampled destination IDs compact, keep land-use and
+skim tables resident, and generate the 41 floating and 31 integer inputs on
+the GPU.
+
+That next boundary is hard because waiting-time formulas, six controlled
+random draws, availability flags, time periods, skims, and exact arithmetic
+all have to match. But it is measured in seconds rather than milliseconds.
+It is the credible route to a repeated component gain and a visible reduction
+in total ActivitySim time.

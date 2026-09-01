@@ -1039,3 +1039,20 @@ superiority, not replicated whole-model superiority for this sub-second gain.
 See the [Phase 48 technical report](docs/phase48-resident-destination-graph.md),
 the [matched-pair evidence](benchmark-results/phase48-p48final-summary.json),
 and the [fail-closed qualification](benchmark-results/phase48-p48final-qualification.json).
+
+## Phase 49 inter-stage destination supergraph
+
+Phase 49 connects the device mode-logsum reducer directly to the device final
+destination utility across all 19 public sampled-destination calls. It removes
+55,497,760 bytes of redundant transfer per complete run and returns only
+107,794 selected float64 school/workplace logsums required by published
+outputs. On the exact 4,696,676-row public call shapes, 31 repetitions improve
+the handoff median from 13.265 to 1.226 ms (10.822x; 90.759% lower) with zero
+float32 bit mismatches.
+
+Three fresh Phase 48/49 full-model pairs preserve all seven published files.
+The lifecycle median is 144.100 versus 143.517 seconds (1.004x observed), but
+only two of three candidates win, so this is not promoted as replicated
+whole-model superiority. See the [Phase 49 technical report](docs/phase49-destination-supergraph.md),
+[boundary qualification](benchmark-results/phase49-handoff-qualification.json),
+and [matched-pair evidence](benchmark-results/phase49-p49final-summary.json).
