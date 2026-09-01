@@ -1012,3 +1012,30 @@ probability/logsum ABI, not another isolated kernel.
 See the [Phase 47 technical report](docs/phase47-device-final-choice.md), the
 [matched-pair evidence](benchmark-results/phase47-p47final-summary.json), and
 the [fail-closed qualification](benchmark-results/phase47-p47final-qualification.json).
+
+## Phase 48 resident destination probability graph
+
+Phase 48 keeps final destination normalization, probability selection, compact
+logsum reduction, and the next keyed MT19937 draw on the GPU. It resumes the
+device random state left by Phase 46, follows final chooser permutations, and
+advances the six intervening ActivitySim ledger draws exactly. Across all 19
+calls it avoids a 23.76 MB dense utility download and transfers only 2.62 MB of
+compact choices, guards, totals, and maxima.
+
+Exact exponential behavior is qualified rather than assumed. A reproducible
+scanner visited all 4,294,967,296 float32 bit patterns. It found exactly 73
+CUDA/NumPy differences inside the declared [-80, 80] domain; the backend's
+hashed 73-entry correction table matches that complete set. A full live shadow
+then found zero bit mismatches in utilities, weights, totals, probabilities,
+choices, or logsums across 4,696,676 sampled alternatives.
+
+Three fresh matched Phase 47/48 pairs produced seven byte-identical published
+tables each. The resident final boundary improved in all three pairs, from a
+0.4002-second median to 0.3182 seconds (**1.258x**, 20.5% lower). The observed
+whole-model medians were 147.2 and 144.717 seconds, but Phase 48 won only two of
+three lifecycle pairs. The project therefore claims replicated boundary
+superiority, not replicated whole-model superiority for this sub-second gain.
+
+See the [Phase 48 technical report](docs/phase48-resident-destination-graph.md),
+the [matched-pair evidence](benchmark-results/phase48-p48final-summary.json),
+and the [fail-closed qualification](benchmark-results/phase48-p48final-qualification.json).

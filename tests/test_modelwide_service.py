@@ -176,3 +176,153 @@ def test_phase47_final_workspace_reuses_phase46_storage():
     second = service.final_workspace(47, 1_099, 21)
     assert all(second[name].data.ptr == pointers[name] for name in pointers)
     assert service.summary()["workspace_bytes"] < 1024**3
+
+
+def test_phase48_resumed_mt19937_state_matches_reseeded_reference_bits():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    seeds = np.asarray([0, 19, 2**31 + 7, 2**32 - 1], dtype=np.uint32)
+    offsets = np.asarray([0, 3, 117, 650], dtype=np.int32)
+    first = service.generate_from_seeds(seeds, offsets, 30)
+    cp.cuda.Stream.null.synchronize()
+    first_host = cp.asnumpy(first)
+    resumed = service._resume_from_device_state(
+        len(seeds), 1, np.arange(len(seeds), dtype=np.int32)
+    )
+    cp.cuda.Stream.null.synchronize()
+    resumed_host = cp.asnumpy(resumed)
+    expected = []
+    for seed, offset in zip(seeds, offsets):
+        generator = np.random.RandomState(int(seed))
+        generator.rand(int(offset))
+        expected.append(generator.rand(31))
+    expected = np.asarray(expected)
+    assert np.array_equal(first_host.view(np.uint64), expected[:, :30].view(np.uint64))
+    assert np.array_equal(resumed_host.view(np.uint64), expected[:, 30:].view(np.uint64))
+
+
+def test_phase48_resumed_mt19937_state_follows_final_chooser_permutation():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    seeds = np.asarray([11, 22, 33, 44, 55], dtype=np.uint32)
+    offsets = np.asarray([1, 5, 9, 13, 17], dtype=np.int32)
+    service.generate_from_seeds(seeds, offsets, 30)
+    cp.cuda.Stream.null.synchronize()
+    permutation = np.asarray([3, 0, 4, 1, 2], dtype=np.int32)
+    resumed = service._resume_from_device_state(
+        len(seeds), 1, permutation, skip_draws=6
+    )
+    cp.cuda.Stream.null.synchronize()
+    expected = []
+    for source in permutation:
+        generator = np.random.RandomState(int(seeds[source]))
+        generator.rand(int(offsets[source]) + 36)
+        expected.append(generator.rand())
+    assert np.array_equal(
+        cp.asnumpy(resumed)[:, 0].view(np.uint64),
+        np.asarray(expected).view(np.uint64),
+    )
+
+
+@pytest.mark.parametrize("width", [21, 25, 29, 30])
+def test_phase48_resident_probability_sum_and_choice_match_numpy(width):
+    from choiceforge.modelwide_graph import _compile_resident_choice
+
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    rng = np.random.default_rng(480000 + width)
+    rows = 59
+    utilities = rng.normal(-2, 3, size=(rows, width)).astype(np.float32)
+    draws = rng.random((rows, 1), dtype=np.float64)
+    workspace = service.final_workspace(rows, rows * width, width)
+    workspace["utilities"].set(utilities)
+    cp.max(workspace["utilities"], axis=1, out=workspace["row_maxima"])
+    weight_kernel, _, _ = _compile_phase46_choice(cp, width)
+    weight_kernel(
+        ((utilities.size + 255) // 256,),
+        (256,),
+        (
+            workspace["utilities"],
+            workspace["row_maxima"],
+            workspace["weights"],
+            np.int64(utilities.size),
+            np.int32(width),
+        ),
+    )
+    choice_kernel, _ = _compile_resident_choice(cp, width)
+    choice_kernel(
+        ((rows + 127) // 128,),
+        (128,),
+        (
+            workspace["weights"],
+            cp.asarray(draws),
+            workspace["positions"],
+            workspace["selected_probabilities"],
+            workspace["row_totals"],
+            workspace["guard"],
+            workspace["bad"],
+            np.int32(rows),
+            np.int32(width),
+        ),
+    )
+    cp.cuda.Stream.null.synchronize()
+    shifted = utilities - utilities.max(axis=1, keepdims=True)
+    expected_weights = np.exp(shifted)
+    expected_totals = expected_weights.sum(axis=1)
+    expected_probs = expected_weights / expected_totals[:, None]
+    expected_positions, _ = numpy_preserved_order_choices(
+        expected_probs, draws, np.arange(width, dtype=np.int32)
+    )
+    assert not int(cp.count_nonzero(workspace["bad"]).get())
+    assert np.array_equal(
+        cp.asnumpy(workspace["weights"]).view(np.uint32),
+        expected_weights.view(np.uint32),
+    )
+    assert np.array_equal(
+        cp.asnumpy(workspace["row_totals"]).view(np.uint32),
+        expected_totals.view(np.uint32),
+    )
+    actual_positions = cp.asnumpy(workspace["positions"])
+    guards = cp.asnumpy(workspace["guard"]).astype(bool)
+    assert np.array_equal(actual_positions[~guards], expected_positions[:, 0][~guards])
+
+
+def test_phase48_exp_correction_matches_numpy_bits_and_enforces_domain():
+    from choiceforge.modelwide_graph import _compile_exp_correction
+
+    cp = _cupy()
+    # This exact negative float32 bit pattern is one of the 73 values found by
+    # the exhaustive 2**32-pattern qualification scan.
+    corrected_input = np.asarray([3213170066], dtype=np.uint32).view(np.float32)[0]
+    utilities = np.asarray(
+        [[corrected_input, 0.0], [-999.0, 0.0], [-81.0, 0.0]], dtype=np.float32
+    )
+    row_maxima = np.zeros(3, dtype=np.float32)
+    device_utilities = cp.asarray(utilities)
+    device_weights = cp.exp(device_utilities)
+    bad = cp.zeros(3, dtype=cp.uint8)
+    correction, (input_bits, output_bits), _ = _compile_exp_correction(cp)
+    correction(
+        ((utilities.size + 255) // 256,),
+        (256,),
+        (
+            device_utilities,
+            cp.asarray(row_maxima),
+            device_weights,
+            bad,
+            input_bits,
+            output_bits,
+            np.int64(utilities.size),
+            np.int32(utilities.shape[1]),
+            np.int32(input_bits.size),
+        ),
+    )
+    cp.cuda.Stream.null.synchronize()
+    expected = np.exp(np.asarray([corrected_input], dtype=np.float32))
+    assert np.array_equal(
+        cp.asnumpy(device_weights[:1, :1]).reshape(-1).view(np.uint32),
+        expected.view(np.uint32),
+    )
+    # -999 is the declared padding sentinel; an ordinary value outside
+    # [-80, 80] must fail closed.
+    assert np.array_equal(cp.asnumpy(bad), np.asarray([0, 0, 1], dtype=np.uint8))

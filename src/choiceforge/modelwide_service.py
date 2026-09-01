@@ -12,6 +12,7 @@ import os
 import time
 
 import numpy as np
+import pandas as pd
 
 from .cuda_backend import _cupy
 
@@ -51,6 +52,7 @@ extern "C" __global__ void phase46_mt19937_rows(
     const unsigned int* seeds,
     const int* offsets,
     unsigned int* states,
+    int* positions,
     double* output,
     int rows,
     int draws)
@@ -74,6 +76,34 @@ extern "C" __global__ void phase46_mt19937_rows(
                 * (1.0 / 9007199254740992.0);
         }
     }
+    positions[row] = position;
+}
+
+extern "C" __global__ void phase48_mt19937_resume(
+    unsigned int* states,
+    int* positions,
+    const int* source_rows,
+    double* output,
+    int rows,
+    int draws,
+    int skip_draws)
+{
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= rows) return;
+    const int source_row = source_rows[row];
+    unsigned int* mt = states + (long long)source_row * 624;
+    int position = positions[source_row];
+    const int stop = skip_draws + draws;
+    for (int draw = 0; draw < stop; ++draw) {
+        const unsigned int first = phase46_mt_next(mt, &position) >> 5;
+        const unsigned int second = phase46_mt_next(mt, &position) >> 6;
+        if (draw >= skip_draws) {
+            output[(long long)row * draws + draw - skip_draws] =
+                ((double)first * 67108864.0 + (double)second)
+                * (1.0 / 9007199254740992.0);
+        }
+    }
+    positions[source_row] = position;
 }
 '''
 
@@ -89,11 +119,19 @@ class Phase46DestinationService:
             options=("--std=c++11", "--fmad=false"),
         )
         self._rng_kernel.compile()
+        self._rng_resume_kernel = self.cp.RawKernel(
+            _MT19937_SOURCE,
+            "phase48_mt19937_resume",
+            options=("--std=c++11", "--fmad=false"),
+        )
+        self._rng_resume_kernel.compile()
         self._rng_capacity_rows = 0
         self._rng_capacity_values = 0
         self._rng_states = None
         self._rng_seeds = None
         self._rng_offsets = None
+        self._rng_positions = None
+        self._rng_mapping = None
         self._rng_output = None
         self._cell_capacity = 0
         self._sample_capacity = 0
@@ -107,9 +145,16 @@ class Phase46DestinationService:
         self._guard = None
         self._bad = None
         self._risk = None
+        self._totals = None
         self._random_events = []
         self._workspace_growths = 0
         self.phase47_device_final = False
+        self.phase48_resident_graph = False
+        self._resume_index = None
+        self._resume_offsets = None
+        self._resume_ready = False
+        self._resume_hits = 0
+        self._resume_misses = 0
 
     def _ensure_rng(self, rows: int, draws: int) -> None:
         cp = self.cp
@@ -117,6 +162,8 @@ class Phase46DestinationService:
             self._rng_states = cp.empty((rows, 624), dtype=cp.uint32)
             self._rng_seeds = cp.empty(rows, dtype=cp.uint32)
             self._rng_offsets = cp.empty(rows, dtype=cp.int32)
+            self._rng_positions = cp.empty(rows, dtype=cp.int32)
+            self._rng_mapping = cp.empty(rows, dtype=cp.int32)
             self._rng_capacity_rows = rows
             self._workspace_growths += 1
         values = rows * draws
@@ -147,6 +194,7 @@ class Phase46DestinationService:
                 self._rng_seeds,
                 self._rng_offsets,
                 self._rng_states,
+                self._rng_positions,
                 output,
                 np.int32(rows),
                 np.int32(draws),
@@ -154,7 +202,32 @@ class Phase46DestinationService:
         )
         return output
 
-    def random_for_df(self, state, frame, draws: int):
+    def _resume_from_device_state(
+        self, rows: int, draws: int, source_rows, *, skip_draws: int = 0
+    ):
+        """Continue the exact MT19937 state left by the preceding sample call."""
+        self._ensure_rng(rows, draws)
+        output = self._rng_output[: rows * draws].reshape(rows, draws)
+        self._rng_mapping[:rows].set(
+            np.ascontiguousarray(source_rows, dtype=np.int32)
+        )
+        block = 128
+        self._rng_resume_kernel(
+            ((rows + block - 1) // block,),
+            (block,),
+            (
+                self._rng_states,
+                self._rng_positions,
+                self._rng_mapping,
+                output,
+                np.int32(rows),
+                np.int32(draws),
+                np.int32(skip_draws),
+            ),
+        )
+        return output
+
+    def random_for_df(self, state, frame, draws: int, *, device_only: bool = False):
         """Generate draws and advance ActivitySim's authoritative row ledger."""
         started = time.perf_counter()
         rng = state.get_rn_generator()
@@ -167,10 +240,90 @@ class Phase46DestinationService:
         seeds = np.ascontiguousarray(row_states["row_seed"], dtype=np.uint32)
         offsets = np.ascontiguousarray(row_states["offset"], dtype=np.int32)
         prepared = time.perf_counter()
-        device = self.generate_from_seeds(seeds, offsets, draws)
+        resume_mapping = None
+        index_set_match = False
+        offset_match = False
+        resume_skip_draws = 0
+        offset_delta = np.empty(0, dtype=np.int32)
+        if (
+            self.phase48_resident_graph
+            and self._resume_ready
+            and int(draws) == 1
+            and self._resume_index is not None
+            and len(frame) == len(self._resume_index)
+        ):
+            resume_mapping = np.asarray(
+                pd.Index(self._resume_index).get_indexer(frame.index),
+                dtype=np.int32,
+            )
+            # get_indexer gives the exact permutation used by final simulation
+            # and fails closed if either call has a different keyed chooser set.
+            in_bounds = np.all(resume_mapping >= 0)
+            index_set_match = bool(
+                in_bounds
+                and np.array_equal(
+                    np.asarray(self._resume_index)[resume_mapping],
+                    np.asarray(frame.index),
+                )
+            )
+            if index_set_match:
+                offset_delta = offsets - self._resume_offsets[resume_mapping]
+                resume_skip_draws = int(offset_delta[0]) if len(offset_delta) else 0
+                offset_match = bool(
+                    resume_skip_draws >= 0
+                    and resume_skip_draws <= 4096
+                    and np.all(offset_delta == resume_skip_draws)
+                )
+        resume_hit = bool(index_set_match and offset_match)
+        if (
+            self.phase48_resident_graph
+            and int(draws) == 1
+            and os.environ.get("CHOICEFORGE_PHASE48_RNG_TRACE", "0") == "1"
+        ):
+            print(
+                "PHASE48_RNG_RESUME "
+                + repr(
+                    {
+                        "rows": len(frame),
+                        "ready": self._resume_ready,
+                        "index_set_match": index_set_match,
+                        "offset_match": offset_match,
+                        "skip_draws": resume_skip_draws,
+                        "offset_delta_min": (
+                            int(offset_delta.min()) if len(offset_delta) else None
+                        ),
+                        "offset_delta_max": (
+                            int(offset_delta.max()) if len(offset_delta) else None
+                        ),
+                        "offset_delta_unique": (
+                            np.unique(offset_delta)[:12].tolist()
+                            if len(offset_delta) else []
+                        ),
+                        "hit": resume_hit,
+                    }
+                ),
+                flush=True,
+            )
+        if resume_hit:
+            device = self._resume_from_device_state(
+                len(frame), draws, resume_mapping, skip_draws=resume_skip_draws
+            )
+            self._resume_hits += 1
+        else:
+            device = self.generate_from_seeds(seeds, offsets, draws)
+            if self.phase48_resident_graph and int(draws) == 1:
+                self._resume_misses += 1
         self.cp.cuda.Stream.null.synchronize()
         generated = time.perf_counter()
-        host = self.cp.asnumpy(device)
+        diagnostics_need_host = (
+            os.environ.get("CHOICEFORGE_PHASE46_RNG_DIAGNOSTIC_ID") is not None
+            or os.environ.get("CHOICEFORGE_PHASE46_RNG_SHADOW_ROWS") is not None
+        )
+        host = (
+            None
+            if device_only and not diagnostics_need_host
+            else self.cp.asnumpy(device)
+        )
         transferred = time.perf_counter()
         diagnostic_id = os.environ.get("CHOICEFORGE_PHASE46_RNG_DIAGNOSTIC_ID")
         if diagnostic_id is not None:
@@ -225,12 +378,23 @@ class Phase46DestinationService:
                 flush=True,
             )
         channel.row_states.loc[frame.index, "offset"] += int(draws)
+        if self.phase48_resident_graph and int(draws) > 1:
+            self._resume_index = np.asarray(frame.index).copy()
+            self._resume_offsets = offsets + int(draws)
+            self._resume_ready = True
+        elif int(draws) == 1:
+            self._resume_ready = False
         finished = time.perf_counter()
         self._random_events.append(
             {
                 "rows": len(frame),
                 "draws_per_row": int(draws),
                 "draw_values": int(len(frame) * draws),
+                "runtime": "phase48_state_resume" if resume_hit else "phase46_reseed",
+                "resume_index_set_match": index_set_match,
+                "resume_offset_match": offset_match,
+                "resume_skip_draws": resume_skip_draws if resume_hit else None,
+                "device_only": bool(device_only),
                 "ledger_read_seconds": prepared - started,
                 "gpu_generation_seconds": generated - prepared,
                 "host_transfer_seconds": transferred - generated,
@@ -261,6 +425,7 @@ class Phase46DestinationService:
             self._guard = cp.empty(rows, dtype=cp.uint8)
             self._bad = cp.empty(rows, dtype=cp.uint8)
             self._risk = cp.empty(rows, dtype=cp.float32)
+            self._totals = cp.empty(rows, dtype=cp.float32)
             self._row_capacity = rows
             self._workspace_growths += 1
         utility = self._utility[:cells].reshape(rows, alternatives)
@@ -312,6 +477,7 @@ class Phase46DestinationService:
             self._guard = cp.empty(rows, dtype=cp.uint8)
             self._bad = cp.empty(rows, dtype=cp.uint8)
             self._risk = cp.empty(rows, dtype=cp.float32)
+            self._totals = cp.empty(rows, dtype=cp.float32)
             self._row_capacity = rows
             self._workspace_growths += 1
         self._guard[:rows].fill(0)
@@ -325,16 +491,17 @@ class Phase46DestinationService:
             "guard": self._guard[:rows],
             "bad": self._bad[:rows],
             "row_maxima": self._risk[:rows],
+            "row_totals": self._totals[:rows],
         }
 
     def summary(self) -> dict:
         random_seconds = sum(item["total_seconds"] for item in self._random_events)
         allocated = (
-            self._rng_capacity_rows * (624 * 4 + 4 + 4)
+            self._rng_capacity_rows * (624 * 4 + 4 + 4 + 4)
             + self._rng_capacity_values * 8
             + self._cell_capacity * 8
             + self._sample_capacity * (4 + 4 + 1 + 4)
-            + self._row_capacity * (1 + 1 + 4)
+            + self._row_capacity * (1 + 1 + 4 + 4)
         )
         return {
             "random_calls": len(self._random_events),
@@ -343,6 +510,8 @@ class Phase46DestinationService:
                 item["draw_values"] for item in self._random_events
             ),
             "random_seconds": random_seconds,
+            "rng_resume_hits": self._resume_hits,
+            "rng_resume_misses": self._resume_misses,
             "workspace_growths": self._workspace_growths,
             "workspace_bytes": int(allocated),
             "cell_capacity": self._cell_capacity,

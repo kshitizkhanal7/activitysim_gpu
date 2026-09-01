@@ -1,0 +1,106 @@
+{
+  "phase": 48,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "zones": 1454,
+  "matched_pairs": 3,
+  "calls": 19,
+  "chooser_rows": 201390,
+  "sampled_alternative_rows": 4696676,
+  "resident_final_boundary": {
+    "phase47_seconds": [
+      0.35448280023410916,
+      0.40888629970140755,
+      0.4001870008651167
+    ],
+    "phase48_seconds": [
+      0.31818900001235306,
+      0.31552139995619655,
+      0.34342449996620417
+    ],
+    "median_phase47_seconds": 0.4001870008651167,
+    "median_phase48_seconds": 0.31818900001235306,
+    "median_seconds_saved": 0.08199800085276365,
+    "median_reduction_percent": 20.489921130746858,
+    "median_speedup": 1.2577021859636262,
+    "won_every_pair": true
+  },
+  "five_target_component_aggregate": {
+    "phase47_seconds": [
+      27.5,
+      28.6,
+      28.099999999999998
+    ],
+    "phase48_seconds": [
+      28.000000000000004,
+      27.900000000000002,
+      27.900000000000002
+    ],
+    "median_phase47_seconds": 28.099999999999998,
+    "median_phase48_seconds": 27.900000000000002
+  },
+  "complete_model_lifecycle": {
+    "median_phase47_seconds": 147.2,
+    "median_phase48_seconds": 144.71681459974494,
+    "median_seconds_saved": 2.483185400255053,
+    "median_reduction_percent": 1.6869466034341394,
+    "median_speedup": 1.0171589279872073,
+    "candidate_won_every_pair": false,
+    "includes_all_cold_prewarms": true
+  },
+  "transfer_contract": {
+    "dense_utility_bytes_avoided": 23759764,
+    "actual_device_to_host_bytes": 2618966
+  },
+  "shadow_observed_utility_range": [
+    -54.5276985168457,
+    22.047199249267578
+  ],
+  "shadow_bit_mismatches": {
+    "utility_shadow_bit_mismatches": 0,
+    "weight_shadow_bit_mismatches": 0,
+    "total_shadow_bit_mismatches": 0,
+    "probability_shadow_bit_mismatches": 0,
+    "choice_shadow_mismatches": 0,
+    "logsum_shadow_bit_mismatches": 0
+  },
+  "exponential_domain_scan": {
+    "phase": 48,
+    "purpose": "exhaustive float32 exponential ABI qualification",
+    "success": true,
+    "input_bit_patterns_scanned": 4294967296,
+    "finite_input_patterns": 4278190080,
+    "all_finite_mismatches_before_correction": 2180536,
+    "declared_domain": [
+      -80.0,
+      80.0
+    ],
+    "finite_domain_input_patterns": 2235564034,
+    "domain_mismatches_before_correction": 73,
+    "domain_correction_entries": 73,
+    "domain_correction_table_exact": true,
+    "observed_correction_sha256": "7d381f55dfc0a244bda39418af15e79d6f81980c194138b43d24dce9e1affe69",
+    "contract_correction_sha256": "7d381f55dfc0a244bda39418af15e79d6f81980c194138b43d24dce9e1affe69",
+    "elapsed_seconds": 44.811293500009924,
+    "chunk_size": 16777216,
+    "numpy_version": "2.4.6",
+    "cupy_version": "14.1.1",
+    "python_version": "3.11.14",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "gpu": "NVIDIA RTX A4000",
+    "proof_boundary": "all 2**32 float32 bit patterns; finite values compared globally; correction completeness required only inside the fail-closed [-80, 80] ABI"
+  },
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "resident_boundary_improves_in_every_matched_pair": true,
+    "all_nineteen_calls_cover_the_public_workload": true,
+    "all_final_draws_resume_resident_keyed_mt19937": true,
+    "dense_final_utility_download_is_eliminated": true,
+    "exhaustive_live_shadow_is_bit_identical_at_every_stage": true,
+    "all_float32_patterns_scanned_and_domain_table_is_complete": true,
+    "three_production_and_one_shadow_verifier_find_exact_outputs": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true,
+  "claim_boundary": "Phase 48 moves exact float32 exponential, pairwise normalization, one-draw selection, and compact logsum reduction onto the resident CUDA destination graph while continuing ActivitySim's keyed MT19937 state. ActivitySim still orchestrates; lifecycle timing is reported but is not used to overclaim a localized sub-second boundary gain."
+}

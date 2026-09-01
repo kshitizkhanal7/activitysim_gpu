@@ -165,6 +165,14 @@ def main() -> int:
             "CUDA utility and selection programs with exact CPU adjudication"
         ),
     )
+    parser.add_argument(
+        "--phase48-resident-destination-graph",
+        action="store_true",
+        help=(
+            "retain final probability, guarded selection, logsum reduction, "
+            "and continued keyed RNG state in one fail-closed CUDA backend"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -239,6 +247,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase48_resident_destination_graph:
+        args.phase47_device_final_choice = True
+        os.environ["CHOICEFORGE_PHASE48_RESIDENT_DESTINATION_GRAPH"] = "1"
     if args.phase47_device_final_choice:
         args.phase46_persistent_destination = True
         os.environ["CHOICEFORGE_PHASE47_DEVICE_FINAL_CHOICE"] = "1"
@@ -420,6 +431,7 @@ def main() -> int:
     phase46_service = None
     phase46_prewarm = None
     phase47_prewarm = None
+    phase48_prewarm = None
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or native_abi_enabled:
@@ -1219,6 +1231,11 @@ def main() -> int:
                 exact_guard_runtime="numpy"
             )
             phase47_prewarm = prewarm_phase47_public_runtime()
+            if args.phase48_resident_destination_graph:
+                from choiceforge.modelwide_graph import prewarm_phase48_public_runtime
+
+                phase46_service.phase48_resident_graph = True
+                phase48_prewarm = prewarm_phase48_public_runtime()
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
@@ -2121,6 +2138,7 @@ def main() -> int:
     phase45_sampling = None
     phase46_runtime = None
     phase47_runtime = None
+    phase48_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -2161,12 +2179,17 @@ def main() -> int:
         from choiceforge.modelwide_service import phase46_service_summary
 
         phase46_runtime = phase46_service_summary()
-    if args.phase47_device_final_choice:
+    if args.phase47_device_final_choice and not args.phase48_resident_destination_graph:
         from choiceforge.modelwide_final import summarize_phase47_telemetry
 
         phase47_runtime = summarize_phase47_telemetry()
+    if args.phase48_resident_destination_graph:
+        from choiceforge.modelwide_graph import summarize_phase48_telemetry
+
+        phase48_runtime = summarize_phase48_telemetry()
     report = {
         "phase": (
+            48 if args.phase48_resident_destination_graph else
             47 if args.phase47_device_final_choice else
             46 if args.phase46_persistent_destination else
             45 if args.phase45_modelwide_choice else
@@ -2185,6 +2208,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a fail-closed resident CUDA "
+            "destination graph for final normalization, guarded selection, "
+            "compact logsums, and continued keyed MT19937 state"
+            if args.phase48_resident_destination_graph else
             "full public ActivitySim model with strict CUDA sampled final-choice "
             "utility and selection across five destination families, exact "
             "boundary adjudication, and a persistent prewarmed device service"
@@ -2301,6 +2328,8 @@ def main() -> int:
         "phase46_prewarm": phase46_prewarm,
         "phase47_device_final_choice": phase47_runtime,
         "phase47_prewarm": phase47_prewarm,
+        "phase48_resident_destination_graph": phase48_runtime,
+        "phase48_prewarm": phase48_prewarm,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2693,7 +2722,7 @@ def main() -> int:
                 ),
             }
         )
-    if args.phase47_device_final_choice:
+    if args.phase47_device_final_choice and not args.phase48_resident_destination_graph:
         final_runtime = phase47_runtime or {}
         final_events = final_runtime.get("events", [])
         report["proof_gates"].update(
@@ -2732,6 +2761,53 @@ def main() -> int:
                 "phase47_cold_numba_adjudicator_removed": (
                     bool(phase46_prewarm)
                     and phase46_prewarm.get("exact_guard_runtime") == "numpy"
+                ),
+            }
+        )
+    if args.phase48_resident_destination_graph:
+        graph = phase48_runtime or {}
+        graph_events = graph.get("events", [])
+        report["proof_gates"].update(
+            {
+                "phase48_versioned_fail_closed_backend_contract_prewarmed": (
+                    bool(phase48_prewarm)
+                    and phase48_prewarm.get("widths") == [21, 25, 29, 30]
+                    and phase48_prewarm.get("contract", {}).get("version") == 1
+                    and len(
+                        phase48_prewarm.get("contract", {}).get("abi_sha256", "")
+                    ) == 64
+                ),
+                "phase48_all_five_families_use_resident_destination_graph": (
+                    len(graph_events) == 19
+                    and {item.get("component") for item in graph_events}
+                    == {
+                        "school_location",
+                        "workplace_location",
+                        "joint_tour_destination",
+                        "non_mandatory_tour_destination",
+                        "atwork_subtour_destination",
+                    }
+                    and all(
+                        item.get("runtime") == "phase48_resident_destination_graph"
+                        for item in graph_events
+                    )
+                ),
+                "phase48_complete_public_final_workload_covered": (
+                    graph.get("chooser_rows") == 201_390
+                    and graph.get("alternative_rows") == 4_696_676
+                ),
+                "phase48_dense_final_utility_download_eliminated": (
+                    graph.get("dense_utility_download_bytes_avoided", 0)
+                    >= 18_000_000
+                    and graph.get("device_to_host_bytes", 10**12) < 3_000_000
+                ),
+                "phase48_all_final_rng_calls_resume_resident_state": (
+                    (phase46_runtime or {}).get("rng_resume_hits") == 19
+                    and (phase46_runtime or {}).get("rng_resume_misses") == 0
+                ),
+                "phase48_sparse_exact_guard_preserves_public_decisions": (
+                    bool(graph_events)
+                    and all(item.get("pre_guard_mismatches") == 0 for item in graph_events)
                 ),
             }
         )

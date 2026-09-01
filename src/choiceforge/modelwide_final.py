@@ -324,6 +324,43 @@ def device_compact_interaction_sample_simulate(
     cp.cuda.Stream.null.synchronize()
     utility_complete = time.perf_counter()
 
+    if getattr(service, "phase48_resident_graph", False):
+        from .modelwide_graph import finish_resident_final_choice
+
+        return finish_resident_final_choice(
+            state=state,
+            choosers=choosers,
+            alternatives=alternatives,
+            choice_column=choice_column,
+            allow_zero_probs=allow_zero_probs,
+            zero_prob_choice_val=zero_prob_choice_val,
+            want_logsums=want_logsums,
+            trace_label=trace_label,
+            telemetry=telemetry,
+            component=component,
+            service=service,
+            workspace=workspace,
+            padded=padded,
+            offsets=offsets,
+            width=width,
+            expressions=expressions,
+            program_cache_hit=cache_hit,
+            started=started,
+            prepared=prepared,
+            utility_complete=utility_complete,
+            shadow_reference=lambda: _cpu_reference_utility(
+                state,
+                choosers,
+                alternatives,
+                counts,
+                spec,
+                skims,
+                locals_d or {},
+                str(trace_label),
+                compute_settings,
+            ),
+        )
+
     padded_host = cp.asnumpy(padded)
     shadow = os.environ.get("CHOICEFORGE_PHASE47_SHADOW", "0") == "1"
     utility_mismatches = 0

@@ -186,3 +186,29 @@ pwsh scripts\run_phase8_interleaved.ps1 -Households 50000 -Repetitions 3
   --output benchmark-results\phase8-nested-logsum-summary.json `
   --repetitions 11 --phase 8B
 ```
+
+## Phase 48 resident destination qualification
+
+Phase 48 uses two separate protocols because correctness work must not pollute
+production timing. First, exhaustively scan the float32 exponential ABI:
+
+```powershell
+.\.venv-phase8\Scripts\python.exe scripts\scan_phase48_exp_domain.py
+```
+
+Then run three fresh-process Phase 47 control/Phase 48 candidate pairs and
+assemble the fail-closed evidence:
+
+```powershell
+.\scripts\run_phase48_resident_destination_ab.ps1 `
+  -Repetitions 3 -Households 50000 -RunTag p48final
+.\.venv-phase8\Scripts\python.exe `
+  scripts\summarize_phase48_qualification.py
+```
+
+The production qualifier requires the directly instrumented 19-call resident
+boundary to improve in every pair. It reports five-component and whole-model
+timing separately but does not require a sub-second boundary saving to dominate
+roughly 145 seconds of lifecycle noise. The complete live CPU/GPU arithmetic
+shadow is opt-in with `CHOICEFORGE_PHASE48_SHADOW=1` and must never be enabled
+for the production timing pairs.

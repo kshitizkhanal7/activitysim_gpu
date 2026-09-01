@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 39 sampling experiment proves and why it was not promoted;
+- what the completed Phase 48 resident destination graph proves and what it still cannot claim;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -360,7 +360,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-The Python 3.11 ActivitySim and CUDA integration environment now passes 95 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, and Phase 18's fail-closed GPU state, stable random draws, deterministic partitions, and ordered aggregation.
+At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 48 repository now passes 201 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, and Phase 48's resumed MT19937 state, exact probability reduction, exhaustive exponential correction, and domain guard.
 
 ## 7. What was benchmarked?
 
@@ -941,7 +941,7 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. The project test suite now passes 95 tests, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, and Phase 18 GPU-native runtime checks.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 48 repository passes 201, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, and Phase 48 probability, random-state, and arithmetic-domain checks.
 
 This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer but failed its 50,000-household scale gate. Phase 16 recovered a repeated large destination-component win. Phase 17 added persistent plans and trip-mode continuation, strengthening that component win and making the five-run whole-model median faster. The strict path remains opt-in because the whole-model interval still includes zero and replication on other hardware and models is unfinished.
 
@@ -974,7 +974,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The complete repository now passes 95 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 48 repository passes 201 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -6115,3 +6115,248 @@ and Python call boundaries. The larger prize is architectural: a reusable
 upstream backend in which a whole chain of destination work is device
 resident. Only that wider graph can turn another large boundary speedup into a
 meaningful whole-model reduction.
+
+## 200. What did Phase 48 build?
+
+Phase 47 sent a short list of final destination scores back to the CPU. The CPU
+turned those scores into probabilities, selected one destination, and
+calculated a logsum. Phase 48 keeps that chain on the GPU.
+
+The new chain is called a **resident destination graph**. "Resident" means the
+working numbers stay in GPU memory between related calculations. "Graph" means
+the output of one operation becomes the input of the next operation: score,
+weight, total, probability, random choice, and logsum. It is not a picture or a
+road network in this context.
+
+The graph covers all five final sampled-destination families: school,
+workplace, joint tours, non-mandatory tours, and at-work subtours. The public
+run contains 19 calls, 201,390 decision makers, and 4,696,676 shortlisted
+places.
+
+## 201. How does a score become a probability?
+
+Suppose three places have final scores of 1, 2, and 3. A model should prefer the
+higher score, but a score is not yet a percentage. A common travel-model rule
+uses the exponential function, written `exp`:
+
+`weight = exp(score - highest score)`
+
+Subtracting the highest score keeps the numbers safe without changing their
+relative chances. Our example becomes approximately 0.135, 0.368, and 1.000.
+Their total is 1.503. Dividing each weight by that total produces probabilities
+of about 9%, 24%, and 67%. They add to 100% apart from tiny rounding effects.
+
+The model then places those probabilities end to end on a line from zero to
+one. A random ticket lands somewhere on that line. If the ticket is 0.40, the
+third place wins because the first two places cover only the first 0.33 of the
+line. This is called inverse cumulative-distribution selection. The long name
+just means "walk along the probability line until the ticket is passed."
+
+## 202. What is a logsum, and why keep one CPU operation?
+
+A logsum summarizes how attractive a whole group of alternatives is. It rises
+when there are more good choices and falls when choices are poor. Later travel
+model steps can use it as an accessibility or mode-quality signal.
+
+After stabilizing scores, its essential calculation is:
+
+`logsum = highest score + log(sum of exponential weights)`
+
+The GPU now calculates the weights and their total. This computer's CUDA
+`log` operation does not always produce the identical final bits as NumPy's
+`log`, so Phase 48 returns one small total per decision maker and lets NumPy
+perform the final scalar logarithm. That is an intentional exactness boundary,
+not an oversight. Returning one number per person is far cheaper than
+returning every destination score.
+
+## 203. Why can two correct exponential functions disagree?
+
+Computers store most decimal-like values in **floating-point** form. A
+32-bit floating-point number, or `float32`, has only a fixed number of binary
+digits. Many real numbers must be rounded to the nearest available pattern.
+
+Functions such as `exp` are not calculated from an infinite mathematical
+definition every time. Fast libraries use carefully designed approximations.
+NumPy on this Windows CPU and CUDA on the RTX A4000 can both be very accurate
+while rounding the last bit differently. Usually that difference is harmless.
+Here, a one-bit probability change could put a rare random ticket on the other
+side of a boundary and select another zone. Exact replication therefore means
+matching the bits, not merely printing the same six decimal places.
+
+## 204. How did we prove the exponential rule instead of guessing?
+
+A `float32` value has exactly 2^32, or 4,294,967,296, possible bit patterns.
+Phase 48 includes a scanner that visits every one. Some patterns mean infinity
+or "not a number"; 4,278,190,080 patterns are finite values that can be
+compared.
+
+The scan compared the CUDA approximation with NumPy 2.4.6. Across all finite
+magnitudes it found 2,180,536 differences, mostly in extreme ranges that the
+destination model does not accept. The backend deliberately accepts ordinary
+exponential inputs only from -80 through 80. There are 2,235,564,034 finite
+bit patterns in that range, and exactly 73 produced a different result.
+
+The project stores those 73 exact input and output bit pairs in a tiny sorted
+correction table. A hash acts like a tamper-evident fingerprint for the table.
+The reproducible scan found exactly the same 73 pairs and the same fingerprint.
+Inputs outside the declared range stop the fast path, except for the reviewed
+`-999` padding marker used for an empty shortlist slot.
+
+This is stronger than testing millions of random examples: it is complete for
+every possible `float32` value inside the declared rule.
+
+## 205. What does "fail closed" mean here?
+
+A fast backend can be dangerous if it silently guesses what to do with a new
+formula. Phase 48 publishes a versioned contract. It recognizes four reviewed
+formula shapes and shortlist widths of 21, 25, 29, or 30. It also declares its
+number types, random-number rule, exponential range, logsum rule, and hashes.
+
+If a formula, width, number range, or random-state relationship is outside that
+contract, required mode stops with an error. It does not return a plausible
+but unproved answer. Test mode can run both paths and compare them. This design
+follows the useful idea in ActivitySim's Sharrow backend: compiled speed is
+optional during development, but a production run can require it and refuse
+silent fallback.
+
+## 206. How can a random number stay on the GPU and still be the same?
+
+ActivitySim does not use one uncontrolled stream of random numbers. It assigns
+repeatable random state to stable chooser identities, such as a tour ID. This
+lets a model reproduce decisions even when work is divided differently.
+
+Phase 46 generated the 30 shortlist-sampling draws with the same MT19937 rule
+as NumPy and kept each generator's internal state on the GPU. Before final
+choice, ActivitySim's intervening logsum work advances each chooser's official
+ledger by six draws. Final rows may also be reordered.
+
+Phase 48 maps each final row back to its stored chooser identity, advances that
+state by exactly six values, and uses the next value as the final ticket. It
+resumes only when the chooser sets and ledger changes pass strict checks. All
+19 calls resumed successfully in every qualified run. Tests also reseed NumPy
+from scratch, generate the long sequence independently, and compare every
+64-bit random value after reordering and skipping six draws.
+
+## 207. What data transfer did Phase 48 remove?
+
+Phase 47 downloaded a dense compact utility table containing one score for
+every shortlisted alternative. Across 19 calls that table occupied 23,759,764
+bytes, about 23.76 megabytes.
+
+Phase 48 leaves it on the device. It transfers 2,618,966 bytes in total: chosen
+positions, guard flags, selected probabilities, row totals, maxima, and other
+small orchestration results. In simple terms, the system now returns mostly
+answers instead of returning the worksheet used to calculate the answers.
+
+This is a roughly 9.1-to-1 reduction relative to the dense utility download,
+although it is not zero transfer. ActivitySim still needs compact results to
+continue its CPU-controlled model.
+
+## 208. How did the complete live shadow work?
+
+The expensive shadow ran the entire 50,000-household public model. For every
+one of the 19 calls, it calculated the final chain through both the new GPU
+graph and the authoritative CPU answer path. It compared the binary results at
+six checkpoints:
+
+- final utility;
+- exponential weight;
+- row total;
+- normalized probability;
+- selected alternative; and
+- logsum.
+
+Across all 4,696,676 shortlisted alternatives, every mismatch count was zero.
+The actual unshifted utilities ranged from about -54.528 to 22.047, inside the
+declared -80 to 80 contract. Seven of 201,390 choice rows were close enough to
+a cumulative-probability boundary to enter the independent safety guard. None
+disagreed before that check.
+
+Finally, an output verifier compared accessibility, households, joint-tour
+participants, land use, persons, tours, and trips. All seven CSV files were
+byte-for-byte identical to the Phase 47 reference.
+
+## 209. How fast was Phase 48?
+
+Three fresh-process matched pairs compared Phase 47 with Phase 48. Each pair
+ran a control and candidate on the same machine and independently checked the
+published outputs.
+
+| Measurement | Phase 47 | Phase 48 | Honest result |
+|---|---:|---:|---:|
+| resident final boundary, median | 0.4002 s | 0.3182 s | 1.258x faster; 20.5% lower |
+| direct boundary pairs won | - | 3 of 3 | replicated |
+| all five target components | 28.1 s | 27.9 s | too close to timer noise |
+| complete model, median | 147.2 s | 144.717 s | 1.017x observed |
+| complete-model pairs won | - | 2 of 3 | not replicated |
+| changed decision cells | - | 0, 0, 0 | exact |
+
+The direct boundary saved 0.0363, 0.0934, and 0.0568 seconds in the three
+pairs. Its median saving was 0.0820 seconds. That is a real repeated boundary
+gain over an already accelerated Phase 47 control.
+
+## 210. Why are we not claiming a whole-model victory?
+
+The complete runs changed by -0.617, +2.982, and +2.483 seconds. The median
+favored Phase 48, but the first candidate was slower. A roughly 145-second run
+contains operating-system scheduling, file output, memory management, and 34
+model steps. Their normal variation is much larger than an 0.082-second local
+saving.
+
+The correct conclusion is therefore narrower: Phase 48 made its directly
+measured boundary faster in all three pairs and preserved exact outputs. It did
+not make a large enough dent to prove whole-model superiority. Reporting the
+attractive 1.017x median without the two-of-three fact would exaggerate the
+evidence.
+
+This is Amdahl's law again. Once a boundary is only about 0.3 to 0.4 seconds,
+even removing it completely could improve a 145-second run by only about one
+quarter of one percent.
+
+## 211. What is the larger achievement?
+
+The main achievement is an exact reusable **backend contract**, not merely an
+82-millisecond saving. The project now has:
+
+- a compiled destination formula shared by CPU proof and CUDA execution;
+- device-resident utility, exponential, normalization, probability choice,
+  and compact logsum reduction;
+- exact continuation of ActivitySim's identity-keyed random state;
+- a complete float32-domain exponential qualification method;
+- a fail-closed version and arithmetic fingerprint;
+- a full live dual-run shadow at every important numerical checkpoint; and
+- four independently verified complete runs: one shadow and three production
+  candidates, each with seven byte-identical output files.
+
+That is the kind of evidence an upstream ActivitySim or Sharrow backend needs.
+It separates a portable interface from machine-specific arithmetic evidence
+and makes unsupported work visible.
+
+## 212. What should the next major phase do?
+
+The next phase must be large enough to remove work measured in seconds, not
+another few hundredths of a second. It should build an **inter-stage
+destination supergraph**.
+
+Today, ActivitySim still constructs pandas tables and crosses Python function
+boundaries between sampling, mode-choice logsums, final destination choice,
+and later table updates. The next graph should keep the compact sample and mode
+logsums resident across those stages, batch the many small joint-tour and
+at-work calls, and return only final zones plus required diagnostics.
+
+The practical order is:
+
+1. measure a detailed CPU/Python/GPU timeline for all five destination
+   families and identify at least one second of removable orchestration;
+2. define one versioned input/output schema for the entire destination chain;
+3. compile and batch sampling, logsum consumption, final utility, choice, and
+   required aggregation inside one reusable service;
+4. expose that service behind a real Sharrow or ActivitySim backend interface;
+5. keep Phase 48's arithmetic hashes, state-ledger checks, fail-closed rules,
+   complete dual-run shadow, and byte-identical output verifier; and
+6. require three matched wins at the wider component boundary before testing a
+   whole-model performance claim.
+
+The target should be a repeated multi-second reduction across the five
+destination components. Only a boundary that large has a fair chance to rise
+above whole-model noise and make a meaningful dent in total ActivitySim time.

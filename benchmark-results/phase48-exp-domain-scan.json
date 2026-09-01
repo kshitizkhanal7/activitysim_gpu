@@ -1,0 +1,26 @@
+{
+  "phase": 48,
+  "purpose": "exhaustive float32 exponential ABI qualification",
+  "success": true,
+  "input_bit_patterns_scanned": 4294967296,
+  "finite_input_patterns": 4278190080,
+  "all_finite_mismatches_before_correction": 2180536,
+  "declared_domain": [
+    -80.0,
+    80.0
+  ],
+  "finite_domain_input_patterns": 2235564034,
+  "domain_mismatches_before_correction": 73,
+  "domain_correction_entries": 73,
+  "domain_correction_table_exact": true,
+  "observed_correction_sha256": "7d381f55dfc0a244bda39418af15e79d6f81980c194138b43d24dce9e1affe69",
+  "contract_correction_sha256": "7d381f55dfc0a244bda39418af15e79d6f81980c194138b43d24dce9e1affe69",
+  "elapsed_seconds": 44.811293500009924,
+  "chunk_size": 16777216,
+  "numpy_version": "2.4.6",
+  "cupy_version": "14.1.1",
+  "python_version": "3.11.14",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "gpu": "NVIDIA RTX A4000",
+  "proof_boundary": "all 2**32 float32 bit patterns; finite values compared globally; correction completeness required only inside the fail-closed [-80, 80] ABI"
+}
