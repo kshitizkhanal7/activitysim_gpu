@@ -1,0 +1,148 @@
+{
+  "phase": 46,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "alternatives": 1454,
+  "matched_pairs": 3,
+  "target_families": [
+    "school_location",
+    "workplace_location",
+    "joint_tour_destination",
+    "non_mandatory_tour_destination",
+    "atwork_subtour_destination"
+  ],
+  "sampling_programs": 19,
+  "chooser_rows": 201390,
+  "dense_utility_cells": 274223637,
+  "gpu_keyed_random_calls": [
+    38,
+    38,
+    38
+  ],
+  "gpu_keyed_random_rows": [
+    402780,
+    402780,
+    402780
+  ],
+  "gpu_keyed_random_values": [
+    6243090,
+    6243090,
+    6243090
+  ],
+  "workspace_bytes": [
+    391398912,
+    391398912,
+    391398912
+  ],
+  "prewarm_seconds": [
+    1.734785000095144,
+    1.710864899912849,
+    1.6883786998223513
+  ],
+  "exact_guard_rows": [
+    7313,
+    7313,
+    7313
+  ],
+  "exact_guard_fraction": [
+    0.03631262724067729,
+    0.03631262724067729,
+    0.03631262724067729
+  ],
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "target_component_aggregate_seconds": {
+    "phase45": [
+      33.7,
+      32.800000000000004,
+      33.0
+    ],
+    "phase46": [
+      29.4,
+      29.7,
+      29.0
+    ],
+    "median_phase45": 33.0,
+    "median_phase46": 29.4,
+    "median_seconds_saved": 3.6000000000000014,
+    "median_reduction_percent": 10.909090909090912,
+    "median_speedup": 1.1224489795918369
+  },
+  "component_medians": {
+    "school_location": {
+      "model_name": "school_location",
+      "gpu_role": "Phase46 persistent exact destination service",
+      "median_baseline_seconds": 7.9,
+      "median_candidate_seconds": 5.9,
+      "median_seconds_saved": 2.0,
+      "median_reduction_percent": 25.31645569620253,
+      "median_speedup": 1.3389830508474576
+    },
+    "workplace_location": {
+      "model_name": "workplace_location",
+      "gpu_role": "Phase46 persistent exact destination service",
+      "median_baseline_seconds": 10.1,
+      "median_candidate_seconds": 8.7,
+      "median_seconds_saved": 1.4000000000000004,
+      "median_reduction_percent": 13.861386138613865,
+      "median_speedup": 1.160919540229885
+    },
+    "joint_tour_destination": {
+      "model_name": "joint_tour_destination",
+      "gpu_role": "Phase46 persistent exact destination service",
+      "median_baseline_seconds": 3.3,
+      "median_candidate_seconds": 3.7,
+      "median_seconds_saved": -0.40000000000000036,
+      "median_reduction_percent": -12.121212121212132,
+      "median_speedup": 0.8918918918918918
+    },
+    "non_mandatory_tour_destination": {
+      "model_name": "non_mandatory_tour_destination",
+      "gpu_role": "Phase46 persistent exact destination service",
+      "median_baseline_seconds": 9.5,
+      "median_candidate_seconds": 8.7,
+      "median_seconds_saved": 0.8000000000000007,
+      "median_reduction_percent": 8.421052631578954,
+      "median_speedup": 1.0919540229885059
+    },
+    "atwork_subtour_destination": {
+      "model_name": "atwork_subtour_destination",
+      "gpu_role": "Phase46 persistent exact destination service",
+      "median_baseline_seconds": 2.5,
+      "median_candidate_seconds": 2.3,
+      "median_seconds_saved": 0.20000000000000018,
+      "median_reduction_percent": 8.000000000000007,
+      "median_speedup": 1.0869565217391306
+    }
+  },
+  "complete_model_lifecycle": {
+    "median_phase45_seconds": 148.3,
+    "median_phase46_seconds": 146.93478500009516,
+    "median_seconds_saved": 1.3652149999048504,
+    "median_reduction_percent": 0.9205765339884358,
+    "median_speedup": 1.0092912988568634,
+    "candidate_won_every_pair": true,
+    "includes_phase46_prewarm": true
+  },
+  "claim_boundary": "Phase 46 keeps the nineteen reviewed public destination samplers inside a prewarmed persistent CUDA service, generates ActivitySim's keyed MT19937 draws exactly on GPU, evaluates each exponential once, and uses ActivitySim's authoritative Numba implementation only for measured sparse probability-boundary rows. Final sampled-choice utility remains Sharrow on CPU. Lifecycle timing charges cold prewarm.",
+  "known_component_tradeoff": "The small joint-tour destination family regressed in the median, while the five-family aggregate and complete lifecycle won every pair.",
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "all_nineteen_sampling_programs_use_persistent_runtime": true,
+    "all_five_final_choice_families_use_persistent_runtime": true,
+    "gpu_rng_covers_sampling_and_final_choice_exact_workload": true,
+    "persistent_workspace_covers_largest_program_under_one_gibibyte": true,
+    "all_four_public_programs_are_cold_prewarmed": true,
+    "sparse_exact_boundary_guard_is_below_five_percent": true,
+    "three_independent_verifiers_have_exact_decisions": true,
+    "all_seven_published_outputs_are_byte_identical": true,
+    "all_declared_logsums_remain_inside_tolerance": true,
+    "target_component_aggregate_improves_in_every_pair": true,
+    "complete_model_lifecycle_improves_in_every_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true
+}

@@ -306,13 +306,13 @@ def cover_story():
     metrics = Table(
         [
             [
-                Paragraph("1.075x", STYLES["metric_num"]),
-                Paragraph("1.016x", STYLES["metric_num"]),
+                Paragraph("1.122x", STYLES["metric_num"]),
+                Paragraph("1.009x", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("five destination components<br/>speedup vs Phase 44", STYLES["metric_label"]),
-                Paragraph("all 34 model steps<br/>speedup vs Phase 44", STYLES["metric_label"]),
+                Paragraph("five destination components<br/>speedup vs Phase 45", STYLES["metric_label"]),
+                Paragraph("full lifecycle<br/>speedup vs Phase 45", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,7 +350,7 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43 and 44 remove repeated random-state rows and generic pandas choice plumbing. Phase 45 applies one reviewed CUDA sampler to five destination families and 274 million utility cells. Three fresh 50,000-household pairs preserve every modeled decision while reducing the five target components from 37.1 to 34.5 seconds and all 34 model steps from 152.1 to 149.7 seconds. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
+            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43 and 44 remove repeated random-state rows and generic pandas choice plumbing. Phase 45 applies one reviewed CUDA sampler to five destination families and 274 million utility cells. Phase 46 adds a persistent service, exact keyed MT19937 generation on GPU, one-exp-per-cell probabilities, fast exact adjudication, and compact packing. Three fresh 50,000-household pairs preserve every published byte while reducing the five target components from 33.0 to 29.4 seconds and the full lifecycle from 148.3 to 146.935 seconds after charging cold prewarm. Assumptions, failed experiments, variance, CPU/GPU claim boundaries, and portability limits are explained inside.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),

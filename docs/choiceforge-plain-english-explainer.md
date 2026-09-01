@@ -5781,3 +5781,163 @@ That attacks both the one regressing small component and the remaining CPU
 boundary. It also creates an upstreamable backend shape: one versioned
 expression compiler and resident service, rather than a collection of model-
 specific shortcuts.
+
+## 182. Phase 46 turns many GPU calls into one service
+
+Phase 45 had the right GPU math, but each destination call still behaved a bit
+like renting a new workshop: find the tools, reserve worktables, do one job,
+and clean up. Phase 46 creates one workshop at the start and keeps it open for
+the whole model.
+
+The service handles 19 destination-sampling calls for school, work, joint
+tours, non-mandatory tours, and at-work tours. It compiles the four legal
+formula shapes before the timed model steps, grows its GPU work area only when
+it sees a larger job, and then reuses that memory. Its largest measured work
+area is about 391 megabytes. That is enough for 26,496 decision makers times
+1,454 possible zones, plus choices, probabilities, duplicate counts, and
+random-number state.
+
+Why do this? Starting tiny jobs and repeatedly asking the computer for large
+blocks of memory can take longer than the arithmetic itself. A persistent
+service lets later calls reuse work already paid for.
+
+## 183. How can a GPU make the same random numbers as ActivitySim?
+
+"Random" in a simulation does not mean uncontrolled. ActivitySim gives each
+person or tour a seed, which is like a recipe number, and an offset recording
+how many random tickets have already been used. If those tickets change, later
+choices can change even when every probability is identical.
+
+Phase 46 implements NumPy's MT19937 ticket machine on CUDA. For each row it:
+
+1. reads ActivitySim's seed and offset;
+2. rebuilds the same MT19937 state on the GPU;
+3. skips exactly the already-used tickets;
+4. produces the requested 64-bit random values; and
+5. advances ActivitySim's official offset by the same amount.
+
+Each qualified run generated 6,243,090 values for 402,780 chooser rows in 38
+GPU calls. A live shadow compared all 705,270 tickets for 23,509 gradeschool
+students and found zero bit differences. ActivitySim still owns the ledger;
+the GPU is an exact ticket printer, not a new source of randomness.
+
+## 184. What does "compute each exponential once" mean?
+
+The model first gives all 1,454 zones scores called utilities. It turns a score
+into a positive weight using an exponential, roughly "raise the number e to
+this score." Earlier GPU choice code could repeat that expensive calculation
+while it summed weights and searched for a chosen zone.
+
+Phase 46 writes each weight once into reusable GPU memory. It then adds the
+1,454 float32 weights in the same pairwise pattern NumPy uses and searches the
+resulting probability line for all 30 random tickets. This is important for
+both speed and accuracy: changing the order of additions can change the last
+binary digit.
+
+The four legal preliminary programs are still checked exactly: 9 terms for
+school, 11 for workplace, and two 7-term tour forms. An unfamiliar expression
+stops the optimized path. The service cannot quietly run a fast version of the
+wrong model.
+
+## 185. Why did the first full Phase 46 run fail?
+
+The first attempt completed school and workplace choice, but one student's
+school zone changed. That one change altered later data, and the model's
+fail-closed scheduling check stopped the run. This was a useful failure.
+
+We compared the person step by step. The GPU random tickets were bit-for-bit
+correct. The problem was a memory-saving shortcut. Probabilities are unchanged
+in pure mathematics if every utility has the row's largest utility subtracted.
+Phase 46 performed that subtraction directly inside the only utility buffer.
+Phase 45 kept the original utilities for its exact boundary checker.
+
+Those two routes were algebraically equal but not arithmetically identical in
+float32. A ticket near a probability boundary sampled zone 659 instead of 660.
+The richer final choice then selected zone 583 instead of 585.
+
+The fix keeps the original utility surface. A short reusable vector stores one
+maximum per row, and the weight kernel subtracts it while making weights. The
+exact checker still sees the untouched values. The next complete run returned
+to zero differences. This is why an agent must run and verify code: a plausible
+edit and a passing small test did not prove the full simulation.
+
+## 186. How did we make the exact safety path fast?
+
+About 7,313 of 201,390 rows have a random ticket close enough to a probability
+boundary that NumPy should decide them. That is 3.63%. Phase 45 used a plain
+Python loop for these rows, looking across as many as 1,454 zones.
+
+ActivitySim already contains a Numba-compiled version of the same preserved-
+order sampling rule. "Numba-compiled" means Python-like code is turned into
+fast machine instructions. We tested both implementations and found identical
+zone choices and identical selected-probability bits. In a focused test the
+ActivitySim version was about 160 times faster. Phase 46 compiles it during
+prewarm, and the benchmark charges that compile time.
+
+Phase 45 also asked pandas to sort a large sample table twice. Phase 46 knows
+that every decision maker has at most 30 draws, so it sorts those tiny rows
+directly and builds an already ordered table. A 26,496-row test was exact and
+4.53 times faster for the packing step.
+
+## 187. What did the official three comparisons show?
+
+Every comparison started a fresh Phase 45 control and then a fresh Phase 46
+candidate. Both ran the same public Prototype MTC extended data, 50,000
+households, 1,454 zones, 34 model steps, and strict output checker.
+
+| Pair | Phase 45 lifecycle | Phase 46 lifecycle | Time saved | Speedup |
+|---|---:|---:|---:|---:|
+| 1 | 150.4 s | 146.935 s | 3.465 s | 1.024x |
+| 2 | 148.3 s | 147.211 s | 1.089 s | 1.007x |
+| 3 | 148.2 s | 146.088 s | 2.112 s | 1.014x |
+| Middle result | **148.3 s** | **146.935 s** | **1.365 s** | **1.009x** |
+
+Phase 46's lifecycle number includes 1.69 to 1.73 seconds of cold prewarm. We
+did not hide setup outside the clock.
+
+| Directly targeted component | Phase 45 | Phase 46 | Result |
+|---|---:|---:|---:|
+| school location | 7.9 s | 5.9 s | 1.339x faster |
+| workplace location | 10.1 s | 8.7 s | 1.161x faster |
+| joint-tour destination | 3.3 s | 3.7 s | 0.892x; 0.4 s slower |
+| non-mandatory-tour destination | 9.5 s | 8.7 s | 1.092x faster |
+| at-work subtour destination | 2.5 s | 2.3 s | 1.087x faster |
+| all five together | **33.0 s** | **29.4 s** | **1.122x; 10.9% lower** |
+
+The joint-tour groups are small, so they do not fully repay the persistent GPU
+service overhead. We keep that regression visible. The five targets together
+improved in all three pairs, and the complete lifecycle also improved in all
+three.
+
+## 188. How strong is the replication guarantee?
+
+For each candidate, an independent verifier compared the seven published CSV
+files: accessibility, households, joint-tour participants, land use, persons,
+tours, and trips. All seven files were byte-for-byte identical in every pair.
+Changed modeled decision cells were 0, 0, and 0.
+
+The runtime also proved that all 19 calls used the persistent service, all
+274,223,637 dense utility cells stayed on the reviewed CUDA path, all 38 random
+calls covered the expected workload, the largest workspace stayed under one
+gibibyte, and every older GPU proof gate still passed. The complete repository
+test suite passed 192 tests.
+
+This is stronger than saying totals look similar. It says the published files
+are the same bytes for this benchmark, software environment, configuration,
+and hardware. It is not a promise that any future formula or GPU will work
+without requalification; unknown programs still stop, and a new environment
+must rerun the same tests.
+
+## 189. What did Phase 46 achieve, and what remains?
+
+Phase 46 proves a model-wide GPU service can own memory, probability sampling,
+duplicate handling, and controlled random generation while preserving exact
+results. Target work is 10.9% lower, but it is only part of a 147-second model,
+so the full lifecycle improves about 0.92%.
+
+It is not GPU-only: ActivitySim orchestrates, the 3.63% boundary uses
+NumPy/Numba, and richer final choice among 4,696,676 samples remains Sharrow
+CPU work.
+
+Next: compile strict final-choice expressions on GPU, batch small joint tours,
+and requalify with cold costs and byte-exact outputs.

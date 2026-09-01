@@ -8,6 +8,7 @@ operations with contiguous ragged offsets and direct typed-array expansion.
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -71,6 +72,7 @@ def compact_interaction_sample_simulate(
     compute_settings=None,
     telemetry=None,
     component="unknown",
+    service=None,
 ):
     """Run one unchunked sampled MNL choice through the compact exact boundary."""
     from activitysim.core import interaction_simulate, logit, tracing, util
@@ -183,12 +185,58 @@ def compact_interaction_sample_simulate(
     probability_seconds = time.perf_counter() - probability_started
 
     choice_started = time.perf_counter()
-    positions, _ = logit.make_choices(
-        state, probs, trace_label=trace_label, trace_choosers=choosers
-    )
+    if service is None:
+        positions, _ = logit.make_choices(
+            state, probs, trace_label=trace_label, trace_choosers=choosers
+        )
+    else:
+        from activitysim.core.choosing import choice_maker
+
+        bad_probs = np.abs(np.asarray(probs.sum(axis=1)) - 1.0) > 0.001
+        if np.any(bad_probs):
+            raise ValueError(
+                "Phase 46 final-choice probabilities do not satisfy ActivitySim's gate"
+            )
+        draws, _ = service.random_for_df(state, probs, 1)
+        positions = pd.Series(
+            choice_maker(probs.to_numpy(copy=False), draws),
+            index=probs.index,
+        )
     selected_positions = (
         positions.clip(lower=0) if state.settings.skip_failed_choices else positions
     )
+    diagnostic_id = os.environ.get("CHOICEFORGE_PHASE46_CHOICE_DIAGNOSTIC_ID")
+    if diagnostic_id is not None:
+        target = int(diagnostic_id)
+        target_positions = np.flatnonzero(np.asarray(choosers.index) == target)
+        if len(target_positions):
+            target_position = int(target_positions[0])
+            begin = int(offsets[target_position])
+            end = int(offsets[target_position + 1])
+            selected_position = int(np.asarray(selected_positions)[target_position])
+            print(
+                "PHASE46_CHOICE_DIAGNOSTIC "
+                + repr(
+                    {
+                        "trace_label": str(trace_label),
+                        "id": target,
+                        "alternatives": alternatives[choice_column]
+                        .iloc[begin:end]
+                        .tolist(),
+                        "probabilities": probs.iloc[target_position, : end - begin].tolist(),
+                        "selected_position": selected_position,
+                        "selected_alternative": alternatives[choice_column].iloc[
+                            begin + selected_position
+                        ],
+                        "gpu_draw": (
+                            float(draws[target_position, 0])
+                            if service is not None
+                            else None
+                        ),
+                    }
+                ),
+                flush=True,
+            )
     selected_rows = offsets[:-1] + np.asarray(selected_positions, dtype=np.int64)
     choices = pd.Series(
         alternatives[choice_column].to_numpy(copy=False)[selected_rows],
@@ -219,6 +267,7 @@ def compact_interaction_sample_simulate(
                 "probability_seconds": probability_seconds,
                 "choice_seconds": choice_seconds,
                 "total_seconds": time.perf_counter() - started,
+                "runtime": "phase46_persistent" if service is not None else "phase45",
             }
         )
     return choices

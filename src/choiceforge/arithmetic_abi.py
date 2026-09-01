@@ -392,6 +392,74 @@ __device__ __forceinline__ float __PAIRWISE_FUNCTION__(const float* values)
     ).replace("__PAIRWISE_FUNCTION__", f"numpy_pairwise_exp_sum_{alternative_count}")
 
 
+def numpy_float32_pairwise_sum_cuda_helpers(
+    alternative_count: int = 1454,
+) -> str:
+    """Emit NumPy's float32 pairwise sum for precomputed values.
+
+    Phase 46 evaluates the versioned NumPy-compatible exponential once per
+    utility cell in a parallel kernel.  This companion generator preserves the
+    exact NumPy association tree when those weights are subsequently reduced.
+    """
+    alternative_count = int(alternative_count)
+    if alternative_count <= 0:
+        raise ValueError("the NumPy pairwise sum ABI requires at least one value")
+    tree = _pairwise_tree(0, alternative_count)
+    leaves = []
+
+    def expression(node):
+        if isinstance(node[0], int):
+            leaf = len(leaves)
+            leaves.append(node)
+            return f"leaf_{leaf}"
+        return f"({expression(node[0])} + {expression(node[1])})"
+
+    root_expression = expression(tree)
+    leaf_lines = [
+        f"const float leaf_{number} = numpy_pairwise_sum_small(values, {start}, {count});"
+        for number, (start, count) in enumerate(leaves)
+    ]
+    return r'''
+__device__ __forceinline__ float numpy_pairwise_sum_small(
+    const float* values, int start, int count)
+{
+    if (count < 8) {
+        float small = 0.0f;
+        for (int offset = 0; offset < count; ++offset) {
+            small += values[start + offset];
+        }
+        return small;
+    }
+    float lanes[8];
+    #pragma unroll
+    for (int lane = 0; lane < 8; ++lane) {
+        lanes[lane] = values[start + lane];
+    }
+    const int stop = count - (count % 8);
+    for (int offset = 8; offset < stop; offset += 8) {
+        #pragma unroll
+        for (int lane = 0; lane < 8; ++lane) {
+            lanes[lane] += values[start + offset + lane];
+        }
+    }
+    float result = ((lanes[0] + lanes[1]) + (lanes[2] + lanes[3]))
+                 + ((lanes[4] + lanes[5]) + (lanes[6] + lanes[7]));
+    for (int offset = stop; offset < count; ++offset) {
+        result += values[start + offset];
+    }
+    return result;
+}
+
+__device__ __forceinline__ float __PAIRWISE_FUNCTION__(const float* values)
+{
+    __LEAVES__
+    return __ROOT__;
+}
+'''.replace("__LEAVES__", "\n    ".join(leaf_lines)).replace(
+        "__ROOT__", root_expression
+    ).replace("__PAIRWISE_FUNCTION__", f"numpy_pairwise_sum_{alternative_count}")
+
+
 PHASE42_NUMERIC_COMPILER = NumericPolicyCompiler(
     reduction=grouped_left_reduction(15),
     probability=Float32ProbabilityPolicy(1_454),

@@ -148,6 +148,15 @@ def main() -> int:
             "school/workplace location and joint/nonmandatory/at-work destination"
         ),
     )
+    parser.add_argument(
+        "--phase46-persistent-destination",
+        action="store_true",
+        help=(
+            "prewarm Phase 45 programs, reuse device workspaces, evaluate each "
+            "probability weight once, and reproduce ActivitySim keyed MT19937 "
+            "draws on CUDA"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -222,6 +231,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase46_persistent_destination:
+        args.phase45_modelwide_choice = True
+        os.environ["CHOICEFORGE_PHASE46_PERSISTENT_DESTINATION"] = "1"
     if args.phase45_modelwide_choice:
         args.phase44_compact_final_simulation = True
         os.environ["CHOICEFORGE_PHASE45_MODELWIDE_CHOICE"] = "1"
@@ -394,6 +406,8 @@ def main() -> int:
     full_model_native_release_freed_bytes = 0
     full_model_native_release_after_model = None
     phase45_choice_events = []
+    phase46_service = None
+    phase46_prewarm = None
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or native_abi_enabled:
@@ -1006,6 +1020,7 @@ def main() -> int:
                 compact_interaction_sample_simulate,
                 telemetry=phase45_choice_events,
                 component=model_name_text,
+                service=(phase46_service if args.phase46_persistent_destination else None),
             )
             from choiceforge.modelwide_sampling import sample_destinations_resident
 
@@ -1055,6 +1070,7 @@ def main() -> int:
                     zone_layer=zone_layer,
                     compute_settings=compute_settings,
                     work_high_segment_id=int((locals_d or {}).get("WORK_HIGH_SEGMENT_ID", 3)),
+                    service=(phase46_service if args.phase46_persistent_destination else None),
                 )
 
             if model_name_text in phase45_location_steps:
@@ -1178,6 +1194,12 @@ def main() -> int:
         cli.extend(["-r", args.resume])
     old_argv = sys.argv
     started = time.perf_counter()
+    if args.phase46_persistent_destination:
+        from choiceforge.modelwide_service import get_phase46_service
+        from choiceforge.modelwide_sampling import prewarm_phase46_public_runtime
+
+        phase46_service = get_phase46_service()
+        phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
     try:
         sys.argv = cli
@@ -2076,6 +2098,7 @@ def main() -> int:
     phase44_runtime = None
     phase45_runtime = None
     phase45_sampling = None
+    phase46_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -2112,8 +2135,13 @@ def main() -> int:
 
         phase45_runtime = summarize_telemetry(phase45_choice_events)
         phase45_sampling = phase45_sampling_telemetry()
+    if args.phase46_persistent_destination:
+        from choiceforge.modelwide_service import phase46_service_summary
+
+        phase46_runtime = phase46_service_summary()
     report = {
         "phase": (
+            46 if args.phase46_persistent_destination else
             45 if args.phase45_modelwide_choice else
             44 if args.phase44_compact_final_simulation else
             43 if args.phase43_compact_trip_state else
@@ -2130,6 +2158,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a persistent prewarmed destination "
+            "service, one-exp CUDA probabilities, and exact keyed GPU MT19937"
+            if args.phase46_persistent_destination else
             "full public ActivitySim model with one compact sampled-choice "
             "runtime shared across five location and destination families"
             if args.phase45_modelwide_choice else
@@ -2235,6 +2266,8 @@ def main() -> int:
         "phase44_compact_final_simulation": phase44_runtime,
         "phase45_modelwide_choice": phase45_runtime,
         "phase45_modelwide_sampling": phase45_sampling,
+        "phase46_persistent_destination": phase46_runtime,
+        "phase46_prewarm": phase46_prewarm,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2591,6 +2624,39 @@ def main() -> int:
                 "phase45_dense_sampling_workload_stays_device_resident": (
                     sum(item.get("utility_cells", 0) for item in phase45_sampling or [])
                     > 100_000_000
+                ),
+            }
+        )
+    if args.phase46_persistent_destination:
+        persistent = phase46_runtime or {}
+        report["proof_gates"].update(
+            {
+                "phase46_all_public_programs_prewarmed": (
+                    bool(phase46_prewarm)
+                    and phase46_prewarm.get("programs") == 4
+                    and all(
+                        item.get("program_cache_hit")
+                        for item in phase45_sampling or []
+                    )
+                ),
+                "phase46_all_sampling_calls_use_persistent_runtime": (
+                    len(phase45_sampling or []) == 19
+                    and all(
+                        item.get("runtime") == "phase46_persistent"
+                        for item in phase45_sampling or []
+                    )
+                ),
+                "phase46_keyed_gpu_rng_covers_sampling_and_final_choice": (
+                    persistent.get("random_calls") == 38
+                    and persistent.get("random_rows") == 402_780
+                    and persistent.get("random_draw_values") == 6_243_090
+                ),
+                "phase46_workspace_covers_largest_public_program": (
+                    persistent.get("cell_capacity", 0) >= 38_525_184
+                    and persistent.get("row_capacity", 0) >= 26_496
+                ),
+                "phase46_workspace_stays_below_one_gibibyte": (
+                    0 < persistent.get("workspace_bytes", 0) < 1024**3
                 ),
             }
         )

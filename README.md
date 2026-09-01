@@ -962,3 +962,25 @@ claim is the matched Phase 44→45 result.
 See the [Phase 45 technical report](docs/phase45-modelwide-destination-runtime.md),
 the [three-pair evidence](benchmark-results/phase45-p45final-summary.json), and
 the [consolidated qualification](benchmark-results/phase45-p45final-qualification.json).
+
+## Phase 46 persistent exact destination service
+
+Phase 46 keeps all 19 Phase 45 destination samplers inside one prewarmed CUDA
+service. It reuses a bounded 391 MB workspace, generates ActivitySim's keyed
+MT19937 values exactly on GPU, evaluates each probability exponential once,
+uses NumPy-compatible pairwise float32 reduction, accelerates the 3.63% sparse
+exact boundary with ActivitySim's authoritative Numba implementation, and
+packs compact samples without two global pandas sorts.
+
+Three fresh matched 50,000-household Phase 45/46 pairs all passed with seven
+byte-identical published outputs and zero changed decision cells. The five
+direct target components improved from a 33.0-second median to 29.4 seconds
+(1.122x, 10.9% lower). Complete lifecycle time—including 1.69-1.73 seconds of
+cold prewarm—improved from 148.3 to 146.935 seconds (1.009x), and Phase 46 won
+all three pairs. School location reached 1.339x and workplace location 1.161x;
+the small joint-tour component regressed by 0.4 seconds and is explicitly
+recorded as the remaining batching target.
+
+See the [Phase 46 technical report](docs/phase46-persistent-destination-service.md),
+the [matched-pair evidence](benchmark-results/phase46-p46final-summary.json), and
+the [fail-closed qualification](benchmark-results/phase46-p46final-qualification.json).

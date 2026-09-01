@@ -10,6 +10,7 @@ from choiceforge.arithmetic_abi import (
     sharrow15_cpu_reduce,
     sharrow15_cuda_reduction,
     numpy_float32_choice_cuda_helpers,
+    numpy_float32_pairwise_sum_cuda_helpers,
     Float32ProbabilityPolicy,
     Float32ReductionPolicy,
     NumericPolicyCompiler,
@@ -100,6 +101,14 @@ def test_general_probability_codegen_supports_changed_alternative_counts():
         source = numpy_float32_choice_cuda_helpers(alternatives)
         assert f"numpy_pairwise_exp_sum_{alternatives}" in source
         assert "if (count < 8)" in source
+
+
+def test_precomputed_pairwise_sum_uses_the_same_fixed_shape_tree():
+    source = numpy_float32_pairwise_sum_cuda_helpers(1454)
+    assert source.count("const float leaf_") == 16
+    assert "numpy_pairwise_sum_1454" in source
+    assert "numpy_avx2_expf" not in source
+    assert "lanes[lane] += values[start + offset + lane]" in source
 
 
 def test_general_compiler_fails_closed_on_invalid_policies_and_shapes():
