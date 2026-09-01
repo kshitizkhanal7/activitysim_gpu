@@ -98,6 +98,32 @@ def phase45_sampling_telemetry():
     return list(_TELEMETRY)
 
 
+def numpy_preserved_order_choices(probabilities, random_draws, alternatives):
+    """Exact preserved-order choices using NumPy's float64 CDF contract."""
+    probabilities = np.asarray(probabilities, dtype=np.float32)
+    random_draws = np.asarray(random_draws, dtype=np.float64)
+    alternatives = np.asarray(alternatives)
+    cumulative = np.cumsum(probabilities, axis=1, dtype=np.float64)
+    rows, draws = random_draws.shape
+    positions = np.empty((rows, draws), dtype=np.int32)
+    for row in range(rows):
+        selected = np.searchsorted(
+            cumulative[row], random_draws[row], side="right"
+        ).astype(np.int32, copy=False)
+        overflow = selected >= probabilities.shape[1]
+        if np.any(overflow):
+            last = probabilities.shape[1] - 1
+            while probabilities[row, last] < 1e-30 and last > 0:
+                last -= 1
+            selected[overflow] = last
+        positions[row] = selected
+    choices = alternatives[positions]
+    selected_probabilities = np.take_along_axis(
+        probabilities, positions, axis=1
+    ).astype(np.float32, copy=False)
+    return choices, selected_probabilities
+
+
 def _pack_sample_phase46(
     choosers,
     choices,
@@ -382,10 +408,8 @@ extern "C" __global__ void phase46_destination_inverse_cdf(
     )
 
 
-def prewarm_phase46_public_runtime(cp=None) -> dict:
+def prewarm_phase46_public_runtime(cp=None, *, exact_guard_runtime="numba") -> dict:
     """Compile all four reviewed public program shapes before model steps."""
-    from activitysim.core.choosing import sample_choices_maker_preserve_ordering
-
     cp = cp or _cupy()
     started = time.perf_counter()
     compiled = 0
@@ -393,17 +417,22 @@ def prewarm_phase46_public_runtime(cp=None) -> dict:
         _, cache_hit = _compile_utility(cp, expressions)
         compiled += int(not cache_hit)
     _compile_phase46_choice(cp, 1454)
-    # The exact boundary is sparse, but its authoritative ActivitySim Numba
-    # implementation must not pay a lazy compile inside the first model step.
-    sample_choices_maker_preserve_ordering(
-        np.ones((1, 1), dtype=np.float32),
-        np.zeros((1, 1), dtype=np.float64),
-        np.zeros(1, dtype=np.int32),
-    )
+    if exact_guard_runtime == "numba":
+        from activitysim.core.choosing import sample_choices_maker_preserve_ordering
+
+        # Phase 46's authoritative sparse helper is charged during prewarm.
+        sample_choices_maker_preserve_ordering(
+            np.ones((1, 1), dtype=np.float32),
+            np.zeros((1, 1), dtype=np.float64),
+            np.zeros(1, dtype=np.int32),
+        )
+    elif exact_guard_runtime != "numpy":
+        raise ValueError("unknown exact guard runtime")
     cp.cuda.Stream.null.synchronize()
     return {
         "programs": len(_PHASE46_PUBLIC_PROGRAMS),
         "new_programs_compiled": compiled,
+        "exact_guard_runtime": exact_guard_runtime,
         "seconds": time.perf_counter() - started,
     }
 
@@ -703,7 +732,6 @@ def sample_destinations_resident(
     guard_count = int(np.count_nonzero(guard_host))
     if guard_count:
         from activitysim.core import logit
-        from activitysim.core.choosing import sample_choices_maker_preserve_ordering
 
         exact_choosers = choosers.iloc[np.flatnonzero(guard_host)]
         # Utilities are already exact and row-max shifted.  Transfer only the
@@ -718,13 +746,19 @@ def sample_destinations_resident(
             trace_choosers=exact_choosers,
             overflow_protection=True,
         ).to_numpy(copy=False)
-        exact_choices, exact_probabilities = sample_choices_maker_preserve_ordering(
-            exact_probs, random_draws[guard_host], alternative_ids
-        )
-        # ActivitySim's public helper stores sample-major arrays; the resident
-        # contract is chooser-major.  Transposition changes layout, not values.
-        exact_choices = exact_choices.T
-        exact_probabilities = exact_probabilities.T
+        if getattr(service, "phase47_device_final", False):
+            exact_choices, exact_probabilities = numpy_preserved_order_choices(
+                exact_probs, random_draws[guard_host], alternative_ids
+            )
+        else:
+            from activitysim.core.choosing import sample_choices_maker_preserve_ordering
+
+            exact_choices, exact_probabilities = sample_choices_maker_preserve_ordering(
+                exact_probs, random_draws[guard_host], alternative_ids
+            )
+            # ActivitySim stores sample-major arrays; resident state is chooser-major.
+            exact_choices = exact_choices.T
+            exact_probabilities = exact_probabilities.T
         host_choices[guard_host] = exact_choices
         host_probabilities[guard_host] = exact_probabilities
         exact_first, exact_counts = _host_duplicate_contract(exact_choices)

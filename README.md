@@ -984,3 +984,31 @@ recorded as the remaining batching target.
 See the [Phase 46 technical report](docs/phase46-persistent-destination-service.md),
 the [matched-pair evidence](benchmark-results/phase46-p46final-summary.json), and
 the [fail-closed qualification](benchmark-results/phase46-p46final-qualification.json).
+
+## Phase 47 strict CUDA sampled final choice
+
+Phase 47 compiles the richer final sampled-choice formulas for school,
+workplace, joint-tour, non-mandatory-tour, and at-work destinations to four
+fail-closed CUDA programs. Nineteen calls cover 201,390 choosers and 4,696,676
+sampled alternatives. The generated kernels preserve Sharrow/OpenBLAS grouped
+float32 arithmetic and reuse Phase 46's persistent workspace and exact GPU
+MT19937 draws.
+
+An exhaustive live shadow found zero utility-bit differences across all
+4,696,676 alternatives. Only 7 final rows entered the exact boundary guard.
+Three fresh matched Phase 46/47 pairs each produced seven byte-identical output
+tables and favored Phase 47 after charging cold prewarm. The final-choice
+boundary improved from a 1.786-second median to 0.362 seconds (**4.94x**). The
+five target components improved from 29.8 to 27.7 seconds (**1.076x**), and the
+complete 34-step lifecycle improved from 144.600 to 143.815 seconds
+(**1.0055x**, 0.785 seconds saved).
+
+The whole-model effect is intentionally reported as modest: the replaced
+boundary was only about 1.2% of an already accelerated Phase 46 run. Exact
+normalization and logsums still use NumPy on the compact transferred utility
+surface. The next major phase is a resident destination graph and strict GPU
+probability/logsum ABI, not another isolated kernel.
+
+See the [Phase 47 technical report](docs/phase47-device-final-choice.md), the
+[matched-pair evidence](benchmark-results/phase47-p47final-summary.json), and
+the [fail-closed qualification](benchmark-results/phase47-p47final-qualification.json).

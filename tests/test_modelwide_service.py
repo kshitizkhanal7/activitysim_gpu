@@ -6,6 +6,7 @@ from choiceforge.modelwide_sampling import (
     _compile_phase46_choice,
     _pack_sample_phase46,
     _preserved_order_choices,
+    numpy_preserved_order_choices,
 )
 from choiceforge.modelwide_service import Phase46DestinationService
 from choiceforge.trip_destination_resident import (
@@ -144,3 +145,34 @@ def test_phase46_compact_packer_matches_activitysim_sorted_contract():
         choosers, choices, probabilities, random_draws, first, counts, "dest_MAZ"
     )
     pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+
+
+def test_phase47_numpy_guard_matches_activitysim_numba_contract():
+    from activitysim.core.choosing import sample_choices_maker_preserve_ordering
+
+    rng = np.random.default_rng(470047)
+    probabilities = rng.random((47, 30), dtype=np.float32)
+    probabilities /= probabilities.sum(axis=1, keepdims=True)
+    draws = rng.random((47, 7), dtype=np.float64)
+    alternatives = np.arange(30, dtype=np.int32)
+    expected_choices, expected_probabilities = sample_choices_maker_preserve_ordering(
+        probabilities, draws, alternatives
+    )
+    choices, selected_probabilities = numpy_preserved_order_choices(
+        probabilities, draws, alternatives
+    )
+    assert np.array_equal(choices, expected_choices.T)
+    assert np.array_equal(
+        selected_probabilities.view(np.uint32),
+        expected_probabilities.T.view(np.uint32),
+    )
+
+
+def test_phase47_final_workspace_reuses_phase46_storage():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    first = service.final_workspace(101, 2_929, 30)
+    pointers = {name: value.data.ptr for name, value in first.items()}
+    second = service.final_workspace(47, 1_099, 21)
+    assert all(second[name].data.ptr == pointers[name] for name in pointers)
+    assert service.summary()["workspace_bytes"] < 1024**3

@@ -106,6 +106,27 @@ def compact_interaction_sample_simulate(
         trace_label, "interaction_sample_simulate"
     )
     compute_settings = compute_settings or ComputeSettings()
+    if service is not None and getattr(service, "phase47_device_final", False):
+        from .modelwide_final import device_compact_interaction_sample_simulate
+
+        return device_compact_interaction_sample_simulate(
+            state,
+            choosers,
+            alternatives,
+            spec,
+            choice_column,
+            allow_zero_probs=allow_zero_probs,
+            zero_prob_choice_val=zero_prob_choice_val,
+            want_logsums=want_logsums,
+            skims=skims,
+            locals_d=locals_d,
+            trace_label=trace_label,
+            compute_settings=compute_settings,
+            telemetry=telemetry,
+            component=component,
+            service=service,
+            work_high_segment_id=int((locals_d or {}).get("WORK_HIGH_SEGMENT_ID", 3)),
+        )
     offsets, counts = ragged_offsets(alternatives, choosers)
 
     prune_started = time.perf_counter()

@@ -5941,3 +5941,177 @@ CPU work.
 
 Next: compile strict final-choice expressions on GPU, batch small joint tours,
 and requalify with cold costs and byte-exact outputs.
+
+## 190. What did Phase 47 try to change?
+
+After Phase 46, the GPU could quickly make a shortlist of possible zones, but
+the CPU still performed the richer final scoring of that shortlist. Imagine a
+school decision. The shortlist may contain up to 30 zones. The final score can
+include distance pieces, school size, a shadow-price correction that balances
+zone capacity, a travel-mode score, and a correction for how the shortlist was
+sampled.
+
+Phase 47 built one strict GPU compiler for those final formulas. It covers five
+kinds of decisions: school location, workplace location, joint-tour
+destination, non-mandatory-tour destination, and at-work subtour destination.
+Across the public benchmark, that is 19 calls, 201,390 decision makers, and
+4,696,676 shortlisted alternatives.
+
+"Strict" matters. The compiler recognizes exactly four reviewed formula
+shapes and four measured shortlist widths: 21, 25, 29, and 30. A new or changed
+formula stops the fast path. It cannot quietly calculate a similar but wrong
+answer.
+
+## 191. What is a final-choice utility?
+
+A utility is a score, not money or electrical power. A zone gets points or
+penalties based on its features. A simplified example is:
+
+`score = distance penalty + size benefit + mode score + sampling correction`
+
+The real formulas split distance into ranges such as 0-1, 1-2, 2-5, 5-15, and
+over 15 miles. This lets one extra mile matter differently on a short trip than
+on a long trip. Workplace formulas also let distance affect higher-income
+groups differently. School and work models include shadow prices, which nudge
+choices toward places with available capacity. Tour models include the
+mode-choice logsum, a summary of how attractive all available travel modes are.
+
+Finally, the sampling correction prevents a zone from gaining or losing an
+unfair advantage merely because the shortlist process happened to include it
+more or less often.
+
+## 192. What does the GPU do now?
+
+For each shortlisted zone, a CUDA kernel reads the distance from the already
+resident skim, builds every required feature, multiplies features by model
+coefficients, and adds them in the same reviewed float32 order as Sharrow on
+the CPU. It writes directly into a compact table organized by decision maker.
+
+The Phase 46 service supplies reusable GPU memory and exactly the same MT19937
+random tickets as ActivitySim. A second GPU kernel turns utilities into
+weights, searches the probability line, and proposes the selected shortlist
+position. This avoids building a large pandas interaction table and running
+the Sharrow CPU utility compiler during production.
+
+Phase 47 is still not "no CPU." The compact utility table returns to NumPy for
+ActivitySim's exact probability normalization and logsum. Normally the GPU
+selection is accepted. If a ticket is extremely close to a probability
+boundary, NumPy decides that row exactly. ActivitySim still coordinates the
+34 model steps and owns the official random ledger.
+
+## 193. How did we prove the GPU arithmetic was identical?
+
+We did not trust a few example rows. We enabled an expensive shadow mode for a
+complete 50,000-household model run. Every one of the 19 final programs ran
+twice: once through the new CUDA compiler and once through Sharrow's CPU
+compiler. The checker compared the binary float32 representation of every
+utility.
+
+The result was zero differing bits across all 4,696,676 shortlisted
+alternatives. It also compared GPU and exact final positions. Only 7 of
+201,390 rows were close enough to a probability boundary to enter the safety
+guard, and there were zero unguarded choice disagreements.
+
+We then ran three normal production comparisons. An independent verifier found
+zero changed decision cells and seven byte-for-byte identical published CSV
+files in every pair. That includes the final households, persons, tours, and
+trips - not just a total or average.
+
+## 194. Why replace the Numba safety helper?
+
+Phase 46 used ActivitySim's Numba-compiled preserved-order sampler for the
+safety rows. It was fast after compilation, but a fresh process spent about
+1.7 seconds compiling it before the model began. Phase 47 needs only a tiny
+number of final safety rows, so that cold cost was wasteful.
+
+The replacement uses NumPy's float64 cumulative sum and `searchsorted`. A
+focused test compared it with ActivitySim's compiled helper across realistic
+and full 1,454-zone shapes. Choices and selected float32 probabilities were
+identical. Phase 47's combined preliminary-runtime prewarm fell to about
+0.012 seconds, while its four final CUDA programs added roughly 0.003 seconds
+after the first CUDA cache was populated. The first fresh cache paid about
+0.054 seconds. All cold costs are included in the lifecycle results.
+
+## 195. How fast is the new final-choice boundary?
+
+The Phase 46 final-choice runtime took a 1.786-second median. Phase 47 took
+0.362 seconds. That is 4.94 times faster and saves about 1.424 seconds directly
+at this boundary.
+
+| Measurement | Phase 46 | Phase 47 | Result |
+|---|---:|---:|---:|
+| final-choice runtime | 1.786 s | 0.362 s | 4.94x faster |
+| all five target components | 29.8 s | 27.7 s | 1.076x faster |
+| complete 34-step lifecycle | 144.600 s | 143.815 s | 1.0055x faster |
+
+The complete lifecycle improvements in the three pairs were 1.933, 1.785, and
+0.485 seconds. Phase 47 won every pair, but the median whole-model saving is
+only 0.785 seconds, or 0.54%.
+
+## 196. Why can 4.94x become only 1.0055x for the whole model?
+
+Suppose a two-hour trip includes a one-minute ticket line. Making that line
+five times faster is useful, but it cannot make the entire trip five times
+faster. Before Phase 47, this final-choice boundary was only about 1.2% of the
+already accelerated Phase 46 lifecycle.
+
+Most of the 34-step model was unchanged. It still loads data, creates people
+and tours, schedules activities, makes modes and trips, writes matrices, and
+produces reports. Amdahl's law is the name for this limit: total speedup is
+bounded by the fraction of total time that was improved.
+
+This is why the report keeps three numbers separate: kernel or boundary
+speedup, target-component speedup, and whole-model speedup. Mixing them would
+make a real result sound much larger than it is.
+
+## 197. Which components improved, and which did not?
+
+| Component | Phase 46 | Phase 47 | Result |
+|---|---:|---:|---:|
+| school location | 6.1 s | 5.2 s | 1.173x faster |
+| workplace location | 9.2 s | 8.7 s | 1.057x faster |
+| joint-tour destination | 3.4 s | 3.5 s | 0.971x; 0.1 s slower |
+| non-mandatory-tour destination | 8.4 s | 8.4 s | tied at timer precision |
+| at-work subtour destination | 2.5 s | 2.2 s | 1.136x faster |
+
+The five components together improved by 1.8 to 2.3 seconds in every pair.
+Joint tours are still too small to hide per-call setup, so batching small
+segments remains important. Reporting that regression prevents an average
+from hiding where the next work belongs.
+
+## 198. What can we honestly claim now?
+
+We can claim that, on the pinned public Prototype MTC extended benchmark and
+this RTX A4000 environment, a strict GPU compiler made the final sampled-choice
+boundary 4.94 times faster while producing byte-identical published outputs in
+three fresh comparisons. We can also claim a replicated 1.0055x complete
+lifecycle improvement over the already GPU-accelerated Phase 46 runtime.
+
+We cannot claim that ActivitySim is entirely GPU-only, that every possible
+ActivitySim expression is compiled, or that every computer will get the same
+speed without rerunning qualification. Exact logsums and normalization still
+cross a compact CPU boundary. Unknown formulas fail closed. New hardware,
+software, data, or formulas must rerun shadows and output checks.
+
+## 199. What should the next ambitious phase build?
+
+The next phase should join several adjacent operations into one resident
+destination graph instead of adding another isolated kernel. It should:
+
+- keep compact samples, mode logsums, final utilities, probabilities, and
+  selected results on the GPU across neighboring stages;
+- compile an exact GPU normalization and logsum ABI, with CPU shadows proving
+  its addition, exponential, division, overflow, and zero-probability rules;
+- batch the small joint-tour segments so they share uploads and launches;
+- retain random state by stable chooser identity instead of reconstructing it
+  at each call;
+- expose the compiler and numeric policy behind a Sharrow or ActivitySim
+  backend interface rather than only a benchmark runner; and
+- preserve fail-closed formulas, exhaustive shadows, three fresh matched
+  pairs, cold-cost accounting, and independent final-table verification.
+
+The likely direct prize is removal of the remaining compact utility download
+and Python call boundaries. The larger prize is architectural: a reusable
+upstream backend in which a whole chain of destination work is device
+resident. Only that wider graph can turn another large boundary speedup into a
+meaningful whole-model reduction.

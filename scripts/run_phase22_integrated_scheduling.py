@@ -157,6 +157,14 @@ def main() -> int:
             "draws on CUDA"
         ),
     )
+    parser.add_argument(
+        "--phase47-device-final-choice",
+        action="store_true",
+        help=(
+            "compile all five public sampled final-choice families to strict "
+            "CUDA utility and selection programs with exact CPU adjudication"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -231,6 +239,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase47_device_final_choice:
+        args.phase46_persistent_destination = True
+        os.environ["CHOICEFORGE_PHASE47_DEVICE_FINAL_CHOICE"] = "1"
     if args.phase46_persistent_destination:
         args.phase45_modelwide_choice = True
         os.environ["CHOICEFORGE_PHASE46_PERSISTENT_DESTINATION"] = "1"
@@ -408,6 +419,7 @@ def main() -> int:
     phase45_choice_events = []
     phase46_service = None
     phase46_prewarm = None
+    phase47_prewarm = None
     raw_mode_constants = None
     raw_cbd_threshold = None
     if args.resident_raw_table_input_report or native_abi_enabled:
@@ -1199,7 +1211,16 @@ def main() -> int:
         from choiceforge.modelwide_sampling import prewarm_phase46_public_runtime
 
         phase46_service = get_phase46_service()
-        phase46_prewarm = prewarm_phase46_public_runtime()
+        if args.phase47_device_final_choice:
+            from choiceforge.modelwide_final import prewarm_phase47_public_runtime
+
+            phase46_service.phase47_device_final = True
+            phase46_prewarm = prewarm_phase46_public_runtime(
+                exact_guard_runtime="numpy"
+            )
+            phase47_prewarm = prewarm_phase47_public_runtime()
+        else:
+            phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
     try:
         sys.argv = cli
@@ -2099,6 +2120,7 @@ def main() -> int:
     phase45_runtime = None
     phase45_sampling = None
     phase46_runtime = None
+    phase47_runtime = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -2139,8 +2161,13 @@ def main() -> int:
         from choiceforge.modelwide_service import phase46_service_summary
 
         phase46_runtime = phase46_service_summary()
+    if args.phase47_device_final_choice:
+        from choiceforge.modelwide_final import summarize_phase47_telemetry
+
+        phase47_runtime = summarize_phase47_telemetry()
     report = {
         "phase": (
+            47 if args.phase47_device_final_choice else
             46 if args.phase46_persistent_destination else
             45 if args.phase45_modelwide_choice else
             44 if args.phase44_compact_final_simulation else
@@ -2158,6 +2185,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with strict CUDA sampled final-choice "
+            "utility and selection across five destination families, exact "
+            "boundary adjudication, and a persistent prewarmed device service"
+            if args.phase47_device_final_choice else
             "full public ActivitySim model with a persistent prewarmed destination "
             "service, one-exp CUDA probabilities, and exact keyed GPU MT19937"
             if args.phase46_persistent_destination else
@@ -2268,6 +2299,8 @@ def main() -> int:
         "phase45_modelwide_sampling": phase45_sampling,
         "phase46_persistent_destination": phase46_runtime,
         "phase46_prewarm": phase46_prewarm,
+        "phase47_device_final_choice": phase47_runtime,
+        "phase47_prewarm": phase47_prewarm,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2657,6 +2690,48 @@ def main() -> int:
                 ),
                 "phase46_workspace_stays_below_one_gibibyte": (
                     0 < persistent.get("workspace_bytes", 0) < 1024**3
+                ),
+            }
+        )
+    if args.phase47_device_final_choice:
+        final_runtime = phase47_runtime or {}
+        final_events = final_runtime.get("events", [])
+        report["proof_gates"].update(
+            {
+                "phase47_all_public_final_programs_and_widths_prewarmed": (
+                    bool(phase47_prewarm)
+                    and phase47_prewarm.get("programs") == 4
+                    and phase47_prewarm.get("widths") == [21, 25, 29, 30]
+                ),
+                "phase47_all_five_target_families_use_device_final_runtime": (
+                    len(final_events) == 19
+                    and {item.get("component") for item in final_events}
+                    == {
+                        "school_location",
+                        "workplace_location",
+                        "joint_tour_destination",
+                        "non_mandatory_tour_destination",
+                        "atwork_subtour_destination",
+                    }
+                    and all(
+                        item.get("runtime") == "phase47_device_final"
+                        for item in final_events
+                    )
+                ),
+                "phase47_complete_public_final_workload_covered": (
+                    final_runtime.get("chooser_rows") == 201_390
+                    and final_runtime.get("alternative_rows") == 4_696_676
+                ),
+                "phase47_no_unguarded_final_choice_mismatches": (
+                    bool(final_events)
+                    and all(
+                        item.get("unguarded_mismatches") == 0
+                        for item in final_events
+                    )
+                ),
+                "phase47_cold_numba_adjudicator_removed": (
+                    bool(phase46_prewarm)
+                    and phase46_prewarm.get("exact_guard_runtime") == "numpy"
                 ),
             }
         )

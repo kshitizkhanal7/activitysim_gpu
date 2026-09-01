@@ -109,6 +109,7 @@ class Phase46DestinationService:
         self._risk = None
         self._random_events = []
         self._workspace_growths = 0
+        self.phase47_device_final = False
 
     def _ensure_rng(self, rows: int, draws: int) -> None:
         cp = self.cp
@@ -284,6 +285,46 @@ class Phase46DestinationService:
             "guard": guard,
             "bad": bad,
             "risk": risk,
+        }
+
+    def final_workspace(self, rows: int, alternative_rows: int, width: int) -> dict:
+        """Return Phase 47 views without adding another dense allocation."""
+        rows = int(rows)
+        alternative_rows = int(alternative_rows)
+        width = int(width)
+        padded_cells = rows * width
+        required_cells = max(alternative_rows, padded_cells)
+        required_samples = max(rows, padded_cells)
+        cp = self.cp
+        if required_cells > self._cell_capacity:
+            self._utility = cp.empty(required_cells, dtype=cp.float32)
+            self._weights = cp.empty(required_cells, dtype=cp.float32)
+            self._cell_capacity = required_cells
+            self._workspace_growths += 1
+        if required_samples > self._sample_capacity:
+            self._choices = cp.empty(required_samples, dtype=cp.int32)
+            self._probabilities = cp.empty(required_samples, dtype=cp.float32)
+            self._first = cp.empty(required_samples, dtype=cp.uint8)
+            self._counts = cp.empty(required_samples, dtype=cp.uint32)
+            self._sample_capacity = required_samples
+            self._workspace_growths += 1
+        if rows > self._row_capacity:
+            self._guard = cp.empty(rows, dtype=cp.uint8)
+            self._bad = cp.empty(rows, dtype=cp.uint8)
+            self._risk = cp.empty(rows, dtype=cp.float32)
+            self._row_capacity = rows
+            self._workspace_growths += 1
+        self._guard[:rows].fill(0)
+        self._bad[:rows].fill(0)
+        self._risk[:rows].fill(0)
+        return {
+            "utilities": self._utility[:padded_cells].reshape(rows, width),
+            "weights": self._weights[:padded_cells].reshape(rows, width),
+            "positions": self._choices[:rows],
+            "selected_probabilities": self._probabilities[:rows],
+            "guard": self._guard[:rows],
+            "bad": self._bad[:rows],
+            "row_maxima": self._risk[:rows],
         }
 
     def summary(self) -> dict:

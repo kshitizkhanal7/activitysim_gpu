@@ -1,0 +1,69 @@
+{
+  "phase": 47,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "zones": 1454,
+  "matched_pairs": 3,
+  "calls": 19,
+  "chooser_rows": 201390,
+  "sampled_alternative_rows": 4696676,
+  "final_choice_runtime": {
+    "phase46_seconds": [
+      1.7861430002376437,
+      1.9511237002443522,
+      1.7700385001953691
+    ],
+    "phase47_seconds": [
+      0.38058469956740737,
+      0.36177570023573935,
+      0.35779409972019494
+    ],
+    "median_phase46_seconds": 1.7861430002376437,
+    "median_phase47_seconds": 0.36177570023573935,
+    "median_seconds_saved": 1.4243673000019044,
+    "median_speedup": 4.937155809728961
+  },
+  "five_target_component_aggregate": {
+    "phase46_seconds": [
+      30.5,
+      29.5,
+      29.799999999999997
+    ],
+    "phase47_seconds": [
+      28.400000000000002,
+      27.700000000000003,
+      27.5
+    ],
+    "median_phase46_seconds": 29.799999999999997,
+    "median_phase47_seconds": 27.700000000000003
+  },
+  "complete_model_lifecycle": {
+    "median_phase46_seconds": 144.59999999999997,
+    "median_phase47_seconds": 143.81507170009425,
+    "median_seconds_saved": 0.7849282999057152,
+    "median_reduction_percent": 0.5428273166706192,
+    "median_speedup": 1.0054579001395805,
+    "candidate_won_every_pair": true,
+    "includes_all_cold_prewarms": true
+  },
+  "utility_shadow_bit_mismatches": 0,
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "proof_gates": {
+    "three_candidate_reports_pass_every_runtime_gate": true,
+    "all_nineteen_calls_cover_the_public_workload": true,
+    "all_four_final_programs_and_widths_are_prewarmed": true,
+    "cold_numba_compile_is_removed": true,
+    "exhaustive_live_utility_shadow_is_bit_identical": true,
+    "production_sparse_guard_has_zero_pre_guard_mismatches": true,
+    "three_independent_verifiers_find_exact_outputs": true,
+    "five_target_components_improve_in_every_pair": true,
+    "complete_lifecycle_improves_in_every_pair": true,
+    "summary_declares_every_pair_exact": true
+  },
+  "success": true,
+  "claim_boundary": "Phase 47 compiles reviewed sampled final-choice utility and guarded selection to CUDA. Exact logsums and normalization remain authoritative NumPy on the compact transferred surface; ActivitySim still orchestrates."
+}
