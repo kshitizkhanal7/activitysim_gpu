@@ -1,0 +1,111 @@
+{
+  "phase": 50,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "zones": 1454,
+  "incremental_matched_pairs": 3,
+  "regular_activitysim_matched_pairs": 3,
+  "calls_per_run": 19,
+  "owners_per_run": 201390,
+  "sampled_alternative_rows_per_run": 4696676,
+  "five_destination_components": {
+    "baseline_seconds": [
+      28.8,
+      27.900000000000002,
+      28.4
+    ],
+    "phase50_seconds": [
+      19.2,
+      16.900000000000002,
+      16.8
+    ],
+    "median_baseline_seconds": 28.4,
+    "median_phase50_seconds": 16.900000000000002,
+    "median_seconds_saved": 11.499999999999996,
+    "median_reduction_percent": 40.49295774647886,
+    "median_speedup": 1.6804733727810648,
+    "won_every_pair": true
+  },
+  "incremental_complete_model_lifecycle": {
+    "baseline_seconds": [
+      150.20000000000005,
+      148.70000000000002,
+      146.60000000000002
+    ],
+    "phase50_seconds": [
+      150.7175457999576,
+      136.5182470001746,
+      134.7170597999822
+    ],
+    "median_baseline_seconds": 148.70000000000002,
+    "median_phase50_seconds": 136.5182470001746,
+    "median_seconds_saved": 12.18175299982542,
+    "median_reduction_percent": 8.19216745112671,
+    "median_speedup": 1.0892316834379645,
+    "won_every_pair": false,
+    "won_pairs": 2
+  },
+  "regular_activitysim_complete_model_lifecycle": {
+    "baseline_seconds": [
+      209.29999999999998,
+      209.29999999999995,
+      208.59999999999997
+    ],
+    "phase50_seconds": [
+      138.9176476999186,
+      134.11817339984697,
+      133.91623149984514
+    ],
+    "median_baseline_seconds": 209.29999999999995,
+    "median_phase50_seconds": 134.11817339984697,
+    "median_seconds_saved": 75.18182660015299,
+    "median_reduction_percent": 35.920605160130435,
+    "median_speedup": 1.560564051047826,
+    "won_every_pair": true
+  },
+  "compact_input_contract": {
+    "float_row_sources": 10,
+    "integer_row_sources": 31,
+    "skim_coordinate_groups": 6,
+    "dense_preprocessor_values_avoided": 192563716,
+    "dense_host_pack_bytes_avoided": 1953817216,
+    "compact_upload_bytes": 58259296,
+    "net_upload_bytes_avoided": 1895557920,
+    "upload_reduction_percent": 97.01818084501923,
+    "median_device_generate_seconds": 0.26166760083287954,
+    "median_utility_kernel_seconds": 1.6071053005289286,
+    "median_total_seconds": 8.892092100577429
+  },
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "regular_activitysim_decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "diagnostic_bounds": {
+    "destination_logsum_max_abs": 1.0000000003174137e-05,
+    "destination_logsum_gate": 0.0001,
+    "mode_choice_logsum_max_abs": 3.813521463058578e-06,
+    "mode_choice_logsum_gate": 1e-05
+  },
+  "proof_gates": {
+    "three_incremental_candidate_reports_pass_every_runtime_gate": true,
+    "all_nineteen_calls_cover_the_complete_public_workload": true,
+    "complete_10_float_31_integer_6_group_abi_generated": true,
+    "dense_host_preprocessor_pack_and_binding_eliminated": true,
+    "net_upload_avoidance_exceeds_1_8_gb_per_run": true,
+    "zero_fallback_in_every_call": true,
+    "five_destination_components_improve_in_every_incremental_pair": true,
+    "three_incremental_verifiers_find_zero_changed_decisions": true,
+    "three_incremental_verifiers_find_all_seven_files_byte_identical": true,
+    "three_regular_activitysim_verifiers_find_zero_changed_decisions": true,
+    "regular_activitysim_lifecycle_improves_in_every_pair": true,
+    "both_summaries_declare_every_pair_exact": true
+  },
+  "success": true,
+  "claim_boundary": "Phase 50 replaces the reviewed public destination-logsum pandas preprocessor and dense host transfer with compact owner/sample state and CUDA-generated inputs. Modeled decisions are exact and declared logsum diagnostics are bounded. The Phase 49 comparison isolates the incremental destination gain; the regular ActivitySim comparison measures the cumulative project runtime on this machine."
+}

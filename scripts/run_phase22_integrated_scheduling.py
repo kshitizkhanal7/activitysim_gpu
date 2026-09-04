@@ -182,6 +182,15 @@ def main() -> int:
             "host round trip"
         ),
     )
+    parser.add_argument(
+        "--phase50-device-generated-destination-inputs",
+        action="store_true",
+        help=(
+            "bypass the dense ActivitySim destination-logsum preprocessor and "
+            "generate its exact 10-float/31-integer row ABI plus skim coordinates "
+            "on CUDA from compact owner and sampled-destination state"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -256,6 +265,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase50_device_generated_destination_inputs:
+        args.phase49_destination_supergraph = True
+        os.environ["CHOICEFORGE_PHASE50_DEVICE_GENERATED_DESTINATION_INPUTS"] = "1"
     if args.phase49_destination_supergraph:
         args.phase48_resident_destination_graph = True
         os.environ["CHOICEFORGE_PHASE49_DESTINATION_SUPERGRAPH"] = "1"
@@ -385,6 +397,7 @@ def main() -> int:
     )
 
     from activitysim.abm.models import location_choice as activitysim_location_choice
+    from activitysim.abm.models.util import logsums as activitysim_logsums
     from activitysim.abm.models.util import tour_destination as activitysim_tour_destination
     from activitysim.abm.models.util import vectorize_tour_scheduling as vts
     from activitysim.core import los as activitysim_los
@@ -420,6 +433,9 @@ def main() -> int:
     )
     original_location_choice_sample = activitysim_location_choice.interaction_sample
     original_run_location_choice = activitysim_location_choice.run_location_choice
+    original_compute_location_choice_logsums = (
+        activitysim_logsums.compute_location_choice_logsums
+    )
     original_tour_destination_simulate = (
         activitysim_tour_destination.interaction_sample_simulate
     )
@@ -446,9 +462,14 @@ def main() -> int:
     phase47_prewarm = None
     phase48_prewarm = None
     phase49_bridge = None
+    phase50_runtime = None
     raw_mode_constants = None
     raw_cbd_threshold = None
-    if args.resident_raw_table_input_report or native_abi_enabled:
+    if (
+        args.resident_raw_table_input_report
+        or native_abi_enabled
+        or args.phase50_device_generated_destination_inputs
+    ):
         import yaml
 
         raw_mode_settings = yaml.safe_load(
@@ -1016,7 +1037,13 @@ def main() -> int:
                 and model_name_text in location_logsum_steps
             )
         )
-        if args.phase33_model_wide and location_candidate_enabled:
+        if args.phase50_device_generated_destination_inputs and model_name_text in location_logsum_steps:
+            activitysim_logsums.compute_location_choice_logsums = phase50_runtime.compute
+        if (
+            args.phase33_model_wide
+            and location_candidate_enabled
+            and not args.phase50_device_generated_destination_inputs
+        ):
             def generated_location_logsums(
                 state,
                 choosers,
@@ -1154,6 +1181,9 @@ def main() -> int:
                 original_tour_destination_simulate
             )
             activitysim_tour_destination.interaction_sample = original_tour_destination_sample
+            activitysim_logsums.compute_location_choice_logsums = (
+                original_compute_location_choice_logsums
+            )
         if args.phase49_destination_supergraph and model_name_text in location_logsum_steps:
             phase49_bridge.assert_empty()
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
@@ -1283,6 +1313,16 @@ def main() -> int:
 
                     phase49_bridge = DestinationSupergraphBridge(phase46_service.cp)
                     phase46_service.destination_supergraph_bridge = phase49_bridge
+                    if args.phase50_device_generated_destination_inputs:
+                        from choiceforge.destination_input_supergraph import (
+                            DestinationInputSupergraph,
+                        )
+
+                        phase50_runtime = DestinationInputSupergraph(
+                            phase49_bridge,
+                            cbd_threshold=raw_cbd_threshold,
+                            cp=phase46_service.cp,
+                        )
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
@@ -1313,6 +1353,9 @@ def main() -> int:
             original_tour_destination_simulate
         )
         activitysim_tour_destination.interaction_sample = original_tour_destination_sample
+        activitysim_logsums.compute_location_choice_logsums = (
+            original_compute_location_choice_logsums
+        )
 
     actual = pd.read_parquet(
         args.output
@@ -2188,6 +2231,7 @@ def main() -> int:
     phase47_runtime = None
     phase48_runtime = None
     phase49_runtime = None
+    phase50_summary = None
     if args.phase35_resident_trip:
         from choiceforge.activitysim_trip_scheduling import trip_scheduling_telemetry
         from choiceforge.activitysim_destination import trip_destination_stage_telemetry
@@ -2239,8 +2283,11 @@ def main() -> int:
     if args.phase49_destination_supergraph:
         phase49_bridge.assert_empty()
         phase49_runtime = phase49_bridge.summary()
+    if args.phase50_device_generated_destination_inputs:
+        phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            50 if args.phase50_device_generated_destination_inputs else
             49 if args.phase49_destination_supergraph else
             48 if args.phase48_resident_destination_graph else
             47 if args.phase47_device_final_choice else
@@ -2261,6 +2308,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a compact owner/sample/land-use "
+            "destination ABI that generates all mode-logsum row inputs and skim "
+            "coordinates on CUDA before the resident destination supergraph"
+            if args.phase50_device_generated_destination_inputs else
             "full public ActivitySim model with an exact device-resident "
             "destination supergraph from mode-logsum reduction through final "
             "utility, probability, choice, compact logsums, and continued RNG"
@@ -2388,6 +2439,7 @@ def main() -> int:
         "phase48_resident_destination_graph": phase48_runtime,
         "phase48_prewarm": phase48_prewarm,
         "phase49_destination_supergraph": phase49_runtime,
+        "phase50_device_generated_destination_inputs": phase50_summary,
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2656,8 +2708,21 @@ def main() -> int:
                     and compiler.get("simulation_spec_cache_hits") == 20
                 ),
                 "phase42_native_codegen_compiles_ten_abis_then_reuses_twenty": (
-                    compiler.get("native_codegen_cache", {}).get("misses") == 10
-                    and compiler.get("native_codegen_cache", {}).get("hits") == 20
+                    (
+                        (
+                            not args.phase50_device_generated_destination_inputs
+                            and compiler.get("native_codegen_cache", {}).get("misses") == 10
+                            and compiler.get("native_codegen_cache", {}).get("hits") == 20
+                        )
+                        or (
+                            args.phase50_device_generated_destination_inputs
+                            # Phase 50 compiles ten destination-mode ABIs first;
+                            # its nine same-process reuses legitimately share the
+                            # global native-codegen cache with the trip compiler.
+                            and compiler.get("native_codegen_cache", {}).get("misses") == 20
+                            and compiler.get("native_codegen_cache", {}).get("hits") == 29
+                        )
+                    )
                     and sum(
                         bool(item.get("native_codegen_cache_hit"))
                         for item in native_events
@@ -2889,6 +2954,34 @@ def main() -> int:
                 ),
             }
         )
+    if args.phase50_device_generated_destination_inputs:
+        generated_inputs = phase50_summary or {}
+        report["proof_gates"].update(
+            {
+                "phase50_all_public_destination_logsum_calls_use_compact_native_abi": (
+                    generated_inputs.get("calls") == 19
+                    and generated_inputs.get("rows") == 4_696_676
+                    and generated_inputs.get("owners") == 201_390
+                ),
+                "phase50_complete_10_float_31_integer_6_skim_group_abi_generated": (
+                    generated_inputs.get("all_source_abis_exact") is True
+                ),
+                "phase50_dense_activitysim_logsum_preprocessor_is_bypassed": (
+                    generated_inputs.get("dense_preprocessor_rows_avoided") == 4_696_676
+                    and generated_inputs.get("dense_preprocessor_values_avoided")
+                    == 192_563_716
+                ),
+                "phase50_eliminates_dense_host_binding_pack_and_upload_boundary": (
+                    generated_inputs.get("binding_resolution_calls") == 0
+                    and generated_inputs.get("host_dense_pack_calls") == 0
+                    and generated_inputs.get("net_upload_bytes_avoided", 0)
+                    > 1_800_000_000
+                ),
+                "phase50_has_zero_preprocessor_fallbacks": (
+                    generated_inputs.get("fallback_calls") == 0
+                ),
+            }
+        )
     if args.phase40_resident_trip_sampling and not args.phase41_exact_trip_sampling:
         resident_sampling = phase40_sampling or []
         phase40_guard_rows = sum(
@@ -2974,8 +3067,27 @@ def main() -> int:
         report["proof_gates"].update(
             {
                 "all_6_non_mandatory_destination_cuda_calls_used": (
-                    report["phase33_non_mandatory_destination_cuda_calls"] == 6
-                    and report["phase33_non_mandatory_destination_rows"] > 0
+                    (
+                        args.phase50_device_generated_destination_inputs
+                        and sum(
+                            item.get("trace_label", "").startswith(
+                                "non_mandatory_tour_destination."
+                            )
+                            for item in (phase50_summary or {}).get("events", [])
+                        ) == 6
+                        and sum(
+                            item.get("rows", 0)
+                            for item in (phase50_summary or {}).get("events", [])
+                            if item.get("trace_label", "").startswith(
+                                "non_mandatory_tour_destination."
+                            )
+                        ) == 1_764_152
+                    )
+                    or (
+                        not args.phase50_device_generated_destination_inputs
+                        and report["phase33_non_mandatory_destination_cuda_calls"] == 6
+                        and report["phase33_non_mandatory_destination_rows"] > 0
+                    )
                 ),
                 "all_7_non_mandatory_scheduling_cuda_calls_used": (
                     report["phase33_non_mandatory_scheduling_cuda_calls"] == 7
@@ -2992,17 +3104,65 @@ def main() -> int:
         report["proof_gates"].update(
             {
                 "all_13_phase34_location_cuda_programs_used": (
-                    report["phase34_location_cuda_calls"] == 13
-                    and report["phase34_location_rows"] == 2_932_524
+                    (
+                        args.phase50_device_generated_destination_inputs
+                        and sum(
+                            not item.get("trace_label", "").startswith(
+                                "non_mandatory_tour_destination."
+                            )
+                            for item in (phase50_summary or {}).get("events", [])
+                        ) == 13
+                        and sum(
+                            item.get("rows", 0)
+                            for item in (phase50_summary or {}).get("events", [])
+                            if not item.get("trace_label", "").startswith(
+                                "non_mandatory_tour_destination."
+                            )
+                        ) == 2_932_524
+                    )
+                    or (
+                        not args.phase50_device_generated_destination_inputs
+                        and report["phase34_location_cuda_calls"] == 13
+                        and report["phase34_location_rows"] == 2_932_524
+                    )
                 ),
                 "phase34_location_workload_shape_exact": (
-                    report["phase34_location_groups"]
-                    == {
-                        "school_location": {"cuda_calls": 3, "rows": 685_915},
-                        "workplace_location": {"cuda_calls": 4, "rows": 1_859_082},
-                        "joint_tour_destination": {"cuda_calls": 5, "rows": 76_559},
-                        "atwork_subtour_destination": {"cuda_calls": 1, "rows": 310_968},
-                    }
+                    (
+                        args.phase50_device_generated_destination_inputs
+                        and {
+                            name: {
+                                "cuda_calls": sum(
+                                    item.get("trace_label", "").startswith(name + ".")
+                                    for item in (phase50_summary or {}).get("events", [])
+                                ),
+                                "rows": sum(
+                                    item.get("rows", 0)
+                                    for item in (phase50_summary or {}).get("events", [])
+                                    if item.get("trace_label", "").startswith(name + ".")
+                                ),
+                            }
+                            for name in (
+                                "school_location", "workplace_location",
+                                "joint_tour_destination", "atwork_subtour_destination",
+                            )
+                        }
+                        == {
+                            "school_location": {"cuda_calls": 3, "rows": 685_915},
+                            "workplace_location": {"cuda_calls": 4, "rows": 1_859_082},
+                            "joint_tour_destination": {"cuda_calls": 5, "rows": 76_559},
+                            "atwork_subtour_destination": {"cuda_calls": 1, "rows": 310_968},
+                        }
+                    )
+                    or (
+                        not args.phase50_device_generated_destination_inputs
+                        and report["phase34_location_groups"]
+                        == {
+                            "school_location": {"cuda_calls": 3, "rows": 685_915},
+                            "workplace_location": {"cuda_calls": 4, "rows": 1_859_082},
+                            "joint_tour_destination": {"cuda_calls": 5, "rows": 76_559},
+                            "atwork_subtour_destination": {"cuda_calls": 1, "rows": 310_968},
+                        }
+                    )
                 ),
                 "atwork_mode_cuda_program_used": (
                     report["phase34_atwork_mode_cuda_calls"] == 1

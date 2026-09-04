@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 49 inter-stage destination graph proves and what it still cannot claim;
+- what the completed Phase 50 compact destination runtime proves and what it still cannot claim;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -360,7 +360,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 49 repository now passes 209 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, Phase 48's resumed MT19937 state and exhaustive exponential correction, and Phase 49's exact repeated-row device handoff and compact selected-output restoration.
+At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 50 repository now passes 213 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, Phase 48's resumed MT19937 state and exhaustive exponential correction, Phase 49's exact repeated-row device handoff, and Phase 50's compact owner topology, wait-time reconstruction, and device-generated destination-input accounting.
 
 ## 7. What was benchmarked?
 
@@ -941,7 +941,7 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 49 repository passes 209, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, Phase 48 probability and random-state checks, and Phase 49 inter-stage packet and selected-output checks.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 50 repository passes 213, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, Phase 48 probability and random-state checks, Phase 49 inter-stage packet checks, and Phase 50 compact input-generation checks.
 
 This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer but failed its 50,000-household scale gate. Phase 16 recovered a repeated large destination-component win. Phase 17 added persistent plans and trip-mode continuation, strengthening that component win and making the five-run whole-model median faster. The strict path remains opt-in because the whole-model interval still includes zero and replication on other hardware and models is unfinished.
 
@@ -974,7 +974,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 49 repository passes 209 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 50 repository passes 213 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -6468,7 +6468,7 @@ The audit found about 1.14 seconds of binding resolution, 0.77 seconds of host
 packing, 0.31 seconds of upload, and 2.65 seconds of mode-utility kernels, with
 about 1.95 billion bytes of dense inputs. The next phase should describe each
 person or tour once, keep sampled destination IDs compact, keep land-use and
-skim tables resident, and generate the 41 floating and 31 integer inputs on
+skim tables resident, and generate the 10 floating and 31 integer inputs on
 the GPU.
 
 That next boundary is hard because waiting-time formulas, six controlled
@@ -6476,3 +6476,164 @@ random draws, availability flags, time periods, skims, and exact arithmetic
 all have to match. But it is measured in seconds rather than milliseconds.
 It is the credible route to a repeated component gain and a visible reduction
 in total ActivitySim time.
+
+## 220. What did Phase 50 build?
+
+Phase 50 built the larger input half of the destination supergraph. Before a
+GPU can score a possible destination, it needs facts such as the traveler's
+age, car ownership, value of time, trip period, destination parking cost,
+local density, and whether each mode is available.
+
+ActivitySim used to make one large spreadsheet row containing those facts for
+every possible sampled destination. The same traveler facts were copied again
+and again. Phase 50 instead sends one compact record per person or tour, plus
+a short list of destination zone numbers. A CUDA kernel looks up land-use and
+travel-time facts and creates the needed inputs on the graphics card.
+
+The reviewed contract has 10 decimal-number inputs, 31 whole-number or
+true/false inputs, and six groups of origin, destination, and time
+coordinates. The travel-mode formula then uses 315 terms to score 21 ways of
+traveling.
+
+## 221. Why does compact data matter?
+
+Imagine 25 students each comparing 30 colleges. Their age, household, and car
+ownership do not change across the 30 choices. Writing those facts 30 times
+is easy to understand, but expensive at millions of rows.
+
+The public run contains 201,390 people or tours and 4,696,676 sampled
+destinations. The old boundary packed 192,563,716 values and moved about 1.95
+gigabytes to the GPU. Phase 50 sends about 58.26 megabytes of compact state and
+creates the repeated values there. It avoids 1.896 gigabytes, or about 97% of
+that input transfer.
+
+This does not mean the whole model uses 97% less memory or becomes 33 times
+faster. It means one specific input boundary moves 97% fewer bytes.
+
+## 222. What happened to the random waiting times?
+
+Taxi and ride-hail waiting times use six repeatable random values for each
+chooser: origin and destination values for taxi, solo ride-hail, and shared
+ride-hail. These are not casual random numbers. ActivitySim gives every stable
+person or tour ID its own numbered sequence so the model can repeat exactly.
+
+ActivitySim normally makes the six values once and then repeats them over all
+sampled destinations. Phase 50 asks the same official random channel for the
+same six values on the unique IDs, but skips the repetition. The random ledger
+advances exactly as before. The first full implementation used ActivitySim's
+ordinary repeated form and passed; the compact version then passed the entire
+model proof again.
+
+## 223. How much faster are the destination parts?
+
+Three fresh pairs compared Phase 49 with Phase 50. Each control and candidate
+started in a new process, and every output was checked independently.
+
+| Measurement | Phase 49 | Phase 50 | Plain-English result |
+|---|---:|---:|---:|
+| five destination components, median | 28.4 s | 16.9 s | 11.5 s saved; 1.680x |
+| reduction in those components | - | 40.5% | repeated in all 3 pairs |
+| complete 34-step model, median | 148.700 s | 136.518 s | 12.182 s saved; 1.089x |
+| complete-model pairs won | - | 2 of 3 | median win, not every run |
+| changed modeled decision cells | - | 0, 0, 0 | exact decisions |
+
+The targeted destination work improved in every pair: 28.8 to 19.2 seconds,
+27.9 to 16.9 seconds, and 28.4 to 16.8 seconds. This is the first recent phase
+whose direct improvement is many seconds rather than milliseconds.
+
+## 224. Why did one whole run still lose?
+
+The first pair's whole model took 150.2 seconds for Phase 49 and 150.7 seconds
+for Phase 50, even though its destination stages saved 9.6 seconds. Unchanged
+work elsewhere became slower: for example, daily-activity and scheduling
+steps varied with operating-system, CPU, and memory conditions.
+
+The other candidates won by about 12.2 and 11.9 seconds. The median whole-run
+gain is useful evidence that the optimization now makes a visible dent, but a
+careful report does not hide the loss. The strongest replicated statement is:
+all three destination-component pairs won by a large amount.
+
+## 225. Did the answers stay the same?
+
+Yes. Against Phase 49, all seven published CSV files are byte-for-byte
+identical in all three pairs. Phase 50 changes how inputs are created, not the
+arithmetic policy already established by Phase 49.
+
+Against regular ActivitySim, the independent checker still finds zero changed
+decision cells across accessibility, households, joint-tour participants,
+land use, persons, tours, and trips. Some stored logsum diagnostic decimals
+differ in the last few digits because the qualified GPU arithmetic follows its
+declared floating-point policy. The largest destination-logsum difference is
+0.00001, ten times below its 0.0001 limit. The largest mode-choice-logsum
+difference is about 0.000003814, below its 0.00001 limit. For that cumulative
+comparison we say **exact decisions and bounded diagnostic logsums**, not that
+every byte in every CSV is identical.
+
+## 226. What assumptions does Phase 50 make?
+
+The fast path is intentionally strict. It is qualified for the public
+Prototype MTC extended model, its 1,454 zones, its reviewed mode formula, its
+five time periods, its current skim directions, and its current lack of
+separate transit-access subzones. Sampled destinations for one chooser must be
+together, and owner facts must not change within that group.
+
+The land-use table is fingerprinted. A new input, changed zone layout,
+different period name, reordered owner group, unsupported direction, or
+chunked call stops with an error. That can sound unfriendly, but it protects
+research results: unsupported work is visible instead of silently switching
+to a path with different arithmetic.
+
+## 227. What exactly is still not on the GPU?
+
+ActivitySim still controls the 34 model steps, owns pandas result tables, and
+runs many non-destination models and file-writing tasks on the CPU. Phase 50
+also still creates the 10-plus-31 dense input arrays in GPU memory. The next
+kernel reads those arrays immediately to compute utilities, so there is one
+remaining write-then-read stage on the device.
+
+That is why this is a major improvement, not a claim that the entire model is
+GPU-only. The graphics card now performs the expensive destination input and
+choice mathematics, while the CPU remains the workflow conductor.
+
+## 228. What should Phase 51 do?
+
+Phase 51 should compile a **fused compact-source utility kernel**. Instead of
+first writing every dense input and then reading it, one generated kernel
+would look up a compact value exactly when a formula term needs it and add the
+term directly to one of the 21 mode scores. Those scores would flow straight
+into nested logit and final destination choice.
+
+The phase should also precompile the ten purpose-specific programs and retain
+compact owner tables across related calls. A successful result should reduce
+the five destination components below 12 seconds, win all three fresh matched
+pairs, preserve zero changed modeled decisions, keep diagnostic logsums within
+their declared limits, and use no fallback. That is ambitious enough to seek
+another roughly five-second direct saving rather than polishing a tiny
+boundary.
+
+## 229. How fast is the latest system versus regular ActivitySim?
+
+We ran a second experiment specifically for that question. Three fresh pairs
+compared regular pinned ActivitySim, with its normal Sharrow acceleration
+required, against the complete ChoiceForge system through Phase 50. This is a
+serious baseline, not a deliberately slow teaching program.
+
+| Complete 50,000-household model | Regular ActivitySim | Phase 50 | Result |
+|---|---:|---:|---:|
+| pair 1 | 209.3 s | 138.918 s | 1.507x |
+| pair 2 | 209.3 s | 134.118 s | 1.561x |
+| pair 3 | 208.6 s | 133.916 s | 1.558x |
+| median | 209.300 s | 134.118 s | 75.182 s saved; 1.561x |
+
+The median reduction is 35.92%, and Phase 50 wins all three pairs. Every pair
+has zero changed modeled decision cells. Four output files are byte-identical;
+the differing logsum diagnostic decimals stay within the small declared
+limits explained above.
+
+This is a **cumulative** result. It includes the work from earlier phases:
+faster scheduling, GPU trip destination, resident skims and random state,
+compiled final choice, the Phase 49 handoff, and Phase 50 compact inputs. The
+separate Phase 49/50 experiment is what tells us Phase 50 itself removes about
+11.5 median seconds from the five destination components. Keeping those two
+comparisons separate prevents us from crediting one phase for the whole
+project's improvement.

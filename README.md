@@ -1056,3 +1056,30 @@ only two of three candidates win, so this is not promoted as replicated
 whole-model superiority. See the [Phase 49 technical report](docs/phase49-destination-supergraph.md),
 [boundary qualification](benchmark-results/phase49-handoff-qualification.json),
 and [matched-pair evidence](benchmark-results/phase49-p49final-summary.json).
+
+## Phase 50 device-generated destination inputs
+
+Phase 50 bypasses ActivitySim's dense pandas destination-logsum preprocessor.
+Across 19 public calls it describes 201,390 choosers once, sends their
+4,696,676 sampled destination IDs, and generates the exact 10-float,
+31-integer, six-skim-group utility ABI on CUDA. This removes 192,563,716 host
+row values, all 19 host binding/pack operations, and 1,895,557,920 bytes of
+host-to-device transfer per complete run, with no fallback.
+
+Three fresh Phase 49/50 pairs reduce the five destination components from a
+28.4-second median to 16.9 seconds (**1.680x**, 40.5% lower), winning the
+target in all three pairs. The complete 34-step model changes from 148.700 to
+136.518 seconds (**1.089x**, 8.19% lower); it wins two of three whole-model
+pairs, so the replicated claim remains the targeted component boundary. All
+three independent output checks report zero changed modeled decision cells;
+declared floating diagnostic logsums remain within their gates.
+
+A second three-pair experiment compares the latest Phase 50 runtime directly
+with regular pinned ActivitySim using Sharrow. Phase 50 wins all three complete
+runs and reduces the median from 209.300 to 134.118 seconds (**1.561x**,
+35.92% lower, 75.182 seconds saved), again with zero changed modeled decision
+cells. This is the cumulative project speedup through Phase 50, not the
+incremental contribution of Phase 50 alone.
+
+See the [Phase 50 technical report](docs/phase50-device-generated-destination-inputs.md)
+and [consolidated qualification](benchmark-results/phase50-p50final-qualification.json).
