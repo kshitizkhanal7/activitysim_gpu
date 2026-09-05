@@ -2,8 +2,8 @@ param(
     [ValidateRange(1, 5)][int]$Repetitions = 3,
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
-    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51)][int]$CandidatePhase = 32,
+    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "activitysim")][string]$Baseline = "phase17",
+    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52)][int]$CandidatePhase = 32,
     [switch]$Resume
 )
 
@@ -82,7 +82,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     $verification = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-exact-$trial.json"
     $baselineComplete = (
         (Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")) -and
-        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50") -or (Test-Path -LiteralPath $baselineReport))
+        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51") -or (Test-Path -LiteralPath $baselineReport))
     )
     $candidateComplete = (
         (Test-Path -LiteralPath (Join-Path $candidateOutput "timing_log.csv")) -and
@@ -109,7 +109,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         $env:CHOICEFORGE_PHASE17_RUN_ID = "$RunTag-base-$trial"
         $baselineStdout = Join-Path $project "$RunTag-base-$trial.stdout.log"
         $baselineStderr = Join-Path $project "$RunTag-base-$trial.stderr.log"
-        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50")) {
+        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51")) {
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
             $baselineArguments = @(
@@ -152,6 +152,8 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
                 $baselineArguments += "--phase49-destination-supergraph"
             } elseif ($Baseline -eq "phase50") {
                 $baselineArguments += "--phase50-device-generated-destination-inputs"
+            } elseif ($Baseline -eq "phase51") {
+                $baselineArguments += "--phase51-fused-compact-destination-utility"
             } else {
                 $baselineArguments += "--phase45-modelwide-choice"
             }
@@ -214,6 +216,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($CandidatePhase -eq 49) { $candidateArguments += "--phase49-destination-supergraph" }
         if ($CandidatePhase -eq 50) { $candidateArguments += "--phase50-device-generated-destination-inputs" }
         if ($CandidatePhase -eq 51) { $candidateArguments += "--phase51-fused-compact-destination-utility" }
+        if ($CandidatePhase -eq 52) { $candidateArguments += "--phase52-persistent-tiled-destination" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
@@ -247,7 +250,10 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     if (($proof.proof_gates.PSObject.Properties.Value | Where-Object { -not $_ }).Count -ne 0) {
         throw "Phase $CandidatePhase proof gate failed for pair $trial"
     }
-    $candidatePrewarm = if ($CandidatePhase -ge 48) {
+    $candidatePrewarm = if ($CandidatePhase -ge 52) {
+        [double]$proof.phase46_prewarm.seconds + [double]$proof.phase47_prewarm.seconds +
+            [double]$proof.phase48_prewarm.seconds + [double]$proof.phase52_prewarm.seconds
+    } elseif ($CandidatePhase -ge 48) {
         [double]$proof.phase46_prewarm.seconds + [double]$proof.phase47_prewarm.seconds + [double]$proof.phase48_prewarm.seconds
     } elseif ($CandidatePhase -ge 47) {
         [double]$proof.phase46_prewarm.seconds + [double]$proof.phase47_prewarm.seconds
@@ -314,7 +320,7 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
     $candidateMedian = [double]$candidateComponentValues[$middle]
     $gpuRole = switch ($modelName) {
         "mandatory_tour_scheduling" { "Phase32 native GPU retained" }
-        "school_location" { if ($CandidatePhase -ge 51) { "Phase51 fused compact-source destination utility plus Phase49 supergraph" } elseif ($CandidatePhase -ge 50) { "Phase50 CUDA-generated compact destination inputs plus Phase49 supergraph" } elseif ($CandidatePhase -ge 49) { "Phase49 device-resident mode-logsum to final-choice supergraph" } elseif ($CandidatePhase -ge 48) { "Phase48 resident CUDA probability, choice, logsum, and continued RNG" } elseif ($CandidatePhase -ge 47) { "Phase47 strict CUDA sampled final choice" } elseif ($CandidatePhase -ge 46) { "Phase46 persistent exact destination service" } elseif ($CandidatePhase -ge 45) { "Phase45 resident CUDA sampling plus compact final choice" } elseif ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
+        "school_location" { if ($CandidatePhase -ge 52) { "Phase52 prewarmed persistent four-row destination service" } elseif ($CandidatePhase -ge 51) { "Phase51 fused compact-source destination utility plus Phase49 supergraph" } elseif ($CandidatePhase -ge 50) { "Phase50 CUDA-generated compact destination inputs plus Phase49 supergraph" } elseif ($CandidatePhase -ge 49) { "Phase49 device-resident mode-logsum to final-choice supergraph" } elseif ($CandidatePhase -ge 48) { "Phase48 resident CUDA probability, choice, logsum, and continued RNG" } elseif ($CandidatePhase -ge 47) { "Phase47 strict CUDA sampled final choice" } elseif ($CandidatePhase -ge 46) { "Phase46 persistent exact destination service" } elseif ($CandidatePhase -ge 45) { "Phase45 resident CUDA sampling plus compact final choice" } elseif ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
         "workplace_location" { if ($CandidatePhase -ge 51) { "Phase51 fused compact-source destination utility plus Phase49 supergraph" } elseif ($CandidatePhase -ge 50) { "Phase50 CUDA-generated compact destination inputs plus Phase49 supergraph" } elseif ($CandidatePhase -ge 49) { "Phase49 device-resident mode-logsum to final-choice supergraph" } elseif ($CandidatePhase -ge 48) { "Phase48 resident CUDA probability, choice, logsum, and continued RNG" } elseif ($CandidatePhase -ge 47) { "Phase47 strict CUDA sampled final choice" } elseif ($CandidatePhase -ge 46) { "Phase46 persistent exact destination service" } elseif ($CandidatePhase -ge 45) { "Phase45 resident CUDA sampling plus compact final choice" } elseif ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
         "joint_tour_destination" { if ($CandidatePhase -ge 51) { "Phase51 fused compact-source destination utility plus Phase49 supergraph" } elseif ($CandidatePhase -ge 50) { "Phase50 CUDA-generated compact destination inputs plus Phase49 supergraph" } elseif ($CandidatePhase -ge 49) { "Phase49 device-resident mode-logsum to final-choice supergraph" } elseif ($CandidatePhase -ge 48) { "Phase48 resident CUDA probability, choice, logsum, and continued RNG" } elseif ($CandidatePhase -ge 47) { "Phase47 strict CUDA sampled final choice" } elseif ($CandidatePhase -ge 46) { "Phase46 persistent exact destination service" } elseif ($CandidatePhase -ge 45) { "Phase45 resident CUDA sampling plus compact final choice" } elseif ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
         "atwork_subtour_destination" { if ($CandidatePhase -ge 51) { "Phase51 fused compact-source destination utility plus Phase49 supergraph" } elseif ($CandidatePhase -ge 50) { "Phase50 CUDA-generated compact destination inputs plus Phase49 supergraph" } elseif ($CandidatePhase -ge 49) { "Phase49 device-resident mode-logsum to final-choice supergraph" } elseif ($CandidatePhase -ge 48) { "Phase48 resident CUDA probability, choice, logsum, and continued RNG" } elseif ($CandidatePhase -ge 47) { "Phase47 strict CUDA sampled final choice" } elseif ($CandidatePhase -ge 46) { "Phase46 persistent exact destination service" } elseif ($CandidatePhase -ge 45) { "Phase45 resident CUDA sampling plus compact final choice" } elseif ($CandidatePhase -ge 34) { "Phase34 generated GPU logsums" } else { "not directly GPU-targeted" } }
@@ -326,6 +332,9 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         "trip_scheduling" { if ($CandidatePhase -ge 35) { "Phase35 persistent GPU probability service" } else { "not directly GPU-targeted" } }
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }
+    }
+    if ($CandidatePhase -ge 52 -and $targetComponents -contains $modelName) {
+        $gpuRole = "Phase52 prewarmed persistent four-row destination service"
     }
     $componentComparison += [pscustomobject]@{
         model_name = $modelName
@@ -342,6 +351,7 @@ $baselineLabel = switch ($Baseline) {
     "phase48" { "already GPU-accelerated Phase 48 resident destination graph" }
     "phase49" { "already GPU-accelerated Phase 49 inter-stage destination supergraph" }
     "phase50" { "already GPU-accelerated Phase 50 device-generated destination inputs" }
+    "phase51" { "already GPU-accelerated Phase 51 fused compact destination utility" }
     "phase46" { "already GPU-accelerated Phase 46 runtime" }
     "activitysim" { "regular pinned ActivitySim with Sharrow required" }
     "phase38" { "already GPU-accelerated Phase 38 runtime" }
@@ -378,8 +388,8 @@ $summary = [ordered]@{
     median_destination_speedup = $baselineDestinationValues[$middle] / $candidateDestinationValues[$middle]
     component_comparison = $componentComparison
     candidate_won_every_pair = (@($runs | Where-Object all_model_seconds_saved -le 0).Count -eq 0)
-    target_component = if ($CandidatePhase -in @(48, 49, 50, 51)) { "five sampled-destination components" } elseif ($CandidatePhase -in @(43, 44)) { "trip_destination" } else { $null }
-    candidate_won_target_component_every_pair = if ($CandidatePhase -in @(48, 49, 50, 51)) {
+    target_component = if ($CandidatePhase -in @(48, 49, 50, 51, 52)) { "five sampled-destination components" } elseif ($CandidatePhase -in @(43, 44)) { "trip_destination" } else { $null }
+    candidate_won_target_component_every_pair = if ($CandidatePhase -in @(48, 49, 50, 51, 52)) {
         @(
             $runs | Where-Object {
                 $baselineDestination = 0.0
@@ -403,10 +413,12 @@ $summary = [ordered]@{
         ).Count -eq 0
     } else { $null }
     every_pair_exact = $true
-    qualification_basis = if ($CandidatePhase -eq 51) {
+    qualification_basis = if ($CandidatePhase -eq 52) {
+        "exact outputs, retained dense-ABI elimination, prewarm/workspace gates, and three-of-three five-component wins"
+    } elseif ($CandidatePhase -eq 51) {
         "complete dense device-row ABI elimination plus fail-closed contract gates and exact published decisions; timing is reported without a required win"
     } else { "performance and exact-output gates defined for the selected phase" }
-    claim_boundary = if ($CandidatePhase -in @(48, 49, 50, 51)) {
+    claim_boundary = if ($CandidatePhase -in @(48, 49, 50, 51, 52)) {
         "resident sampled-destination probability/choice boundary gain over $baselineLabel; five-component and whole-model timing reported separately; all substantive outputs independently verified"
     } elseif ($CandidatePhase -in @(43, 44)) {
         "replicated trip_destination component gain over $baselineLabel; whole-model timing reported separately; all substantive outputs independently verified"
@@ -416,11 +428,11 @@ $summary = [ordered]@{
 }
 $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Encoding utf8
 $summary | ConvertTo-Json -Depth 8
-if ($CandidatePhase -in @(48, 49, 50, 51)) {
+if ($CandidatePhase -in @(48, 49, 50, 51, 52)) {
     # Phase 48's fail-closed qualifier evaluates the directly instrumented
     # nineteen-call boundary. A roughly 0.2-second boundary cannot honestly be
     # required to dominate noise in a 140+ second lifecycle on every pair.
-    if ($CandidatePhase -eq 50 -and -not $summary.candidate_won_target_component_every_pair) {
+    if ($CandidatePhase -in @(50, 52) -and -not $summary.candidate_won_target_component_every_pair) {
         throw "Phase $CandidatePhase did not win the five destination components in every matched pair"
     }
 } elseif ($CandidatePhase -in @(43, 44)) {

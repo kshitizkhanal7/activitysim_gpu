@@ -119,11 +119,14 @@ def test_native_abi_can_prepare_contract_without_compiling_unused_kernel():
         lambda source: NativeSkimCube(cube, 3, 1, 2),
         rows=16,
         minimal_row_state=True,
+        minimal_output_state=True,
         compile_kernel=False,
     )
     assert native.invocation.kernel is None
+    assert native.invocation.utilities.shape[0] == 1
     assert native.manifest["compiled_this_call"] is False
     assert native.manifest["codegen"]["kernel_compiled"] is False
+    assert native.manifest["codegen"]["minimal_output_state"] is True
 
 
 def test_native_abi_fails_closed_for_unknown_row_source():

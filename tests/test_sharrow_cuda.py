@@ -360,20 +360,27 @@ def test_direct_generator_can_fuse_row_sources_and_skim_coordinates():
             bindings,
             row_source_references={("column", "missing"): "missing"},
         )
-    with pytest.raises(ValueError, match="requires the direct kernel"):
-        generate_cuda_source(
-            document,
-            bindings,
-            locality_tile_rows=2,
-            row_source_references={("column", "x"): "phase37_x"},
-        )
-    with pytest.raises(ValueError, match="requires the direct kernel"):
-        generate_cuda_source(
-            document,
-            bindings,
-            locality_tile_rows=2,
-            block_prelude="__shared__ float values[1];",
-        )
+    tiled_source, _ = generate_cuda_source(
+        document,
+        bindings,
+        locality_tile_rows=2,
+        group_skim_indices=True,
+        row_source_references={("column", "x"): "phase52_x[tile_row]"},
+        group_coordinate_references={
+            0: ("phase52_origin[gather_row]", "phase52_destination[gather_row]", None)
+        },
+        block_prelude=(
+            "    __shared__ float phase52_x[2];\n"
+            "    __shared__ long long phase52_origin[2];\n"
+            "    __shared__ long long phase52_destination[2];"
+        ),
+        row_prelude="    phase52_x[tile_row] = phase51_packet[row];",
+        extra_kernel_parameters=("    const float* phase51_packet",),
+    )
+    assert "constexpr int TILE_ROWS = 2" in tiled_source
+    assert "phase52_x[tile_row] = phase51_packet[row]" in tiled_source
+    assert "phase52_origin[gather_row]" in tiled_source
+    assert "float_inputs[row *" not in tiled_source
     with pytest.raises(ValueError, match="unknown skim groups"):
         generate_cuda_source(
             document,

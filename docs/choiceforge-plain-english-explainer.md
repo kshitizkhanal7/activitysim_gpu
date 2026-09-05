@@ -10,7 +10,7 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 51 fused compact destination runtime proves and what it still cannot claim;
+- what the completed Phase 52 persistent tiled destination runtime proves and what it still cannot claim;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
@@ -360,7 +360,7 @@ The validation rules are:
 
 Small floating-point differences are normal because parallel GPU operations may add numbers in a different order. It is like adding a long list of rounded decimals from left to right versus pairing them first: the last digit can differ. The selected choices still must match, and logsum differences must stay within an explicit tolerance.
 
-At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 51 repository now passes 214 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, Phase 48's resumed MT19937 state and exhaustive exponential correction, Phase 49's exact repeated-row device handoff, Phase 50's compact owner topology and wait-time reconstruction, and Phase 51's fused compact-source utility and dense-device-ABI elimination checks.
+At the Phase 18 milestone, the Python 3.11 ActivitySim and CUDA integration environment passed 95 tests. The completed Phase 52 repository now passes 215 tests. These include exact comparison with ActivitySim's real Numba choice function, compact expression compilation, segmented destination batches, categorical flags, nested-logit validation, current-version fallback forwarding, real scheduling integration, GPU tests using 33 and 190 alternatives, a safe expression interpreter, skim-table adapters, shadow checks, the strict CPU reference, the generated strict CUDA evaluator, the explicit FP32 policy used for Phase 16, Phase 17's schema-safe plan and workspace reuse, Phase 18's fail-closed GPU state, Phase 48's resumed MT19937 state and exhaustive exponential correction, Phase 49's exact repeated-row device handoff, Phase 50's compact owner topology and wait-time reconstruction, Phase 51's fused compact-source utility and dense-device-ABI elimination checks, and Phase 52's persistent four-row service and lifecycle-release checks.
 
 ## 7. What was benchmarked?
 
@@ -941,7 +941,7 @@ The project is now pursuing a more rigorous solution rather than trying to tune 
 
 An everyday analogy: two kitchens can make the same named dish but use different measuring cups and a different order of steps. A strict recipe states the ingredients, measurements, order, and rounding rules so both kitchens produce the same dish. For ChoiceForge, the two kitchens are the strict CPU evaluator and the generated CUDA target.
 
-The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 51 repository passes 214, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, Phase 48 probability and random-state checks, Phase 49 inter-stage packet checks, Phase 50 compact input-generation checks, and Phase 51 fused-ABI checks.
+The strict IR has generated a canonical description of the public MTC trip-mode utility: 379 terms across 21 alternatives. Phase 13 completed the strict CPU target, including separate ordered multiply and add steps, exact comparison reports, and fail-closed policy checks. Phase 14 completed the CUDA target generated from the same IR. That milestone passed 95 tests; the completed Phase 52 repository passes 215, including exact cross-device edge cases, compact skim gathering, a device-resident handoff to the nested-logsum reducer, the Phase 16 FP32 arithmetic policy, Phase 17 plan reuse, Phase 18 GPU-native runtime checks, Phase 48 probability and random-state checks, Phase 49 inter-stage packet checks, Phase 50 compact input-generation checks, Phase 51 fused-ABI checks, and Phase 52 persistent tiling and release checks.
 
 This remains a project implementation, not a completed upstream Sharrow feature. Phase 15 removed the qualification-only utility transfer but failed its 50,000-household scale gate. Phase 16 recovered a repeated large destination-component win. Phase 17 added persistent plans and trip-mode continuation, strengthening that component win and making the five-run whole-model median faster. The strict path remains opt-in because the whole-model interval still includes zero and replication on other hardware and models is unfinished.
 
@@ -974,7 +974,7 @@ If the IR version, policy, or identifying hash changes unexpectedly, the evaluat
 
 ### Did it cover the real model?
 
-Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 51 repository passes 214 tests.
+Yes. The canonical public MTC utility contains 379 terms for 21 travel-mode alternatives. Every term and alternative executes under the strict policy. An independent, simple scalar loop produced exactly the same utility bits. The completed Phase 52 repository passes 215 tests.
 
 Phase 13 then ran the public full-geography model with 1,001 households. It observed 30 real trip-mode batches containing 85,126 rows. That meant comparing 32,262,754 individual feature values and 1,787,646 utility values. ActivitySim completed all 34 model steps normally in 95.511 seconds, and Sharrow remained the official source of every model answer.
 
@@ -6822,3 +6822,198 @@ decisions, three-of-three wins in synchronized kernel and complete service
 time, and three-of-three wins across the five destination components. That is
 the practical path from a capacity breakthrough to a provable incremental
 speed improvement.
+
+## 239. Did Phase 52 meet that harder goal?
+
+Yes. Phase 52 is the first phase after the large Phase 51 memory improvement
+to show a repeated speed win against the immediately previous GPU system at
+every measured level.
+
+Three fresh Phase 51/52 pairs produced these medians:
+
+| What was timed | Phase 51 | Phase 52 | Improvement |
+|---|---:|---:|---:|
+| fused GPU kernel pipeline | 2.030 s | 1.657 s | 1.225x; 18.36% lower |
+| complete instrumented destination service | 9.069 s | 7.846 s | 1.156x; 13.48% lower |
+| five destination model components | 16.9 s | 16.2 s | 1.043x; 4.14% lower |
+| all 34 model steps, including prewarm | 139.0 s | 136.527 s | 1.018x; 1.78% lower |
+
+Phase 52 won all three pairs on every row of this table. That matters because
+a single computer run can be accidentally fast or slow. Repeating a matched
+control-then-candidate pair three times makes the claim much harder to fake
+with ordinary timing noise.
+
+## 240. What does “persistent service” mean?
+
+Think about doing 19 school assignments that reuse the same textbook and
+calculator. A nonpersistent approach cleans the desk, finds the book, checks
+the instructions, and gets a new sheet of paper for every assignment. A
+persistent service leaves the trusted book, instructions, calculator, and
+reusable workspace ready for the next assignment.
+
+Phase 52 remembers two safe plans:
+
+- the **semantic plan** says which model facts each formula name means;
+- the **native ABI plan** says the exact order, type, and shape of values sent
+  to the CUDA kernel.
+
+It also reuses GPU memory for compact input packets, row-owner numbers, and
+utility results. Buffers grow when a larger call arrives, then serve smaller
+calls without another allocation. In each qualified run, the system reused 9
+semantic plans, 9 native plans, 16 utility buffers, 152 packet buffers, and 16
+row-owner buffers.
+
+“Persistent” does not mean memory is kept forever. After the nineteenth and
+last destination call, the service releases these objects at an explicit safe
+boundary.
+
+## 241. What is prewarming, and why is the source hash important?
+
+GPU source code cannot run directly. It must first be translated into a binary
+program for the particular GPU. That compilation is useful work, but doing it
+inside the first timed destination call makes the model look slower and makes
+run-to-run timing less predictable.
+
+Phase 52 stores the qualified CUDA source in the repository, reads it before
+the destination timers begin, and asks CuPy to compile it. CuPy keeps a
+content-addressed binary cache on disk, so a fresh Python process can reuse the
+compiled result. The three qualified prewarm calls took about 0.010 to 0.023
+seconds on this machine.
+
+The exact source has this SHA-256 fingerprint:
+
+`599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906`
+
+A hash is like a very sensitive digital fingerprint. Changing even a small
+part of the source produces a different fingerprint. Every Phase 52 call
+records the expected hash, and the qualification rejects mismatches. This
+connects the benchmark claim to the actual checked-in program instead of to an
+unknown program left in a compiler cache.
+
+## 242. What is a four-row GPU tile?
+
+Each modeled person or tour considers several possible destinations. Nearby
+rows in the sample often belong to the same owner and therefore share facts
+such as age, household size, vehicle ownership, and tour purpose.
+
+Phase 51 gave one GPU thread block one sampled row. Phase 52 gives a block four
+adjacent rows. The block loads shared owner facts once into a small, fast
+on-chip workspace. It then loads each row's destination and time values and
+calculates the same 315 formula terms for all 21 travel modes independently.
+
+This is like bringing four worksheets about the same student to one table:
+the student's record is opened once, while four separate destination answers
+are still calculated. Two-row tiling was built and tested first. Four rows ran
+faster on this GPU, so four became part of the checked-in proof contract.
+
+The tile does **not** mix decisions between rows. Each row keeps its own
+destination facts, arithmetic order, utility outputs, probabilities, random
+draw, and final answer.
+
+## 243. Did Phase 52 keep the Phase 51 memory win?
+
+Yes. Across the 19 calls, Phase 52 still eliminates 1,953,817,216 bytes of
+dense GPU input allocation and avoids the same amount of dense host packing.
+It uploads only 47,787,016 compact bytes, for 1,906,030,200 net bytes of upload
+avoided. Its row-owner maps total 18,786,704 bytes, exactly one four-byte int32
+number per sampled row. Compatibility bootstraps total only 7,904 bytes.
+
+These numbers are totals across sequential calls, not all memory live at one
+instant. The distinction from Section 232 still applies.
+
+Phase 52 also fixes a lifecycle issue discovered during development. One
+experimental run completed every new destination call, but Windows later
+refused a small CPU allocation while ActivitySim was building a trip table.
+The final runtime now releases unused Phase 52 buffers, runs garbage
+collection, and returns unused CUDA allocator blocks immediately after the
+last destination consumer. It freed 101,630,976 bytes at that boundary in
+every qualified run while preserving the shared skim arrays needed later.
+
+## 244. Are the answers still the same?
+
+Yes. Six independent comparisons were made: three Phase 51/52 pairs and three
+regular-ActivitySim/Phase 52 pairs. Every verifier found:
+
+- zero changed modeled decision cells;
+- zero rows with changed modeled decisions;
+- all declared floating diagnostic differences below their limits;
+- no hidden fallback to a generic generator or CPU evaluator.
+
+In every incremental comparison, five published files were byte-for-byte
+identical. Some published person and tour files contain floating logsum
+diagnostics. Their text can differ by a few millionths because the GPU follows
+the qualified float policy. The largest destination-logsum difference was
+about 0.000003, far below its 0.0001 limit; school and workplace maxima were
+about 0.00000191, below their 0.00001 limits. These tiny diagnostics changed no
+choice.
+
+This is why the honest claim is **exact modeled decisions with bounded logsum
+diagnostics**, not that every decimal character in every output file is
+always identical.
+
+## 245. How fast is Phase 52 versus regular ActivitySim?
+
+Three new public 50,000-household comparisons gave:
+
+| Pair | Regular ActivitySim, all steps | Phase 52, all steps | Whole-model speedup | Regular destination | Phase 52 destination | Destination speedup |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 204.8 s | 142.427 s | 1.438x | 43.6 s | 16.7 s | 2.611x |
+| 2 | 209.0 s | 139.086 s | 1.504x | 43.2 s | 15.8 s | 2.734x |
+| 3 | 205.4 s | 138.028 s | 1.488x | 43.0 s | 16.3 s | 2.638x |
+| median | **205.4 s** | **139.086 s** | **1.477x** | **43.2 s** | **16.3 s** | **2.650x** |
+
+The median complete run saves 66.314 seconds, or 32.29%. The destination group
+saves 26.9 seconds, or 62.27%. Phase 52 wins all three pairs, and all three
+output comparisons have zero changed decisions.
+
+The 1.477x complete-model result belongs to the accumulated ChoiceForge system
+through Phase 52. Phase 52 alone contributes the smaller but now replicated
+Phase 51/52 gains in Section 239. Keeping those two comparisons separate
+prevents us from giving one phase credit for years of earlier work.
+
+## 246. What exactly is proven, and what is assumed?
+
+The proof covers the public Prototype MTC Extended model on this machine at
+50,000 households and 1,454 zones. Each run contains 34 timed model steps. The
+new service covers 19 destination-logsum calls, 201,390 people or tours, and
+4,696,676 sampled destination rows.
+
+It assumes the reviewed 315-term, 21-mode formula; the current five time
+periods and skim directions; dense zero-based zone mapping; contiguous groups
+of sampled rows belonging to one stable owner; no chunking inside these calls;
+and current land-use and compact integer ranges. The program checks important
+parts of these assumptions and stops on a mismatch.
+
+The benchmark uses three fresh-process matched pairs in control-then-candidate
+order. That design controls workload and catches repeated regressions, but it
+does not eliminate every temperature, operating-system, antivirus, or cache
+effect. Results on another GPU, another ActivitySim model, or a different
+sample size must be measured again. Phase 52 is a strong replicated result,
+not a universal law that every model will be exactly 1.477 times faster.
+
+## 247. What is the next big phase?
+
+Do not spend Phase 53 merely changing the tile from four to another small
+number. The qualified tiled kernel takes only about 1.657 seconds, while
+building compact packets on the CPU still takes roughly 4.3 seconds inside the
+service. The larger prize is removing that remaining host preparation path.
+
+Phase 53 should build a **model-wide device-resident destination data plane**:
+
+1. Destination sampling should leave canonical owner IDs, sampled destination
+   IDs, and group offsets on the GPU.
+2. Permanent GPU tables should hold reusable person, tour, household, land-use,
+   time-period, and skim facts with versioned fingerprints.
+3. The tiled utility service should gather those facts directly, without first
+   constructing pandas-shaped compact packets on the CPU.
+4. Logsum, probability, keyed random choice, and selected-output gathering
+   should remain connected on-device.
+5. Fixed-shape segments should be tested with CUDA Graph replay to reduce the
+   many small Python launch and orchestration costs.
+
+A successful Phase 53 must keep Phase 52's source hashes, exact decisions,
+bounded diagnostics, zero fallback, memory lifecycle, and three-pair testing.
+It should eliminate most of the roughly 4.3-second packet-preparation cost,
+win all three matched pairs, and aim to bring the five destination components
+below 14 seconds. That would move the project from “a faster persistent
+kernel service” to “an end-to-end resident destination pipeline.”

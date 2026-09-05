@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+import gc
 import hashlib
 import json
 import os
@@ -199,6 +200,14 @@ def main() -> int:
             "compact owner/sample/land-use state and eliminate the dense device ABI"
         ),
     )
+    parser.add_argument(
+        "--phase52-persistent-tiled-destination",
+        action="store_true",
+        help=(
+            "prewarm the hash-verified fused destination program, reuse native "
+            "plans/device workspaces, and evaluate four sampled rows per CUDA block"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -273,6 +282,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase52_persistent_tiled_destination:
+        args.phase51_fused_compact_destination_utility = True
+        os.environ["CHOICEFORGE_PHASE52_PERSISTENT_TILED_DESTINATION"] = "1"
     if args.phase51_fused_compact_destination_utility:
         args.phase50_device_generated_destination_inputs = True
         os.environ["CHOICEFORGE_PHASE51_FUSED_COMPACT_DESTINATION_UTILITY"] = "1"
@@ -467,11 +479,15 @@ def main() -> int:
     full_model_native_release_seconds = 0.0
     full_model_native_release_freed_bytes = 0
     full_model_native_release_after_model = None
+    phase52_early_release_calls = 0
+    phase52_early_release_seconds = 0.0
+    phase52_early_release_freed_bytes = 0
     phase45_choice_events = []
     phase46_service = None
     phase46_prewarm = None
     phase47_prewarm = None
     phase48_prewarm = None
+    phase52_prewarm = None
     phase49_bridge = None
     phase50_runtime = None
     raw_mode_constants = None
@@ -1004,6 +1020,8 @@ def main() -> int:
         nonlocal full_model_native_release_calls, full_model_native_release_seconds
         nonlocal full_model_native_release_freed_bytes
         nonlocal full_model_native_release_after_model
+        nonlocal phase52_early_release_calls, phase52_early_release_seconds
+        nonlocal phase52_early_release_freed_bytes
         nonlocal full_model_scheduler_checkpoint
         model_name_text = str(model_name)
         location_logsum_steps = {
@@ -1197,6 +1215,31 @@ def main() -> int:
             )
         if args.phase49_destination_supergraph and model_name_text in location_logsum_steps:
             phase49_bridge.assert_empty()
+        if (
+            args.phase52_persistent_tiled_destination
+            and model_name_text == "atwork_subtour_destination"
+        ):
+            # All nineteen Phase 52 calls are complete. Drop its aliases and
+            # return unused allocator blocks before ActivitySim builds the large
+            # trip-destination joins. Live shared skim arrays remain resident
+            # for the downstream CUDA trip models.
+            from choiceforge.cuda_backend import _cupy
+
+            cp = _cupy()
+            cp.cuda.Stream.null.synchronize()
+            pool = cp.get_default_memory_pool()
+            pinned_pool = cp.get_default_pinned_memory_pool()
+            before = int(pool.used_bytes())
+            release_started = time.perf_counter()
+            phase50_runtime.release()
+            gc.collect()
+            pool.free_all_blocks()
+            pinned_pool.free_all_blocks()
+            cp.cuda.Stream.null.synchronize()
+            after = int(pool.used_bytes())
+            phase52_early_release_calls += 1
+            phase52_early_release_seconds += time.perf_counter() - release_started
+            phase52_early_release_freed_bytes += max(0, before - after)
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
             full_model_scheduler_checkpoint = scheduler.checkpoint()
             # The scheduling-only hooks must end here, but its immutable CUDA
@@ -1220,6 +1263,8 @@ def main() -> int:
             # Phase 35 memoizes aliases to the same shared skim arrays so its
             # 30 purpose programs do not rebuild wrappers. Drop those aliases
             # before clearing the owner cache at the final GPU skim consumer.
+            if phase50_runtime is not None:
+                phase50_runtime.release()
             clear_trip_native_cube_cache()
             clear_cuda_dataset_cache()
             cp.cuda.Stream.null.synchronize()
@@ -1328,13 +1373,21 @@ def main() -> int:
                         from choiceforge.destination_input_supergraph import (
                             DestinationInputSupergraph,
                             FusedDestinationInputSupergraph,
+                            PersistentTiledDestinationInputSupergraph,
+                            prewarm_phase52_public_runtime,
                         )
 
                         runtime_type = (
-                            FusedDestinationInputSupergraph
+                            PersistentTiledDestinationInputSupergraph
+                            if args.phase52_persistent_tiled_destination
+                            else FusedDestinationInputSupergraph
                             if args.phase51_fused_compact_destination_utility
                             else DestinationInputSupergraph
                         )
+                        if args.phase52_persistent_tiled_destination:
+                            phase52_prewarm = prewarm_phase52_public_runtime(
+                                phase46_service.cp
+                            )
                         phase50_runtime = runtime_type(
                             phase49_bridge,
                             cbd_threshold=raw_cbd_threshold,
@@ -2304,6 +2357,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            52 if args.phase52_persistent_tiled_destination else
             51 if args.phase51_fused_compact_destination_utility else
             50 if args.phase50_device_generated_destination_inputs else
             49 if args.phase49_destination_supergraph else
@@ -2326,6 +2380,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a prewarmed hash-verified, persistent "
+            "four-row tiled destination utility service and reusable compact workspaces"
+            if args.phase52_persistent_tiled_destination else
             "full public ActivitySim model with strict destination-mode expressions "
             "fused directly over compact owner/sample/land-use state, eliminating "
             "the dense device row ABI before the resident destination supergraph"
@@ -2460,10 +2517,14 @@ def main() -> int:
         "phase47_prewarm": phase47_prewarm,
         "phase48_resident_destination_graph": phase48_runtime,
         "phase48_prewarm": phase48_prewarm,
+        "phase52_prewarm": phase52_prewarm,
         "phase49_destination_supergraph": phase49_runtime,
         "phase50_device_generated_destination_inputs": phase50_summary,
         "phase51_fused_compact_destination_utility": (
             phase50_summary if args.phase51_fused_compact_destination_utility else None
+        ),
+        "phase52_persistent_tiled_destination": (
+            phase50_summary if args.phase52_persistent_tiled_destination else None
         ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -2524,6 +2585,9 @@ def main() -> int:
         "full_model_native_release_after_model": (
             full_model_native_release_after_model
         ),
+        "phase52_early_release_calls": int(phase52_early_release_calls),
+        "phase52_early_release_seconds": float(phase52_early_release_seconds),
+        "phase52_early_release_freed_bytes": int(phase52_early_release_freed_bytes),
         "model_timing_seconds": model_timing_seconds,
         "activitysim_all_model_steps_seconds": float(
             sum(model_timing_seconds.values())
@@ -2740,7 +2804,16 @@ def main() -> int:
                             and compiler.get("native_codegen_cache", {}).get("hits") == 20
                         )
                         or (
+                            args.phase52_persistent_tiled_destination
+                            # Phase 52 serves nine repeated destination contracts
+                            # from its stronger native-plan cache before the trip
+                            # compiler observes the shared codegen counters.
+                            and compiler.get("native_codegen_cache", {}).get("misses") == 20
+                            and compiler.get("native_codegen_cache", {}).get("hits") == 20
+                        )
+                        or (
                             args.phase50_device_generated_destination_inputs
+                            and not args.phase52_persistent_tiled_destination
                             # Phase 50 compiles ten destination-mode ABIs first;
                             # its nine same-process reuses legitimately share the
                             # global native-codegen cache with the trip compiler.
@@ -3033,6 +3106,44 @@ def main() -> int:
                     fused_inputs.get("fallback_calls") == 0
                     and fused_inputs.get("device_generate_seconds") == 0.0
                     and fused_inputs.get("fused_kernel_seconds", 0) > 0.0
+                ),
+            }
+        )
+    if args.phase52_persistent_tiled_destination:
+        persistent_inputs = phase50_summary or {}
+        report["proof_gates"].update(
+            {
+                "phase52_all_nineteen_calls_use_persistent_four_row_fused_tiles": (
+                    persistent_inputs.get("calls") == 19
+                    and persistent_inputs.get("phase52_calls") == 19
+                    and persistent_inputs.get("tile_rows") == [4]
+                ),
+                "phase52_hash_verified_program_is_prewarmed": (
+                    bool((phase52_prewarm or {}).get("available"))
+                    and bool((phase52_prewarm or {}).get("source_sha256"))
+                    and sum(
+                        bool(item.get("fused_kernel_compiled"))
+                        for item in persistent_inputs.get("events", [])
+                    ) == 0
+                ),
+                "phase52_reuses_semantic_and_native_plans": (
+                    persistent_inputs.get("semantic_plan_cache_hits", 0) > 0
+                    and persistent_inputs.get("native_plan_cache_hits", 0) > 0
+                ),
+                "phase52_reuses_compact_and_output_device_workspaces": (
+                    persistent_inputs.get("packet_workspace_hits", 0) > 0
+                    and persistent_inputs.get("utility_workspace_hits", 0) > 0
+                    and persistent_inputs.get("row_owner_workspace_hits", 0) > 0
+                ),
+                "phase52_retains_phase51_dense_abi_elimination": (
+                    persistent_inputs.get("all_dense_device_abis_eliminated") is True
+                    and persistent_inputs.get("fallback_calls") == 0
+                    and persistent_inputs.get("dense_device_abi_bytes_eliminated", 0)
+                    > 1_900_000_000
+                ),
+                "phase52_releases_workspaces_before_trip_destination": (
+                    phase52_early_release_calls == 1
+                    and phase52_early_release_freed_bytes > 0
                 ),
             }
         )

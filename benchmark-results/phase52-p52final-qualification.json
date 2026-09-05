@@ -1,0 +1,206 @@
+{
+  "phase": 52,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "zones": 1454,
+  "incremental_matched_pairs": 3,
+  "regular_activitysim_matched_pairs": 3,
+  "calls_per_run": 19,
+  "owners_per_run": 201390,
+  "sampled_alternative_rows_per_run": 4696676,
+  "phase51_to_phase52_five_destination_components": {
+    "baseline_seconds": [
+      17.6,
+      16.900000000000002,
+      16.7
+    ],
+    "phase52_seconds": [
+      16.2,
+      16.099999999999998,
+      16.2
+    ],
+    "median_baseline_seconds": 16.900000000000002,
+    "median_phase52_seconds": 16.2,
+    "median_seconds_saved": 0.7000000000000028,
+    "median_reduction_percent": 4.142011834319543,
+    "median_speedup": 1.04320987654321,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "phase51_to_phase52_complete_model_lifecycle": {
+    "baseline_seconds": [
+      144.90000000000003,
+      138.79999999999998,
+      138.99999999999997
+    ],
+    "phase52_seconds": [
+      135.9392312996555,
+      138.5281128000933,
+      136.52667239983563
+    ],
+    "median_baseline_seconds": 138.99999999999997,
+    "median_phase52_seconds": 136.52667239983563,
+    "median_seconds_saved": 2.473327600164339,
+    "median_reduction_percent": 1.7793723742189493,
+    "median_speedup": 1.0181160761973373,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "phase51_to_phase52_tiled_kernel_pipeline": {
+    "baseline_seconds": [
+      2.0295370002277195,
+      1.9954309002496302,
+      2.0441181994974613
+    ],
+    "phase52_tiled_kernel_seconds": [
+      1.6570109997410327,
+      1.6722728002350777,
+      1.551511700032279
+    ],
+    "median_baseline_seconds": 2.0295370002277195,
+    "median_phase52_tiled_kernel_seconds": 1.6570109997410327,
+    "median_seconds_saved": 0.3725260004866868,
+    "median_reduction_percent": 18.35522094176595,
+    "median_speedup": 1.2248180612831825,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "phase51_to_phase52_instrumented_service": {
+    "baseline_seconds": [
+      9.225975699955598,
+      9.068782600108534,
+      8.903653899906203
+    ],
+    "phase52_seconds": [
+      7.846212899778038,
+      7.966399999335408,
+      7.826636799843982
+    ],
+    "median_baseline_seconds": 9.068782600108534,
+    "median_phase52_seconds": 7.846212899778038,
+    "median_seconds_saved": 1.2225697003304958,
+    "median_reduction_percent": 13.481078489144334,
+    "median_speedup": 1.1558165341607136,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "regular_activitysim_complete_model_lifecycle": {
+    "baseline_seconds": [
+      204.79999999999998,
+      209.0,
+      205.40000000000003
+    ],
+    "phase52_seconds": [
+      142.42703319955612,
+      139.08575320011,
+      138.02752459980545
+    ],
+    "median_baseline_seconds": 205.40000000000003,
+    "median_phase52_seconds": 139.08575320011,
+    "median_seconds_saved": 66.31424679989004,
+    "median_reduction_percent": 32.28541713723955,
+    "median_speedup": 1.476786768408122,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "regular_activitysim_five_destination_components": {
+    "baseline_seconds": [
+      43.6,
+      43.199999999999996,
+      43.00000000000001
+    ],
+    "phase52_seconds": [
+      16.7,
+      15.799999999999999,
+      16.3
+    ],
+    "median_baseline_seconds": 43.199999999999996,
+    "median_phase52_seconds": 16.3,
+    "median_seconds_saved": 26.899999999999995,
+    "median_reduction_percent": 62.26851851851851,
+    "median_speedup": 2.6503067484662575,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "persistent_runtime_contract": {
+    "tile_rows": 4,
+    "checked_in_cuda_source": "src/choiceforge/kernels/phase52_public_destination_tile4.cu",
+    "source_sha256": "599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906",
+    "semantic_plan_cache_hits_per_run": [
+      9,
+      9,
+      9
+    ],
+    "native_plan_cache_hits_per_run": [
+      9,
+      9,
+      9
+    ],
+    "utility_workspace_hits_per_run": [
+      16,
+      16,
+      16
+    ],
+    "packet_workspace_hits_per_run": [
+      152,
+      152,
+      152
+    ],
+    "row_owner_workspace_hits_per_run": [
+      16,
+      16,
+      16
+    ],
+    "prewarm_seconds": [
+      0.022783800028264523,
+      0.010593899991363287,
+      0.010201300028711557
+    ],
+    "early_release_bytes": [
+      101630976,
+      101630976,
+      101630976
+    ]
+  },
+  "memory_and_transfer_contract": {
+    "aggregate_dense_device_abi_bytes_eliminated": 1953817216,
+    "aggregate_dense_host_pack_bytes_avoided": 1953817216,
+    "compact_upload_bytes": 47787016,
+    "net_upload_bytes_avoided": 1906030200,
+    "row_owner_device_bytes": 18786704,
+    "minimal_bootstrap_bytes": 7904
+  },
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "regular_activitysim_decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "proof_gates": {
+    "all_incremental_runtime_gates_pass": true,
+    "all_nineteen_calls_cover_the_public_workload": true,
+    "all_calls_use_four_row_tiles": true,
+    "checked_in_source_hash_matches_every_run": true,
+    "no_timed_call_compiles_the_fused_kernel": true,
+    "semantic_and_native_plans_reused": true,
+    "all_three_device_workspaces_reused": true,
+    "workspaces_released_before_trip_destination": true,
+    "dense_device_abi_remains_eliminated": true,
+    "tiled_kernel_wins_every_incremental_pair": true,
+    "instrumented_service_wins_every_incremental_pair": true,
+    "five_destination_components_win_every_incremental_pair": true,
+    "complete_lifecycle_wins_every_incremental_pair": true,
+    "three_incremental_verifiers_find_zero_changed_decisions": true,
+    "three_regular_activitysim_verifiers_find_zero_changed_decisions": true,
+    "regular_activitysim_lifecycle_improves_in_every_pair": true,
+    "regular_activitysim_destination_components_improve_in_every_pair": true,
+    "both_summaries_declare_every_pair_exact": true
+  },
+  "success": true,
+  "performance_interpretation": "Phase 52 converts Phase 51's per-call fused path into a hash-verified, prewarmed, four-row tiled service with persistent plans and reusable device workspaces. It wins the tiled kernel, instrumented service, five destination components, and complete model lifecycle in all three matched Phase 51/52 pairs.",
+  "claim_boundary": "Incremental gains are attributed only to Phase 52 versus already accelerated Phase 51. The larger regular-ActivitySim gains are cumulative across Phases 1-52. Published modeled decisions are exact; declared floating logsum diagnostics remain within verifier tolerances."
+}

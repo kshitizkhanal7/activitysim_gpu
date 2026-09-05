@@ -618,14 +618,8 @@ def generate_cuda_source(
         raise ValueError("locality_tile_rows must be one of 1, 2, 4, or 8")
     tiled = bool(locality_optimized or locality_tile_rows > 1)
     grouped_direct = bool(group_skim_indices and not tiled)
+    tiled_grouped = bool(tiled and group_coordinate_references)
     sparse_direct = bool(sparse_zero_coefficients and not tiled)
-    if tiled and (
-        row_source_references
-        or group_coordinate_references
-        or block_prelude
-        or row_prelude
-    ):
-        raise ValueError("CUDA row-source fusion currently requires the direct kernel")
     if sparse_direct:
         if coefficient_values is None:
             raise ValueError("sparse coefficient generation requires resolved values")
@@ -661,8 +655,8 @@ def generate_cuda_source(
     skim_bindings = [binding for binding in bindings if binding.storage_kind == "skim"]
     skim_groups = _skim_groups(bindings)
     if group_coordinate_references:
-        if not grouped_direct:
-            raise ValueError("CUDA coordinate fusion requires grouped direct skim indices")
+        if not (grouped_direct or tiled):
+            raise ValueError("CUDA coordinate fusion requires grouped or tiled skim indices")
         known_groups = {group for group, _ in skim_groups}
         unknown_groups = set(group_coordinate_references) - known_groups
         if unknown_groups:
@@ -671,7 +665,7 @@ def generate_cuda_source(
                 f"{sorted(unknown_groups)!r}"
             )
     skim_parameters = []
-    if grouped_direct:
+    if grouped_direct or tiled_grouped:
         skim_parameters.extend(
             f"    const float* skim_{binding.slot}_data"
             for binding in skim_bindings
@@ -751,10 +745,35 @@ def generate_cuda_source(
     if tiled:
         skim_cases = []
         for binding in skim_bindings:
+            coordinate_override = (
+                group_coordinate_references.get(binding.skim_group)
+                if group_coordinate_references else None
+            )
+            if coordinate_override:
+                origin_ref, destination_ref, period_ref = coordinate_override
+                data_prefix = f"skim_{binding.slot}"
+                dimension_prefix = f"skim_group_{binding.skim_group}"
+                if binding.skim_rank == 3:
+                    if period_ref is None:
+                        raise ValueError(
+                            f"CUDA skim group {binding.skim_group} requires a period override"
+                        )
+                    skim_reference = (
+                        f"{data_prefix}_data[((({origin_ref}) * "
+                        f"{dimension_prefix}_dest_count + ({destination_ref})) * "
+                        f"{dimension_prefix}_time_count + ({period_ref}))]"
+                    )
+                else:
+                    skim_reference = (
+                        f"{data_prefix}_data[({origin_ref}) * "
+                        f"{dimension_prefix}_dest_count + ({destination_ref})]"
+                    )
+            else:
+                skim_reference = _skim_global_reference(binding, "skim_row")
             skim_cases.append(
                 f"                case {binding.slot}: "
                 f"shared_skims[gather_row * SKIM_COUNT + {binding.slot}] = "
-                f"{_skim_global_reference(binding, 'skim_row')}; break;"
+                f"{skim_reference}; break;"
             )
         if locality_tile_rows == 1:
             gather_code = f'''    for (int skim = (int)threadIdx.x; skim < SKIM_COUNT; skim += 256) {{
@@ -796,12 +815,14 @@ def generate_cuda_source(
     constexpr int SKIM_COUNT = {len(skim_bindings)};
     constexpr int TILE_ROWS = {locality_tile_rows};
     constexpr int THREADS_PER_ROW = 256 / TILE_ROWS;
+{block_prelude}
     const int lane = (int)threadIdx.x & 31;
     const int warp = (int)threadIdx.x >> 5;
     const int tile_row = (int)threadIdx.x / THREADS_PER_ROW;
     const int row_thread = (int)threadIdx.x - tile_row * THREADS_PER_ROW;
     const long long tile_base = (long long)blockIdx.x * TILE_ROWS;
     const long long row = tile_base + tile_row;
+{row_prelude}
     extern __shared__ float shared_values[];
     float* shared_features = shared_values;
     float* shared_skims = shared_values + TILE_ROWS * TERM_COUNT;

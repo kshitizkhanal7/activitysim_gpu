@@ -1,4 +1,4 @@
-"""Phase 50 compact destination-input generation on CUDA.
+"""Phase 50-52 compact destination-input generation and fused CUDA execution.
 
 ActivitySim's public tour-mode preprocessor expands one owner and each sampled
 destination into 41 dense row fields, then Sharrow resolves, packs, and uploads
@@ -14,9 +14,11 @@ direction changes the ABI and stops the run instead of silently falling back.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
+import os
+from pathlib import Path
 import time
 from typing import Any, Mapping
 
@@ -24,11 +26,15 @@ import numpy as np
 import pandas as pd
 
 from .cuda_backend import _cupy
-from .native_abi_bootstrap import NativeSkimCube, compile_native_strict_abi
+from .native_abi_bootstrap import (
+    NativeSkimCube,
+    NativeStrictAbiPlan,
+    compile_native_strict_abi,
+)
 from .nested_logit import mtc21_nested_logsums_cuda
 from .raw_table_input_generation import _density_band, _scaled_lognormal
 from .semantic_input_generation import _AVAILABILITY_LABELS, _availability_expression
-from .sharrow_cuda import generate_cuda_source
+from .sharrow_cuda import _shared_memory_bytes, generate_cuda_source
 from .sharrow_ir import specification_ir
 
 
@@ -71,6 +77,47 @@ _INT_LABELS = set(_OWNER_INT_LABELS) | _DESTINATION_INT_LABELS | set(
 _GENERATOR_CACHE: dict[str, Any] = {}
 _FUSED_UTILITY_CACHE: dict[str, Any] = {}
 _ROW_OWNER_KERNEL = None
+_PHASE52_SOURCE = Path(__file__).with_name("kernels") / "phase52_public_destination_tile4.cu"
+
+
+def prewarm_phase52_public_runtime(cp=None) -> dict[str, Any]:
+    """Compile the checked-in Phase 52 program before ActivitySim component timers.
+
+    CuPy's own content-addressed disk cache supplies the cross-process binary
+    cache.  This function adds a checked-in source boundary and a process-local
+    executable cache keyed by the exact source SHA-256.
+    """
+    cp = cp or _cupy()
+    started = time.perf_counter()
+    if not _PHASE52_SOURCE.exists():
+        return {
+            "available": False,
+            "compiled": False,
+            "seconds": 0.0,
+            "source_sha256": None,
+            "source_path": str(_PHASE52_SOURCE),
+        }
+    source = _PHASE52_SOURCE.read_text(encoding="utf-8")
+    source_sha256 = hashlib.sha256(source.encode()).hexdigest()
+    kernel = _FUSED_UTILITY_CACHE.get(source_sha256)
+    compiled = kernel is None
+    if kernel is None:
+        kernel = cp.RawKernel(
+            source,
+            "choiceforge_strict_ir_v3",
+            options=("--std=c++11", "--fmad=true", "--prec-div=true", "--ftz=true"),
+        )
+        kernel.compile()
+        _FUSED_UTILITY_CACHE[source_sha256] = kernel
+    cp.cuda.Stream.null.synchronize()
+    return {
+        "available": True,
+        "compiled": compiled,
+        "seconds": time.perf_counter() - started,
+        "source_sha256": source_sha256,
+        "source_path": str(_PHASE52_SOURCE),
+        "cache_contract": "checked-in-source-sha256-plus-cupy-disk-binary-cache",
+    }
 
 
 def _label(source) -> str:
@@ -236,6 +283,8 @@ class CompactDestinationPacket:
     wait_table: Any
     compact_bytes: int
     owners: int
+    workspace_hits: int = 0
+    workspace_allocations: int = 0
 
 
 class DestinationInputSupergraph:
@@ -243,15 +292,68 @@ class DestinationInputSupergraph:
 
     version = 1
 
-    def __init__(self, bridge, *, cbd_threshold: int, cp=None, fused: bool = False):
+    def __init__(
+        self,
+        bridge,
+        *,
+        cbd_threshold: int,
+        cp=None,
+        fused: bool = False,
+        tile_rows: int = 1,
+        persistent: bool = False,
+    ):
         self.cp = cp or _cupy()
         self.bridge = bridge
         self.cbd_threshold = int(cbd_threshold)
         self.fused = bool(fused)
+        self.tile_rows = int(tile_rows)
+        if self.tile_rows not in {1, 2, 4}:
+            raise ValueError("destination fused tile_rows must be 1, 2, or 4")
+        if self.tile_rows > 1 and not self.fused:
+            raise ValueError("destination row tiling requires fused execution")
+        self.persistent = bool(persistent)
         self._land_signature = None
         self._land_float = None
         self._land_int = None
         self._events: list[dict[str, Any]] = []
+        self._device_buffers: dict[tuple[Any, ...], Any] = {}
+        self._utility_buffer = None
+        self._native_plan_cache: dict[str, NativeStrictAbiPlan] = {}
+        self._semantic_plan_cache: dict[tuple[str, str], tuple[Any, ...]] = {}
+
+    @staticmethod
+    def _capacity(rows: int) -> int:
+        rows = max(1, int(rows))
+        return 1 << (rows - 1).bit_length()
+
+    def _upload(self, name: str, host):
+        host = np.ascontiguousarray(host)
+        if not self.persistent:
+            return self.cp.asarray(host), False
+        tail = tuple(host.shape[1:])
+        key = (name, tail, host.dtype.str)
+        buffer = self._device_buffers.get(key)
+        hit = buffer is not None and buffer.shape[0] >= host.shape[0]
+        if not hit:
+            buffer = self.cp.empty(
+                (self._capacity(host.shape[0]),) + tail, dtype=host.dtype
+            )
+            self._device_buffers[key] = buffer
+        view = buffer[: host.shape[0]]
+        view.set(host)
+        return view, hit
+
+    def _utilities(self, rows: int, alternatives: int):
+        hit = (
+            self._utility_buffer is not None
+            and self._utility_buffer.shape[0] >= rows
+            and self._utility_buffer.shape[1] == alternatives
+        )
+        if not hit:
+            self._utility_buffer = self.cp.empty(
+                (self._capacity(rows), alternatives), dtype=self.cp.float32
+            )
+        return self._utility_buffer[:rows], hit
 
     def _resident_land(self, land_use):
         columns = (
@@ -442,11 +544,24 @@ class DestinationInputSupergraph:
             offsets, owner_float, owner_int_storage, origin, out_period, in_period,
             duration, destination, waits,
         )
-        device = [self.cp.asarray(np.ascontiguousarray(item)) for item in host_arrays]
+        uploaded = [
+            self._upload(name, item)
+            for name, item in zip(
+                (
+                    "offsets", "owner_float", "owner_int", "owner_origin",
+                    "owner_out_period", "owner_in_period", "owner_duration",
+                    "row_destination", "wait_table",
+                ),
+                host_arrays,
+            )
+        ]
+        device = [item[0] for item in uploaded]
         return CompactDestinationPacket(
             *device,
             compact_bytes=int(sum(np.asarray(item).nbytes for item in host_arrays)),
             owners=owners,
+            workspace_hits=sum(bool(item[1]) for item in uploaded),
+            workspace_allocations=sum(not bool(item[1]) for item in uploaded),
         )
 
     @staticmethod
@@ -667,12 +782,14 @@ class DestinationInputSupergraph:
             unknown = sorted(set(int_labels) ^ _INT_LABELS)
             raise ValueError("Phase 51 integer row-source ABI changed: " + ", ".join(unknown))
 
+        tile_index = "tile_row * 10 + " if self.tile_rows > 1 else ""
+        int_tile_index = "tile_row * 31 + " if self.tile_rows > 1 else ""
         float_variables = {
-            label: f"phase51_float_values[{position}]"
+            label: f"phase51_float_values[{tile_index}{position}]"
             for position, label in enumerate(float_labels)
         }
         int_variables = {
-            label: f"(long long)phase51_int_values[{position}]"
+            label: f"(long long)phase51_int_values[{int_tile_index}{position}]"
             for position, label in enumerate(int_labels)
         }
         float_expressions = {
@@ -729,16 +846,17 @@ class DestinationInputSupergraph:
                 origin, destination = "destination", "origin"
             else:
                 raise ValueError(f"Phase 51 unsupported skim direction {direction!r}")
-            prefix = f"skim_group_{binding.skim_group}"
+            data_prefix = f"skim_{binding.slot}"
+            dimension_prefix = f"skim_group_{binding.skim_group}"
             if binding.skim_rank == 3:
                 period = "out_period" if direction in {"odt_skims", "dor_skims"} else "in_period"
                 index = (
-                    f"(({origin} * {prefix}_dest_count + {destination}) * "
-                    f"{prefix}_time_count + {period})"
+                    f"(({origin} * {dimension_prefix}_dest_count + {destination}) * "
+                    f"{dimension_prefix}_time_count + {period})"
                 )
             else:
-                index = f"({origin} * {prefix}_dest_count + {destination})"
-            return f"skim_{binding.slot}_data[{index}]"
+                index = f"({origin} * {dimension_prefix}_dest_count + {destination})"
+            return f"{data_prefix}_data[{index}]"
 
         for label in sorted(_AVAILABILITY_LABELS):
             int_expressions[label] = _availability_expression(
@@ -752,7 +870,7 @@ class DestinationInputSupergraph:
                 "Phase 51 fused integer source contract is incomplete: " + ", ".join(missing)
             )
 
-        prelude = [
+        scalar_prelude = [
             "    const long long owner = phase51_row_owner[row];",
             "    const long long origin = phase51_owner_origin[owner];",
             "    const long long out_period = phase51_owner_out_period[owner];",
@@ -760,24 +878,35 @@ class DestinationInputSupergraph:
             "    const long long destination = phase51_row_destination[row];",
             "    const int destination_band = "
             "(int)phase51_land_int[destination * 3 + 2] - 1;",
-            "    if ((int)threadIdx.x < 10) {",
-            "        switch ((int)threadIdx.x) {",
         ]
-        prelude.extend(
-            f"        case {position}: phase51_float_values[{position}] = "
+        float_target = (
+            "phase51_float_values[tile_row * 10 + {position}]"
+            if self.tile_rows > 1 else "phase51_float_values[{position}]"
+        )
+        int_target = (
+            "phase51_int_values[tile_row * 31 + {position}]"
+            if self.tile_rows > 1 else "phase51_int_values[{position}]"
+        )
+        row_thread = "row_thread" if self.tile_rows > 1 else "(int)threadIdx.x"
+        scalar_prelude.extend((
+            f"    if ({row_thread} < 10) {{",
+            f"        switch ({row_thread}) {{",
+        ))
+        scalar_prelude.extend(
+            f"        case {position}: {float_target.format(position=position)} = "
             f"(float)({float_expressions[label]}); break;"
             for position, label in enumerate(float_labels)
         )
-        prelude.extend(
+        scalar_prelude.extend(
             (
                 "        }",
                 "    }",
-                "    if ((int)threadIdx.x < 31) {",
-                "        switch ((int)threadIdx.x) {",
+                f"    if ({row_thread} < 31) {{",
+                f"        switch ({row_thread}) {{",
             )
         )
-        prelude.extend(
-            f"        case {position}: phase51_int_values[{position}] = "
+        scalar_prelude.extend(
+            f"        case {position}: {int_target.format(position=position)} = "
             f"(int)({int_expressions[label]}); break;"
             for position, label in enumerate(int_labels)
         )
@@ -786,7 +915,24 @@ class DestinationInputSupergraph:
         # also makes the compact values visible before feature evaluation.
         # Keeping both barriers costs one block-wide rendezvous per sampled
         # row (4.7 million at the qualification scale).
-        prelude.extend(("        }", "    }"))
+        scalar_prelude.extend(("        }", "    }"))
+        if self.tile_rows > 1:
+            prelude = ["    if (row < rows) {"]
+            prelude.extend("    " + line for line in scalar_prelude)
+            prelude.extend(
+                (
+                    "        if (row_thread == 0) {",
+                    "            phase52_origin[tile_row] = (int)origin;",
+                    "            phase52_destination[tile_row] = (int)destination;",
+                    "            phase52_out_period[tile_row] = (int)out_period;",
+                    "            phase52_in_period[tile_row] = (int)in_period;",
+                    "        }",
+                    "    }",
+                    "    __syncthreads();",
+                )
+            )
+        else:
+            prelude = scalar_prelude
 
         float_reference_by_slot = {
             slot: float_variables[label] for slot, label in enumerate(float_labels)
@@ -807,11 +953,21 @@ class DestinationInputSupergraph:
             period = (
                 "out_period" if direction in {"odt_skims", "dor_skims"} else "in_period"
             ) if binding.skim_rank == 3 else None
-            coordinates = (
-                "destination" if reverse else "origin",
-                "origin" if reverse else "destination",
-                period,
-            )
+            if self.tile_rows > 1:
+                origin_ref = "phase52_destination[gather_row]" if reverse else "phase52_origin[gather_row]"
+                destination_ref = "phase52_origin[gather_row]" if reverse else "phase52_destination[gather_row]"
+                period_ref = (
+                    "phase52_out_period[gather_row]"
+                    if direction in {"odt_skims", "dor_skims"}
+                    else "phase52_in_period[gather_row]"
+                ) if binding.skim_rank == 3 else None
+                coordinates = (origin_ref, destination_ref, period_ref)
+            else:
+                coordinates = (
+                    "destination" if reverse else "origin",
+                    "origin" if reverse else "destination",
+                    period,
+                )
             prior = group_coordinates.setdefault(binding.skim_group, coordinates)
             if prior != coordinates:
                 raise ValueError("Phase 51 skim group mixes coordinate directions")
@@ -830,12 +986,26 @@ class DestinationInputSupergraph:
             "    const int* phase51_land_int",
             "    int phase51_cbd_threshold",
         )
+        if self.tile_rows > 1:
+            block_prelude = (
+                f"    __shared__ float phase51_float_values[{self.tile_rows * 10}];\n"
+                f"    __shared__ int phase51_int_values[{self.tile_rows * 31}];\n"
+                f"    __shared__ int phase52_origin[{self.tile_rows}];\n"
+                f"    __shared__ int phase52_destination[{self.tile_rows}];\n"
+                f"    __shared__ int phase52_out_period[{self.tile_rows}];\n"
+                f"    __shared__ int phase52_in_period[{self.tile_rows}];"
+            )
+        else:
+            block_prelude = (
+                "    __shared__ float phase51_float_values[10];\n"
+                "    __shared__ int phase51_int_values[31];"
+            )
         source, source_sha256 = generate_cuda_source(
             document,
             list(bindings),
             capture_features=False,
-            locality_tile_rows=1,
-            locality_optimized=False,
+            locality_tile_rows=self.tile_rows,
+            locality_optimized=self.tile_rows > 1,
             group_skim_indices=True,
             sparse_zero_coefficients=False,
             expression_float32=True,
@@ -843,10 +1013,7 @@ class DestinationInputSupergraph:
             row_source_references=row_references,
             group_coordinate_references=group_coordinates,
             extra_kernel_parameters=extra_parameters,
-            block_prelude=(
-                "    __shared__ float phase51_float_values[10];\n"
-                "    __shared__ int phase51_int_values[31];"
-            ),
+            block_prelude=block_prelude,
             row_prelude="\n".join(prelude),
         )
         unresolved = (
@@ -860,6 +1027,11 @@ class DestinationInputSupergraph:
             raise ValueError(f"Phase 51 fused source retains legacy reads: {retained}")
         if "const long long owner = phase51_row_owner[row]" not in source:
             raise ValueError("Phase 51 compiler did not emit compact row-owner execution")
+        export_path = os.environ.get("CHOICEFORGE_PHASE52_EXPORT_CUDA")
+        if self.tile_rows > 1 and export_path:
+            export = Path(export_path)
+            export.parent.mkdir(parents=True, exist_ok=True)
+            export.write_text(source, encoding="utf-8", newline="\n")
         kernel = _FUSED_UTILITY_CACHE.get(source_sha256)
         compiled = kernel is None
         if kernel is None:
@@ -891,13 +1063,23 @@ class DestinationInputSupergraph:
                 source, "phase51_row_owner", options=("--std=c++11",)
             )
             _ROW_OWNER_KERNEL.compile()
-        row_owner = self.cp.empty(rows, dtype=self.cp.int32)
+        key = ("row_owner", (), np.dtype(np.int32).str)
+        buffer = self._device_buffers.get(key) if self.persistent else None
+        hit = buffer is not None and buffer.shape[0] >= rows
+        if not hit:
+            buffer = self.cp.empty(
+                self._capacity(rows) if self.persistent else rows,
+                dtype=self.cp.int32,
+            )
+            if self.persistent:
+                self._device_buffers[key] = buffer
+        row_owner = buffer[:rows]
         _ROW_OWNER_KERNEL(
             (packet.owners,),
             (32,),
             (packet.offsets, row_owner, np.int32(packet.owners)),
         )
-        return row_owner
+        return row_owner, hit
 
     def compute(
         self,
@@ -929,20 +1111,29 @@ class DestinationInputSupergraph:
         if isinstance(logsum_settings, dict):
             logsum_settings = TourModeComponentSettings.model_validate(logsum_settings)
         started = time.perf_counter()
-        spec = state.filesystem.read_model_spec(file_name=logsum_settings.SPEC)
-        coefficients = state.filesystem.get_segment_coefficients(
-            logsum_settings, tour_purpose
-        )
-        spec = simulate.eval_coefficients(state, spec, coefficients, estimator=None)
-        numeric_nest = config.get_logit_model_settings(logsum_settings)
-        numeric_nest = simulate.eval_nest_coefficients(
-            numeric_nest, coefficients, trace_label
-        )
-        constants = config.get_model_constants(logsum_settings)
-        scalar_environment = state.get_global_constants().copy()
-        scalar_environment.update(constants)
-        scalar_environment.update(coefficients)
-        document = specification_ir(spec.reset_index())
+        semantic_key = (str(logsum_settings.SPEC), str(tour_purpose))
+        semantic = self._semantic_plan_cache.get(semantic_key) if self.persistent else None
+        semantic_plan_hit = semantic is not None
+        if semantic is None:
+            spec = state.filesystem.read_model_spec(file_name=logsum_settings.SPEC)
+            coefficients = state.filesystem.get_segment_coefficients(
+                logsum_settings, tour_purpose
+            )
+            spec = simulate.eval_coefficients(state, spec, coefficients, estimator=None)
+            numeric_nest = config.get_logit_model_settings(logsum_settings)
+            numeric_nest = simulate.eval_nest_coefficients(
+                numeric_nest, coefficients, trace_label
+            )
+            constants = config.get_model_constants(logsum_settings)
+            scalar_environment = state.get_global_constants().copy()
+            scalar_environment.update(constants)
+            scalar_environment.update(coefficients)
+            document = specification_ir(spec.reset_index())
+            semantic = (numeric_nest, constants, scalar_environment, document)
+            if self.persistent:
+                self._semantic_plan_cache[semantic_key] = semantic
+        else:
+            numeric_nest, constants, scalar_environment, document = semantic
 
         skim_dict = network_los.get_default_skim_dict()
         origin_name = model_settings.CHOOSER_ORIG_COL_NAME
@@ -965,15 +1156,58 @@ class DestinationInputSupergraph:
             )
             return NativeSkimCube(data, dest_count, time_count, rank)
 
-        native = compile_native_strict_abi(
-            document,
-            scalar_environment,
-            cube_loader,
-            rows=len(choosers),
-            minimal_row_state=self.fused,
-            cache_codegen=True,
-            compile_kernel=not self.fused,
-        )
+        scalar_signature = hashlib.sha256(
+            json.dumps(
+                sorted(
+                    (str(key), type(value).__name__, repr(value))
+                    for key, value in scalar_environment.items()
+                    if np.isscalar(value)
+                ),
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        native_key = f"{document['sha256']}:{scalar_signature}:{id(network_los)}"
+        native = self._native_plan_cache.get(native_key) if self.persistent else None
+        native_plan_hit = native is not None
+        if native is None:
+            native = compile_native_strict_abi(
+                document,
+                scalar_environment,
+                cube_loader,
+                rows=len(choosers),
+                minimal_row_state=self.fused,
+                minimal_output_state=self.persistent,
+                cache_codegen=True,
+                compile_kernel=not self.fused,
+            )
+            if self.persistent:
+                template_invocation = replace(
+                    native.invocation,
+                    utilities=self.cp.empty(
+                        (1, native.invocation.alternatives), dtype=self.cp.float32
+                    ),
+                    rows=1,
+                    grid=(1,),
+                )
+                self._native_plan_cache[native_key] = NativeStrictAbiPlan(
+                    template_invocation, native.bindings, dict(native.manifest)
+                )
+        if self.persistent:
+            utilities, utility_workspace_hit = self._utilities(
+                len(choosers), native.invocation.alternatives
+            )
+            native = NativeStrictAbiPlan(
+                replace(
+                    native.invocation,
+                    utilities=utilities,
+                    rows=len(choosers),
+                    grid=((len(choosers) + self.tile_rows - 1) // self.tile_rows,),
+                ),
+                native.bindings,
+                {**native.manifest, "template_cache_hit": native_plan_hit},
+            )
+        else:
+            utility_workspace_hit = False
         if self.fused:
             fused_kernel, schema_sha256, fused_compiled = self._fused_utility(
                 document, native
@@ -999,9 +1233,10 @@ class DestinationInputSupergraph:
         )
         prepared = time.perf_counter()
         row_owner = None
+        row_owner_workspace_hit = False
         row_owner_complete = prepared
         if self.fused:
-            row_owner = self._row_owner(packet, len(choosers))
+            row_owner, row_owner_workspace_hit = self._row_owner(packet, len(choosers))
             self.cp.cuda.Stream.null.synchronize()
             row_owner_complete = time.perf_counter()
         compact_arguments = (
@@ -1021,7 +1256,7 @@ class DestinationInputSupergraph:
         if self.fused:
             generated = prepared
             fused_kernel(
-                (len(choosers),),
+                ((len(choosers) + self.tile_rows - 1) // self.tile_rows,),
                 (256,),
                 (
                     native.invocation.float_inputs,
@@ -1033,7 +1268,14 @@ class DestinationInputSupergraph:
                     native.invocation.utilities,
                     np.int64(len(choosers)),
                 ) + native.invocation.skim_arguments + compact_arguments,
-                shared_mem=native.invocation.shared_mem,
+                shared_mem=_shared_memory_bytes(
+                    native.invocation.terms,
+                    native.invocation.logical_skim_bindings,
+                    len(set(native.invocation.skim_input_groups)),
+                    self.tile_rows,
+                    self.tile_rows > 1,
+                    self.tile_rows == 1,
+                ),
             )
             utilities = native.invocation.utilities
             generator_compiled = False
@@ -1097,7 +1339,7 @@ class DestinationInputSupergraph:
         )
         self._events.append(
             {
-                "phase": 51 if self.fused else 50,
+                "phase": 52 if self.persistent else (51 if self.fused else 50),
                 "trace_label": str(trace_label),
                 "rows": int(len(choosers)),
                 "owners": int(packet.owners),
@@ -1118,6 +1360,13 @@ class DestinationInputSupergraph:
                 "native_abi_sha256": native.manifest["schema_sha256"],
                 "native_codegen_cache_hit": native.manifest["codegen_cache_hit"],
                 "native_kernel_compiled": native.manifest["compiled_this_call"],
+                "semantic_plan_cache_hit": semantic_plan_hit,
+                "native_plan_cache_hit": native_plan_hit,
+                "utility_workspace_hit": utility_workspace_hit,
+                "packet_workspace_hits": packet.workspace_hits,
+                "packet_workspace_allocations": packet.workspace_allocations,
+                "row_owner_workspace_hit": row_owner_workspace_hit,
+                "tile_rows": self.tile_rows,
                 "generator_compiled": bool(generator_compiled),
                 "fused_kernel_compiled": bool(fused_compiled),
                 "dense_device_abi_bytes_eliminated": dense_bytes if self.fused else 0,
@@ -1167,7 +1416,27 @@ class DestinationInputSupergraph:
             ),
             "host_dense_pack_calls": int(sum(item["host_dense_pack_calls"] for item in events)),
             "fallback_calls": int(sum(bool(item["fallback_used"]) for item in events)),
-            "fused_calls": int(sum(item.get("phase") == 51 for item in events)),
+            "fused_calls": int(sum(item.get("phase") in {51, 52} for item in events)),
+            "phase52_calls": int(sum(item.get("phase") == 52 for item in events)),
+            "semantic_plan_cache_hits": int(
+                sum(bool(item.get("semantic_plan_cache_hit")) for item in events)
+            ),
+            "native_plan_cache_hits": int(
+                sum(bool(item.get("native_plan_cache_hit")) for item in events)
+            ),
+            "utility_workspace_hits": int(
+                sum(bool(item.get("utility_workspace_hit")) for item in events)
+            ),
+            "packet_workspace_hits": int(
+                sum(item.get("packet_workspace_hits", 0) for item in events)
+            ),
+            "packet_workspace_allocations": int(
+                sum(item.get("packet_workspace_allocations", 0) for item in events)
+            ),
+            "row_owner_workspace_hits": int(
+                sum(bool(item.get("row_owner_workspace_hit")) for item in events)
+            ),
+            "tile_rows": sorted({int(item.get("tile_rows", 1)) for item in events}),
             "dense_device_abi_bytes_eliminated": int(
                 sum(item.get("dense_device_abi_bytes_eliminated", 0) for item in events)
             ),
@@ -1202,13 +1471,23 @@ class DestinationInputSupergraph:
             "all_dense_device_abis_eliminated": bool(
                 events
                 and all(
-                    item.get("phase") == 51
+                    item.get("phase") in {51, 52}
                     and item.get("dense_device_abi_bytes_eliminated", 0) > 0
                     for item in events
                 )
             ),
             "events": events,
         }
+
+    def release(self) -> None:
+        """Drop every resident device reference after the final GPU consumer."""
+        self._native_plan_cache.clear()
+        self._semantic_plan_cache.clear()
+        self._device_buffers.clear()
+        self._utility_buffer = None
+        self._land_float = None
+        self._land_int = None
+        self._land_signature = None
 
 
 class FusedDestinationInputSupergraph(DestinationInputSupergraph):
@@ -1218,3 +1497,21 @@ class FusedDestinationInputSupergraph(DestinationInputSupergraph):
 
     def __init__(self, bridge, *, cbd_threshold: int, cp=None):
         super().__init__(bridge, cbd_threshold=cbd_threshold, cp=cp, fused=True)
+
+
+class PersistentTiledDestinationInputSupergraph(DestinationInputSupergraph):
+    """Phase 52 prewarmed, workspace-reusing compact destination runtime."""
+
+    version = 3
+
+    def __init__(self, bridge, *, cbd_threshold: int, cp=None, tile_rows: int | None = None):
+        if tile_rows is None:
+            tile_rows = int(os.environ.get("CHOICEFORGE_PHASE52_TILE_ROWS", "4"))
+        super().__init__(
+            bridge,
+            cbd_threshold=cbd_threshold,
+            cp=cp,
+            fused=True,
+            tile_rows=tile_rows,
+            persistent=True,
+        )

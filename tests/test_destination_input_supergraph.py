@@ -4,6 +4,7 @@ import pytest
 
 from choiceforge.destination_input_supergraph import (
     DestinationInputSupergraph,
+    PersistentTiledDestinationInputSupergraph,
     _owner_topology,
     _period_positions,
     _stable_owner,
@@ -117,3 +118,63 @@ def test_phase50_summary_preserves_accounting_and_exact_abi_gate():
     assert summary["net_upload_bytes_avoided"] == 40_600
     assert summary["all_source_abis_exact"] is True
     assert summary["fallback_calls"] == 0
+
+
+def test_phase52_summary_and_release_expose_persistent_runtime_contract():
+    runtime = PersistentTiledDestinationInputSupergraph(
+        None, cbd_threshold=3, cp=object(), tile_rows=4
+    )
+    runtime._events = [
+        {
+            "phase": 52,
+            "trace_label": "school_location.i1.logsums.university",
+            "rows": 100,
+            "owners": 5,
+            "dense_preprocessor_rows_avoided": 100,
+            "dense_preprocessor_values_avoided": 4_100,
+            "dense_host_pack_bytes_avoided": 41_600,
+            "compact_upload_bytes": 1_000,
+            "net_upload_bytes_avoided": 40_600,
+            "binding_resolution_calls": 0,
+            "host_dense_pack_calls": 0,
+            "fallback_used": False,
+            "device_generate_seconds": 0.0,
+            "utility_kernel_seconds": 0.02,
+            "fused_kernel_seconds": 0.02,
+            "row_owner_kernel_seconds": 0.001,
+            "total_seconds": 0.04,
+            "float_row_sources": 10,
+            "int_row_sources": 31,
+            "skim_coordinate_groups": 6,
+            "semantic_plan_cache_hit": True,
+            "native_plan_cache_hit": True,
+            "utility_workspace_hit": True,
+            "packet_workspace_hits": 8,
+            "packet_workspace_allocations": 1,
+            "row_owner_workspace_hit": True,
+            "tile_rows": 4,
+            "dense_device_abi_bytes_eliminated": 41_600,
+            "minimal_bootstrap_bytes": 416,
+            "row_owner_device_bytes": 400,
+        }
+    ]
+    runtime._device_buffers["x"] = object()
+    runtime._utility_buffer = object()
+    runtime._native_plan_cache["native"] = object()
+    runtime._semantic_plan_cache["semantic"] = object()
+
+    summary = runtime.summary()
+    assert summary["contract_version"] == 3
+    assert summary["phase52_calls"] == 1
+    assert summary["tile_rows"] == [4]
+    assert summary["semantic_plan_cache_hits"] == 1
+    assert summary["native_plan_cache_hits"] == 1
+    assert summary["utility_workspace_hits"] == 1
+    assert summary["packet_workspace_hits"] == 8
+    assert summary["row_owner_workspace_hits"] == 1
+
+    runtime.release()
+    assert runtime._device_buffers == {}
+    assert runtime._utility_buffer is None
+    assert runtime._native_plan_cache == {}
+    assert runtime._semantic_plan_cache == {}

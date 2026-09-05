@@ -1111,3 +1111,32 @@ is the cumulative result through Phase 51, not Phase 51's isolated gain.
 
 See the [Phase 51 technical report](docs/phase51-fused-compact-destination-utility.md)
 and [consolidated qualification](benchmark-results/phase51-qualification.json).
+
+## Phase 52 persistent prewarmed four-row destination service
+
+Phase 52 turns the Phase 51 fused kernel into a reusable service. A checked-in
+CUDA program is verified by SHA-256 and prewarmed through CuPy's cross-process
+binary cache before component timing. Four adjacent sampled rows share cached
+owner facts, while semantic plans, native ABI plans, compact packet buffers,
+row-owner maps, and utility outputs are reused across all 19 destination calls.
+An explicit lifecycle boundary releases 101,630,976 bytes of workspace before
+ActivitySim's large trip-destination join.
+
+Three fresh Phase 51/52 matched pairs show a replicated incremental speedup at
+every measured layer: tiled kernel 2.030 to 1.657 seconds (**1.225x**, 18.36%
+lower), instrumented service 9.069 to 7.846 seconds (**1.156x**, 13.48% lower),
+five destination components 16.9 to 16.2 seconds (**1.043x**, 4.14% lower), and
+complete 34-step lifecycle 139.0 to 136.527 seconds (**1.018x**, 1.78% lower).
+Every metric wins all three pairs.
+
+A separate three-pair comparison with regular pinned ActivitySim reduces the
+complete-model median from 205.4 to 139.086 seconds (**1.477x**, 32.29% lower)
+and the five destination components from 43.2 to 16.3 seconds (**2.650x**,
+62.27% lower). All six independent verifiers across both experiments find zero
+changed modeled decision cells. The larger CPU comparison is the cumulative
+result through Phase 52; only the Phase 51/52 comparison measures Phase 52's
+isolated contribution.
+
+Phase 52 retains the 1,953,817,216-byte dense device ABI elimination and zero
+fallback contract. See the [Phase 52 technical report](docs/phase52-persistent-tiled-destination.md)
+and [consolidated qualification](benchmark-results/phase52-p52final-qualification.json).

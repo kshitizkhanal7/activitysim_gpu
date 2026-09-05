@@ -228,6 +228,7 @@ def compile_native_strict_abi(
     *,
     rows: int,
     minimal_row_state: bool = False,
+    minimal_output_state: bool = False,
     cache_codegen: bool = False,
     compile_kernel: bool = True,
 ) -> NativeStrictAbiPlan:
@@ -323,7 +324,8 @@ def compile_native_strict_abi(
         (allocation_rows, len(int_sources)), dtype=cp.int64
     )
     features = cp.empty((1,), dtype=cp.float32)
-    utilities = cp.empty((rows, len(document["alternatives"])), dtype=cp.float32)
+    output_rows = 1 if minimal_output_state else rows
+    utilities = cp.empty((output_rows, len(document["alternatives"])), dtype=cp.float32)
     unique_cubes = {
         int(cube.data.__cuda_array_interface__["data"][0]): cube.data
         for cube in cubes.values()
@@ -368,6 +370,7 @@ def compile_native_strict_abi(
             "grouped_skim_indices": True,
             "capture_features": False,
             "minimal_row_state": bool(minimal_row_state),
+            "minimal_output_state": bool(minimal_output_state),
             "kernel_compiled": bool(compile_kernel),
         },
     }
