@@ -229,6 +229,7 @@ def compile_native_strict_abi(
     rows: int,
     minimal_row_state: bool = False,
     cache_codegen: bool = False,
+    compile_kernel: bool = True,
 ) -> NativeStrictAbiPlan:
     """Compile a strict resident invocation without dense preprocessor values."""
     _validate_document(document)
@@ -283,9 +284,9 @@ def compile_native_strict_abi(
         _NATIVE_CODEGEN_HITS += 1
         codegen_cache_hit = True
     kernel_key = f"{document['sha256']}:{source_sha256}"
-    kernel = _NATIVE_KERNEL_CACHE.get(kernel_key)
-    compiled = kernel is None
-    if kernel is None:
+    kernel = _NATIVE_KERNEL_CACHE.get(kernel_key) if compile_kernel else None
+    compiled = bool(compile_kernel and kernel is None)
+    if compile_kernel and kernel is None:
         kernel = cp.RawKernel(
             source,
             "choiceforge_strict_ir_v3",
@@ -367,6 +368,7 @@ def compile_native_strict_abi(
             "grouped_skim_indices": True,
             "capture_features": False,
             "minimal_row_state": bool(minimal_row_state),
+            "kernel_compiled": bool(compile_kernel),
         },
     }
     schema_sha256 = hashlib.sha256(

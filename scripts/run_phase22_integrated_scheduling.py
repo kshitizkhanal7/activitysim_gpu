@@ -191,6 +191,14 @@ def main() -> int:
             "on CUDA from compact owner and sampled-destination state"
         ),
     )
+    parser.add_argument(
+        "--phase51-fused-compact-destination-utility",
+        action="store_true",
+        help=(
+            "compile strict destination-mode utility expressions directly over "
+            "compact owner/sample/land-use state and eliminate the dense device ABI"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -265,6 +273,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase51_fused_compact_destination_utility:
+        args.phase50_device_generated_destination_inputs = True
+        os.environ["CHOICEFORGE_PHASE51_FUSED_COMPACT_DESTINATION_UTILITY"] = "1"
     if args.phase50_device_generated_destination_inputs:
         args.phase49_destination_supergraph = True
         os.environ["CHOICEFORGE_PHASE50_DEVICE_GENERATED_DESTINATION_INPUTS"] = "1"
@@ -1316,9 +1327,15 @@ def main() -> int:
                     if args.phase50_device_generated_destination_inputs:
                         from choiceforge.destination_input_supergraph import (
                             DestinationInputSupergraph,
+                            FusedDestinationInputSupergraph,
                         )
 
-                        phase50_runtime = DestinationInputSupergraph(
+                        runtime_type = (
+                            FusedDestinationInputSupergraph
+                            if args.phase51_fused_compact_destination_utility
+                            else DestinationInputSupergraph
+                        )
+                        phase50_runtime = runtime_type(
                             phase49_bridge,
                             cbd_threshold=raw_cbd_threshold,
                             cp=phase46_service.cp,
@@ -2287,6 +2304,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            51 if args.phase51_fused_compact_destination_utility else
             50 if args.phase50_device_generated_destination_inputs else
             49 if args.phase49_destination_supergraph else
             48 if args.phase48_resident_destination_graph else
@@ -2308,6 +2326,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with strict destination-mode expressions "
+            "fused directly over compact owner/sample/land-use state, eliminating "
+            "the dense device row ABI before the resident destination supergraph"
+            if args.phase51_fused_compact_destination_utility else
             "full public ActivitySim model with a compact owner/sample/land-use "
             "destination ABI that generates all mode-logsum row inputs and skim "
             "coordinates on CUDA before the resident destination supergraph"
@@ -2440,6 +2462,9 @@ def main() -> int:
         "phase48_prewarm": phase48_prewarm,
         "phase49_destination_supergraph": phase49_runtime,
         "phase50_device_generated_destination_inputs": phase50_summary,
+        "phase51_fused_compact_destination_utility": (
+            phase50_summary if args.phase51_fused_compact_destination_utility else None
+        ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
         "cache_value_mismatches": int(sum(x["cache_value_mismatches"] for x in batch_telemetry)),
@@ -2979,6 +3004,35 @@ def main() -> int:
                 ),
                 "phase50_has_zero_preprocessor_fallbacks": (
                     generated_inputs.get("fallback_calls") == 0
+                ),
+            }
+        )
+    if args.phase51_fused_compact_destination_utility:
+        fused_inputs = phase50_summary or {}
+        report["proof_gates"].update(
+            {
+                "phase51_all_nineteen_destination_logsum_calls_use_fused_compact_ir": (
+                    fused_inputs.get("calls") == 19
+                    and fused_inputs.get("fused_calls") == 19
+                    and fused_inputs.get("rows") == 4_696_676
+                    and fused_inputs.get("owners") == 201_390
+                ),
+                "phase51_eliminates_the_complete_dense_device_row_abi": (
+                    fused_inputs.get("all_dense_device_abis_eliminated") is True
+                    and fused_inputs.get("dense_device_abi_bytes_eliminated", 0)
+                    > 1_900_000_000
+                ),
+                "phase51_retains_only_minimal_strict_bootstrap_storage": (
+                    0 < fused_inputs.get("minimal_bootstrap_bytes", 0) < 20_000
+                ),
+                "phase51_row_owner_map_is_exactly_one_int32_per_sampled_row": (
+                    fused_inputs.get("row_owner_device_bytes") == 4_696_676 * 4
+                    and fused_inputs.get("row_owner_kernel_seconds", 0) > 0.0
+                ),
+                "phase51_fused_compiler_has_no_generator_or_fallback_calls": (
+                    fused_inputs.get("fallback_calls") == 0
+                    and fused_inputs.get("device_generate_seconds") == 0.0
+                    and fused_inputs.get("fused_kernel_seconds", 0) > 0.0
                 ),
             }
         )

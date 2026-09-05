@@ -1,0 +1,169 @@
+{
+  "phase": 51,
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "households": 50000,
+  "zones": 1454,
+  "incremental_matched_pairs": 3,
+  "regular_activitysim_matched_pairs": 3,
+  "calls_per_run": 19,
+  "owners_per_run": 201390,
+  "sampled_alternative_rows_per_run": 4696676,
+  "phase50_to_phase51_five_destination_components": {
+    "baseline_seconds": [
+      16.5,
+      16.4,
+      16.4
+    ],
+    "phase51_seconds": [
+      16.1,
+      17.0,
+      17.1
+    ],
+    "median_baseline_seconds": 16.4,
+    "median_phase51_seconds": 17.0,
+    "median_seconds_saved": -0.6000000000000014,
+    "median_reduction_percent": -3.6585365853658627,
+    "median_speedup": 0.9647058823529411,
+    "won_pairs": 1,
+    "won_every_pair": false
+  },
+  "phase50_to_phase51_complete_model_lifecycle": {
+    "baseline_seconds": [
+      133.79999999999995,
+      136.29999999999998,
+      138.99999999999997
+    ],
+    "phase51_seconds": [
+      133.61656719995662,
+      143.8179875998292,
+      135.01781679992564
+    ],
+    "median_baseline_seconds": 136.29999999999998,
+    "median_phase51_seconds": 135.01781679992564,
+    "median_seconds_saved": 1.2821832000743427,
+    "median_reduction_percent": 0.9407066765035531,
+    "median_speedup": 1.0094964000341846,
+    "won_pairs": 2,
+    "won_every_pair": false
+  },
+  "phase50_to_phase51_kernel_pipeline": {
+    "baseline_seconds": [
+      1.723458299646154,
+      1.6101091005839407,
+      1.7851293003186584
+    ],
+    "phase51_fused_seconds": [
+      1.721398099558428,
+      1.738836801610887,
+      1.792192100547254
+    ],
+    "median_baseline_seconds": 1.723458299646154,
+    "median_phase51_fused_seconds": 1.738836801610887,
+    "median_seconds_saved": -0.015378501964733005,
+    "median_reduction_percent": -0.8923048482165417,
+    "median_speedup": 0.9911558681352465,
+    "won_pairs": 1,
+    "won_every_pair": false
+  },
+  "phase50_to_phase51_instrumented_service": {
+    "baseline_seconds": [
+      8.570146799786016,
+      8.398266599979252,
+      8.687865499872714
+    ],
+    "phase51_seconds": [
+      8.726660500047728,
+      9.264219700358808,
+      8.943009799579158
+    ],
+    "median_baseline_seconds": 8.570146799786016,
+    "median_phase51_seconds": 8.943009799579158,
+    "median_seconds_saved": -0.3728629997931421,
+    "median_reduction_percent": -4.350718937538525,
+    "median_speedup": 0.9583067660497601,
+    "won_pairs": 0,
+    "won_every_pair": false
+  },
+  "regular_activitysim_complete_model_lifecycle": {
+    "baseline_seconds": [
+      202.59999999999994,
+      202.6,
+      202.79999999999995
+    ],
+    "phase51_seconds": [
+      135.1173879999202,
+      135.31828699978067,
+      137.8170308998786
+    ],
+    "median_baseline_seconds": 202.6,
+    "median_phase51_seconds": 135.31828699978067,
+    "median_seconds_saved": 67.28171300021933,
+    "median_reduction_percent": 33.209137709881205,
+    "median_speedup": 1.4972107945789204,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "regular_activitysim_five_destination_components": {
+    "baseline_seconds": [
+      42.900000000000006,
+      42.8,
+      42.400000000000006
+    ],
+    "phase51_seconds": [
+      16.700000000000003,
+      16.9,
+      17.0
+    ],
+    "median_baseline_seconds": 42.8,
+    "median_phase51_seconds": 16.9,
+    "median_seconds_saved": 25.9,
+    "median_reduction_percent": 60.51401869158879,
+    "median_speedup": 2.532544378698225,
+    "won_pairs": 3,
+    "won_every_pair": true
+  },
+  "device_memory_contract": {
+    "aggregate_dense_device_allocation_bytes_eliminated_across_19_calls": 1953817216,
+    "aggregate_row_owner_map_bytes_across_19_calls": 18786704,
+    "aggregate_net_device_allocation_bytes_eliminated_across_19_calls": 1935030512,
+    "largest_call_rows": 710813,
+    "largest_call_dense_device_bytes_eliminated": 295698208,
+    "largest_call_row_owner_map_bytes": 2843252,
+    "largest_call_net_device_bytes_eliminated": 292854956,
+    "minimal_bootstrap_bytes_per_call": 416,
+    "aggregate_minimal_bootstrap_bytes_across_19_calls": 7904,
+    "phase50_compact_upload_bytes": 58259296,
+    "phase51_compact_upload_bytes": 47787016,
+    "compact_upload_bytes_saved": 10472280,
+    "compact_upload_reduction_percent": 17.975294449146794,
+    "dense_host_upload_bytes_avoided": 1906030200
+  },
+  "decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "regular_activitysim_decision_cell_differences": [
+    0,
+    0,
+    0
+  ],
+  "proof_gates": {
+    "all_incremental_runtime_gates_pass": true,
+    "all_nineteen_calls_cover_the_public_workload": true,
+    "complete_dense_device_row_abi_eliminated": true,
+    "minimal_bootstrap_stays_below_20_kb": true,
+    "row_owner_is_exactly_one_int32_per_row": true,
+    "zero_generator_and_fallback_calls": true,
+    "compact_upload_reduced": true,
+    "three_incremental_verifiers_find_zero_changed_decisions": true,
+    "three_incremental_verifiers_find_all_seven_files_byte_identical": true,
+    "three_regular_activitysim_verifiers_find_zero_changed_decisions": true,
+    "regular_activitysim_lifecycle_improves_in_every_pair": true,
+    "regular_activitysim_destination_components_improve_in_every_pair": true,
+    "both_summaries_declare_every_pair_exact": true
+  },
+  "success": true,
+  "performance_interpretation": "Phase 51 is qualified as a deterministic memory-capacity improvement. Its fused kernel pipeline is approximately performance-neutral against Phase 50 on this GPU, while first-use compilation makes the instrumented service modestly slower. The cumulative Phase 51 system is substantially faster than regular ActivitySim, but that cumulative gain belongs to Phases 1-51 rather than Phase 51 alone.",
+  "claim_boundary": "Phase 51 fuses compact destination-state reconstruction into strict utility evaluation and removes the dense device row ABI for all nineteen reviewed public calls. Published decisions are exact. Incremental timing versus Phase 50 and cumulative timing versus regular pinned ActivitySim are reported separately; no incremental Phase 51 speedup is claimed."
+}

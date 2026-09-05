@@ -28,7 +28,11 @@ def _availability_expression(label, gather, auto_column):
         return f"(({expression}) / 100.0f)"
 
     walk_base = "true"
-    drive_base = f"(int_inputs[row * int_columns + {auto_column}] > 0LL)"
+    drive_base = (
+        f"({auto_column} > 0LL)"
+        if isinstance(auto_column, str)
+        else f"(int_inputs[row * int_columns + {auto_column}] > 0LL)"
+    )
     if label == "name:sov_available":
         return f"(({g('odt_skims', 'SOV_TIME')} > 0.0f) && ({g('dot_skims', 'SOV_TIME')} > 0.0f))"
     if label == "name:sovtoll_available":

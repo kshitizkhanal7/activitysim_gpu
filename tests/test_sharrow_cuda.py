@@ -336,6 +336,24 @@ def test_direct_generator_can_fuse_row_sources_and_skim_coordinates():
     assert "skim_group_0_orig[row]" not in source
     assert "skim_group_0_dest[row]" not in source
 
+    block_source, _ = generate_cuda_source(
+        document,
+        bindings,
+        capture_features=False,
+        group_skim_indices=True,
+        row_source_references={("column", "x"): "phase51_x"},
+        group_coordinate_references={0: ("phase51_origin", "phase51_destination", None)},
+        extra_kernel_parameters=("    const float* phase51_packet",),
+        block_prelude="    __shared__ float phase51_values[1];",
+        row_prelude=(
+            "    const float phase51_x = phase51_packet[row];\n"
+            "    const long long phase51_origin = row;\n"
+            "    const long long phase51_destination = row;"
+        ),
+    )
+    assert "const float phase51_x = phase51_packet[row]" in block_source
+    assert "__shared__ float phase51_values[1]" in block_source
+
     with pytest.raises(ValueError, match="unknown bindings"):
         generate_cuda_source(
             document,
@@ -349,6 +367,13 @@ def test_direct_generator_can_fuse_row_sources_and_skim_coordinates():
             locality_tile_rows=2,
             row_source_references={("column", "x"): "phase37_x"},
         )
+    with pytest.raises(ValueError, match="requires the direct kernel"):
+        generate_cuda_source(
+            document,
+            bindings,
+            locality_tile_rows=2,
+            block_prelude="__shared__ float values[1];",
+        )
     with pytest.raises(ValueError, match="unknown skim groups"):
         generate_cuda_source(
             document,
@@ -356,7 +381,6 @@ def test_direct_generator_can_fuse_row_sources_and_skim_coordinates():
             group_skim_indices=True,
             group_coordinate_references={7: ("origin", "destination", None)},
         )
-
 
 def test_generated_cuda_matches_strict_cpu_for_canonical_mtc_ir():
     pytest.importorskip("cupy")

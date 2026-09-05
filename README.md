@@ -1083,3 +1083,31 @@ incremental contribution of Phase 50 alone.
 
 See the [Phase 50 technical report](docs/phase50-device-generated-destination-inputs.md)
 and [consolidated qualification](benchmark-results/phase50-p50final-qualification.json).
+
+## Phase 51 fused compact destination utility
+
+Phase 51 fuses compact-source reconstruction into the strict 315-term,
+21-alternative utility kernel for all 19 public destination-logsum calls. It
+eliminates 1,953,817,216 bytes of dense device row allocation across the 19
+sequential calls, which add 18,786,704 bytes of row-owner maps in aggregate.
+The largest call replaces 295.70 MB of dense ABI with a 2.84 MB int32 owner
+map: 292.85 MB less live row state. Each call leaves only a 416-byte
+compatibility bootstrap. Range-checked int32 owner and land packets also
+reduce compact uploads from 58.26 to 47.79 MB.
+
+Three fresh Phase 50/51 pairs preserve all seven published CSV files byte for
+byte. The fused kernel pipeline is approximately neutral (1.723 vs 1.739
+seconds median), while first-use compilation makes the complete instrumented
+service 4.35% slower. The five destination components are 16.4 vs 17.0
+seconds median, so **no incremental Phase 51 speedup is claimed**. This phase
+is qualified for deterministic capacity and exactness.
+
+Against regular pinned ActivitySim with Sharrow required, the accumulated
+Phase 51 system wins all three complete-model pairs: 202.600 to 135.318
+seconds median (**1.497x**, 33.21% lower, 67.282 seconds saved). The five
+destination components improve from 42.8 to 16.9 seconds (**2.533x**, 60.51%
+lower). All three comparisons have zero changed modeled decision cells. This
+is the cumulative result through Phase 51, not Phase 51's isolated gain.
+
+See the [Phase 51 technical report](docs/phase51-fused-compact-destination-utility.md)
+and [consolidated qualification](benchmark-results/phase51-qualification.json).

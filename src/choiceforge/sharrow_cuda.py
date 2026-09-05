@@ -609,6 +609,7 @@ def generate_cuda_source(
     row_source_references: Mapping[tuple[str, ...], str] | None = None,
     group_coordinate_references: Mapping[int, tuple[str, str, str | None]] | None = None,
     extra_kernel_parameters: tuple[str, ...] = (),
+    block_prelude: str = "",
     row_prelude: str = "",
 ) -> tuple[str, str]:
     """Emit inspectable CUDA C++ from a strict IR document and typed schema."""
@@ -618,7 +619,12 @@ def generate_cuda_source(
     tiled = bool(locality_optimized or locality_tile_rows > 1)
     grouped_direct = bool(group_skim_indices and not tiled)
     sparse_direct = bool(sparse_zero_coefficients and not tiled)
-    if tiled and (row_source_references or group_coordinate_references or row_prelude):
+    if tiled and (
+        row_source_references
+        or group_coordinate_references
+        or block_prelude
+        or row_prelude
+    ):
         raise ValueError("CUDA row-source fusion currently requires the direct kernel")
     if sparse_direct:
         if coefficient_values is None:
@@ -963,6 +969,7 @@ def generate_cuda_source(
     constexpr int INT_INPUT_COUNT = {int_input_count};
     constexpr int FLOAT_SCALAR_COUNT = {float_scalar_count};
     constexpr int INT_SCALAR_COUNT = {int_scalar_count};
+{block_prelude}
     const long long row = (long long)blockIdx.x;
     if (row >= rows) return;
 {row_prelude}

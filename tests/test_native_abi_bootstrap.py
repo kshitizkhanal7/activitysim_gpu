@@ -108,6 +108,24 @@ def test_native_abi_minimal_row_state_allocates_only_one_contract_row():
     assert native.manifest["codegen"]["minimal_row_state"] is True
 
 
+def test_native_abi_can_prepare_contract_without_compiling_unused_kernel():
+    import numpy as np
+
+    document = _document()
+    cube = cp.asarray(np.arange(9, dtype=np.float32).reshape(3, 3))
+    native = compile_native_strict_abi(
+        document,
+        {"scale": 1.25},
+        lambda source: NativeSkimCube(cube, 3, 1, 2),
+        rows=16,
+        minimal_row_state=True,
+        compile_kernel=False,
+    )
+    assert native.invocation.kernel is None
+    assert native.manifest["compiled_this_call"] is False
+    assert native.manifest["codegen"]["kernel_compiled"] is False
+
+
 def test_native_abi_fails_closed_for_unknown_row_source():
     document = _document("df.unknown + scale")
     with pytest.raises(ValueError, match="neither declared row state"):
