@@ -46,6 +46,10 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--stop-after-model",
+        help="qualification shard: stop the configured model list after this model",
+    )
+    parser.add_argument(
         "--phase33-model-wide",
         action="store_true",
         help=(
@@ -208,6 +212,14 @@ def main() -> int:
             "plans/device workspaces, and evaluate four sampled rows per CUDA block"
         ),
     )
+    parser.add_argument(
+        "--phase53-device-resident-destination-data-plane",
+        action="store_true",
+        help=(
+            "replace ActivitySim's repeated sampled-row owner joins with an "
+            "authoritative compact owner table consumed directly by the Phase 52 kernel"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -282,6 +294,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase53_device_resident_destination_data_plane:
+        args.phase52_persistent_tiled_destination = True
+        os.environ["CHOICEFORGE_PHASE53_DESTINATION_DATA_PLANE"] = "1"
     if args.phase52_persistent_tiled_destination:
         args.phase51_fused_compact_destination_utility = True
         os.environ["CHOICEFORGE_PHASE52_PERSISTENT_TILED_DESTINATION"] = "1"
@@ -456,6 +471,7 @@ def main() -> int:
     )
     original_location_choice_sample = activitysim_location_choice.interaction_sample
     original_run_location_choice = activitysim_location_choice.run_location_choice
+    original_run_location_logsums = activitysim_location_choice.run_location_logsums
     original_compute_location_choice_logsums = (
         activitysim_logsums.compute_location_choice_logsums
     )
@@ -463,6 +479,7 @@ def main() -> int:
         activitysim_tour_destination.interaction_sample_simulate
     )
     original_tour_destination_sample = activitysim_tour_destination.interaction_sample
+    original_run_destination_logsums = activitysim_tour_destination.run_destination_logsums
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
@@ -1006,6 +1023,12 @@ def main() -> int:
         return pd.Series(selected, index=choosers.index)
 
     def run_one_model(self, models, resume_after=None, memory_sidecar_process=None):
+        if args.stop_after_model and isinstance(models, list):
+            if args.stop_after_model not in models:
+                raise ValueError(
+                    f"stop-after model {args.stop_after_model!r} is not configured"
+                )
+            models = models[: models.index(args.stop_after_model) + 1]
         if not args.full_model and isinstance(models, list) and resume_after in models:
             checkpoint = models.index(resume_after)
             models = models[: checkpoint + 2]
@@ -1037,6 +1060,19 @@ def main() -> int:
             "non_mandatory_tour_destination",
             "atwork_subtour_destination",
         }
+        if args.resume_full_model and model_name_text in {
+            "joint_tour_scheduling",
+            "non_mandatory_tour_scheduling",
+            "atwork_subtour_scheduling",
+        }:
+            # A resumed pipeline has no live mandatory-scheduler device cache.
+            # These downstream schedulers are outside the Phase 53 target, so
+            # use their public ActivitySim choice path instead of asking the
+            # integrated bridge for state from the earlier process.
+            vts.interaction_sample_simulate = original_activitysim_choice
+            activitysim_scheduling.interaction_sample_simulate_choiceforge = (
+                original_choice
+            )
         if (
             args.phase33_model_wide
             and model_name_text == "tour_mode_choice_simulate"
@@ -1068,6 +1104,22 @@ def main() -> int:
         )
         if args.phase50_device_generated_destination_inputs and model_name_text in location_logsum_steps:
             activitysim_logsums.compute_location_choice_logsums = phase50_runtime.compute
+        if (
+            args.phase53_device_resident_destination_data_plane
+            and model_name_text in location_logsum_steps
+        ):
+            from functools import partial
+            from choiceforge.destination_input_supergraph import (
+                phase53_run_destination_logsums,
+                phase53_run_location_logsums,
+            )
+
+            activitysim_location_choice.run_location_logsums = partial(
+                phase53_run_location_logsums, phase50_runtime
+            )
+            activitysim_tour_destination.run_destination_logsums = partial(
+                phase53_run_destination_logsums, phase50_runtime
+            )
         if (
             args.phase33_model_wide
             and location_candidate_enabled
@@ -1206,10 +1258,14 @@ def main() -> int:
             )
             activitysim_location_choice.interaction_sample = original_location_choice_sample
             activitysim_location_choice.run_location_choice = original_run_location_choice
+            activitysim_location_choice.run_location_logsums = original_run_location_logsums
             activitysim_tour_destination.interaction_sample_simulate = (
                 original_tour_destination_simulate
             )
             activitysim_tour_destination.interaction_sample = original_tour_destination_sample
+            activitysim_tour_destination.run_destination_logsums = (
+                original_run_destination_logsums
+            )
             activitysim_logsums.compute_location_choice_logsums = (
                 original_compute_location_choice_logsums
             )
@@ -1374,10 +1430,14 @@ def main() -> int:
                             DestinationInputSupergraph,
                             FusedDestinationInputSupergraph,
                             PersistentTiledDestinationInputSupergraph,
+                            DeviceResidentDestinationDataPlane,
                             prewarm_phase52_public_runtime,
                         )
 
                         runtime_type = (
+                            DeviceResidentDestinationDataPlane
+                            if args.phase53_device_resident_destination_data_plane
+                            else
                             PersistentTiledDestinationInputSupergraph
                             if args.phase52_persistent_tiled_destination
                             else FusedDestinationInputSupergraph
@@ -1419,13 +1479,184 @@ def main() -> int:
         )
         activitysim_location_choice.interaction_sample = original_location_choice_sample
         activitysim_location_choice.run_location_choice = original_run_location_choice
+        activitysim_location_choice.run_location_logsums = original_run_location_logsums
         activitysim_tour_destination.interaction_sample_simulate = (
             original_tour_destination_simulate
         )
         activitysim_tour_destination.interaction_sample = original_tour_destination_sample
+        activitysim_tour_destination.run_destination_logsums = (
+            original_run_destination_logsums
+        )
         activitysim_logsums.compute_location_choice_logsums = (
             original_compute_location_choice_logsums
         )
+
+    if (
+        args.stop_after_model == "atwork_subtour_destination"
+        and args.phase53_device_resident_destination_data_plane
+        and args.resume_full_model
+    ):
+        summary = phase50_runtime.summary()
+        actual_tours = pd.read_parquet(
+            args.output
+            / "pipeline.parquetpipeline"
+            / "tours"
+            / "atwork_subtour_destination.parquet"
+        )
+        reference_tours = pd.read_parquet(
+            args.reference_pipeline
+            / "tours"
+            / "atwork_subtour_destination.parquet"
+        )
+        actual_tours = actual_tours.reindex(reference_tours.index)
+        destination_exact = actual_tours["destination"].equals(
+            reference_tours["destination"]
+        )
+        logsum_difference = np.abs(
+            actual_tours["destination_logsum"].to_numpy(dtype=np.float64)
+            - reference_tours["destination_logsum"].to_numpy(dtype=np.float64)
+        )
+        max_abs = float(np.nanmax(logsum_difference))
+        timing_path = args.output / "timing_log.csv"
+        timing = (
+            pd.read_csv(timing_path).set_index("model_name")["seconds"].to_dict()
+            if timing_path.exists() else {}
+        )
+        partial = {
+            "phase": 53,
+            "qualification_shard": "post_mandatory_through_atwork_destination",
+            "elapsed_seconds": elapsed,
+            "exit_code": int(exit_code or 0),
+            "model_timing_seconds": timing,
+            "phase53_device_resident_destination_data_plane": summary,
+            "output_comparisons": {
+                "destination": {"exact": bool(destination_exact)},
+                "destination_logsum": {
+                    "max_abs": max_abs,
+                    "gate": 1e-4,
+                    "bounded": max_abs <= 1e-4,
+                },
+            },
+            "proof_gates": {
+                "activitysim_shard_completed": int(exit_code or 0) == 0,
+                "all_twelve_tour_destination_calls_use_compact_owners": (
+                    summary.get("calls") == 12
+                    and summary.get("phase53_calls") == 12
+                    and summary.get("upstream_compact_owner_calls") == 12
+                ),
+                "public_tour_destination_workload_shape_exact": (
+                    summary.get("rows") == 2_151_679
+                    and summary.get("owners") == 93_596
+                ),
+                "destination_decisions_exact_logsum_bounded": (
+                    destination_exact and max_abs <= 1e-4
+                ),
+                "zero_fallback": summary.get("fallback_calls") == 0,
+            },
+        }
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(partial, indent=2), encoding="utf-8")
+        args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        args.checkpoint.write_text(
+            json.dumps(
+                {
+                    "phase": 53,
+                    "shard": partial["qualification_shard"],
+                    "report": str(args.report),
+                    "all_proof_gates_pass": all(partial["proof_gates"].values()),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(json.dumps(partial, indent=2))
+        return 0 if all(partial["proof_gates"].values()) else 1
+
+    if args.stop_after_model:
+        if not args.phase53_device_resident_destination_data_plane:
+            raise ValueError("stop-after qualification is restricted to Phase 53")
+        summary = phase50_runtime.summary()
+        actual_people = pd.read_parquet(
+            args.output
+            / "pipeline.parquetpipeline"
+            / "persons"
+            / f"{args.stop_after_model}.parquet"
+        )
+        reference_people = pd.read_parquet(
+            args.reference_pipeline
+            / "persons"
+            / f"{args.stop_after_model}.parquet"
+        )
+        proof_columns = [
+            "school_zone_id",
+            "school_location_logsum",
+            "workplace_zone_id",
+            "workplace_location_logsum",
+        ]
+        comparisons = {}
+        for column in proof_columns:
+            left = actual_people[column].reindex(reference_people.index)
+            right = reference_people[column]
+            if np.issubdtype(right.dtype, np.floating):
+                left_values = left.to_numpy(dtype=np.float64)
+                right_values = right.to_numpy(dtype=np.float64)
+                difference = np.abs(left_values - right_values)
+                max_abs = float(np.nanmax(difference))
+                comparisons[column] = {
+                    "max_abs": max_abs,
+                    "gate": 1e-5,
+                    "bounded": max_abs <= 1e-5,
+                }
+            else:
+                comparisons[column] = {"exact": bool(left.equals(right))}
+        timing_path = args.output / "timing_log.csv"
+        timing = (
+            pd.read_csv(timing_path).set_index("model_name")["seconds"].to_dict()
+            if timing_path.exists() else {}
+        )
+        partial = {
+            "phase": 53,
+            "qualification_shard": "pre_mandatory_through_workplace_location",
+            "elapsed_seconds": elapsed,
+            "exit_code": int(exit_code or 0),
+            "model_timing_seconds": timing,
+            "phase53_device_resident_destination_data_plane": summary,
+            "output_comparisons": comparisons,
+            "proof_gates": {
+                "activitysim_shard_completed": int(exit_code or 0) == 0,
+                "all_seven_location_calls_use_compact_owners": (
+                    summary.get("calls") == 7
+                    and summary.get("phase53_calls") == 7
+                    and summary.get("upstream_compact_owner_calls") == 7
+                ),
+                "public_location_workload_shape_exact": (
+                    summary.get("rows") == 2_544_997
+                    and summary.get("owners") == 107_794
+                ),
+                "school_and_workplace_decisions_exact_logsums_bounded": all(
+                    value.get("exact", value.get("bounded", False))
+                    for value in comparisons.values()
+                ),
+                "zero_fallback": summary.get("fallback_calls") == 0,
+            },
+        }
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(partial, indent=2), encoding="utf-8")
+        args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        args.checkpoint.write_text(
+            json.dumps(
+                {
+                    "phase": 53,
+                    "shard": partial["qualification_shard"],
+                    "report": str(args.report),
+                    "all_proof_gates_pass": all(partial["proof_gates"].values()),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(json.dumps(partial, indent=2))
+        return 0 if all(partial["proof_gates"].values()) else 1
 
     actual = pd.read_parquet(
         args.output
@@ -2357,6 +2588,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            53 if args.phase53_device_resident_destination_data_plane else
             52 if args.phase52_persistent_tiled_destination else
             51 if args.phase51_fused_compact_destination_utility else
             50 if args.phase50_device_generated_destination_inputs else
@@ -2380,6 +2612,10 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a device-resident destination data "
+            "plane that joins authoritative owner data once at compact cardinality "
+            "and never constructs repeated sampled-row owner columns"
+            if args.phase53_device_resident_destination_data_plane else
             "full public ActivitySim model with a prewarmed hash-verified, persistent "
             "four-row tiled destination utility service and reusable compact workspaces"
             if args.phase52_persistent_tiled_destination else
@@ -2525,6 +2761,10 @@ def main() -> int:
         ),
         "phase52_persistent_tiled_destination": (
             phase50_summary if args.phase52_persistent_tiled_destination else None
+        ),
+        "phase53_device_resident_destination_data_plane": (
+            phase50_summary
+            if args.phase53_device_resident_destination_data_plane else None
         ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -3115,7 +3355,10 @@ def main() -> int:
             {
                 "phase52_all_nineteen_calls_use_persistent_four_row_fused_tiles": (
                     persistent_inputs.get("calls") == 19
-                    and persistent_inputs.get("phase52_calls") == 19
+                    and (
+                        persistent_inputs.get("phase52_calls", 0)
+                        + persistent_inputs.get("phase53_calls", 0)
+                    ) == 19
                     and persistent_inputs.get("tile_rows") == [4]
                 ),
                 "phase52_hash_verified_program_is_prewarmed": (
@@ -3144,6 +3387,33 @@ def main() -> int:
                 "phase52_releases_workspaces_before_trip_destination": (
                     phase52_early_release_calls == 1
                     and phase52_early_release_freed_bytes > 0
+                ),
+            }
+        )
+    if args.phase53_device_resident_destination_data_plane:
+        data_plane = phase50_summary or {}
+        report["proof_gates"].update(
+            {
+                "phase53_all_nineteen_calls_consume_upstream_compact_owners": (
+                    data_plane.get("calls") == 19
+                    and data_plane.get("phase53_calls") == 19
+                    and data_plane.get("upstream_compact_owner_calls") == 19
+                ),
+                "phase53_complete_public_destination_cardinality_is_preserved": (
+                    data_plane.get("rows") == 4_696_676
+                    and data_plane.get("owners") == 201_390
+                ),
+                "phase53_retains_hash_verified_tiled_fused_cuda_execution": (
+                    data_plane.get("tile_rows") == [4]
+                    and data_plane.get("all_dense_device_abis_eliminated") is True
+                    and data_plane.get("fallback_calls") == 0
+                ),
+                "phase53_never_reconstructs_dense_owner_state": all(
+                    bool(item.get("upstream_compact_owner_source"))
+                    and item.get("packet_stage_seconds", {}).get(
+                        "upstream_compact_source"
+                    ) == 1.0
+                    for item in data_plane.get("events", [])
                 ),
             }
         )
@@ -3554,12 +3824,51 @@ def main() -> int:
                 ),
             }
         )
+    phase53_post_shard = bool(
+        args.phase53_device_resident_destination_data_plane
+        and args.resume_full_model
+        and args.resume == "mandatory_tour_scheduling"
+    )
+    if phase53_post_shard:
+        data_plane = phase50_summary or {}
+        report["qualification_shard"] = "post_mandatory_destination_and_downstream"
+        report["shard_proof_gates"] = {
+            "activitysim_shard_completed": report["exit_code"] == 0,
+            "all_twelve_tour_destination_calls_use_compact_owners": (
+                data_plane.get("calls") == 12
+                and data_plane.get("phase53_calls") == 12
+                and data_plane.get("upstream_compact_owner_calls") == 12
+            ),
+            "public_tour_destination_workload_shape_exact": (
+                data_plane.get("rows") == 2_151_679
+                and data_plane.get("owners") == 93_596
+            ),
+            "all_published_modeled_decisions_exact": report["proof_gates"].get(
+                "activitysim_outputs_exact", False
+            ),
+            "zero_destination_fallback": data_plane.get("fallback_calls") == 0,
+        }
+        args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        args.checkpoint.write_text(
+            json.dumps(
+                {
+                    "phase": 53,
+                    "shard": report["qualification_shard"],
+                    "report": str(args.report),
+                    "all_proof_gates_pass": all(report["shard_proof_gates"].values()),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
     args.report.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     resident_ok = (
         resident_report is None
         or all(resident_report["proof_gates"].values())
     )
+    if phase53_post_shard:
+        return 0 if all(report["shard_proof_gates"].values()) else 2
     return 0 if all(report["proof_gates"].values()) and resident_ok else 2
 
 

@@ -1140,3 +1140,24 @@ isolated contribution.
 Phase 52 retains the 1,953,817,216-byte dense device ABI elimination and zero
 fallback contract. See the [Phase 52 technical report](docs/phase52-persistent-tiled-destination.md)
 and [consolidated qualification](benchmark-results/phase52-p52final-qualification.json).
+
+## Phase 53 upstream compact-owner destination data plane
+
+Phase 53 intercepts ActivitySim before it repeats every person/tour field over
+every sampled destination. It joins authoritative owner data at owner
+cardinality and supplies that compact table plus the sampled destination vector
+directly to the hash-verified Phase 52 CUDA service.
+
+Across three public 50,000-household matched pairs, packet preparation fell
+from 4.312 to 1.300 seconds (**3.318x**), the destination service fell from
+7.846 to 4.989 seconds (**1.573x**), and the five affected components fell
+from 16.2 to 12.6 seconds (**1.286x**). All three pairs won; all 19 calls and
+4,696,676 sampled rows were covered; destination decisions were exact; bounded
+logsums remained at most 1.91e-6 from the reference; and no fallback occurred.
+
+Because this Windows host repeatedly failed an unrelated 79 MiB pandas
+allocation in mandatory scheduling, the formal result uses two deterministic
+shards around a verified checkpoint. Destination measurements are direct; the
+133.391-second whole-model figure is explicitly a component-substitution
+projection. See the [Phase 53 technical report](docs/phase53-device-resident-destination-data-plane.md)
+and [qualification artifact](benchmark-results/phase53-p53final-qualification.json).

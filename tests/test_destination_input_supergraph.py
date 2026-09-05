@@ -3,9 +3,11 @@ import pandas as pd
 import pytest
 
 from choiceforge.destination_input_supergraph import (
+    DeviceResidentDestinationDataPlane,
     DestinationInputSupergraph,
     PersistentTiledDestinationInputSupergraph,
     _owner_topology,
+    _phase53_compact_sample,
     _period_positions,
     _stable_owner,
     _time_state,
@@ -178,3 +180,62 @@ def test_phase52_summary_and_release_expose_persistent_runtime_contract():
     assert runtime._utility_buffer is None
     assert runtime._native_plan_cache == {}
     assert runtime._semantic_plan_cache == {}
+
+
+def test_phase53_compact_sample_preserves_authoritative_owner_rows():
+    sample = pd.DataFrame(
+        {"dest": [3, 7, 9, 4, 8], "person_id": [11, 11, 22, 22, 22]},
+        index=pd.Index([100, 100, 200, 200, 200], name="tour_id"),
+    )
+    compact = _phase53_compact_sample(sample)
+    assert list(compact.index) == [100, 200]
+    assert compact.index.name == "tour_id"
+    np.testing.assert_array_equal(compact["dest"], [3, 9])
+    np.testing.assert_array_equal(compact["person_id"], [11, 22])
+
+
+def test_phase53_summary_proves_every_call_used_compact_owner_data_plane():
+    runtime = DeviceResidentDestinationDataPlane(
+        None, cbd_threshold=3, cp=object(), tile_rows=4
+    )
+    runtime._events = [
+        {
+            "phase": 53,
+            "trace_label": "school_location.i1.logsums.university",
+            "rows": 100,
+            "owners": 5,
+            "dense_preprocessor_rows_avoided": 100,
+            "dense_preprocessor_values_avoided": 4_100,
+            "dense_host_pack_bytes_avoided": 41_600,
+            "compact_upload_bytes": 1_000,
+            "net_upload_bytes_avoided": 40_600,
+            "binding_resolution_calls": 0,
+            "host_dense_pack_calls": 0,
+            "fallback_used": False,
+            "device_generate_seconds": 0.0,
+            "utility_kernel_seconds": 0.02,
+            "fused_kernel_seconds": 0.02,
+            "row_owner_kernel_seconds": 0.001,
+            "total_seconds": 0.04,
+            "float_row_sources": 10,
+            "int_row_sources": 31,
+            "skim_coordinate_groups": 6,
+            "semantic_plan_cache_hit": True,
+            "native_plan_cache_hit": True,
+            "utility_workspace_hit": True,
+            "packet_workspace_hits": 8,
+            "packet_workspace_allocations": 1,
+            "row_owner_workspace_hit": True,
+            "tile_rows": 4,
+            "dense_device_abi_bytes_eliminated": 41_600,
+            "minimal_bootstrap_bytes": 416,
+            "row_owner_device_bytes": 400,
+            "upstream_compact_owner_source": True,
+        }
+    ]
+    summary = runtime.summary()
+    assert summary["contract_version"] == 4
+    assert summary["fused_calls"] == 1
+    assert summary["phase53_calls"] == 1
+    assert summary["upstream_compact_owner_calls"] == 1
+    assert summary["all_dense_device_abis_eliminated"] is True

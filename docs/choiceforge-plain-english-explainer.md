@@ -7017,3 +7017,178 @@ It should eliminate most of the roughly 4.3-second packet-preparation cost,
 win all three matched pairs, and aim to bring the five destination components
 below 14 seconds. That would move the project from “a faster persistent
 kernel service” to “an end-to-end resident destination pipeline.”
+
+## 248. What did Phase 53 actually build?
+
+Phase 53 built the first upstream compact-owner destination data plane. That
+name sounds complicated, but the idea is simple: stop copying the same person
+or tour facts onto every possible destination before the GPU can use them.
+
+Imagine one student considering 25 colleges. The old path made 25 copies of
+the student's age, household, car access, and other facts, attached one college
+to each copy, and then scanned the copies to recover the one student record.
+Phase 53 keeps one student card plus a list of 25 college IDs. The GPU combines
+the card and each college only while doing the calculation.
+
+ActivitySim has two public places where it builds destination logsums. Phase 53
+intercepts both places before their large joins. For school and workplace it
+joins one sampled row per person to the original person table. For tour
+destinations it joins one sampled row per tour to the original person/tour
+facts. It then passes this compact owner table and the full destination vector
+to the already proven Phase 52 CUDA service.
+
+## 249. Why is this more than deleting a safety check?
+
+Phase 52 received a huge table whose owner facts were already repeated. It had
+to scan each repeated column to prove that all rows in a group really belonged
+to the same unchanged owner. Simply skipping those scans would be faster but
+unsafe.
+
+Phase 53 changes where the data comes from. It constructs the compact table
+inside ActivitySim's public logsum functions from the authoritative
+one-row-per-person or one-row-per-tour source. It still checks that:
+
+- sampled rows for an owner are next to one another;
+- every compact owner ID exactly matches the corresponding sampled group ID;
+- every tour-to-person relationship exists;
+- required fields, zones, periods, integer ranges, formula hashes, and shapes
+  match the qualified contract.
+
+If any check fails, the model stops. There is no generic or CPU fallback. The
+speedup comes from avoiding unnecessary data construction, not from trusting
+unverified repeated data.
+
+## 250. How much faster is Phase 53?
+
+Three matched comparisons used the public 50,000-household, 1,454-zone model.
+Each comparison covered all 19 destination-logsum calls, 201,390 owners, and
+4,696,676 sampled destinations.
+
+| What was measured | Phase 52 | Phase 53 | Improvement |
+|---|---:|---:|---:|
+| build the compact packets | 4.312 s | 1.300 s | 3.318x; 69.86% lower |
+| complete destination service | 7.846 s | 4.989 s | 1.573x; 36.41% lower |
+| five destination model components | 16.2 s | 12.6 s | 1.286x; 22.22% lower |
+
+Phase 53 won all three pairs on every row. It also beat the Phase 52 goal of
+bringing the five components below 14 seconds.
+
+The difference between the rows matters. “Packet preparation” is the host work
+most directly changed. “Destination service” adds formula planning, GPU
+utility work, nesting, and handoff. “Five components” also includes destination
+sampling, pandas work, ActivitySim orchestration, and final choice. The speedup
+naturally gets smaller as unrelated work is included.
+
+## 251. Are the travel choices still the same?
+
+Yes. All verified school zones, workplace zones, and tour destinations are
+exactly the same as the reference. No modeled destination decision changed.
+
+Some stored logsum diagnostics differ by a few millionths because of the
+already qualified GPU floating-point policy. The largest observed difference
+was 0.000001907. The school/workplace limit is 0.00001, and the tour-destination
+limit is 0.0001. The observed difference is more than five times below the
+tighter limit and more than fifty times below the tour limit.
+
+The honest replication statement is therefore: **exact destination decisions,
+bounded logsum diagnostics, and zero fallback**. It is not a claim that every
+printed decimal character is identical.
+
+## 252. Why was the qualification split into two pieces?
+
+This Windows computer repeatedly refused to allocate a 79-megabyte pandas
+array during unchanged mandatory tour scheduling. At the time, Windows
+reported more than 24 gigabytes of virtual memory available. The same failure
+occurred after the seven new school/workplace calls and before the later tour
+destination calls, so it was not caused inside the Phase 53 code.
+
+Instead of hiding the problem or reporting a partial run as complete, the
+qualification used two deterministic pieces:
+
+1. initialization through workplace location, covering seven destination
+   calls;
+2. a resume from a previously verified mandatory-scheduling checkpoint through
+   at-work destination, covering the other twelve calls.
+
+The two pieces together reproduce exactly 19 calls, 201,390 owners, and
+4,696,676 sampled rows. Six formal shards - two per matched pair - passed all
+runtime and output gates. A separate resumed downstream run finished the rest
+of the model with zero changed modeled decisions.
+
+This proves the measured destination improvement. It does **not** turn the two
+pieces into a measured monolithic whole-model time.
+
+## 253. What is the current whole-model comparison?
+
+The latest successful monolithic Phase 52 median is 136.991 seconds. Replacing
+only its five measured destination-component times with the Phase 53 measured
+times gives a conservative projection of 133.391 seconds.
+
+Regular ActivitySim's measured median is 205.4 seconds. The Phase 53 projection
+is therefore about **1.540x faster**, saving about 72 seconds or 35.06%.
+
+The word “projection” is essential. The Phase 52 and regular ActivitySim times
+are measured complete runs. The 133.391-second Phase 53 number is a
+component-substitution estimate necessitated by the unrelated Windows
+allocation failure. It should become a measured number after the host memory
+problem is fixed or the benchmark is repeated on a clean machine.
+
+## 254. Did Phase 53 make the GPU kernel itself faster?
+
+Not directly. Phase 52 had already made the four-row CUDA kernel fast. Phase 53
+made the road into that kernel much shorter.
+
+This is an important systems lesson: a fast engine does not make a car fast if
+workers spend most of the trip unloading and repacking the luggage. GPU
+projects often stall because data is copied, expanded, converted, and checked
+in CPU-shaped tables between kernels. Phase 53 removes a large repeated table
+before it exists, so the proven kernel receives useful compact data sooner.
+
+The CUDA formula, four-row tile, random-stream rules, nested logit, and final
+choice arithmetic stay the same. The same checked-in source fingerprint is
+recorded in every call:
+
+`599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906`
+
+## 255. What assumptions and limits should a reviewer remember?
+
+The proof applies to the public Prototype MTC Extended model on this machine,
+with 50,000 households, 1,454 zones, the reviewed 315-term and 21-mode program,
+five time periods, current skim directions, unchunked destination calls, and
+the current ActivitySim person/tour relationships.
+
+Another model might name fields differently, use noncontiguous samples, add a
+new zone layer, or need another time system. It must qualify those contracts
+before enabling this route. Three matched pairs reduce normal timing noise but
+do not prove the exact speed on every computer or GPU.
+
+Most importantly, Phase 53 is not a “GPU-only whole model.” ActivitySim still
+controls workflow, tables, many model components, and the authoritative random
+stream. Phase 53 makes the destination path substantially more resident and
+compact while preserving compatibility and proof.
+
+## 256. What should the next ambitious phase do?
+
+Phase 54 should make the destination packet genuinely device-owned from
+sampling onward.
+
+The sampling service already knows owner IDs, group offsets, and sampled
+destination IDs. Instead of rebuilding those vectors through pandas and NumPy,
+it should publish versioned GPU buffer leases directly to the logsum service.
+The GPU should also transform each owner's six controlled normal draws into
+taxi and ride-hail wait times using a numerically qualified CUDA routine and
+resident land-use density bands.
+
+The target should be ambitious and testable:
+
+- all 19 public calls and 4,696,676 sample rows;
+- exact destination decisions and the existing logsum limits;
+- zero hidden CPU or generic fallback;
+- three matched wins over Phase 53;
+- destination service below four seconds;
+- a successful measured monolithic complete run once the host allocation issue
+  is removed.
+
+That phase would move the project from “compact before the kernel” to “retain
+the destination packet on the device across sampling, logsum, probability, and
+choice.”

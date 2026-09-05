@@ -1,4 +1,4 @@
-"""Phase 50-52 compact destination-input generation and fused CUDA execution.
+"""Phase 50-53 compact destination-input generation and fused CUDA execution.
 
 ActivitySim's public tour-mode preprocessor expands one owner and each sampled
 destination into 41 dense row fields, then Sharrow resolves, packs, and uploads
@@ -285,6 +285,7 @@ class CompactDestinationPacket:
     owners: int
     workspace_hits: int = 0
     workspace_allocations: int = 0
+    stage_seconds: Mapping[str, float] | None = None
 
 
 class DestinationInputSupergraph:
@@ -401,12 +402,35 @@ class DestinationInputSupergraph:
         network_los,
         purpose,
         *,
+        owner_choosers=None,
         in_period_col,
         out_period_col,
         duration_col,
     ) -> CompactDestinationPacket:
+        packet_started = time.perf_counter()
         owner_ids, starts, offsets = _owner_topology(choosers.index)
+        topology_complete = time.perf_counter()
         owners = len(starts)
+        source = owner_choosers if owner_choosers is not None else choosers
+        compact_source = owner_choosers is not None
+        if compact_source:
+            source_ids = np.asarray(source.index, dtype=np.int64)
+            expected_ids = owner_ids[starts]
+            if len(source) != owners or not np.array_equal(source_ids, expected_ids):
+                raise ValueError(
+                    "Phase 53 compact owner source does not exactly match sampled owners"
+                )
+
+        def owner_values(values, label, *, dtype=None):
+            if compact_source:
+                result = np.asarray(values, dtype=dtype)
+                if len(result) != owners:
+                    raise ValueError(
+                        f"Phase 53 compact owner source {label!r} has the wrong length"
+                    )
+                return np.ascontiguousarray(result)
+            return _stable_owner(values, starts, offsets, label, dtype=dtype)
+
         orig_name = model_settings.CHOOSER_ORIG_COL_NAME
         dest_name = model_settings.ALT_DEST_COL_NAME
         # ActivitySim deliberately permits the school/workplace location
@@ -414,17 +438,19 @@ class DestinationInputSupergraph:
         # branch then supplies one participant and false tour-category flags.
         # Preserve that contract here instead of requiring the union of every
         # chooser schema used by the five destination components.
-        is_tour = "tour_type" in choosers.columns
+        is_tour = "tour_type" in source.columns
         required = {
-            orig_name, dest_name, "hhsize", "density_index", "age",
+            orig_name, "hhsize", "density_index", "age",
             "auto_ownership", "num_workers", "value_of_time",
         }
         if is_tour:
             required.update(("number_of_participants", "free_parking_at_work"))
-        missing = sorted(required - set(choosers.columns))
+        missing = sorted(required - set(source.columns))
+        if dest_name not in choosers.columns:
+            missing.append(dest_name)
         if missing:
             raise ValueError("Phase 50 chooser columns are absent: " + ", ".join(missing))
-        origin = _stable_owner(choosers[orig_name], starts, offsets, orig_name, dtype=np.int32)
+        origin = owner_values(source[orig_name], orig_name, dtype=np.int32)
         destination = np.ascontiguousarray(choosers[dest_name], dtype=np.int32)
         if (
             origin.min() < 0 or destination.min() < 0
@@ -432,61 +458,61 @@ class DestinationInputSupergraph:
         ):
             raise ValueError("Phase 50 origin or destination is outside the dense zone universe")
         out_row, in_row, duration_row = _time_state(
-            choosers, model_settings, network_los, purpose,
+            source, model_settings, network_los, purpose,
             in_period_col=in_period_col,
             out_period_col=out_period_col,
             duration_col=duration_col,
         )
-        out_period = _stable_owner(out_row, starts, offsets, "out_period", dtype=np.int8)
-        in_period = _stable_owner(in_row, starts, offsets, "in_period", dtype=np.int8)
-        duration = _stable_owner(duration_row, starts, offsets, "duration", dtype=np.int16)
+        out_period = owner_values(out_row, "out_period", dtype=np.int8)
+        in_period = owner_values(in_row, "in_period", dtype=np.int8)
+        duration = owner_values(duration_row, "duration", dtype=np.int16)
 
         tour_type = (
-            _stable_owner(choosers["tour_type"].astype(str), starts, offsets, "tour_type")
+            owner_values(source["tour_type"].astype(str), "tour_type")
             if is_tour else np.full(owners, "", dtype="<U1")
         )
         category = (
-            _stable_owner(
-                choosers["tour_category"].astype(str), starts, offsets, "tour_category"
+            owner_values(
+                source["tour_category"].astype(str), "tour_category"
             )
-            if "tour_category" in choosers else np.full(owners, "", dtype="<U1")
+            if "tour_category" in source else np.full(owners, "", dtype="<U1")
         )
-        auto = _stable_owner(
-            choosers["auto_ownership"], starts, offsets, "auto_ownership", dtype=np.int64
+        auto = owner_values(
+            source["auto_ownership"], "auto_ownership", dtype=np.int64
         )
-        age = _stable_owner(choosers["age"], starts, offsets, "age", dtype=np.int64)
+        age = owner_values(source["age"], "age", dtype=np.int64)
         participants = (
-            _stable_owner(
-                choosers["number_of_participants"], starts, offsets,
+            owner_values(
+                source["number_of_participants"],
                 "number_of_participants", dtype=np.int64,
             )
             if is_tour else np.ones(owners, dtype=np.int64)
         )
-        hhsize = _stable_owner(choosers["hhsize"], starts, offsets, "hhsize", dtype=np.int64)
-        workers = _stable_owner(
-            choosers["num_workers"], starts, offsets, "num_workers", dtype=np.int64
+        hhsize = owner_values(source["hhsize"], "hhsize", dtype=np.int64)
+        workers = owner_values(
+            source["num_workers"], "num_workers", dtype=np.int64
         )
         free_parking = (
-            _stable_owner(
-                choosers["free_parking_at_work"], starts, offsets,
+            owner_values(
+                source["free_parking_at_work"],
                 "free_parking_at_work", dtype=bool,
             )
             if is_tour else np.zeros(owners, dtype=bool)
         )
-        value_of_time = _stable_owner(
-            choosers["value_of_time"], starts, offsets, "value_of_time", dtype=np.float64
+        value_of_time = owner_values(
+            source["value_of_time"], "value_of_time", dtype=np.float64
         )
-        density = _stable_owner(
-            choosers["density_index"], starts, offsets, "density_index", dtype=np.float64
+        density = owner_values(
+            source["density_index"], "density_index", dtype=np.float64
         )
         if not np.isfinite(value_of_time).all() or np.any(value_of_time == 0):
             raise ValueError("Phase 50 value_of_time must be finite and nonzero")
 
         parent_sov = np.zeros(owners, dtype=np.int64)
         parent_bike = np.zeros(owners, dtype=np.int64)
-        if "parent_tour_id" in choosers:
-            parent = _stable_owner(
-                choosers["parent_tour_id"], starts, offsets, "parent_tour_id"
+        if "parent_tour_id" in source:
+            parent = owner_values(
+                source["parent_tour_id"], "parent_tour_id"
             )
             tours = state.get_dataframe("tours")
             parent_modes = tours["tour_mode"].reindex(parent)
@@ -526,6 +552,7 @@ class DestinationInputSupergraph:
         i32 = np.iinfo(np.int32)
         if self.fused and (owner_int.min() < i32.min or owner_int.max() > i32.max):
             raise ValueError("Phase 51 compact owner integer state exceeds int32")
+        owner_state_complete = time.perf_counter()
 
         rng = state.get_rn_generator()
         # ActivitySim's broadcast=True implementation first generates on this
@@ -537,7 +564,9 @@ class DestinationInputSupergraph:
             compact_index.to_series(), broadcast=False, size=6
         )
         compact_draws = np.asarray(compact_draws, dtype=np.float64)
+        rng_complete = time.perf_counter()
         waits = _wait_table(land_use, origin, compact_draws, constants)
+        waits_complete = time.perf_counter()
 
         owner_int_storage = owner_int.astype(np.int32) if self.fused else owner_int
         host_arrays = (
@@ -556,12 +585,22 @@ class DestinationInputSupergraph:
             )
         ]
         device = [item[0] for item in uploaded]
+        upload_complete = time.perf_counter()
         return CompactDestinationPacket(
             *device,
             compact_bytes=int(sum(np.asarray(item).nbytes for item in host_arrays)),
             owners=owners,
             workspace_hits=sum(bool(item[1]) for item in uploaded),
             workspace_allocations=sum(not bool(item[1]) for item in uploaded),
+            stage_seconds={
+                "upstream_compact_source": float(compact_source),
+                "topology": topology_complete - packet_started,
+                "owner_state": owner_state_complete - topology_complete,
+                "controlled_rng": rng_complete - owner_state_complete,
+                "wait_table": waits_complete - rng_complete,
+                "upload": upload_complete - waits_complete,
+                "total": upload_complete - packet_started,
+            },
         )
 
     @staticmethod
@@ -1095,6 +1134,7 @@ class DestinationInputSupergraph:
         in_period_col=None,
         out_period_col=None,
         duration_col=None,
+        owner_choosers=None,
     ):
         """ActivitySim-compatible preprocessor replacement for Phase 50."""
         from activitysim.core import config, simulate
@@ -1227,6 +1267,7 @@ class DestinationInputSupergraph:
             model_settings,
             network_los,
             tour_purpose,
+            owner_choosers=owner_choosers,
             in_period_col=in_period_col,
             out_period_col=out_period_col,
             duration_col=duration_col,
@@ -1339,7 +1380,7 @@ class DestinationInputSupergraph:
         )
         self._events.append(
             {
-                "phase": 52 if self.persistent else (51 if self.fused else 50),
+                "phase": 49 + self.version,
                 "trace_label": str(trace_label),
                 "rows": int(len(choosers)),
                 "owners": int(packet.owners),
@@ -1367,6 +1408,8 @@ class DestinationInputSupergraph:
                 "packet_workspace_allocations": packet.workspace_allocations,
                 "row_owner_workspace_hit": row_owner_workspace_hit,
                 "tile_rows": self.tile_rows,
+                "packet_stage_seconds": dict(packet.stage_seconds or {}),
+                "upstream_compact_owner_source": owner_choosers is not None,
                 "generator_compiled": bool(generator_compiled),
                 "fused_kernel_compiled": bool(fused_compiled),
                 "dense_device_abi_bytes_eliminated": dense_bytes if self.fused else 0,
@@ -1416,8 +1459,12 @@ class DestinationInputSupergraph:
             ),
             "host_dense_pack_calls": int(sum(item["host_dense_pack_calls"] for item in events)),
             "fallback_calls": int(sum(bool(item["fallback_used"]) for item in events)),
-            "fused_calls": int(sum(item.get("phase") in {51, 52} for item in events)),
+            "fused_calls": int(sum(item.get("phase") in {51, 52, 53} for item in events)),
             "phase52_calls": int(sum(item.get("phase") == 52 for item in events)),
+            "phase53_calls": int(sum(item.get("phase") == 53 for item in events)),
+            "upstream_compact_owner_calls": int(
+                sum(bool(item.get("upstream_compact_owner_source")) for item in events)
+            ),
             "semantic_plan_cache_hits": int(
                 sum(bool(item.get("semantic_plan_cache_hit")) for item in events)
             ),
@@ -1471,7 +1518,7 @@ class DestinationInputSupergraph:
             "all_dense_device_abis_eliminated": bool(
                 events
                 and all(
-                    item.get("phase") in {51, 52}
+                    item.get("phase") in {51, 52, 53}
                     and item.get("dense_device_abi_bytes_eliminated", 0) > 0
                     for item in events
                 )
@@ -1515,3 +1562,113 @@ class PersistentTiledDestinationInputSupergraph(DestinationInputSupergraph):
             tile_rows=tile_rows,
             persistent=True,
         )
+
+
+class DeviceResidentDestinationDataPlane(PersistentTiledDestinationInputSupergraph):
+    """Phase 53 upstream compact-owner destination data plane.
+
+    ActivitySim's authoritative one-row-per-owner table is joined only to one
+    sampled row per owner.  The runtime consumes that compact provenance table
+    and the sampled destination vector directly, so the model never constructs
+    or rescans the repeated owner columns that Phase 52 had to compact again.
+    """
+
+    version = 4
+
+
+def _phase53_compact_sample(sample: pd.DataFrame) -> pd.DataFrame:
+    """Select the authoritative first sampled row for every contiguous owner."""
+    owner_ids, starts, _ = _owner_topology(sample.index)
+    compact = sample.iloc[starts].copy()
+    compact.index = pd.Index(owner_ids[starts], name=sample.index.name)
+    return compact
+
+
+def phase53_run_location_logsums(
+    runtime,
+    state,
+    segment_name,
+    persons_merged_df,
+    network_los,
+    location_sample_df,
+    model_settings,
+    chunk_size,
+    chunk_tag,
+    trace_label,
+):
+    """ActivitySim location-logsum adapter that never creates a dense owner join."""
+    from activitysim.abm.models.tour_mode_choice import TourModeComponentSettings
+    from activitysim.abm.models.util import logsums as logsum
+
+    if location_sample_df.empty:
+        raise ValueError("Phase 53 requires a nonempty location sample")
+    logsum_settings = TourModeComponentSettings.read_settings_file(
+        state.filesystem, str(model_settings.LOGSUM_SETTINGS), mandatory=False
+    )
+    persons = logsum.filter_chooser_columns(
+        persons_merged_df, logsum_settings, model_settings
+    )
+    compact = _phase53_compact_sample(location_sample_df).join(persons, how="left")
+    purpose = model_settings.LOGSUM_TOUR_PURPOSE
+    if isinstance(purpose, dict):
+        purpose = purpose[segment_name]
+    logsums = runtime.compute(
+        state,
+        location_sample_df,
+        purpose,
+        logsum_settings,
+        model_settings,
+        network_los,
+        chunk_size,
+        chunk_tag,
+        trace_label,
+        owner_choosers=compact,
+    )
+    location_sample_df["mode_choice_logsum"] = logsums
+    return location_sample_df
+
+
+def phase53_run_destination_logsums(
+    runtime,
+    state,
+    tour_purpose,
+    persons_merged,
+    destination_sample,
+    model_settings,
+    network_los,
+    chunk_size,
+    trace_label,
+):
+    """ActivitySim tour-destination adapter using only a compact owner join."""
+    from activitysim.abm.models.util import logsums as logsum
+
+    if destination_sample.empty:
+        raise ValueError("Phase 53 requires a nonempty destination sample")
+    logsum_settings = state.filesystem.read_model_settings(model_settings.LOGSUM_SETTINGS)
+    persons = logsum.filter_chooser_columns(
+        persons_merged, logsum_settings, model_settings
+    )
+    compact = _phase53_compact_sample(destination_sample)
+    chooser_id = model_settings.CHOOSER_ID_COLUMN
+    if chooser_id not in compact:
+        raise ValueError(f"Phase 53 compact sample has no {chooser_id!r} relation")
+    person_ids = np.asarray(compact[chooser_id])
+    if not pd.Index(person_ids).isin(persons.index).all():
+        raise ValueError("Phase 53 compact owner-to-person relation is incomplete")
+    person_rows = persons.reindex(person_ids).copy()
+    person_rows.index = compact.index
+    compact = compact.join(person_rows, how="left")
+    logsums = runtime.compute(
+        state,
+        destination_sample,
+        tour_purpose,
+        logsum_settings,
+        model_settings,
+        network_los,
+        chunk_size,
+        "tour_destination.logsums",
+        trace_label,
+        owner_choosers=compact,
+    )
+    destination_sample["mode_choice_logsum"] = logsums
+    return destination_sample
