@@ -8,8 +8,11 @@ same one-call contract as ``random_for_df``.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import os
 import time
+from typing import Any
+import weakref
 
 import numpy as np
 import pandas as pd
@@ -105,7 +108,79 @@ extern "C" __global__ void phase48_mt19937_resume(
     }
     positions[source_row] = position;
 }
+
+__device__ __forceinline__ double phase54_mt_double(
+    unsigned int* mt, int* position)
+{
+    const unsigned int first = phase46_mt_next(mt, position) >> 5;
+    const unsigned int second = phase46_mt_next(mt, position) >> 6;
+    return ((double)first * 67108864.0 + (double)second)
+        * (1.0 / 9007199254740992.0);
+}
+
+extern "C" __global__ void phase54_mt19937_normals(
+    const unsigned int* seeds,
+    const int* offsets,
+    unsigned int* states,
+    double* output,
+    int rows,
+    int draws)
+{
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= rows) return;
+    unsigned int* mt = states + (long long)row * 624;
+    mt[0] = seeds[row];
+    for (int i = 1; i < 624; ++i) {
+        const unsigned int previous = mt[i - 1];
+        mt[i] = 1812433253U * (previous ^ (previous >> 30)) + (unsigned int)i;
+    }
+    int position = 624;
+    for (int skip = 0; skip < offsets[row]; ++skip) {
+        (void)phase54_mt_double(mt, &position);
+    }
+    bool has_gauss = false;
+    double cached_gauss = 0.0;
+    for (int draw = 0; draw < draws; ++draw) {
+        double value;
+        if (has_gauss) {
+            value = cached_gauss;
+            cached_gauss = 0.0;
+            has_gauss = false;
+        } else {
+            double x1, x2, radius2;
+            do {
+                x1 = 2.0 * phase54_mt_double(mt, &position) - 1.0;
+                x2 = 2.0 * phase54_mt_double(mt, &position) - 1.0;
+                radius2 = x1 * x1 + x2 * x2;
+            } while (radius2 >= 1.0 || radius2 == 0.0);
+            const double factor = sqrt(-2.0 * log(radius2) / radius2);
+            cached_gauss = factor * x1;
+            has_gauss = true;
+            value = factor * x2;
+        }
+        output[(long long)row * draws + draw] = value;
+    }
+}
 '''
+
+
+@dataclass(frozen=True)
+class DestinationSampleLease:
+    """Versioned device view of one exact ActivitySim sampled-destination table."""
+
+    generation: int
+    source_ref: Any
+    index_name: str | None
+    alt_col_name: str
+    rows: int
+    owners: int
+    starts_host: np.ndarray
+    owner_ids_host: np.ndarray
+    offsets_device: Any
+    destinations_device: Any
+    destination_min: int
+    destination_max: int
+    device_bytes: int
 
 
 class Phase46DestinationService:
@@ -125,6 +200,12 @@ class Phase46DestinationService:
             options=("--std=c++11", "--fmad=false"),
         )
         self._rng_resume_kernel.compile()
+        self._normal_kernel = self.cp.RawKernel(
+            _MT19937_SOURCE,
+            "phase54_mt19937_normals",
+            options=("--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=false"),
+        )
+        self._normal_kernel.compile()
         self._rng_capacity_rows = 0
         self._rng_capacity_values = 0
         self._rng_states = None
@@ -155,6 +236,21 @@ class Phase46DestinationService:
         self._resume_ready = False
         self._resume_hits = 0
         self._resume_misses = 0
+        self.phase54_device_packets = False
+        self._normal_capacity_rows = 0
+        self._normal_capacity_values = 0
+        self._normal_states = None
+        self._normal_seeds = None
+        self._normal_offsets = None
+        self._normal_output = None
+        self._normal_events = []
+        self._lease_generation = 0
+        self._lease_offset_capacity = 0
+        self._lease_destination_capacity = 0
+        self._lease_offsets = None
+        self._lease_destinations = None
+        self._active_destination_lease = None
+        self._lease_events = []
 
     def _ensure_rng(self, rows: int, draws: int) -> None:
         cp = self.cp
@@ -201,6 +297,165 @@ class Phase46DestinationService:
             ),
         )
         return output
+
+    def _ensure_normal(self, rows: int, draws: int) -> None:
+        cp = self.cp
+        if rows > self._normal_capacity_rows:
+            self._normal_states = cp.empty((rows, 624), dtype=cp.uint32)
+            self._normal_seeds = cp.empty(rows, dtype=cp.uint32)
+            self._normal_offsets = cp.empty(rows, dtype=cp.int32)
+            self._normal_capacity_rows = rows
+            self._workspace_growths += 1
+        values = rows * draws
+        if values > self._normal_capacity_values:
+            self._normal_output = cp.empty(values, dtype=cp.float64)
+            self._normal_capacity_values = values
+            self._workspace_growths += 1
+
+    def generate_normals_from_seeds(self, seeds, offsets, draws: int):
+        """Generate legacy RandomState normals after uniform-offset fast-forward."""
+        seeds = np.ascontiguousarray(seeds, dtype=np.uint32)
+        offsets = np.ascontiguousarray(offsets, dtype=np.int32)
+        draws = int(draws)
+        if seeds.ndim != 1 or offsets.shape != seeds.shape:
+            raise ValueError("Phase 54 normal seeds and offsets must be aligned vectors")
+        if draws <= 0 or np.any(offsets < 0) or np.any(offsets + draws > 4096):
+            raise ValueError("Phase 54 supports 1..4096 controlled draws per row")
+        rows = len(seeds)
+        self._ensure_normal(rows, draws)
+        self._normal_seeds[:rows].set(seeds)
+        self._normal_offsets[:rows].set(offsets)
+        output = self._normal_output[: rows * draws].reshape(rows, draws)
+        block = 128
+        self._normal_kernel(
+            ((rows + block - 1) // block,),
+            (block,),
+            (
+                self._normal_seeds,
+                self._normal_offsets,
+                self._normal_states,
+                output,
+                np.int32(rows),
+                np.int32(draws),
+            ),
+        )
+        return output
+
+    def normal_for_df_device(self, state, frame, draws: int):
+        """Advance ActivitySim's ledger while retaining controlled normals on CUDA."""
+        started = time.perf_counter()
+        rng = state.get_rn_generator()
+        if not getattr(rng, "channels", None):
+            raise ValueError("Phase 54 requires ActivitySim's keyed random channels")
+        channel = rng.get_channel_for_df(frame)
+        if getattr(channel, "step_name", None) != getattr(rng, "step_name", None):
+            raise ValueError("Phase 54 normal channel is outside its active step")
+        row_states = channel.row_states.loc[frame.index, ["row_seed", "offset"]]
+        seeds = np.ascontiguousarray(row_states["row_seed"], dtype=np.uint32)
+        offsets = np.ascontiguousarray(row_states["offset"], dtype=np.int32)
+        prepared = time.perf_counter()
+        device = self.generate_normals_from_seeds(seeds, offsets, draws)
+        self.cp.cuda.Stream.null.synchronize()
+        generated = time.perf_counter()
+        channel.row_states.loc[frame.index, "offset"] += int(draws)
+        finished = time.perf_counter()
+        self._normal_events.append(
+            {
+                "rows": len(frame),
+                "draws_per_row": int(draws),
+                "draw_values": int(len(frame) * draws),
+                "ledger_read_seconds": prepared - started,
+                "gpu_generation_seconds": generated - prepared,
+                "ledger_update_seconds": finished - generated,
+                "total_seconds": finished - started,
+            }
+        )
+        return device
+
+    def publish_destination_sample(self, sample, alt_col_name: str):
+        """Publish a grow-only, versioned CUDA lease for the exact packed sample."""
+        started = time.perf_counter()
+        if not self.phase54_device_packets:
+            return None
+        if alt_col_name not in sample or not len(sample):
+            raise ValueError("Phase 54 requires a nonempty sampled destination column")
+        ids = np.asarray(sample.index, dtype=np.int64)
+        first = np.r_[True, ids[1:] != ids[:-1]]
+        starts = np.flatnonzero(first).astype(np.int64)
+        owner_ids = np.ascontiguousarray(ids[starts])
+        if len(np.unique(owner_ids)) != len(owner_ids):
+            raise ValueError("Phase 54 sampled destination owners are not contiguous")
+        offsets = np.ascontiguousarray(np.r_[starts, len(ids)], dtype=np.int64)
+        destinations = np.ascontiguousarray(sample[alt_col_name], dtype=np.int32)
+        cp = self.cp
+        if len(offsets) > self._lease_offset_capacity:
+            self._lease_offsets = cp.empty(len(offsets), dtype=cp.int64)
+            self._lease_offset_capacity = len(offsets)
+            self._workspace_growths += 1
+        if len(destinations) > self._lease_destination_capacity:
+            self._lease_destinations = cp.empty(len(destinations), dtype=cp.int32)
+            self._lease_destination_capacity = len(destinations)
+            self._workspace_growths += 1
+        device_offsets = self._lease_offsets[: len(offsets)]
+        device_destinations = self._lease_destinations[: len(destinations)]
+        device_offsets.set(offsets)
+        device_destinations.set(destinations)
+        self.cp.cuda.Stream.null.synchronize()
+        self._lease_generation += 1
+        lease = DestinationSampleLease(
+            generation=self._lease_generation,
+            source_ref=weakref.ref(sample),
+            index_name=sample.index.name,
+            alt_col_name=str(alt_col_name),
+            rows=len(sample),
+            owners=len(starts),
+            starts_host=starts,
+            owner_ids_host=owner_ids,
+            offsets_device=device_offsets,
+            destinations_device=device_destinations,
+            destination_min=int(destinations.min()),
+            destination_max=int(destinations.max()),
+            device_bytes=int(device_offsets.nbytes + device_destinations.nbytes),
+        )
+        self._active_destination_lease = lease
+        self._lease_events.append(
+            {
+                "operation": "publish",
+                "generation": lease.generation,
+                "rows": lease.rows,
+                "owners": lease.owners,
+                "device_bytes": lease.device_bytes,
+                "seconds": time.perf_counter() - started,
+            }
+        )
+        return lease
+
+    def consume_destination_sample(self, sample, alt_col_name: str):
+        """Return the current sample lease only for the exact published object."""
+        started = time.perf_counter()
+        lease = self._active_destination_lease
+        valid = bool(
+            self.phase54_device_packets
+            and lease is not None
+            and lease.source_ref() is sample
+            and lease.rows == len(sample)
+            and lease.index_name == sample.index.name
+            and lease.alt_col_name == str(alt_col_name)
+            and alt_col_name in sample
+        )
+        if not valid:
+            raise ValueError("Phase 54 destination sample has no valid device lease")
+        self._lease_events.append(
+            {
+                "operation": "consume",
+                "generation": lease.generation,
+                "rows": lease.rows,
+                "owners": lease.owners,
+                "device_bytes": lease.device_bytes,
+                "seconds": time.perf_counter() - started,
+            }
+        )
+        return lease
 
     def _resume_from_device_state(
         self, rows: int, draws: int, source_rows, *, skip_draws: int = 0
@@ -502,6 +757,10 @@ class Phase46DestinationService:
             + self._cell_capacity * 8
             + self._sample_capacity * (4 + 4 + 1 + 4)
             + self._row_capacity * (1 + 1 + 4 + 4)
+            + self._normal_capacity_rows * (624 * 4 + 4 + 4)
+            + self._normal_capacity_values * 8
+            + self._lease_offset_capacity * 8
+            + self._lease_destination_capacity * 4
         )
         return {
             "random_calls": len(self._random_events),
@@ -517,6 +776,21 @@ class Phase46DestinationService:
             "cell_capacity": self._cell_capacity,
             "row_capacity": self._row_capacity,
             "events": list(self._random_events),
+            "phase54_normal_calls": len(self._normal_events),
+            "phase54_normal_rows": sum(item["rows"] for item in self._normal_events),
+            "phase54_normal_values": sum(
+                item["draw_values"] for item in self._normal_events
+            ),
+            "phase54_normal_seconds": sum(
+                item["total_seconds"] for item in self._normal_events
+            ),
+            "phase54_sample_lease_publishes": sum(
+                item["operation"] == "publish" for item in self._lease_events
+            ),
+            "phase54_sample_lease_consumes": sum(
+                item["operation"] == "consume" for item in self._lease_events
+            ),
+            "phase54_sample_lease_events": list(self._lease_events),
         }
 
 

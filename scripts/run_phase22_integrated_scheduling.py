@@ -220,6 +220,14 @@ def main() -> int:
             "authoritative compact owner table consumed directly by the Phase 52 kernel"
         ),
     )
+    parser.add_argument(
+        "--phase54-device-owned-destination-packet",
+        action="store_true",
+        help=(
+            "consume versioned sampled-destination CUDA leases and generate the "
+            "exact controlled normals and wait table on the GPU"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -294,6 +302,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase54_device_owned_destination_packet:
+        args.phase53_device_resident_destination_data_plane = True
+        os.environ["CHOICEFORGE_PHASE54_DEVICE_OWNED_DESTINATION_PACKET"] = "1"
     if args.phase53_device_resident_destination_data_plane:
         args.phase52_persistent_tiled_destination = True
         os.environ["CHOICEFORGE_PHASE53_DESTINATION_DATA_PLANE"] = "1"
@@ -1427,6 +1438,7 @@ def main() -> int:
                     phase46_service.destination_supergraph_bridge = phase49_bridge
                     if args.phase50_device_generated_destination_inputs:
                         from choiceforge.destination_input_supergraph import (
+                            DeviceOwnedDestinationPacket,
                             DestinationInputSupergraph,
                             FusedDestinationInputSupergraph,
                             PersistentTiledDestinationInputSupergraph,
@@ -1435,6 +1447,9 @@ def main() -> int:
                         )
 
                         runtime_type = (
+                            DeviceOwnedDestinationPacket
+                            if args.phase54_device_owned_destination_packet
+                            else
                             DeviceResidentDestinationDataPlane
                             if args.phase53_device_resident_destination_data_plane
                             else
@@ -1448,11 +1463,14 @@ def main() -> int:
                             phase52_prewarm = prewarm_phase52_public_runtime(
                                 phase46_service.cp
                             )
-                        phase50_runtime = runtime_type(
-                            phase49_bridge,
-                            cbd_threshold=raw_cbd_threshold,
-                            cp=phase46_service.cp,
-                        )
+                        runtime_kwargs = {
+                            "cbd_threshold": raw_cbd_threshold,
+                            "cp": phase46_service.cp,
+                        }
+                        if args.phase54_device_owned_destination_packet:
+                            phase46_service.phase54_device_packets = True
+                            runtime_kwargs["sample_service"] = phase46_service
+                        phase50_runtime = runtime_type(phase49_bridge, **runtime_kwargs)
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
@@ -1491,6 +1509,12 @@ def main() -> int:
             original_compute_location_choice_logsums
         )
 
+    destination_phase = 54 if args.phase54_device_owned_destination_packet else 53
+    destination_runtime_key = (
+        "phase54_device_owned_destination_packet"
+        if args.phase54_device_owned_destination_packet
+        else "phase53_device_resident_destination_data_plane"
+    )
     if (
         args.stop_after_model == "atwork_subtour_destination"
         and args.phase53_device_resident_destination_data_plane
@@ -1522,13 +1546,18 @@ def main() -> int:
             pd.read_csv(timing_path).set_index("model_name")["seconds"].to_dict()
             if timing_path.exists() else {}
         )
+        phase54_service = (
+            phase46_service.summary()
+            if args.phase54_device_owned_destination_packet else None
+        )
         partial = {
-            "phase": 53,
+            "phase": destination_phase,
             "qualification_shard": "post_mandatory_through_atwork_destination",
             "elapsed_seconds": elapsed,
             "exit_code": int(exit_code or 0),
             "model_timing_seconds": timing,
-            "phase53_device_resident_destination_data_plane": summary,
+            destination_runtime_key: summary,
+            "phase54_persistent_service": phase54_service,
             "output_comparisons": {
                 "destination": {"exact": bool(destination_exact)},
                 "destination_logsum": {
@@ -1541,7 +1570,7 @@ def main() -> int:
                 "activitysim_shard_completed": int(exit_code or 0) == 0,
                 "all_twelve_tour_destination_calls_use_compact_owners": (
                     summary.get("calls") == 12
-                    and summary.get("phase53_calls") == 12
+                    and summary.get(f"phase{destination_phase}_calls") == 12
                     and summary.get("upstream_compact_owner_calls") == 12
                 ),
                 "public_tour_destination_workload_shape_exact": (
@@ -1552,6 +1581,24 @@ def main() -> int:
                     destination_exact and max_abs <= 1e-4
                 ),
                 "zero_fallback": summary.get("fallback_calls") == 0,
+                "phase54_all_twelve_calls_use_device_leases_normals_and_waits": (
+                    not args.phase54_device_owned_destination_packet
+                    or (
+                        summary.get("device_sample_lease_calls") == 12
+                        and phase54_service.get("phase54_sample_lease_publishes") == 12
+                        and phase54_service.get("phase54_sample_lease_consumes") == 12
+                        and phase54_service.get("phase54_normal_calls") == 12
+                        and all(
+                            event.get("packet_stage_seconds", {}).get(
+                                "device_controlled_normals"
+                            ) == 1.0
+                            and event.get("packet_stage_seconds", {}).get(
+                                "device_wait_transform"
+                            ) == 1.0
+                            for event in summary.get("events", [])
+                        )
+                    )
+                ),
             },
         }
         args.report.parent.mkdir(parents=True, exist_ok=True)
@@ -1560,7 +1607,7 @@ def main() -> int:
         args.checkpoint.write_text(
             json.dumps(
                 {
-                    "phase": 53,
+                    "phase": destination_phase,
                     "shard": partial["qualification_shard"],
                     "report": str(args.report),
                     "all_proof_gates_pass": all(partial["proof_gates"].values()),
@@ -1614,19 +1661,24 @@ def main() -> int:
             pd.read_csv(timing_path).set_index("model_name")["seconds"].to_dict()
             if timing_path.exists() else {}
         )
+        phase54_service = (
+            phase46_service.summary()
+            if args.phase54_device_owned_destination_packet else None
+        )
         partial = {
-            "phase": 53,
+            "phase": destination_phase,
             "qualification_shard": "pre_mandatory_through_workplace_location",
             "elapsed_seconds": elapsed,
             "exit_code": int(exit_code or 0),
             "model_timing_seconds": timing,
-            "phase53_device_resident_destination_data_plane": summary,
+            destination_runtime_key: summary,
+            "phase54_persistent_service": phase54_service,
             "output_comparisons": comparisons,
             "proof_gates": {
                 "activitysim_shard_completed": int(exit_code or 0) == 0,
                 "all_seven_location_calls_use_compact_owners": (
                     summary.get("calls") == 7
-                    and summary.get("phase53_calls") == 7
+                    and summary.get(f"phase{destination_phase}_calls") == 7
                     and summary.get("upstream_compact_owner_calls") == 7
                 ),
                 "public_location_workload_shape_exact": (
@@ -1638,6 +1690,24 @@ def main() -> int:
                     for value in comparisons.values()
                 ),
                 "zero_fallback": summary.get("fallback_calls") == 0,
+                "phase54_all_seven_calls_use_device_leases_normals_and_waits": (
+                    not args.phase54_device_owned_destination_packet
+                    or (
+                        summary.get("device_sample_lease_calls") == 7
+                        and phase54_service.get("phase54_sample_lease_publishes") == 7
+                        and phase54_service.get("phase54_sample_lease_consumes") == 7
+                        and phase54_service.get("phase54_normal_calls") == 7
+                        and all(
+                            event.get("packet_stage_seconds", {}).get(
+                                "device_controlled_normals"
+                            ) == 1.0
+                            and event.get("packet_stage_seconds", {}).get(
+                                "device_wait_transform"
+                            ) == 1.0
+                            for event in summary.get("events", [])
+                        )
+                    )
+                ),
             },
         }
         args.report.parent.mkdir(parents=True, exist_ok=True)
@@ -1646,7 +1716,7 @@ def main() -> int:
         args.checkpoint.write_text(
             json.dumps(
                 {
-                    "phase": 53,
+                    "phase": destination_phase,
                     "shard": partial["qualification_shard"],
                     "report": str(args.report),
                     "all_proof_gates_pass": all(partial["proof_gates"].values()),
@@ -2588,6 +2658,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            54 if args.phase54_device_owned_destination_packet else
             53 if args.phase53_device_resident_destination_data_plane else
             52 if args.phase52_persistent_tiled_destination else
             51 if args.phase51_fused_compact_destination_utility else
@@ -2612,6 +2683,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with versioned sampled-destination CUDA "
+            "leases, bit-exact GPU legacy normals, and device-generated wait tables"
+            if args.phase54_device_owned_destination_packet else
             "full public ActivitySim model with a device-resident destination data "
             "plane that joins authoritative owner data once at compact cardinality "
             "and never constructs repeated sampled-row owner columns"
@@ -2765,6 +2839,10 @@ def main() -> int:
         "phase53_device_resident_destination_data_plane": (
             phase50_summary
             if args.phase53_device_resident_destination_data_plane else None
+        ),
+        "phase54_device_owned_destination_packet": (
+            phase50_summary
+            if args.phase54_device_owned_destination_packet else None
         ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -3358,6 +3436,7 @@ def main() -> int:
                     and (
                         persistent_inputs.get("phase52_calls", 0)
                         + persistent_inputs.get("phase53_calls", 0)
+                        + persistent_inputs.get("phase54_calls", 0)
                     ) == 19
                     and persistent_inputs.get("tile_rows") == [4]
                 ),
@@ -3396,7 +3475,10 @@ def main() -> int:
             {
                 "phase53_all_nineteen_calls_consume_upstream_compact_owners": (
                     data_plane.get("calls") == 19
-                    and data_plane.get("phase53_calls") == 19
+                    and (
+                        data_plane.get("phase53_calls", 0)
+                        + data_plane.get("phase54_calls", 0)
+                    ) == 19
                     and data_plane.get("upstream_compact_owner_calls") == 19
                 ),
                 "phase53_complete_public_destination_cardinality_is_preserved": (
@@ -3414,6 +3496,36 @@ def main() -> int:
                         "upstream_compact_source"
                     ) == 1.0
                     for item in data_plane.get("events", [])
+                ),
+            }
+        )
+    if args.phase54_device_owned_destination_packet:
+        device_packet = phase50_summary or {}
+        phase54_service = phase46_service.summary()
+        report["proof_gates"].update(
+            {
+                "phase54_all_nineteen_calls_use_sampler_device_leases": (
+                    device_packet.get("calls") == 19
+                    and device_packet.get("phase54_calls") == 19
+                    and device_packet.get("device_sample_lease_calls") == 19
+                    and phase54_service.get("phase54_sample_lease_publishes") == 19
+                    and phase54_service.get("phase54_sample_lease_consumes") == 19
+                ),
+                "phase54_all_controlled_normal_streams_generated_on_cuda": (
+                    phase54_service.get("phase54_normal_calls") == 19
+                    and phase54_service.get("phase54_normal_rows") == 201_390
+                    and phase54_service.get("phase54_normal_values") == 1_208_340
+                ),
+                "phase54_all_wait_tables_generated_on_cuda": all(
+                    event.get("packet_stage_seconds", {}).get(
+                        "device_wait_transform"
+                    ) == 1.0
+                    and event.get("device_generated_wait_bytes", 0) > 0
+                    for event in device_packet.get("events", [])
+                ),
+                "phase54_retains_exact_public_destination_cardinality": (
+                    device_packet.get("rows") == 4_696_676
+                    and device_packet.get("owners") == 201_390
                 ),
             }
         )

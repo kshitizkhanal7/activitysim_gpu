@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pytest
 
 from choiceforge.cuda_backend import _cupy, cuda_available
@@ -32,6 +33,41 @@ def test_phase46_gpu_mt19937_matches_scalar_numpy_randomstate():
         expected.append(generator.rand(draws))
     expected = np.asarray(expected, dtype=np.float64)
     assert np.array_equal(actual.view(np.uint64), expected.view(np.uint64))
+
+
+def test_phase54_gpu_legacy_normals_match_numpy_randomstate_bits():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    seeds = np.asarray([0, 1, 17, 2**31 + 91, 2**32 - 1], dtype=np.uint32)
+    offsets = np.asarray([0, 1, 30, 311, 650], dtype=np.int32)
+    actual = cp.asnumpy(service.generate_normals_from_seeds(seeds, offsets, 6))
+    expected = []
+    for seed, offset in zip(seeds, offsets):
+        generator = np.random.RandomState(int(seed))
+        generator.rand(int(offset))
+        expected.append(generator.normal(size=6))
+    expected = np.asarray(expected, dtype=np.float64)
+    assert np.array_equal(actual.view(np.uint64), expected.view(np.uint64))
+
+
+def test_phase54_sample_lease_is_versioned_reused_and_fail_closed():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    service.phase54_device_packets = True
+    sample = pd.DataFrame(
+        {"zone_id": [3, 7, 2, 8, 9]},
+        index=pd.Index([10, 10, 20, 20, 20], name="tour_id"),
+    )
+    lease = service.publish_destination_sample(sample, "zone_id")
+    assert service.consume_destination_sample(sample, "zone_id") is lease
+    np.testing.assert_array_equal(lease.owner_ids_host, [10, 20])
+    np.testing.assert_array_equal(cp.asnumpy(lease.offsets_device), [0, 2, 5])
+    np.testing.assert_array_equal(cp.asnumpy(lease.destinations_device), [3, 7, 2, 8, 9])
+    with pytest.raises(ValueError, match="no valid device lease"):
+        service.consume_destination_sample(sample.copy(), "zone_id")
+    summary = service.summary()
+    assert summary["phase54_sample_lease_publishes"] == 1
+    assert summary["phase54_sample_lease_consumes"] == 1
 
 
 def test_phase46_precomputed_weights_and_selected_probabilities_are_exact():

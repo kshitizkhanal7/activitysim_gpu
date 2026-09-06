@@ -4,6 +4,7 @@ import pytest
 
 from choiceforge.destination_input_supergraph import (
     DeviceResidentDestinationDataPlane,
+    DeviceOwnedDestinationPacket,
     DestinationInputSupergraph,
     PersistentTiledDestinationInputSupergraph,
     _owner_topology,
@@ -12,7 +13,10 @@ from choiceforge.destination_input_supergraph import (
     _stable_owner,
     _time_state,
     _wait_table,
+    _wait_parameters,
+    _phase54_wait_kernel,
 )
+from choiceforge.cuda_backend import _cupy, cuda_available
 
 
 class _Settings:
@@ -89,6 +93,42 @@ def test_phase50_wait_table_reconstructs_owner_by_destination_band():
     expected = np.asarray([32.0, 13.3, 20.0], dtype=np.float32)
     np.testing.assert_array_equal(table[0, 0], expected)
     np.testing.assert_array_equal(table[1, 4], expected)
+
+
+@pytest.mark.skipif(not cuda_available(), reason="CUDA unavailable")
+def test_phase54_gpu_wait_table_matches_host_float32_contract():
+    cp = _cupy()
+    constants = _constants()
+    for family in ("Taxi", "TNC_single", "TNC_shared"):
+        constants[f"{family}_waitTime_sd"] = {
+            band: 0.4 + band * 0.17 for band in range(1, 6)
+        }
+    land_use = pd.DataFrame(
+        {"TOTPOP": [100.0, 20_000.0], "TOTEMP": [0.0, 0.0], "TOTACRE": [640.0, 640.0]},
+        index=[0, 1],
+    )
+    origins = np.asarray([0, 1], dtype=np.int32)
+    draws = np.asarray(
+        [[-1.4, 0.2, 1.1, -0.7, 0.5, 1.8], [0.1, -2.0, 0.8, 1.5, -0.3, 0.9]],
+        dtype=np.float64,
+    )
+    expected = _wait_table(land_use, origins, draws, constants)
+    mu, sigma = _wait_parameters(constants)
+    land_int = np.asarray([[0, 0, 5], [0, 0, 1]], dtype=np.int32)
+    actual = cp.empty((2, 5, 3), dtype=cp.float32)
+    kernel = _phase54_wait_kernel(cp)
+    kernel(
+        (1,),
+        (256,),
+        (
+            cp.asarray(draws), cp.asarray(origins), cp.asarray(land_int),
+            cp.asarray(mu), cp.asarray(sigma), actual, np.int32(2),
+            np.float64(constants["min_waitTime"]),
+            np.float64(constants["max_waitTime"]),
+        ),
+    )
+    cp.cuda.Stream.null.synchronize()
+    np.testing.assert_array_equal(cp.asnumpy(actual), expected)
 
 
 def test_phase50_summary_preserves_accounting_and_exact_abi_gate():
@@ -239,3 +279,57 @@ def test_phase53_summary_proves_every_call_used_compact_owner_data_plane():
     assert summary["phase53_calls"] == 1
     assert summary["upstream_compact_owner_calls"] == 1
     assert summary["all_dense_device_abis_eliminated"] is True
+
+
+def test_phase54_summary_proves_device_leases_normals_and_waits():
+    service = object()
+    runtime = DeviceOwnedDestinationPacket(
+        None, cbd_threshold=3, cp=object(), tile_rows=4, sample_service=service
+    )
+    runtime._events = [
+        {
+            "phase": 54,
+            "trace_label": "workplace_location.i1.logsums.work",
+            "rows": 100,
+            "owners": 5,
+            "dense_preprocessor_rows_avoided": 100,
+            "dense_preprocessor_values_avoided": 4_100,
+            "dense_host_pack_bytes_avoided": 41_600,
+            "compact_upload_bytes": 700,
+            "net_upload_bytes_avoided": 40_900,
+            "binding_resolution_calls": 0,
+            "host_dense_pack_calls": 0,
+            "fallback_used": False,
+            "device_generate_seconds": 0.0,
+            "utility_kernel_seconds": 0.02,
+            "total_seconds": 0.04,
+            "float_row_sources": 10,
+            "int_row_sources": 31,
+            "skim_coordinate_groups": 6,
+            "semantic_plan_cache_hit": True,
+            "native_plan_cache_hit": True,
+            "utility_workspace_hit": True,
+            "packet_workspace_hits": 9,
+            "packet_workspace_allocations": 0,
+            "row_owner_workspace_hit": True,
+            "tile_rows": 4,
+            "dense_device_abi_bytes_eliminated": 41_600,
+            "minimal_bootstrap_bytes": 416,
+            "row_owner_device_bytes": 400,
+            "upstream_compact_owner_source": True,
+            "device_sample_lease": True,
+            "sample_lease_bytes": 440,
+            "device_generated_wait_bytes": 300,
+            "packet_stage_seconds": {
+                "device_controlled_normals": 1.0,
+                "device_wait_transform": 1.0,
+            },
+        }
+    ]
+    summary = runtime.summary()
+    assert summary["contract_version"] == 5
+    assert summary["fused_calls"] == 1
+    assert summary["phase54_calls"] == 1
+    assert summary["device_sample_lease_calls"] == 1
+    assert summary["device_sample_lease_bytes"] == 440
+    assert summary["device_generated_wait_bytes"] == 300

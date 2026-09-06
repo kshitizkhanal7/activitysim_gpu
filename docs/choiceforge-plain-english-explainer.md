@@ -7192,3 +7192,132 @@ The target should be ambitious and testable:
 That phase would move the project from “compact before the kernel” to “retain
 the destination packet on the device across sampling, logsum, probability, and
 choice.”
+
+## 257. What did Phase 54 build?
+
+Phase 54 built the device-owned destination packet proposed above. When the
+GPU sampler finishes making a destination list, it now gives the next GPU
+stage a short-lived, numbered claim ticket called a **lease**. The ticket
+points to the exact group boundaries and destination IDs already in GPU
+memory. The next stage uses them directly instead of copying the list back
+through CPU tables and rebuilding it.
+
+The GPU also makes the six controlled bell-curve random numbers needed for
+each person or tour and converts them into expected taxi and ride-hail waiting
+times. Sampling, random inputs, wait construction, destination utility,
+probability, and choice are now connected much more closely.
+
+## 258. What is a buffer lease, in ordinary language?
+
+Think of checked luggage being transferred between two flights. The old
+system unloaded every bag, wrote a new list on paper, and then loaded the same
+bags again. A buffer lease is a secure electronic transfer slip: “bags 1
+through 25 belong to traveler A, these are their exact storage locations, and
+this slip is valid only for transfer number 17.”
+
+The consumer checks the transfer number, source object, row count, owner
+count, index, column name, and owner sequence. A stale or mismatched ticket
+causes the run to stop. The lease is deliberately short-lived and synchronous;
+it is not permission to keep using memory after another task changes it.
+
+## 259. How can GPU random numbers match old CPU random numbers?
+
+A pseudo-random generator is a deterministic recipe. Give it the same seed,
+advance it the same number of steps, and use the same conversion recipe, and
+it produces the same bit pattern.
+
+ActivitySim relies on NumPy's legacy `RandomState` behavior. Phase 54 implements
+its MT19937 state update and polar Box-Muller normal conversion on CUDA. Tests
+try several seeds, offsets, and output lengths and require every generated
+64-bit normal value to match NumPy exactly, not merely approximately. The
+implementation follows NumPy's published legacy source and compatibility
+policy: [legacy distribution source](https://github.com/numpy/numpy/blob/main/numpy/random/src/legacy/legacy-distributions.c)
+and [random compatibility policy](https://numpy.org/devdocs/reference/random/compatibility.html).
+
+This does not mean every possible random API is supported. It means the exact
+bounded legacy stream used by this public model is implemented and checked.
+
+## 260. What are the wait tables and why generate them on the GPU?
+
+The travel formula needs an estimate of how long a taxi or transportation-
+network-company vehicle might take to arrive. The estimate depends on a
+controlled normal draw and the destination's density band. Previously the CPU
+made a table of those values and uploaded it.
+
+Phase 54 sends the compact ingredients to a CUDA kernel. The kernel applies
+the same float32 rules and creates the owner-by-density-band wait table where
+the destination calculation will use it. Tests compare the entire table with
+the host reference exactly.
+
+## 261. How much faster is Phase 54 itself?
+
+Three matched Phase 53/54 comparisons cover the same 19 calls, 201,390 owners,
+and 4,696,676 sampled destinations:
+
+| Measured boundary | Phase 53 | Phase 54 | Improvement |
+|---|---:|---:|---:|
+| packet preparation | 1.300 s | 0.306 s | 4.252x; 76.48% lower |
+| complete destination service | 4.989 s | 3.713 s | 1.344x; 25.58% lower |
+| five destination components | 12.6 s | 11.3 s | 1.115x; 10.32% lower |
+
+Phase 54 won every comparison at every boundary. The shrinking speedup is
+normal: each lower row includes more unchanged ActivitySim work outside the
+new packet path.
+
+## 262. Did the full model finally run, and how fast is it?
+
+Yes. The earlier failure was traced to running many host math workers during a
+large unchanged pandas allocation. The GPU benchmark now limits OpenBLAS,
+OpenMP, MKL, and Numba host work to one thread. Three fresh complete runs took
+134.267, 133.264, and 133.714 seconds, including startup bookkeeping. The
+median is **133.714 seconds**.
+
+The separately measured regular ActivitySim CPU median is 205.4 seconds. The
+latest system is therefore **1.536x faster**, saves about 71.7 seconds, and
+uses **34.90% less total time**. It is also 2.39% lower than the measured
+136.991-second Phase 52 median.
+
+The incremental destination result is the strongest experiment because Phase
+53 and Phase 54 are directly matched. The CPU and Phase 52 figures are older
+measured medians on the same machine and workload, not interleaved pairs with
+these three full runs.
+
+## 263. Are accuracy and reproducibility still protected?
+
+Yes. All three complete runs pass every proof gate. Every published school,
+workplace, and tour destination stays exactly the same. Every controlled
+normal stream is generated on CUDA, every lease is both published and
+consumed, every wait table is made on CUDA, and no generic or CPU fallback is
+used.
+
+The largest observed cached floating diagnostic difference is
+0.000005722. It remains below the declared limits. The honest statement is
+still **exact modeled decisions with bounded floating diagnostics**, not that
+two different processors must print every intermediate decimal identically.
+
+## 264. What did the speed cost in memory and complexity?
+
+The persistent GPU service now uses at most 462,283,900 bytes, about 441 MiB.
+It keeps separate random state for sampling and normal generation plus
+reusable packet workspaces. That is modest on the tested 16 GiB GPU, but it is
+not free and smaller GPUs must be qualified.
+
+The lease is safe under the current immediate producer-to-consumer workflow.
+It is not a permanent cache, and code must not mutate the sample between
+publishing and consuming it. Different sample layouts, random APIs, expression
+programs, or models need their own checks.
+
+## 265. What should Phase 55 do?
+
+The next ambitious step is a versioned **device entity store** plus
+ahead-of-time linked execution plans. Today, Phase 54 still assembles some
+one-row-per-person or one-row-per-tour facts on the CPU and Python still plans
+individual calls. Phase 55 should keep authoritative person, tour, household,
+and land-use columns on the GPU across destination families and launch a
+hash-addressed packet-to-choice graph without rebuilding Python objects.
+
+The success bar should be meaningful: exact decisions, existing diagnostic
+limits, zero fallback, three matched wins, destination service below 2.5
+seconds, five destination components below 10 seconds, and a measured complete
+model median below 130 seconds. That would attack orchestration and remaining
+owner-state movement, not merely tune an already fast inner kernel.

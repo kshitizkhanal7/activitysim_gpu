@@ -798,6 +798,9 @@ def sample_destinations_resident(
             host_first, host_counts, alt_col_name,
         )
     )
+    sample_lease = None
+    if service is not None and getattr(service, "phase54_device_packets", False):
+        sample_lease = service.publish_destination_sample(sample, alt_col_name)
     finished = time.perf_counter()
     _TELEMETRY.append({
         "component": str(component), "trace_label": str(trace_label),
@@ -812,5 +815,9 @@ def sample_destinations_resident(
         "exact_guard_rows": guard_count,
         "total_seconds": finished - started, "fallback": False,
         "runtime": "phase46_persistent" if service is not None else "phase45",
+        "phase54_sample_lease_published": sample_lease is not None,
+        "phase54_sample_lease_generation": (
+            sample_lease.generation if sample_lease is not None else None
+        ),
     })
     return sample

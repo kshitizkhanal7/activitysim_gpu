@@ -1,4 +1,4 @@
-"""Phase 50-53 compact destination-input generation and fused CUDA execution.
+"""Phase 50-54 compact destination-input generation and fused CUDA execution.
 
 ActivitySim's public tour-mode preprocessor expands one owner and each sampled
 destination into 41 dense row fields, then Sharrow resolves, packs, and uploads
@@ -77,6 +77,7 @@ _INT_LABELS = set(_OWNER_INT_LABELS) | _DESTINATION_INT_LABELS | set(
 _GENERATOR_CACHE: dict[str, Any] = {}
 _FUSED_UTILITY_CACHE: dict[str, Any] = {}
 _ROW_OWNER_KERNEL = None
+_PHASE54_WAIT_KERNEL = None
 _PHASE52_SOURCE = Path(__file__).with_name("kernels") / "phase52_public_destination_tile4.cu"
 
 
@@ -259,6 +260,71 @@ def _wait_table(land_use, origin, draws, constants) -> np.ndarray:
     return result
 
 
+def _wait_parameters(constants) -> tuple[np.ndarray, np.ndarray]:
+    """Precompute the public lognormal parameters for five bands and three modes."""
+    families = (
+        ("Taxi_waitTime_mean", "Taxi_waitTime_sd"),
+        ("TNC_single_waitTime_mean", "TNC_single_waitTime_sd"),
+        ("TNC_shared_waitTime_mean", "TNC_shared_waitTime_sd"),
+    )
+    mu = np.empty((5, 3), dtype=np.float64)
+    sigma = np.empty((5, 3), dtype=np.float64)
+    for band in range(1, 6):
+        for family, (mean_key, sd_key) in enumerate(families):
+            mean = float(constants[mean_key][band])
+            sd = float(constants[sd_key][band])
+            x = 1.0 + ((sd * sd) / (mean * mean))
+            mu[band - 1, family] = np.log(mean / np.sqrt(x))
+            sigma[band - 1, family] = np.sqrt(np.log(x))
+    return mu, sigma
+
+
+def _phase54_wait_kernel(cp):
+    global _PHASE54_WAIT_KERNEL
+    if _PHASE54_WAIT_KERNEL is None:
+        source = r'''
+extern "C" __global__ void phase54_wait_table(
+    const double* draws,
+    const int* origins,
+    const int* land_int,
+    const double* mu,
+    const double* sigma,
+    float* waits,
+    int owners,
+    double lower,
+    double upper)
+{
+    const long long cell = (long long)blockIdx.x * blockDim.x + threadIdx.x;
+    const long long cells = (long long)owners * 15;
+    if (cell >= cells) return;
+    const int owner = (int)(cell / 15);
+    const int within = (int)(cell - (long long)owner * 15);
+    const int destination_band = within / 3;
+    const int family = within - destination_band * 3;
+    const int origin_band = land_int[(long long)origins[owner] * 3 + 2] - 1;
+    const int origin_parameter = origin_band * 3 + family;
+    const int destination_parameter = destination_band * 3 + family;
+    double origin_wait = exp(
+        draws[(long long)owner * 6 + family * 2]
+        * sigma[origin_parameter] + mu[origin_parameter]);
+    double destination_wait = exp(
+        draws[(long long)owner * 6 + family * 2 + 1]
+        * sigma[destination_parameter] + mu[destination_parameter]);
+    origin_wait = origin_wait < lower ? lower : (origin_wait > upper ? upper : origin_wait);
+    destination_wait = destination_wait < lower ? lower : (
+        destination_wait > upper ? upper : destination_wait);
+    waits[cell] = (float)(origin_wait + destination_wait);
+}
+'''
+        _PHASE54_WAIT_KERNEL = cp.RawKernel(
+            source,
+            "phase54_wait_table",
+            options=("--std=c++11", "--fmad=false", "--prec-div=true", "--ftz=false"),
+        )
+        _PHASE54_WAIT_KERNEL.compile()
+    return _PHASE54_WAIT_KERNEL
+
+
 def _land_signature(land_use, columns) -> str:
     digest = hashlib.sha256()
     digest.update(np.ascontiguousarray(np.asarray(land_use.index, dtype=np.int64)))
@@ -286,6 +352,8 @@ class CompactDestinationPacket:
     workspace_hits: int = 0
     workspace_allocations: int = 0
     stage_seconds: Mapping[str, float] | None = None
+    sample_lease_bytes: int = 0
+    device_generated_wait_bytes: int = 0
 
 
 class DestinationInputSupergraph:
@@ -343,6 +411,17 @@ class DestinationInputSupergraph:
         view = buffer[: host.shape[0]]
         view.set(host)
         return view, hit
+
+    def _workspace(self, name: str, rows: int, tail: tuple[int, ...], dtype):
+        """Return a grow-only device view without a host upload."""
+        dtype = np.dtype(dtype)
+        key = (name, tuple(tail), dtype.str)
+        buffer = self._device_buffers.get(key)
+        hit = buffer is not None and buffer.shape[0] >= rows
+        if not hit:
+            buffer = self.cp.empty((self._capacity(rows),) + tuple(tail), dtype=dtype)
+            self._device_buffers[key] = buffer
+        return buffer[:rows], hit
 
     def _utilities(self, rows: int, alternatives: int):
         hit = (
@@ -403,19 +482,34 @@ class DestinationInputSupergraph:
         purpose,
         *,
         owner_choosers=None,
+        sample_lease=None,
         in_period_col,
         out_period_col,
         duration_col,
     ) -> CompactDestinationPacket:
         packet_started = time.perf_counter()
-        owner_ids, starts, offsets = _owner_topology(choosers.index)
+        if sample_lease is None:
+            owner_ids, starts, offsets = _owner_topology(choosers.index)
+        else:
+            if (
+                sample_lease.source_ref() is not choosers
+                or sample_lease.rows != len(choosers)
+                or sample_lease.index_name != choosers.index.name
+            ):
+                raise ValueError("Phase 54 sample lease does not own this chooser table")
+            owner_ids = np.asarray(choosers.index, dtype=np.int64)
+            starts = sample_lease.starts_host
+            offsets = None
         topology_complete = time.perf_counter()
         owners = len(starts)
         source = owner_choosers if owner_choosers is not None else choosers
         compact_source = owner_choosers is not None
         if compact_source:
             source_ids = np.asarray(source.index, dtype=np.int64)
-            expected_ids = owner_ids[starts]
+            expected_ids = (
+                sample_lease.owner_ids_host
+                if sample_lease is not None else owner_ids[starts]
+            )
             if len(source) != owners or not np.array_equal(source_ids, expected_ids):
                 raise ValueError(
                     "Phase 53 compact owner source does not exactly match sampled owners"
@@ -451,10 +545,22 @@ class DestinationInputSupergraph:
         if missing:
             raise ValueError("Phase 50 chooser columns are absent: " + ", ".join(missing))
         origin = owner_values(source[orig_name], orig_name, dtype=np.int32)
-        destination = np.ascontiguousarray(choosers[dest_name], dtype=np.int32)
+        destination = (
+            None
+            if sample_lease is not None
+            else np.ascontiguousarray(choosers[dest_name], dtype=np.int32)
+        )
+        destination_min = (
+            sample_lease.destination_min
+            if sample_lease is not None else int(destination.min())
+        )
+        destination_max = (
+            sample_lease.destination_max
+            if sample_lease is not None else int(destination.max())
+        )
         if (
-            origin.min() < 0 or destination.min() < 0
-            or origin.max() >= len(land_use) or destination.max() >= len(land_use)
+            origin.min() < 0 or destination_min < 0
+            or origin.max() >= len(land_use) or destination_max >= len(land_use)
         ):
             raise ValueError("Phase 50 origin or destination is outside the dense zone universe")
         out_row, in_row, duration_row = _time_state(
@@ -554,22 +660,60 @@ class DestinationInputSupergraph:
             raise ValueError("Phase 51 compact owner integer state exceeds int32")
         owner_state_complete = time.perf_counter()
 
-        rng = state.get_rn_generator()
-        # ActivitySim's broadcast=True implementation first generates on this
-        # exact unique-index Series and then expands back to all sampled rows.
-        # Call that underlying public contract directly: the controlled RNG
-        # advances identically, while the dense N_rows x 6 reindex disappears.
         compact_index = pd.Index(owner_ids[starts], name=choosers.index.name)
-        compact_draws = rng.normal_for_df(
-            compact_index.to_series(), broadcast=False, size=6
-        )
-        compact_draws = np.asarray(compact_draws, dtype=np.float64)
+        phase54 = sample_lease is not None and self.version >= 5
+        if phase54:
+            compact_draws = self.sample_service.normal_for_df_device(
+                state, compact_index.to_series(), 6
+            )
+        else:
+            rng = state.get_rn_generator()
+            # ActivitySim's broadcast=True implementation first generates on
+            # this exact unique-index Series and expands to sampled rows.
+            compact_draws = rng.normal_for_df(
+                compact_index.to_series(), broadcast=False, size=6
+            )
+            compact_draws = np.asarray(compact_draws, dtype=np.float64)
         rng_complete = time.perf_counter()
-        waits = _wait_table(land_use, origin, compact_draws, constants)
+        if phase54:
+            origin_device, origin_workspace_hit = self._upload("owner_origin", origin)
+            wait_mu, wait_sigma = _wait_parameters(constants)
+            mu_device, mu_hit = self._upload("phase54_wait_mu", wait_mu)
+            sigma_device, sigma_hit = self._upload("phase54_wait_sigma", wait_sigma)
+            waits, wait_workspace_hit = self._workspace(
+                "phase54_wait_table", owners, (5, 3), np.float32
+            )
+            kernel = _phase54_wait_kernel(self.cp)
+            cells = owners * 15
+            kernel(
+                ((cells + 255) // 256,),
+                (256,),
+                (
+                    compact_draws,
+                    origin_device,
+                    self._land_int,
+                    mu_device,
+                    sigma_device,
+                    waits,
+                    np.int32(owners),
+                    np.float64(constants["min_waitTime"]),
+                    np.float64(constants["max_waitTime"]),
+                ),
+            )
+            self.cp.cuda.Stream.null.synchronize()
+        else:
+            waits = _wait_table(land_use, origin, compact_draws, constants)
+            origin_device = None
+            origin_workspace_hit = False
+            mu_hit = False
+            sigma_hit = False
+            wait_workspace_hit = False
         waits_complete = time.perf_counter()
 
         owner_int_storage = owner_int.astype(np.int32) if self.fused else owner_int
         host_arrays = (
+            owner_float, owner_int_storage, out_period, in_period, duration,
+        ) if phase54 else (
             offsets, owner_float, owner_int_storage, origin, out_period, in_period,
             duration, destination, waits,
         )
@@ -577,6 +721,9 @@ class DestinationInputSupergraph:
             self._upload(name, item)
             for name, item in zip(
                 (
+                    "owner_float", "owner_int", "owner_out_period", "owner_in_period",
+                    "owner_duration",
+                ) if phase54 else (
                     "offsets", "owner_float", "owner_int", "owner_origin",
                     "owner_out_period", "owner_in_period", "owner_duration",
                     "row_destination", "wait_table",
@@ -584,16 +731,49 @@ class DestinationInputSupergraph:
                 host_arrays,
             )
         ]
-        device = [item[0] for item in uploaded]
+        if phase54:
+            device_by_name = {
+                name: item[0]
+                for name, item in zip(
+                    ("owner_float", "owner_int", "out_period", "in_period", "duration"),
+                    uploaded,
+                )
+            }
+            device = [
+                sample_lease.offsets_device,
+                device_by_name["owner_float"],
+                device_by_name["owner_int"],
+                origin_device,
+                device_by_name["out_period"],
+                device_by_name["in_period"],
+                device_by_name["duration"],
+                sample_lease.destinations_device,
+                waits,
+            ]
+        else:
+            device = [item[0] for item in uploaded]
         upload_complete = time.perf_counter()
         return CompactDestinationPacket(
             *device,
             compact_bytes=int(sum(np.asarray(item).nbytes for item in host_arrays)),
             owners=owners,
-            workspace_hits=sum(bool(item[1]) for item in uploaded),
-            workspace_allocations=sum(not bool(item[1]) for item in uploaded),
+            workspace_hits=(
+                sum(bool(item[1]) for item in uploaded)
+                + int(origin_workspace_hit) + int(mu_hit) + int(sigma_hit)
+                + int(wait_workspace_hit)
+            ),
+            workspace_allocations=(
+                sum(not bool(item[1]) for item in uploaded)
+                + int(phase54 and not origin_workspace_hit)
+                + int(phase54 and not mu_hit)
+                + int(phase54 and not sigma_hit)
+                + int(phase54 and not wait_workspace_hit)
+            ),
             stage_seconds={
                 "upstream_compact_source": float(compact_source),
+                "device_sample_lease": float(phase54),
+                "device_controlled_normals": float(phase54),
+                "device_wait_transform": float(phase54),
                 "topology": topology_complete - packet_started,
                 "owner_state": owner_state_complete - topology_complete,
                 "controlled_rng": rng_complete - owner_state_complete,
@@ -601,6 +781,8 @@ class DestinationInputSupergraph:
                 "upload": upload_complete - waits_complete,
                 "total": upload_complete - packet_started,
             },
+            sample_lease_bytes=(sample_lease.device_bytes if phase54 else 0),
+            device_generated_wait_bytes=(int(waits.nbytes) if phase54 else 0),
         )
 
     @staticmethod
@@ -1135,6 +1317,7 @@ class DestinationInputSupergraph:
         out_period_col=None,
         duration_col=None,
         owner_choosers=None,
+        sample_lease=None,
     ):
         """ActivitySim-compatible preprocessor replacement for Phase 50."""
         from activitysim.core import config, simulate
@@ -1268,6 +1451,7 @@ class DestinationInputSupergraph:
             network_los,
             tour_purpose,
             owner_choosers=owner_choosers,
+            sample_lease=sample_lease,
             in_period_col=in_period_col,
             out_period_col=out_period_col,
             duration_col=duration_col,
@@ -1410,6 +1594,9 @@ class DestinationInputSupergraph:
                 "tile_rows": self.tile_rows,
                 "packet_stage_seconds": dict(packet.stage_seconds or {}),
                 "upstream_compact_owner_source": owner_choosers is not None,
+                "device_sample_lease": sample_lease is not None,
+                "sample_lease_bytes": int(packet.sample_lease_bytes),
+                "device_generated_wait_bytes": int(packet.device_generated_wait_bytes),
                 "generator_compiled": bool(generator_compiled),
                 "fused_kernel_compiled": bool(fused_compiled),
                 "dense_device_abi_bytes_eliminated": dense_bytes if self.fused else 0,
@@ -1459,11 +1646,21 @@ class DestinationInputSupergraph:
             ),
             "host_dense_pack_calls": int(sum(item["host_dense_pack_calls"] for item in events)),
             "fallback_calls": int(sum(bool(item["fallback_used"]) for item in events)),
-            "fused_calls": int(sum(item.get("phase") in {51, 52, 53} for item in events)),
+            "fused_calls": int(sum(item.get("phase") in {51, 52, 53, 54} for item in events)),
             "phase52_calls": int(sum(item.get("phase") == 52 for item in events)),
             "phase53_calls": int(sum(item.get("phase") == 53 for item in events)),
+            "phase54_calls": int(sum(item.get("phase") == 54 for item in events)),
             "upstream_compact_owner_calls": int(
                 sum(bool(item.get("upstream_compact_owner_source")) for item in events)
+            ),
+            "device_sample_lease_calls": int(
+                sum(bool(item.get("device_sample_lease")) for item in events)
+            ),
+            "device_sample_lease_bytes": int(
+                sum(item.get("sample_lease_bytes", 0) for item in events)
+            ),
+            "device_generated_wait_bytes": int(
+                sum(item.get("device_generated_wait_bytes", 0) for item in events)
             ),
             "semantic_plan_cache_hits": int(
                 sum(bool(item.get("semantic_plan_cache_hit")) for item in events)
@@ -1518,7 +1715,7 @@ class DestinationInputSupergraph:
             "all_dense_device_abis_eliminated": bool(
                 events
                 and all(
-                    item.get("phase") in {51, 52, 53}
+                    item.get("phase") in {51, 52, 53, 54}
                     and item.get("dense_device_abi_bytes_eliminated", 0) > 0
                     for item in events
                 )
@@ -1576,11 +1773,32 @@ class DeviceResidentDestinationDataPlane(PersistentTiledDestinationInputSupergra
     version = 4
 
 
+class DeviceOwnedDestinationPacket(DeviceResidentDestinationDataPlane):
+    """Phase 54 consumes the sampler's CUDA lease and GPU-generated waits."""
+
+    version = 5
+
+    def __init__(self, bridge, *, sample_service, **kwargs):
+        super().__init__(bridge, **kwargs)
+        if sample_service is None:
+            raise ValueError("Phase 54 requires the persistent destination service")
+        self.sample_service = sample_service
+
+
 def _phase53_compact_sample(sample: pd.DataFrame) -> pd.DataFrame:
     """Select the authoritative first sampled row for every contiguous owner."""
     owner_ids, starts, _ = _owner_topology(sample.index)
     compact = sample.iloc[starts].copy()
     compact.index = pd.Index(owner_ids[starts], name=sample.index.name)
+    return compact
+
+
+def _phase54_compact_sample(sample: pd.DataFrame, lease) -> pd.DataFrame:
+    """Select owner rows using the sampler's versioned topology lease."""
+    if lease.source_ref() is not sample or lease.rows != len(sample):
+        raise ValueError("Phase 54 compact sample lease is stale")
+    compact = sample.iloc[lease.starts_host].copy()
+    compact.index = pd.Index(lease.owner_ids_host, name=sample.index.name)
     return compact
 
 
@@ -1608,7 +1826,15 @@ def phase53_run_location_logsums(
     persons = logsum.filter_chooser_columns(
         persons_merged_df, logsum_settings, model_settings
     )
-    compact = _phase53_compact_sample(location_sample_df).join(persons, how="left")
+    sample_lease = None
+    if runtime.version >= 5:
+        sample_lease = runtime.sample_service.consume_destination_sample(
+            location_sample_df, model_settings.ALT_DEST_COL_NAME
+        )
+        compact_sample = _phase54_compact_sample(location_sample_df, sample_lease)
+    else:
+        compact_sample = _phase53_compact_sample(location_sample_df)
+    compact = compact_sample.join(persons, how="left")
     purpose = model_settings.LOGSUM_TOUR_PURPOSE
     if isinstance(purpose, dict):
         purpose = purpose[segment_name]
@@ -1623,6 +1849,7 @@ def phase53_run_location_logsums(
         chunk_tag,
         trace_label,
         owner_choosers=compact,
+        sample_lease=sample_lease,
     )
     location_sample_df["mode_choice_logsum"] = logsums
     return location_sample_df
@@ -1648,7 +1875,14 @@ def phase53_run_destination_logsums(
     persons = logsum.filter_chooser_columns(
         persons_merged, logsum_settings, model_settings
     )
-    compact = _phase53_compact_sample(destination_sample)
+    sample_lease = None
+    if runtime.version >= 5:
+        sample_lease = runtime.sample_service.consume_destination_sample(
+            destination_sample, model_settings.ALT_DEST_COL_NAME
+        )
+        compact = _phase54_compact_sample(destination_sample, sample_lease)
+    else:
+        compact = _phase53_compact_sample(destination_sample)
     chooser_id = model_settings.CHOOSER_ID_COLUMN
     if chooser_id not in compact:
         raise ValueError(f"Phase 53 compact sample has no {chooser_id!r} relation")
@@ -1669,6 +1903,7 @@ def phase53_run_destination_logsums(
         "tour_destination.logsums",
         trace_label,
         owner_choosers=compact,
+        sample_lease=sample_lease,
     )
     destination_sample["mode_choice_logsum"] = logsums
     return destination_sample

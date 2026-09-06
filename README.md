@@ -1161,3 +1161,26 @@ shards around a verified checkpoint. Destination measurements are direct; the
 133.391-second whole-model figure is explicitly a component-substitution
 projection. See the [Phase 53 technical report](docs/phase53-device-resident-destination-data-plane.md)
 and [qualification artifact](benchmark-results/phase53-p53final-qualification.json).
+
+## Phase 54 device-owned destination packet
+
+Phase 54 connects destination sampling to the logsum service with versioned
+GPU buffer leases. It reuses the sampler's exact group offsets and destination
+IDs, generates all 1,208,340 controlled legacy-compatible normal values on
+CUDA, and transforms them into taxi/TNC wait tables on-device. All 19 public
+calls use this path; generic and CPU fallbacks remain forbidden.
+
+Three matched Phase 53/54 shard pairs reduce packet preparation from 1.300 to
+0.306 seconds (**4.252x**, 76.48% lower), destination service from 4.989 to
+3.713 seconds (**1.344x**, 25.58% lower), and the five destination components
+from 12.6 to 11.3 seconds (**1.115x**, 10.32% lower). Phase 54 wins every pair.
+
+With host math limited to one worker, three fresh monolithic public-benchmark
+runs all complete and pass every proof gate. Their 133.714-second median is
+**1.536x faster and 34.90% lower** than the separately measured 205.4-second
+regular ActivitySim CPU median. Published destination decisions remain exact;
+the maximum observed cached diagnostic difference is 5.72e-6. The persistent
+speed path uses about 441 MiB of GPU workspace.
+
+See the [Phase 54 technical report](docs/phase54-device-owned-destination-packet.md)
+and [consolidated qualification](benchmark-results/phase54-p54final-qualification.json).
