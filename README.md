@@ -27,7 +27,7 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 ActivitySim/CUDA integration suite passes 144 tests, including
+The Python 3.11 repository test suite passes 238 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
@@ -1236,3 +1236,30 @@ This is a verified startup/data-plane gain layered on the Phase 55 GPU runtime,
 not a new inner-kernel speed claim. See the
 [Phase 56 technical report](docs/phase56-verified-modelwide-runtime.md) and
 [consolidated qualification](benchmark-results/phase56-p56formal-qualification.json).
+
+## Phase 57 live timetable CUDA compaction
+
+Phase 57 computes feasible period pairs directly from the current timetable,
+avoiding 15,242,743 host interaction rows while freshly computing all six GPU
+logsum batches. No new modeled-result replay is used.
+
+Three fresh full-model Phase 56/57 pairs preserve every checked decision and
+pass all proof gates. Median model time plus validation/prewarm falls from
+142.075 to 128.158 seconds (**1.109x**, 9.80% lower); mandatory scheduling falls
+from 16.5 to 8.0 seconds (**2.063x**). Process wall medians are 151.231 and
+138.263 seconds. All 238 tests pass. Absolute times and untouched components
+varied, so the entire whole-run difference is not attributed to the new kernel.
+
+Separately, seven identical-input trials show the CUDA reduction taking
+8.250 ms versus 21.731 ms for the fastest tested compiled CPU configuration
+(48 threads): **2.634x**, including GPU transfers and allocations, with exact
+integer outputs. Most multi-second integration savings come from avoiding
+large tables, not from this 13.5 ms GPU-versus-compact-CPU difference.
+
+The under-105-second target remains unmet by 23.158 seconds. This is a
+replicated improvement on the fixed public workload, not a general GPU-only
+ActivitySim implementation or a newly matched regular-CPU comparison.
+
+See the [Phase 57 report and all-component table](docs/phase57-live-scheduling.md),
+[qualification](benchmark-results/phase57-p57formal-qualification.json), and
+[plain-English explainer](docs/choiceforge-plain-english-explainer.md).

@@ -10,10 +10,19 @@ This guide is for a curious high school student. You do not need to know transpo
 - what CPUs, GPUs, and GPU kernels do;
 - what ChoiceForge changes;
 - how correctness and speed are proven on a public benchmark;
-- what the completed Phase 52 persistent tiled destination runtime proves and what it still cannot claim;
+- what the latest live scheduling kernel changes and what the benchmark can and cannot prove;
 - why faster modeling could matter to communities.
 
 ## The one-minute version
+
+Latest result, Phase 57: the live GPU scheduling path cuts its targeted step
+from 16.5 to 8.0 seconds in three matched public-model runs, preserving every
+checked travel decision. The observed full-model median falls from 142.08 to
+128.16 seconds versus the previous GPU version. A separate compact-kernel test
+is 2.63x faster than the strongest tested compiled CPU configuration. The
+under-105-second target is still unmet, and the full runtime remains a
+benchmark-specific hybrid prototype. Sections 288-295 explain the results,
+assumptions, rejected experiments, and remaining work.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -7658,3 +7667,178 @@ Success should again mean exact decisions, bounded diagnostics, no silent
 fallback, three fresh matched wins, and a large whole-model improvement. The
 ambitious target is not "another phase exists." It is roughly 14 more seconds
 removed from a model that now takes about 119 seconds.
+
+## 288. What changed in Phase 57?
+
+Phase 57 changes how the model prepares possible departure and return times.
+Previously, the CPU created more than 15 million rows: one row for each tour
+and available time choice. It then repeatedly merged and shortened these
+tables before asking the GPU to calculate travel attractiveness.
+
+The new kernel reads the current timetable directly. Thousands of GPU workers
+check time conflicts at once and keep the first available choice for each
+departure-period and return-period pair. Only this compact list returns to the
+CPU. The model then calculates all six batches of travel-attractiveness scores
+again using the current tours, current skims, and controlled random numbers.
+
+This removes 15,242,743 large host-table rows and supplies 1,210,124 smaller
+representative rows. It does not reduce the set of actual scheduling choices.
+The scheduling kernel still considers the available hourly alternatives and
+updates each person's timetable after choosing a time.
+
+## 289. Why is taking one representative time legitimate?
+
+The public MTC model already groups hours into five travel periods. For example,
+several morning departure times may use the same morning travel conditions.
+Its configuration chooses representative times for these period pairs when
+computing logsums. Phase 57 implements that existing rule more directly.
+
+It preserves the order of the first available alternative in every pair.
+Order matters because the model's controlled random draws and downstream
+tables must remain aligned. Integer minimum and integer counting operations
+make this new reduction independent of which GPU worker happens to finish
+first. They introduce no floating-point summation approximation.
+
+The numerical utility and logsum calculations still use the earlier reviewed
+GPU arithmetic. The inherited near-boundary choice checks remain necessary;
+Phase 57 does not remove the project's existing numerical limitations.
+
+## 290. What happened to the faster-looking cache experiment?
+
+An early experiment saved old logsum values, trip matrices, and summary tables,
+then reused them when input fingerprints matched. Its checked decision columns
+were unchanged and one run took about 108.48 seconds. That is evidence about
+repeating an unchanged scenario, not evidence that the GPU calculates a new
+scenario faster. Its hash checks also did not establish a complete model-wide
+dependency or semantic equivalence proof.
+
+We therefore removed that result-replay implementation from the release
+candidate. The released Phase 57 path recalculates all six logsum batches and
+regenerates the trip matrices and summary tables. Its formal benchmark uses
+this live-computation path. Early cache measurements remain development
+evidence and must not be presented as Phase 57 GPU-kernel speedups.
+
+Reusing invariant input skims, as Phase 56 does, remains part of the baseline
+and candidate. Reusing input data and replaying a model's calculated answers
+are different operations and must be described separately.
+
+## 291. How do we test whether it really works?
+
+First, an independent CPU loop checks every combination of timetable conflict
+codes on randomized inputs. Tests change the timetable to empty and occupied
+states and require identical GPU results. Another test changes representative
+times in the configuration and checks that the new calculation responds.
+
+Second, the full public model runs from a fresh process. It must execute all
+34 timed steps, use six live GPU logsum computations, preserve the complete
+representative-row count, and match every checked published decision column.
+The separately declared logsum diagnostics retain their numerical tolerances.
+
+Third, fresh Phase 56 controls and Phase 57 candidates run in three matched
+pairs. Both sides include validation of their input-skim cache and program
+prewarm. The comparison also records launch-to-exit wall time. The commonly
+reported sum of model-step times is smaller than process wall time because
+imports, startup, and other orchestration also take time.
+
+Finally, a separate benchmark compares this reduction against compiled CPU
+code with several thread counts. It includes uploads, downloads, and allocation
+in the GPU measurement. That benchmark answers a kernel question; the full
+ActivitySim comparison answers the end-to-end question.
+
+## 292. What does this let us claim?
+
+The single development run of the live path reduced mandatory scheduling from
+13.9 to 7.2 seconds and the measured model total from 118.34 to 111.73 seconds.
+Every checked decision cell matched. These are preliminary single-pair figures;
+the final replication record below is the authority for a repeated claim.
+
+The new kernel uses live inputs, but the complete application still contains
+benchmark-specific scheduling artifacts and sparse reference decisions inherited
+from earlier phases. It is a qualified prototype for this 50,000-household
+public workload, not a general GPU implementation of every ActivitySim model.
+
+The target remains a measured total below 105 seconds. A positive speedup does
+not automatically meet that target. A report must state both the improvement
+we measured and any remaining gap. Faster kernels also do not prove that the
+underlying travel model predicts real people more accurately; they preserve
+the model's calculations while taking less time.
+
+## 293. What did the finished replication actually show?
+
+We ran three complete Phase 56 controls and three complete Phase 57 candidates.
+Each candidate produced exactly the same checked travel decisions as the
+reference. All correctness gates passed, and all 238 automated repository tests
+passed. Some attractiveness-score diagnostics still differ slightly within
+their declared tolerances; "same decisions" does not mean every number is
+bit-for-bit identical.
+
+| What we measured | Previous GPU system | New GPU system |
+|---|---:|---:|
+| Whole-model median, including validation and prewarm | 142.08 seconds | 128.16 seconds |
+| Launch-to-exit wall-clock median | 151.23 seconds | 138.26 seconds |
+| Mandatory tour scheduling median | 16.5 seconds | 8.0 seconds |
+
+The observed whole-model improvement is 1.109x, or 9.80% less time. The targeted
+scheduling step takes 51.52% less time. All three pairs improved, with whole-run
+savings of 11.69, 19.65, and 12.72 seconds.
+
+The final runs were slower overall than the earlier development test. Other,
+unchanged steps also varied, and each pair ran the old version first. That
+means we cannot assign all 13.92 seconds of median savings to the new kernel
+alone. Alternating which version runs first is an important follow-up. These
+are honest measurements on this computer, not a promise that another computer
+or every new run will have the same times.
+
+The under-105-second goal was **not met**. The replicated median remains
+23.16 seconds above it. The machine-readable result explicitly says
+`replicated_improvement_target_not_met`. A working optimization and an
+unfinished larger target can both be true.
+
+## 294. Did the GPU beat a strong CPU implementation too?
+
+Yes, for this particular reduction. We wrote compiled CPU code for the same
+job and tried 1, 4, 8, 24, and 48 CPU threads. A thread is a worker that can
+carry out part of a program. More workers can help, but their coordination
+also costs time, so we measured rather than assumed which count was best.
+
+Across seven trials, the fastest tested CPU configuration used 48 threads and
+took a median of 21.73 milliseconds for all six batches. The GPU took 8.25
+milliseconds, including copying inputs in and results out and allocating
+memory. The GPU was **2.63x faster** and returned exactly the same integer
+answers in every trial. A millisecond is one thousandth of a second.
+
+These measurements reuse already initialized compiled functions. First use
+also takes time: about 1.32 seconds for the CPU and 0.59 seconds for the GPU in
+that process, with existing disk compiler caches possibly reused. The complete
+model measurements include their own initialization costs.
+
+Here is the crucial interpretation: the GPU's advantage over this compact CPU
+calculation saves only about 13.5 milliseconds. Avoiding the old giant tables
+is what saves whole seconds in ActivitySim. A good CPU rewrite could also avoid
+those tables. We have demonstrated both a better data layout and a local GPU
+advantage, but not that the GPU alone caused every second of the full-model
+improvement or that no better CPU algorithm could ever exist.
+
+## 295. What remains before the bigger ambition is fulfilled?
+
+First, make the experiment stronger: alternate run order and repeat a fresh
+regular-CPU ActivitySim comparison. The old 205.4-second CPU result is useful
+history, but it is not a newly matched comparison with these slower formal
+runs. Do not divide unrelated historical timings and call that a new proof.
+
+Second, tackle complete remaining steps. Trip mode choice takes about 11.3
+seconds, trip destination about 10.7 seconds, and non-mandatory tour frequency
+about 8.9 seconds in the latest candidate medians. Keeping person, tour, and
+trip information in a shared GPU store could remove repeated copying and table
+construction. We must measure those costs before promising the savings.
+
+Third, broaden correctness beyond this fixed benchmark. The full prototype
+still relies on earlier benchmark-specific scheduling contracts and a small
+set of reference decisions near numerical boundaries. Those dependencies need
+live replacements and tests with changed inputs and seeds. The new kernel's
+changed-timetable tests do not by themselves prove that the entire model works
+for every city or scenario.
+
+The next success is not another impressive tiny-kernel ratio. It is a lower
+complete-run time, including all required work, with repeatable travel choices
+and a clearer path for another researcher to reproduce and extend it.

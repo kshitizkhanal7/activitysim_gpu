@@ -15,6 +15,9 @@ htmlcov/
 .env.*
 *.log
 
+# Rejected local Phase 57 result-replay experiment; never part of the runtime.
+src/choiceforge/kernels/phase57_postprocess_cache/
+
 # Keep compact, machine-readable benchmark evidence while excluding captured
 # arrays and run directories. Phase 13/14 exact-gate reports are intentionally
 # versioned because their hashes are part of the replication contract.

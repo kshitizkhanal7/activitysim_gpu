@@ -327,7 +327,14 @@ def main() -> int:
         type=Path,
         help="optional host capture for numeric debugging; never use for qualification",
     )
+    parser.add_argument(
+        "--phase57-live-scheduling", action="store_true",
+        help="generate feasible representative rows on CUDA and recompute all six live logsums",
+    )
     args = parser.parse_args()
+    if args.phase57_live_scheduling:
+        args.phase56_modelwide_resident_runtime = True
+        args.native_abi_live = True
     if args.phase56_modelwide_resident_runtime:
         args.phase55_device_entity_execution_runtime = True
         os.environ["CHOICEFORGE_PHASE56_MODELWIDE_RESIDENT_RUNTIME"] = "1"
@@ -505,6 +512,9 @@ def main() -> int:
     )
     scheduler_initialization_seconds = time.perf_counter() - scheduler_started
     original_compute = vts._compute_logsums
+    original_compute_tour_scheduling_logsums = vts.compute_tour_scheduling_logsums
+    original_tdd_interaction_dataset = vts.tdd_interaction_dataset
+    phase57_live_events = []
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1100,6 +1110,38 @@ def main() -> int:
         )
         return pd.Series(selected, index=choosers.index)
 
+    def phase57_live_tdd_dataset(
+        state, tours, alts, timetable, choice_column, window_id_col, trace_label
+    ):
+        if scheduler.complete:
+            return original_tdd_interaction_dataset(
+                state, tours, alts, timetable, choice_column, window_id_col, trace_label
+            )
+        from choiceforge.phase57_live_scheduling import representative_rows
+        expected_ids = scheduler.batches[scheduler.cursor]["host"]["chooser_ids"]
+        if not np.array_equal(tours.index, expected_ids):
+            raise ValueError("Phase 57 live tour ordering differs from scheduling contract")
+        rows, event = representative_rows(state, tours, alts, timetable, window_id_col)
+        event["batch"] = scheduler.cursor
+        phase57_live_events.append(event)
+        return rows
+
+    def phase57_live_tour_logsums(
+        state, alt_tdd, tours, purpose, model_settings, skims, trace_label, *, chunk_sizer
+    ):
+        if scheduler.complete:
+            return original_compute_tour_scheduling_logsums(
+                state, alt_tdd, tours, purpose, model_settings, skims, trace_label,
+                chunk_sizer=chunk_sizer,
+            )
+        from choiceforge.phase57_live_scheduling import representative_times
+        rows = representative_times(state, alt_tdd, purpose)
+        # Compute new utility/nesting/cache values from current skims and tours.
+        return gpu_compute_logsums(
+            state, rows, tours, purpose, model_settings,
+            state.get_injectable("network_los"), skims, trace_label,
+        )
+
     def run_one_model(self, models, resume_after=None, memory_sidecar_process=None):
         if args.stop_after_model and isinstance(models, list):
             if args.stop_after_model not in models:
@@ -1448,6 +1490,9 @@ def main() -> int:
         self.skims_info.clear()
 
     vts._compute_logsums = gpu_compute_logsums
+    if args.phase57_live_scheduling:
+        vts.tdd_interaction_dataset = phase57_live_tdd_dataset
+        vts.compute_tour_scheduling_logsums = phase57_live_tour_logsums
     if args.native_skim_store:
         vts.skims_for_logsums = native_skims_for_logsums
         activitysim_los.Network_LOS.load_skim_info = native_network_los_load_skim_info
@@ -1561,6 +1606,8 @@ def main() -> int:
         elapsed = time.perf_counter() - started
         sys.argv = old_argv
         vts._compute_logsums = original_compute
+        vts.compute_tour_scheduling_logsums = original_compute_tour_scheduling_logsums
+        vts.tdd_interaction_dataset = original_tdd_interaction_dataset
         vts.skims_for_logsums = original_skims_for_logsums
         activitysim_los.Network_LOS.load_skim_info = original_network_los_load_skim_info
         activitysim_los.Network_LOS.load_data = original_network_los_load_data
@@ -2809,6 +2856,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            57 if args.phase57_live_scheduling else
             56 if args.phase56_modelwide_resident_runtime else
             55 if args.phase55_device_entity_execution_runtime else
             54 if args.phase54_device_owned_destination_packet else
@@ -2836,6 +2884,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public model with current-timetable CUDA feasibility and period-pair "
+            "compaction, six newly computed GPU logsums, and fresh matrix/summary generation"
+            if args.phase57_live_scheduling else
             "full public ActivitySim model with the Phase 55 AOT device runtime "
             "and a verified persistent model-wide Sharrow skim image"
             if args.phase56_modelwide_resident_runtime else
@@ -2929,6 +2980,16 @@ def main() -> int:
         ),
         "phase56_modelwide_resident_runtime": phase56_cache_validation,
         "phase56_cache_built_this_run": phase56_cache_built,
+        "phase57_live_scheduling": {
+            "contract": "choiceforge-phase57-live-period-pairs-v1",
+            "events": phase57_live_events,
+            "calls": len(phase57_live_events),
+            "full_interaction_rows_avoided": sum(
+                item["full_interaction_rows_avoided"] for item in phase57_live_events
+            ),
+            "representative_rows": sum(item["representative_rows"] for item in phase57_live_events),
+            "result_replay_enabled": False,
+        } if args.phase57_live_scheduling else None,
         "elapsed_seconds_including_resume_overhead": elapsed,
         "exit_code": int(exit_code or 0),
         "mandatory_tours": int(len(expected)),
@@ -3120,6 +3181,15 @@ def main() -> int:
                 ),
             }
         )
+    if args.phase57_live_scheduling:
+        live_proof = report["phase57_live_scheduling"]
+        report["proof_gates"].update({
+            "phase57_six_live_feasibility_compactions": live_proof["calls"] == 6,
+            "phase57_complete_live_logsum_cardinality": live_proof["representative_rows"] == 1_210_124,
+            "phase57_dense_host_alternatives_eliminated": live_proof["full_interaction_rows_avoided"] == 15_242_743,
+            "phase57_all_six_logsums_recomputed": len(native_manifests) == 6,
+            "phase57_no_result_replay": live_proof["result_replay_enabled"] is False,
+        })
     if args.native_skim_store:
         report["proof_gates"].update(
             {

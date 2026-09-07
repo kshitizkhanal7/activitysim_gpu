@@ -1,0 +1,136 @@
+{
+  "contract": "phase57-current-window-cpu-cuda-reduction-v1",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "numba_version": "0.66.0",
+  "python_version": "3.11.14",
+  "numpy_version": "2.4.6",
+  "cupy_version": "14.1.1",
+  "activitysim_version": "1000.dev1+g16ab11180",
+  "cpu_description": "AMD64 Family 25 Model 8 Stepping 2, AuthenticAMD",
+  "logical_cpu_count": 48,
+  "gpu_name": "NVIDIA RTX A4000",
+  "cuda_runtime_version": 12090,
+  "input_sha256": {
+    "benchmark-results\\phase21-scheduling-inputs\\manifest.json": "46d091c06d7b227a3ea9535e8dc709dc6860c9fcd52f28d8fa68eb95086cca57",
+    "benchmark-results\\phase21-scheduling-inputs\\common.npz": "54d4ca8384747561de9606306fbf33b4120d393a39d7eb3d371668d6a42bd3ea",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_000.npz": "2f47dbd5a2ecc4b06e09abe807a3fcb3839f3c882a51c4b839a3d3e1d4f1c32f",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_001.npz": "31f75d26ee1f52348fef7937fb7556aed0bf49aa70b3ec08f9346930ea6fae66",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_002.npz": "b3ccf5ce853d88e2d6889a361759082e2b1767dadd31a93b345e2653bcb0c0a3",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_003.npz": "e247670ac5d0e9b94a89c420cdc8b3e95b2830e478c1c094a20bff51d6f6e8d3",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_004.npz": "cbee011d1abcb1c29ad92d3fbfc94fd9d7a1e140c0ab1a45530d9030405ca30c",
+    "benchmark-results\\phase21-scheduling-inputs\\batch_005.npz": "8d08962929c72fa2e9e09a0e75f19ef516bff40b628655e4c66a24d4dfc5e9fe"
+  },
+  "cpu_thread_counts": [
+    1,
+    4,
+    8,
+    24,
+    48
+  ],
+  "batches": 6,
+  "chooser_rows": 81983,
+  "feasible_rows": 15242743,
+  "representative_rows": 1210124,
+  "repetitions": 7,
+  "runs": [
+    {
+      "trial": 1,
+      "seconds": {
+        "cpu_1": 0.3477370999753475,
+        "cpu_4": 0.12381260003894567,
+        "cpu_8": 0.06882750010117888,
+        "cpu_24": 0.026869300054386258,
+        "cpu_48": 0.02275569993071258,
+        "gpu": 0.009360700147226453
+      },
+      "exact": true
+    },
+    {
+      "trial": 2,
+      "seconds": {
+        "gpu": 0.008149199886247516,
+        "cpu_48": 0.0181940000038594,
+        "cpu_24": 0.029537699883803725,
+        "cpu_8": 0.07109219999983907,
+        "cpu_4": 0.13514099991880357,
+        "cpu_1": 0.3746722999494523
+      },
+      "exact": true
+    },
+    {
+      "trial": 3,
+      "seconds": {
+        "cpu_1": 0.34520450001582503,
+        "cpu_4": 0.13517999998293817,
+        "cpu_8": 0.06940779997967184,
+        "cpu_24": 0.02728649997152388,
+        "cpu_48": 0.0219781999476254,
+        "gpu": 0.008249500067904592
+      },
+      "exact": true
+    },
+    {
+      "trial": 4,
+      "seconds": {
+        "gpu": 0.008022499969229102,
+        "cpu_48": 0.018990700133144855,
+        "cpu_24": 0.029393699951469898,
+        "cpu_8": 0.07023230008780956,
+        "cpu_4": 0.13642970006912947,
+        "cpu_1": 0.34353969991207123
+      },
+      "exact": true
+    },
+    {
+      "trial": 5,
+      "seconds": {
+        "cpu_1": 0.35068950010463595,
+        "cpu_4": 0.13622740004211664,
+        "cpu_8": 0.070128999883309,
+        "cpu_24": 0.02744370000436902,
+        "cpu_48": 0.02185179991647601,
+        "gpu": 0.008552300045266747
+      },
+      "exact": true
+    },
+    {
+      "trial": 6,
+      "seconds": {
+        "gpu": 0.007900699973106384,
+        "cpu_48": 0.016957399901002645,
+        "cpu_24": 0.030040400102734566,
+        "cpu_8": 0.06948209996335208,
+        "cpu_4": 0.1370884000789374,
+        "cpu_1": 0.32987060002051294
+      },
+      "exact": true
+    },
+    {
+      "trial": 7,
+      "seconds": {
+        "cpu_1": 0.3487780001014471,
+        "cpu_4": 0.13739140005782247,
+        "cpu_8": 0.0697624001186341,
+        "cpu_24": 0.028039300115779042,
+        "cpu_48": 0.021731300046667457,
+        "gpu": 0.008353100158274174
+      },
+      "exact": true
+    }
+  ],
+  "median_seconds": {
+    "cpu_1": 0.3477370999753475,
+    "cpu_4": 0.13622740004211664,
+    "cpu_8": 0.0697624001186341,
+    "cpu_24": 0.028039300115779042,
+    "cpu_48": 0.021731300046667457,
+    "gpu": 0.008249500067904592
+  },
+  "strongest_measured_cpu": "cpu_48",
+  "speedup_vs_strongest_cpu": 2.634256605586925,
+  "cold_cpu_compile_seconds": 1.318039100151509,
+  "cold_gpu_compile_seconds": 0.5901783001609147,
+  "gpu_includes_all_host_device_transfers_and_allocations": true,
+  "all_outputs_exact": true,
+  "scope": "six public timetable snapshots, warmed compiled functions; separate from full ActivitySim timing"
+}
