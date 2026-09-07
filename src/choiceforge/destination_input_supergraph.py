@@ -1,4 +1,4 @@
-"""Phase 50-54 compact destination-input generation and fused CUDA execution.
+"""Phase 50-55 compact destination-input generation and fused CUDA execution.
 
 ActivitySim's public tour-mode preprocessor expands one owner and each sampled
 destination into 41 dense row fields, then Sharrow resolves, packs, and uploads
@@ -30,11 +30,18 @@ from .native_abi_bootstrap import (
     NativeSkimCube,
     NativeStrictAbiPlan,
     compile_native_strict_abi,
+    export_native_aot_plan,
+    materialize_native_aot_plan,
 )
 from .nested_logit import mtc21_nested_logsums_cuda
-from .raw_table_input_generation import _density_band, _scaled_lognormal
+from .raw_table_input_generation import (
+    RAW_FLOAT_SOURCES,
+    RAW_INT_SOURCES,
+    _density_band,
+    _scaled_lognormal,
+)
 from .semantic_input_generation import _AVAILABILITY_LABELS, _availability_expression
-from .sharrow_cuda import _shared_memory_bytes, generate_cuda_source
+from .sharrow_cuda import _node_sources, _shared_memory_bytes, generate_cuda_source
 from .sharrow_ir import specification_ir
 
 
@@ -79,6 +86,78 @@ _FUSED_UTILITY_CACHE: dict[str, Any] = {}
 _ROW_OWNER_KERNEL = None
 _PHASE54_WAIT_KERNEL = None
 _PHASE52_SOURCE = Path(__file__).with_name("kernels") / "phase52_public_destination_tile4.cu"
+_PHASE55_ATLAS = Path(__file__).with_name("kernels") / "phase55_public_destination_plans.json"
+_PHASE55_CUBIN = Path(__file__).with_name("kernels") / "phase55_public_destination_sm86.cubin"
+_PHASE55_CUBIN_MANIFEST = Path(__file__).with_name("kernels") / "phase55_public_destination_sm86.json"
+# Replaced with the reviewed artifact digest after a capture run.  Capture mode
+# is explicit and never enabled by the production runner.
+_PHASE55_ATLAS_SHA256 = "8a26ceb258b7f891517010f1b1a59f380f146ee76d05c5c6bd27d7ac7a187ce8"
+
+
+def _typed_json(value):
+    """Encode semantic plans without pickle or lossy dictionary-key coercion."""
+    if isinstance(value, np.generic):
+        value = value.item()
+    if hasattr(value, "model_dump"):
+        value = value.model_dump()
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, Mapping):
+        pairs = [(_typed_json(key), _typed_json(item)) for key, item in value.items()]
+        pairs.sort(key=lambda pair: json.dumps(pair[0], sort_keys=True, separators=(",", ":")))
+        return {"$map": pairs}
+    if isinstance(value, tuple):
+        return {"$tuple": [_typed_json(item) for item in value]}
+    if isinstance(value, list):
+        return {"$list": [_typed_json(item) for item in value]}
+    raise TypeError(f"Phase 55 plan value has unsupported type {type(value).__name__}")
+
+
+def _from_typed_json(value):
+    if isinstance(value, list):
+        return [_from_typed_json(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    if set(value) == {"$map"}:
+        return {
+            _from_typed_json(key): _from_typed_json(item)
+            for key, item in value["$map"]
+        }
+    if set(value) == {"$tuple"}:
+        return tuple(_from_typed_json(item) for item in value["$tuple"])
+    if set(value) == {"$list"}:
+        return [_from_typed_json(item) for item in value["$list"]]
+    raise ValueError("Phase 55 typed plan contains an unknown object")
+
+
+def _canonical_json(value) -> bytes:
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def _phase55_plan_key(spec_name, purpose) -> str:
+    return f"{spec_name}:{purpose}"
+
+
+def _phase55_config_fingerprints(state, logsum_settings) -> dict[str, str]:
+    names = {
+        str(logsum_settings.SPEC),
+        str(logsum_settings.COEFFICIENTS),
+        str(logsum_settings.COEFFICIENT_TEMPLATE),
+        "tour_mode_choice.yaml",
+        "settings.yaml",
+    }
+    fingerprints = {}
+    for number, directory in enumerate(state.filesystem.get_configs_dir()):
+        for name in sorted(names):
+            path = Path(directory) / name
+            if path.is_file():
+                fingerprints[f"{number}:{name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    if not fingerprints:
+        raise ValueError("Phase 55 cannot fingerprint the public model configuration")
+    return fingerprints
 
 
 def prewarm_phase52_public_runtime(cp=None) -> dict[str, Any]:
@@ -118,6 +197,49 @@ def prewarm_phase52_public_runtime(cp=None) -> dict[str, Any]:
         "source_sha256": source_sha256,
         "source_path": str(_PHASE52_SOURCE),
         "cache_contract": "checked-in-source-sha256-plus-cupy-disk-binary-cache",
+    }
+
+
+def prewarm_phase55_public_runtime(cp=None) -> dict[str, Any]:
+    """Load the reviewed device binary without invoking a runtime compiler."""
+    cp = cp or _cupy()
+    started = time.perf_counter()
+    if not _PHASE55_CUBIN.is_file() or not _PHASE55_CUBIN_MANIFEST.is_file():
+        raise ValueError("Phase 55 reviewed destination cubin is absent")
+    manifest = json.loads(_PHASE55_CUBIN_MANIFEST.read_text(encoding="utf-8"))
+    source = _PHASE52_SOURCE.read_text(encoding="utf-8")
+    binary = _PHASE55_CUBIN.read_bytes()
+    architecture = f"sm_{cp.cuda.Device().compute_capability}"
+    checks = {
+        "contract": manifest.get("contract")
+        == "choiceforge-phase55-reviewed-fused-cubin-v1",
+        "architecture": manifest.get("architecture") == architecture,
+        "source": manifest.get("source_sha256")
+        == hashlib.sha256(source.encode()).hexdigest(),
+        "binary": manifest.get("cubin_sha256") == hashlib.sha256(binary).hexdigest(),
+        "bytes": manifest.get("bytes") == len(binary),
+        "kernel": manifest.get("kernel") == "choiceforge_strict_ir_v3",
+    }
+    if not all(checks.values()):
+        failed = [name for name, passed in checks.items() if not passed]
+        raise ValueError(f"Phase 55 reviewed cubin validation failed: {failed}")
+    source_sha256 = manifest["source_sha256"]
+    kernel = _FUSED_UTILITY_CACHE.get(source_sha256)
+    loaded = kernel is None
+    if kernel is None:
+        module = cp.RawModule(path=str(_PHASE55_CUBIN))
+        kernel = module.get_function(manifest["kernel"])
+        _FUSED_UTILITY_CACHE[source_sha256] = kernel
+    cp.cuda.Stream.null.synchronize()
+    return {
+        "available": True,
+        "compiled": False,
+        "binary_loaded": loaded,
+        "seconds": time.perf_counter() - started,
+        "source_sha256": source_sha256,
+        "cubin_sha256": manifest["cubin_sha256"],
+        "architecture": architecture,
+        "cache_contract": "reviewed-hash-verified-architecture-specific-cubin",
     }
 
 
@@ -388,7 +510,88 @@ class DestinationInputSupergraph:
         self._device_buffers: dict[tuple[Any, ...], Any] = {}
         self._utility_buffer = None
         self._native_plan_cache: dict[str, NativeStrictAbiPlan] = {}
+        self._skim_cube_cache: dict[tuple[int, tuple[str, ...]], NativeSkimCube] = {}
         self._semantic_plan_cache: dict[tuple[str, str], tuple[Any, ...]] = {}
+        self._phase55_atlas_document = None
+        self._phase55_atlas_hits = 0
+        self._phase55_atlas_misses = 0
+        self._phase55_codegen_bypasses = 0
+
+    def _phase55_load_atlas(self, state, logsum_settings):
+        if self._phase55_atlas_document is not None:
+            return self._phase55_atlas_document
+        capture = bool(os.environ.get("CHOICEFORGE_PHASE55_CAPTURE_ATLAS"))
+        if not _PHASE55_ATLAS.exists():
+            if capture:
+                document = {
+                    "contract": "phase55-public-destination-plan-atlas-v2",
+                    "config_files": _phase55_config_fingerprints(state, logsum_settings),
+                    "plans": {},
+                }
+                self._phase55_atlas_document = document
+                return document
+            raise ValueError("Phase 55 checked-in plan atlas is absent")
+        raw = json.loads(_PHASE55_ATLAS.read_text(encoding="utf-8"))
+        artifact_sha256 = raw.pop("artifact_sha256", None)
+        computed = hashlib.sha256(_canonical_json(raw)).hexdigest()
+        if artifact_sha256 != computed:
+            raise ValueError("Phase 55 plan atlas self-digest is invalid")
+        if not capture and computed != _PHASE55_ATLAS_SHA256:
+            raise ValueError("Phase 55 plan atlas does not match the reviewed digest")
+        if capture and raw.get("contract") != "phase55-public-destination-plan-atlas-v2":
+            raw = {
+                "contract": "phase55-public-destination-plan-atlas-v2",
+                "config_files": _phase55_config_fingerprints(state, logsum_settings),
+                "plans": {},
+            }
+        elif raw.get("contract") != "phase55-public-destination-plan-atlas-v2":
+            raise ValueError("Phase 55 plan atlas contract is unsupported")
+        current = _phase55_config_fingerprints(state, logsum_settings)
+        if raw.get("config_files") != current:
+            raise ValueError("Phase 55 public model configuration fingerprint changed")
+        self._phase55_atlas_document = raw
+        return raw
+
+    def _phase55_entry(self, state, logsum_settings, purpose):
+        atlas = self._phase55_load_atlas(state, logsum_settings)
+        key = _phase55_plan_key(logsum_settings.SPEC, purpose)
+        entry = atlas["plans"].get(key)
+        if entry is None:
+            self._phase55_atlas_misses += 1
+            if not os.environ.get("CHOICEFORGE_PHASE55_CAPTURE_ATLAS"):
+                raise ValueError(f"Phase 55 plan atlas has no reviewed entry for {key!r}")
+            return key, None
+        self._phase55_atlas_hits += 1
+        numeric_nest, constants = _from_typed_json(entry["semantic"])
+        document = {
+            "sha256": entry["document_sha256"],
+            "terms": [None] * int(entry["native_aot"]["terms"]),
+            "alternatives": list(entry["alternatives"]),
+        }
+        semantic = (numeric_nest, constants, None, document)
+        return key, (semantic, entry)
+
+    def _phase55_capture(self, key, semantic, native, fused_source_sha256):
+        if not os.environ.get("CHOICEFORGE_PHASE55_CAPTURE_ATLAS"):
+            return
+        atlas = self._phase55_atlas_document
+        numeric_nest, constants, _scalar_environment, document = semantic
+        atlas["plans"][key] = {
+            "semantic": _typed_json((numeric_nest, constants)),
+            "document_sha256": document["sha256"],
+            "alternatives": list(document["alternatives"]),
+            "native_schema_sha256": native.manifest["schema_sha256"],
+            "native_generated_source_sha256": native.manifest["generated_source_sha256"],
+            "fused_source_sha256": fused_source_sha256,
+            "native_aot": export_native_aot_plan(native),
+        }
+        payload = dict(atlas)
+        digest = hashlib.sha256(_canonical_json(payload)).hexdigest()
+        output = {"artifact_sha256": digest, **payload}
+        _PHASE55_ATLAS.parent.mkdir(parents=True, exist_ok=True)
+        temporary = _PHASE55_ATLAS.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+        os.replace(temporary, _PHASE55_ATLAS)
 
     @staticmethod
     def _capacity(rows: int) -> int:
@@ -1335,8 +1538,20 @@ class DestinationInputSupergraph:
             logsum_settings = TourModeComponentSettings.model_validate(logsum_settings)
         started = time.perf_counter()
         semantic_key = (str(logsum_settings.SPEC), str(tour_purpose))
-        semantic = self._semantic_plan_cache.get(semantic_key) if self.persistent else None
-        semantic_plan_hit = semantic is not None
+        phase55_key = None
+        phase55_metadata = None
+        if self.version >= 6:
+            phase55_key, phase55 = self._phase55_entry(
+                state, logsum_settings, tour_purpose
+            )
+            if phase55 is None:
+                semantic = None
+            else:
+                semantic, phase55_metadata = phase55
+            semantic_plan_hit = semantic is not None
+        else:
+            semantic = self._semantic_plan_cache.get(semantic_key) if self.persistent else None
+            semantic_plan_hit = semantic is not None
         if semantic is None:
             spec = state.filesystem.read_model_spec(file_name=logsum_settings.SPEC)
             coefficients = state.filesystem.get_segment_coefficients(
@@ -1370,6 +1585,10 @@ class DestinationInputSupergraph:
         }
 
         def cube_loader(source):
+            cache_key = (id(network_los), tuple(source))
+            cached_cube = self._skim_cube_cache.get(cache_key)
+            if cached_cube is not None:
+                return cached_cube
             _, direction, key = source
             wrapper_name = "od_skims" if direction == "od_skims_reverse" else direction
             if wrapper_name not in skims:
@@ -1377,32 +1596,53 @@ class DestinationInputSupergraph:
             data, dest_count, time_count, rank = cuda_cube_from_activitysim(
                 skims[wrapper_name], key
             )
-            return NativeSkimCube(data, dest_count, time_count, rank)
+            cube = NativeSkimCube(data, dest_count, time_count, rank)
+            if self.persistent:
+                self._skim_cube_cache[cache_key] = cube
+            return cube
 
-        scalar_signature = hashlib.sha256(
-            json.dumps(
-                sorted(
-                    (str(key), type(value).__name__, repr(value))
-                    for key, value in scalar_environment.items()
-                    if np.isscalar(value)
-                ),
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
+        if phase55_metadata is not None:
+            # The reviewed compact plan already commits to every scalar value,
+            # binding, and coefficient in its schema digest.  Rebuilding this
+            # signature from the original expression environment would defeat
+            # AOT loading and require reparsing the source specification.
+            scalar_signature = phase55_metadata["native_schema_sha256"]
+        else:
+            scalar_signature = hashlib.sha256(
+                json.dumps(
+                    sorted(
+                        (str(key), type(value).__name__, repr(value))
+                        for key, value in scalar_environment.items()
+                        if np.isscalar(value)
+                    ),
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
         native_key = f"{document['sha256']}:{scalar_signature}:{id(network_los)}"
         native = self._native_plan_cache.get(native_key) if self.persistent else None
         native_plan_hit = native is not None
         if native is None:
-            native = compile_native_strict_abi(
-                document,
-                scalar_environment,
-                cube_loader,
-                rows=len(choosers),
-                minimal_row_state=self.fused,
-                minimal_output_state=self.persistent,
-                cache_codegen=True,
-                compile_kernel=not self.fused,
-            )
+            if phase55_metadata is not None:
+                native = materialize_native_aot_plan(
+                    phase55_metadata["native_aot"], cube_loader
+                )
+            else:
+                native = compile_native_strict_abi(
+                    document,
+                    scalar_environment,
+                    cube_loader,
+                    rows=len(choosers),
+                    minimal_row_state=self.fused,
+                    minimal_output_state=self.persistent,
+                    cache_codegen=True,
+                    compile_kernel=not self.fused,
+                )
+            if (
+                phase55_metadata is not None
+                and native.manifest["schema_sha256"]
+                != phase55_metadata["native_schema_sha256"]
+            ):
+                raise ValueError("Phase 55 native ABI differs from the reviewed atlas")
             if self.persistent:
                 template_invocation = replace(
                     native.invocation,
@@ -1431,7 +1671,20 @@ class DestinationInputSupergraph:
             )
         else:
             utility_workspace_hit = False
-        if self.fused:
+        if self.fused and phase55_metadata is not None:
+            source = _PHASE52_SOURCE.read_text(encoding="utf-8")
+            source_sha256 = hashlib.sha256(source.encode()).hexdigest()
+            if source_sha256 != phase55_metadata["fused_source_sha256"]:
+                raise ValueError("Phase 55 checked-in fused CUDA source changed")
+            fused_kernel = _FUSED_UTILITY_CACHE.get(source_sha256)
+            fused_compiled = fused_kernel is None
+            if fused_kernel is None:
+                raise ValueError(
+                    "Phase 55 reviewed cubin was not prewarmed; refusing runtime compilation"
+                )
+            schema_sha256 = source_sha256
+            self._phase55_codegen_bypasses += 1
+        elif self.fused:
             fused_kernel, schema_sha256, fused_compiled = self._fused_utility(
                 document, native
             )
@@ -1439,6 +1692,10 @@ class DestinationInputSupergraph:
             fused_kernel = None
             schema_sha256 = None
             fused_compiled = False
+        if self.version >= 6 and phase55_metadata is None:
+            self._phase55_capture(
+                phase55_key, semantic, native, schema_sha256
+            )
         compiled = time.perf_counter()
         land_use = state.get_dataframe("land_use")
         land_float, land_int = self._resident_land(land_use)
@@ -1587,6 +1844,8 @@ class DestinationInputSupergraph:
                 "native_kernel_compiled": native.manifest["compiled_this_call"],
                 "semantic_plan_cache_hit": semantic_plan_hit,
                 "native_plan_cache_hit": native_plan_hit,
+                "phase55_plan_atlas_hit": phase55_metadata is not None,
+                "phase55_codegen_bypassed": phase55_metadata is not None,
                 "utility_workspace_hit": utility_workspace_hit,
                 "packet_workspace_hits": packet.workspace_hits,
                 "packet_workspace_allocations": packet.workspace_allocations,
@@ -1646,10 +1905,23 @@ class DestinationInputSupergraph:
             ),
             "host_dense_pack_calls": int(sum(item["host_dense_pack_calls"] for item in events)),
             "fallback_calls": int(sum(bool(item["fallback_used"]) for item in events)),
-            "fused_calls": int(sum(item.get("phase") in {51, 52, 53, 54} for item in events)),
+            "fused_calls": int(sum(item.get("phase") in {51, 52, 53, 54, 55} for item in events)),
             "phase52_calls": int(sum(item.get("phase") == 52 for item in events)),
             "phase53_calls": int(sum(item.get("phase") == 53 for item in events)),
             "phase54_calls": int(sum(item.get("phase") == 54 for item in events)),
+            "phase55_calls": int(sum(item.get("phase") == 55 for item in events)),
+            "phase55_plan_atlas_hits": int(
+                sum(bool(item.get("phase55_plan_atlas_hit")) for item in events)
+            ),
+            "phase55_codegen_bypasses": int(
+                sum(bool(item.get("phase55_codegen_bypassed")) for item in events)
+            ),
+            "phase55_atlas_entries": int(
+                len((self._phase55_atlas_document or {}).get("plans", {}))
+            ),
+            "phase55_atlas_sha256": (
+                _PHASE55_ATLAS_SHA256 if self.version >= 6 else None
+            ),
             "upstream_compact_owner_calls": int(
                 sum(bool(item.get("upstream_compact_owner_source")) for item in events)
             ),
@@ -1715,7 +1987,7 @@ class DestinationInputSupergraph:
             "all_dense_device_abis_eliminated": bool(
                 events
                 and all(
-                    item.get("phase") in {51, 52, 53, 54}
+                    item.get("phase") in {51, 52, 53, 54, 55}
                     and item.get("dense_device_abi_bytes_eliminated", 0) > 0
                     for item in events
                 )
@@ -1727,6 +1999,7 @@ class DestinationInputSupergraph:
         """Drop every resident device reference after the final GPU consumer."""
         self._native_plan_cache.clear()
         self._semantic_plan_cache.clear()
+        self._skim_cube_cache.clear()
         self._device_buffers.clear()
         self._utility_buffer = None
         self._land_float = None
@@ -1783,6 +2056,12 @@ class DeviceOwnedDestinationPacket(DeviceResidentDestinationDataPlane):
         if sample_service is None:
             raise ValueError("Phase 54 requires the persistent destination service")
         self.sample_service = sample_service
+
+
+class DeviceEntityExecutionRuntime(DeviceOwnedDestinationPacket):
+    """Phase 55 hash-verified AOT plan atlas and device packet runtime."""
+
+    version = 6
 
 
 def _phase53_compact_sample(sample: pd.DataFrame) -> pd.DataFrame:

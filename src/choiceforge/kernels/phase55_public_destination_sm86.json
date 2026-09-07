@@ -1,0 +1,14 @@
+{
+  "contract": "choiceforge-phase55-reviewed-fused-cubin-v1",
+  "architecture": "sm_86",
+  "kernel": "choiceforge_strict_ir_v3",
+  "source_sha256": "599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906",
+  "cubin_sha256": "9872bc0c9031f5ab29d99065db960652ff5fa5ffdb8733e0f0c8d5e1008d7f06",
+  "bytes": 205151,
+  "options": [
+    "--std=c++11",
+    "--fmad=true",
+    "--prec-div=true",
+    "--ftz=true"
+  ]
+}

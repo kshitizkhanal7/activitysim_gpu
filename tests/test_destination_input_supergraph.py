@@ -1,10 +1,13 @@
 import numpy as np
 import pandas as pd
 import pytest
+import hashlib
+import json
 
 from choiceforge.destination_input_supergraph import (
     DeviceResidentDestinationDataPlane,
     DeviceOwnedDestinationPacket,
+    DeviceEntityExecutionRuntime,
     DestinationInputSupergraph,
     PersistentTiledDestinationInputSupergraph,
     _owner_topology,
@@ -15,6 +18,9 @@ from choiceforge.destination_input_supergraph import (
     _wait_table,
     _wait_parameters,
     _phase54_wait_kernel,
+    _canonical_json,
+    _PHASE55_ATLAS,
+    _PHASE55_ATLAS_SHA256,
 )
 from choiceforge.cuda_backend import _cupy, cuda_available
 
@@ -333,3 +339,51 @@ def test_phase54_summary_proves_device_leases_normals_and_waits():
     assert summary["device_sample_lease_calls"] == 1
     assert summary["device_sample_lease_bytes"] == 440
     assert summary["device_generated_wait_bytes"] == 300
+
+
+def test_phase55_reviewed_plan_atlas_self_digest_and_code_digest_match():
+    document = json.loads(_PHASE55_ATLAS.read_text(encoding="utf-8"))
+    artifact_digest = document.pop("artifact_sha256")
+    computed = hashlib.sha256(_canonical_json(document)).hexdigest()
+    assert artifact_digest == computed == _PHASE55_ATLAS_SHA256
+    assert document["contract"] == "phase55-public-destination-plan-atlas-v2"
+    assert len(document["plans"]) == 10
+
+
+def test_phase55_summary_exposes_locked_aot_runtime_contract():
+    runtime = DeviceEntityExecutionRuntime(
+        None, cbd_threshold=3, cp=object(), tile_rows=4, sample_service=object()
+    )
+    runtime._phase55_atlas_document = {"plans": {str(i): {} for i in range(10)}}
+    runtime._events = [
+        {
+            "phase": 55,
+            "trace_label": "workplace_location.i1.logsums.work",
+            "rows": 100,
+            "owners": 5,
+            "dense_preprocessor_rows_avoided": 100,
+            "dense_preprocessor_values_avoided": 4_100,
+            "dense_host_pack_bytes_avoided": 41_600,
+            "compact_upload_bytes": 700,
+            "net_upload_bytes_avoided": 40_900,
+            "binding_resolution_calls": 0,
+            "host_dense_pack_calls": 0,
+            "fallback_used": False,
+            "device_generate_seconds": 0.0,
+            "utility_kernel_seconds": 0.02,
+            "total_seconds": 0.04,
+            "float_row_sources": 10,
+            "int_row_sources": 31,
+            "skim_coordinate_groups": 6,
+            "phase55_plan_atlas_hit": True,
+            "phase55_codegen_bypassed": True,
+            "tile_rows": 4,
+        }
+    ]
+    summary = runtime.summary()
+    assert summary["contract_version"] == 6
+    assert summary["phase55_calls"] == 1
+    assert summary["phase55_plan_atlas_hits"] == 1
+    assert summary["phase55_codegen_bypasses"] == 1
+    assert summary["phase55_atlas_entries"] == 10
+    assert summary["phase55_atlas_sha256"] == _PHASE55_ATLAS_SHA256

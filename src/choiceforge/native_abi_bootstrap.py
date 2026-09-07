@@ -76,6 +76,96 @@ class NativeStrictAbiPlan:
     manifest: Mapping[str, Any]
 
 
+def export_native_aot_plan(plan: NativeStrictAbiPlan) -> dict[str, Any]:
+    """Return the compact, data-only portion needed to rematerialize a fused plan."""
+    cp = _cupy()
+    invocation = plan.invocation
+    return {
+        "bindings": [
+            {
+                "source": list(item.source),
+                "value_kind": item.value_kind,
+                "storage_kind": item.storage_kind,
+                "slot": item.slot,
+                "skim_rank": item.skim_rank,
+                "skim_group": item.skim_group,
+            }
+            for item in plan.bindings
+        ],
+        "coefficients": cp.asnumpy(invocation.coefficients).tolist(),
+        "float_scalars": cp.asnumpy(invocation.float_scalars).tolist(),
+        "int_scalars": cp.asnumpy(invocation.int_scalars).tolist(),
+        "terms": invocation.terms,
+        "alternatives": invocation.alternatives,
+        "float_input_sources": [list(item) for item in invocation.float_input_sources],
+        "int_input_sources": [list(item) for item in invocation.int_input_sources],
+        "manifest": dict(plan.manifest),
+    }
+
+
+def materialize_native_aot_plan(payload, cube_loader) -> NativeStrictAbiPlan:
+    """Build a minimal resident invocation from a reviewed compact ABI atlas."""
+    cp = _cupy()
+    bindings = tuple(
+        InputBinding(
+            tuple(item["source"]), item["value_kind"], item["storage_kind"],
+            int(item["slot"]), int(item["skim_rank"]), int(item["skim_group"]),
+        )
+        for item in payload["bindings"]
+    )
+    skim_bindings = tuple(item for item in bindings if item.storage_kind == "skim")
+    # Several expression terms reference the same skim cube.  Resolve each
+    # immutable cube once; repeatedly asking ActivitySim for identical raw
+    # metadata dominated the first AOT-plan materialization.
+    unique_skim_sources = tuple(dict.fromkeys(item.source for item in skim_bindings))
+    cubes = {source: cube_loader(source) for source in unique_skim_sources}
+    if not all(isinstance(item, NativeSkimCube) for item in cubes.values()):
+        raise TypeError("Phase 55 AOT skim loader returned an invalid cube")
+    skim_arguments, coordinate_bytes = _skim_arguments(cp, bindings, cubes, 1)
+    float_sources = tuple(tuple(item) for item in payload["float_input_sources"])
+    int_sources = tuple(tuple(item) for item in payload["int_input_sources"])
+    terms = int(payload["terms"])
+    alternatives = int(payload["alternatives"])
+    unique_cubes = {
+        int(cube.data.__cuda_array_interface__["data"][0]): cube.data
+        for cube in cubes.values()
+    }
+    invocation = ResidentStrictCudaInvocation(
+        kernel=None,
+        float_inputs=cp.empty((1, len(float_sources)), dtype=cp.float32),
+        int_inputs=cp.empty((1, len(int_sources)), dtype=cp.int64),
+        float_scalars=cp.asarray(payload["float_scalars"], dtype=cp.float32),
+        int_scalars=cp.asarray(payload["int_scalars"], dtype=cp.int64),
+        coefficients=cp.asarray(payload["coefficients"], dtype=cp.float32),
+        features=cp.empty((1,), dtype=cp.float32),
+        utilities=cp.empty((1, alternatives), dtype=cp.float32),
+        skim_arguments=skim_arguments,
+        grid=(1,),
+        block=(256,),
+        shared_mem=_shared_memory_bytes(
+            terms, len(skim_bindings), len({item.skim_group for item in skim_bindings}),
+            1, False, True,
+        ),
+        rows=1,
+        terms=terms,
+        alternatives=alternatives,
+        dense_input_bytes=int((len(float_sources) * 4) + (len(int_sources) * 8)),
+        skim_coordinate_bytes=coordinate_bytes,
+        logical_skim_bindings=len(skim_bindings),
+        unique_skim_arrays=len(unique_cubes),
+        shared_skim_data_bytes=sum(int(item.nbytes) for item in unique_cubes.values()),
+        float_input_sources=float_sources,
+        int_input_sources=int_sources,
+        skim_input_sources=tuple(item.source for item in skim_bindings),
+        skim_input_ranks=tuple(item.skim_rank for item in skim_bindings),
+        skim_input_groups=tuple(item.skim_group for item in skim_bindings),
+    )
+    manifest = dict(payload["manifest"])
+    if manifest.get("terms") != terms or len(manifest.get("alternatives", [])) != alternatives:
+        raise ValueError("Phase 55 compact ABI metadata is inconsistent")
+    return NativeStrictAbiPlan(invocation, bindings, manifest)
+
+
 def _source_label(source) -> str:
     return ":".join(str(part) for part in source)
 
@@ -231,6 +321,7 @@ def compile_native_strict_abi(
     minimal_output_state: bool = False,
     cache_codegen: bool = False,
     compile_kernel: bool = True,
+    aot_generated_source_sha256: str | None = None,
 ) -> NativeStrictAbiPlan:
     """Compile a strict resident invocation without dense preprocessor values."""
     _validate_document(document)
@@ -263,7 +354,13 @@ def compile_native_strict_abi(
     ).hexdigest()
     global _NATIVE_CODEGEN_HITS, _NATIVE_CODEGEN_MISSES
     cached_codegen = _NATIVE_CODEGEN_CACHE.get(codegen_key) if cache_codegen else None
-    if cached_codegen is None:
+    if aot_generated_source_sha256 is not None:
+        if not isinstance(aot_generated_source_sha256, str) or len(aot_generated_source_sha256) != 64:
+            raise ValueError("AOT native source SHA-256 is invalid")
+        source = None
+        source_sha256 = aot_generated_source_sha256
+        codegen_cache_hit = True
+    elif cached_codegen is None:
         source, source_sha256 = generate_cuda_source(
             document,
             bindings,
@@ -288,6 +385,8 @@ def compile_native_strict_abi(
     kernel = _NATIVE_KERNEL_CACHE.get(kernel_key) if compile_kernel else None
     compiled = bool(compile_kernel and kernel is None)
     if compile_kernel and kernel is None:
+        if source is None:
+            raise ValueError("AOT native source cannot compile without checked-in source")
         kernel = cp.RawKernel(
             source,
             "choiceforge_strict_ir_v3",

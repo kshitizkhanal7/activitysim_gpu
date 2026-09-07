@@ -2,9 +2,10 @@ param(
     [ValidateRange(1, 5)][int]$Repetitions = 3,
     [ValidateRange(1, 500000)][int]$Households = 50000,
     [ValidatePattern("^[A-Za-z0-9-]+$")][string]$RunTag = "p32proof",
-    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53", "activitysim")][string]$Baseline = "phase17",
-    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54)][int]$CandidatePhase = 32,
-    [switch]$Resume
+    [ValidateSet("phase17", "phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53", "phase54", "activitysim")][string]$Baseline = "phase17",
+    [ValidateSet(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55)][int]$CandidatePhase = 32,
+    [switch]$Resume,
+    [switch]$CleanupOutputs
 )
 
 $ErrorActionPreference = "Stop"
@@ -82,9 +83,10 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
     $checkpoint = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-checkpoint-$trial.json"
     $baselineCheckpoint = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-base-checkpoint-$trial.json"
     $verification = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-exact-$trial.json"
+    $baselineTimingSnapshot = Join-Path $repo "benchmark-results\$phasePrefix-$RunTag-base-timing-$trial.csv"
     $baselineComplete = (
         (Test-Path -LiteralPath (Join-Path $baselineOutput "timing_log.csv")) -and
-        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53") -or (Test-Path -LiteralPath $baselineReport))
+        ($Baseline -notin @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53", "phase54") -or (Test-Path -LiteralPath $baselineReport))
     )
     $candidateComplete = (
         (Test-Path -LiteralPath (Join-Path $candidateOutput "timing_log.csv")) -and
@@ -111,7 +113,7 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         $env:CHOICEFORGE_PHASE17_RUN_ID = "$RunTag-base-$trial"
         $baselineStdout = Join-Path $project "$RunTag-base-$trial.stdout.log"
         $baselineStderr = Join-Path $project "$RunTag-base-$trial.stderr.log"
-        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53")) {
+        if ($Baseline -in @("phase34", "phase35", "phase36", "phase37", "phase38", "phase40", "phase41", "phase42", "phase43", "phase44", "phase45", "phase46", "phase47", "phase48", "phase49", "phase50", "phase51", "phase52", "phase53", "phase54")) {
             $env:CHOICEFORGE_STRICT_CUDA_CANDIDATE = "1"
             $env:CHOICEFORGE_STRICT_CUDA_MODE_CHOICE = "1"
             $baselineArguments = @(
@@ -160,6 +162,8 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
                 $baselineArguments += "--phase52-persistent-tiled-destination"
             } elseif ($Baseline -eq "phase53") {
                 $baselineArguments += "--phase53-device-resident-destination-data-plane"
+            } elseif ($Baseline -eq "phase54") {
+                $baselineArguments += "--phase54-device-owned-destination-packet"
             } else {
                 $baselineArguments += "--phase45-modelwide-choice"
             }
@@ -185,6 +189,17 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
             $baselineRun = Invoke-CheckedProcess $activitysim $baselineArguments `
                 $project $baselineStdout $baselineStderr
         }
+    }
+
+    if ($CleanupOutputs) {
+        Copy-Item -LiteralPath (Join-Path $baselineOutput "timing_log.csv") `
+            -Destination $baselineTimingSnapshot
+        $projectRoot = [System.IO.Path]::GetFullPath($project) + [System.IO.Path]::DirectorySeparatorChar
+        $resolvedBaseline = [System.IO.Path]::GetFullPath($baselineOutput)
+        if (-not $resolvedBaseline.StartsWith($projectRoot)) {
+            throw "Refusing to clean baseline outside the benchmark project: $resolvedBaseline"
+        }
+        [System.IO.Directory]::Delete($resolvedBaseline, $true)
     }
 
     if ($candidateComplete) {
@@ -225,11 +240,13 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         if ($CandidatePhase -eq 52) { $candidateArguments += "--phase52-persistent-tiled-destination" }
         if ($CandidatePhase -eq 53) { $candidateArguments += "--phase53-device-resident-destination-data-plane" }
         if ($CandidatePhase -eq 54) { $candidateArguments += "--phase54-device-owned-destination-packet" }
+        if ($CandidatePhase -eq 55) { $candidateArguments += "--phase55-device-entity-execution-runtime" }
         $candidateRun = Invoke-CheckedProcess $python $candidateArguments `
             $repo $candidateStdout $candidateStderr
 
+        $verificationReference = if ($CleanupOutputs) { $reference } else { $baselineOutput }
         & $python (Join-Path $repo "scripts\verify_phase15_outputs.py") `
-            --reference $baselineOutput --candidate $candidateOutput --output $verification | Out-Null
+            --reference $verificationReference --candidate $candidateOutput --output $verification | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Phase $CandidatePhase exact-output verification failed for pair $trial" }
     }
     $exactProof = Get-Content -LiteralPath $verification -Raw | ConvertFrom-Json
@@ -237,7 +254,12 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         throw "Phase $CandidatePhase exact-output proof is invalid for pair $trial"
     }
 
-    $baselineTiming = Import-Csv (Join-Path $baselineOutput "timing_log.csv")
+    $baselineTimingPath = if ($CleanupOutputs) {
+        $baselineTimingSnapshot
+    } else {
+        Join-Path $baselineOutput "timing_log.csv"
+    }
+    $baselineTiming = Import-Csv $baselineTimingPath
     $candidateTiming = Import-Csv (Join-Path $candidateOutput "timing_log.csv")
     $baselineAll = [double](($baselineTiming.seconds | Measure-Object -Sum).Sum)
     $candidateModelSteps = [double](($candidateTiming.seconds | Measure-Object -Sum).Sum)
@@ -307,6 +329,18 @@ for ($trial = 1; $trial -le $Repetitions; $trial++) {
         exact_output_verification = $verification
         candidate_report = $candidateReport
     }
+    if ($CleanupOutputs) {
+        $projectRoot = [System.IO.Path]::GetFullPath($project) + [System.IO.Path]::DirectorySeparatorChar
+        foreach ($runOutput in @($candidateOutput)) {
+            $resolvedOutput = [System.IO.Path]::GetFullPath($runOutput)
+            if (-not $resolvedOutput.StartsWith($projectRoot)) {
+                throw "Refusing to clean output outside the benchmark project: $resolvedOutput"
+            }
+            if ([System.IO.Directory]::Exists($resolvedOutput)) {
+                [System.IO.Directory]::Delete($resolvedOutput, $true)
+            }
+        }
+    }
 }
 
 $baselineValues = @($runs | ForEach-Object { $_.baseline_all_model_seconds } | Sort-Object)
@@ -314,6 +348,10 @@ $candidateValues = @($runs | ForEach-Object { $_.candidate_all_model_seconds } |
 $baselineDestinationValues = @($runs | ForEach-Object { $_.baseline_destination_seconds } | Sort-Object)
 $candidateDestinationValues = @($runs | ForEach-Object { $_.candidate_destination_seconds } | Sort-Object)
 $middle = [int][Math]::Floor($Repetitions / 2)
+$targetComponents = @(
+    "school_location", "workplace_location", "joint_tour_destination",
+    "non_mandatory_tour_destination", "atwork_subtour_destination"
+)
 $componentComparison = @()
 foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
     $baselineComponentValues = @(
@@ -341,7 +379,9 @@ foreach ($modelName in $runs[0].baseline_component_seconds.Keys) {
         "trip_mode_choice" { "Phase17 generated GPU retained" }
         default { "not directly GPU-targeted" }
     }
-    if ($CandidatePhase -ge 54 -and $targetComponents -contains $modelName) {
+    if ($CandidatePhase -ge 55 -and $targetComponents -contains $modelName) {
+        $gpuRole = "Phase55 AOT destination plan atlas and CUDA sample compaction"
+    } elseif ($CandidatePhase -ge 54 -and $targetComponents -contains $modelName) {
         $gpuRole = "Phase54 device-owned sample lease, exact GPU normals, and wait transform"
     } elseif ($CandidatePhase -ge 53 -and $targetComponents -contains $modelName) {
         $gpuRole = "Phase53 upstream compact-owner destination data plane"
@@ -366,6 +406,7 @@ $baselineLabel = switch ($Baseline) {
     "phase51" { "already GPU-accelerated Phase 51 fused compact destination utility" }
     "phase52" { "already GPU-accelerated Phase 52 persistent tiled destination service" }
     "phase53" { "already GPU-accelerated Phase 53 compact-owner destination data plane" }
+    "phase54" { "already GPU-accelerated Phase 54 device-owned destination packet" }
     "phase46" { "already GPU-accelerated Phase 46 runtime" }
     "activitysim" { "regular pinned ActivitySim with Sharrow required" }
     "phase38" { "already GPU-accelerated Phase 38 runtime" }
@@ -402,8 +443,8 @@ $summary = [ordered]@{
     median_destination_speedup = $baselineDestinationValues[$middle] / $candidateDestinationValues[$middle]
     component_comparison = $componentComparison
     candidate_won_every_pair = (@($runs | Where-Object all_model_seconds_saved -le 0).Count -eq 0)
-    target_component = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54)) { "five sampled-destination components" } elseif ($CandidatePhase -in @(43, 44)) { "trip_destination" } else { $null }
-    candidate_won_target_component_every_pair = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54)) {
+    target_component = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54, 55)) { "five sampled-destination components" } elseif ($CandidatePhase -in @(43, 44)) { "trip_destination" } else { $null }
+    candidate_won_target_component_every_pair = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54, 55)) {
         @(
             $runs | Where-Object {
                 $baselineDestination = 0.0
@@ -427,7 +468,9 @@ $summary = [ordered]@{
         ).Count -eq 0
     } else { $null }
     every_pair_exact = $true
-    qualification_basis = if ($CandidatePhase -eq 54) {
+    qualification_basis = if ($CandidatePhase -eq 55) {
+        "exact decisions, bounded logsums, reviewed AOT-plan/device-compaction gates, and three-of-three destination wins"
+    } elseif ($CandidatePhase -eq 54) {
         "exact decisions, bounded logsums, device-lease/normal/wait gates, and three-of-three destination-service wins"
     } elseif ($CandidatePhase -eq 53) {
         "exact decisions, bounded logsums, compact-owner data-plane gates, and three-of-three destination-service wins"
@@ -436,7 +479,7 @@ $summary = [ordered]@{
     } elseif ($CandidatePhase -eq 51) {
         "complete dense device-row ABI elimination plus fail-closed contract gates and exact published decisions; timing is reported without a required win"
     } else { "performance and exact-output gates defined for the selected phase" }
-    claim_boundary = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54)) {
+    claim_boundary = if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54, 55)) {
         "resident sampled-destination probability/choice boundary gain over $baselineLabel; five-component and whole-model timing reported separately; all substantive outputs independently verified"
     } elseif ($CandidatePhase -in @(43, 44)) {
         "replicated trip_destination component gain over $baselineLabel; whole-model timing reported separately; all substantive outputs independently verified"
@@ -446,11 +489,11 @@ $summary = [ordered]@{
 }
 $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Encoding utf8
 $summary | ConvertTo-Json -Depth 8
-if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54)) {
+if ($CandidatePhase -in @(48, 49, 50, 51, 52, 53, 54, 55)) {
     # Phase 48's fail-closed qualifier evaluates the directly instrumented
     # nineteen-call boundary. A roughly 0.2-second boundary cannot honestly be
     # required to dominate noise in a 140+ second lifecycle on every pair.
-    if ($CandidatePhase -in @(50, 52, 53, 54) -and -not $summary.candidate_won_target_component_every_pair) {
+    if ($CandidatePhase -in @(50, 52, 53, 54, 55) -and -not $summary.candidate_won_target_component_every_pair) {
         throw "Phase $CandidatePhase did not win the five destination components in every matched pair"
     }
 } elseif ($CandidatePhase -in @(43, 44)) {

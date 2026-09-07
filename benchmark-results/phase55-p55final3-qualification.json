@@ -1,0 +1,128 @@
+{
+  "phase": 55,
+  "contract": "choiceforge-phase55-replicated-qualification-v1",
+  "status": "qualified_with_two_absolute_time_stretch_targets_open",
+  "benchmark": "public Prototype MTC extended, full 34-step ActivitySim model",
+  "hardware_scope": "NVIDIA RTX A4000, sm_86 cubin",
+  "implementation": {
+    "plan_atlas": "src\\choiceforge\\kernels\\phase55_public_destination_plans.json",
+    "plan_atlas_sha256": "8a26ceb258b7f891517010f1b1a59f380f146ee76d05c5c6bd27d7ac7a187ce8",
+    "plan_count": 10,
+    "cubin": "src\\choiceforge\\kernels\\phase55_public_destination_sm86.cubin",
+    "cubin_sha256": "9872bc0c9031f5ab29d99065db960652ff5fa5ffdb8733e0f0c8d5e1008d7f06",
+    "source_sha256": "599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906"
+  },
+  "cold_sharded_service": {
+    "runs": [
+      {
+        "trial": 1,
+        "phase54_seconds": 3.712981299730018,
+        "phase55_seconds": 2.9455386991612613,
+        "seconds_saved": 0.7674426005687565,
+        "speedup": 1.260544056266273,
+        "reduction_percent": 20.669174946411918,
+        "all_proof_gates_pass": true
+      },
+      {
+        "trial": 2,
+        "phase54_seconds": 3.695438598981127,
+        "phase55_seconds": 2.357220000354573,
+        "seconds_saved": 1.338218598626554,
+        "speedup": 1.5677105227451231,
+        "reduction_percent": 36.212713668020776,
+        "all_proof_gates_pass": true
+      },
+      {
+        "trial": 3,
+        "phase54_seconds": 3.9378808005712926,
+        "phase55_seconds": 2.7374633997678757,
+        "seconds_saved": 1.200417400803417,
+        "speedup": 1.4385145024789032,
+        "reduction_percent": 30.483843000764903,
+        "all_proof_gates_pass": true
+      }
+    ],
+    "median_phase54_seconds": 3.712981299730018,
+    "median_phase55_seconds": 2.7374633997678757,
+    "median_speedup": 1.3563583352547697
+  },
+  "matched_full_model": {
+    "summary": "benchmark-results\\phase55-p55final3-summary.json",
+    "runs": [
+      {
+        "trial": 1,
+        "phase54_all_model_seconds": 139.7,
+        "phase55_all_model_seconds": 135.90947440019806,
+        "all_model_seconds_saved": 3.7905255998019243,
+        "phase54_five_destination_seconds": 10.700000000000001,
+        "phase55_five_destination_seconds": 9.6,
+        "destination_seconds_saved": 1.1000000000000014,
+        "phase55_service_seconds": 2.248565499903634,
+        "aot_plan_hits": 19,
+        "codegen_bypasses": 19,
+        "device_compactions": 19,
+        "all_proof_gates_pass": true,
+        "exact_output_verification_pass": true
+      },
+      {
+        "trial": 2,
+        "phase54_all_model_seconds": 137.69999999999996,
+        "phase55_all_model_seconds": 136.40878010015,
+        "all_model_seconds_saved": 1.2912198998499491,
+        "phase54_five_destination_seconds": 10.799999999999999,
+        "phase55_five_destination_seconds": 10.100000000000001,
+        "destination_seconds_saved": 0.6999999999999975,
+        "phase55_service_seconds": 2.0993470007088035,
+        "aot_plan_hits": 19,
+        "codegen_bypasses": 19,
+        "device_compactions": 19,
+        "all_proof_gates_pass": true,
+        "exact_output_verification_pass": true
+      },
+      {
+        "trial": 3,
+        "phase54_all_model_seconds": 138.2,
+        "phase55_all_model_seconds": 135.50887860031793,
+        "all_model_seconds_saved": 2.6911213996820607,
+        "phase54_five_destination_seconds": 10.700000000000001,
+        "phase55_five_destination_seconds": 10.3,
+        "destination_seconds_saved": 0.40000000000000036,
+        "phase55_service_seconds": 2.2912130001932383,
+        "aot_plan_hits": 19,
+        "codegen_bypasses": 19,
+        "device_compactions": 19,
+        "all_proof_gates_pass": true,
+        "exact_output_verification_pass": true
+      }
+    ],
+    "median_phase54_all_model_seconds": 138.2,
+    "median_phase55_all_model_seconds": 135.90947440019806,
+    "median_all_model_speedup": 1.0168533180627073,
+    "median_all_model_reduction_percent": 1.657399131549873,
+    "median_phase54_five_destination_seconds": 10.700000000000001,
+    "median_phase55_five_destination_seconds": 10.100000000000001,
+    "median_five_destination_speedup": 1.0594059405940595,
+    "median_phase55_service_seconds": 2.248565499903634,
+    "median_phase54_sampling_seconds": 2.182206200202927,
+    "median_phase55_sampling_seconds": 2.5839637003373355
+  },
+  "acceptance_gates": {
+    "atlas_digest_and_ten_plan_contract_valid": true,
+    "sm86_cubin_digest_valid": true,
+    "all_six_cold_shards_pass_proof_gates": true,
+    "phase55_service_wins_all_three_shard_pairs": true,
+    "all_three_full_runs_pass_every_proof_gate": true,
+    "all_three_full_runs_are_output_exact": true,
+    "all_three_full_runs_have_19_aot_hits_and_compactions": true,
+    "five_destination_components_win_all_three_pairs": true,
+    "whole_model_wins_all_three_pairs": true,
+    "monolithic_destination_service_median_below_2_5_seconds": true
+  },
+  "stretch_targets": {
+    "five_destination_component_median_below_10_seconds": false,
+    "full_model_median_below_130_seconds": false
+  },
+  "core_qualification_pass": true,
+  "all_stretch_targets_pass": false,
+  "claim_boundary": "Phase 55 is a replicated speedup over the already GPU-accelerated Phase 54 runtime on this RTX A4000 public 50,000-household workload. It does not yet satisfy the two remaining absolute-time stretch targets."
+}

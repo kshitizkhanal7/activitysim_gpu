@@ -237,6 +237,7 @@ class Phase46DestinationService:
         self._resume_hits = 0
         self._resume_misses = 0
         self.phase54_device_packets = False
+        self.phase55_device_compaction = False
         self._normal_capacity_rows = 0
         self._normal_capacity_values = 0
         self._normal_states = None
@@ -448,6 +449,58 @@ class Phase46DestinationService:
         self._lease_events.append(
             {
                 "operation": "consume",
+                "generation": lease.generation,
+                "rows": lease.rows,
+                "owners": lease.owners,
+                "device_bytes": lease.device_bytes,
+                "seconds": time.perf_counter() - started,
+            }
+        )
+        return lease
+
+    def publish_device_destination_sample(
+        self, sample, alt_col_name: str, offsets_device, destinations_device
+    ):
+        """Publish Phase 55's already compacted CUDA sample without re-upload."""
+        started = time.perf_counter()
+        if not self.phase55_device_compaction:
+            raise ValueError("Phase 55 device sample publication is disabled")
+        if alt_col_name not in sample or not len(sample):
+            raise ValueError("Phase 55 requires a nonempty packed destination sample")
+        ids = np.asarray(sample.index, dtype=np.int64)
+        first = np.r_[True, ids[1:] != ids[:-1]]
+        starts = np.flatnonzero(first).astype(np.int64)
+        owner_ids = np.ascontiguousarray(ids[starts])
+        if len(np.unique(owner_ids)) != len(owner_ids):
+            raise ValueError("Phase 55 packed destination owners are not contiguous")
+        if (
+            offsets_device.dtype != self.cp.int64
+            or destinations_device.dtype != self.cp.int32
+            or int(offsets_device.size) != len(starts) + 1
+            or int(destinations_device.size) != len(sample)
+        ):
+            raise ValueError("Phase 55 device sample shape or dtype is invalid")
+        self._lease_generation += 1
+        destinations = np.asarray(sample[alt_col_name], dtype=np.int32)
+        lease = DestinationSampleLease(
+            generation=self._lease_generation,
+            source_ref=weakref.ref(sample),
+            index_name=sample.index.name,
+            alt_col_name=str(alt_col_name),
+            rows=len(sample),
+            owners=len(starts),
+            starts_host=starts,
+            owner_ids_host=owner_ids,
+            offsets_device=offsets_device,
+            destinations_device=destinations_device,
+            destination_min=int(destinations.min()),
+            destination_max=int(destinations.max()),
+            device_bytes=int(offsets_device.nbytes + destinations_device.nbytes),
+        )
+        self._active_destination_lease = lease
+        self._lease_events.append(
+            {
+                "operation": "publish_device",
                 "generation": lease.generation,
                 "rows": lease.rows,
                 "owners": lease.owners,
@@ -785,12 +838,16 @@ class Phase46DestinationService:
                 item["total_seconds"] for item in self._normal_events
             ),
             "phase54_sample_lease_publishes": sum(
-                item["operation"] == "publish" for item in self._lease_events
+                item["operation"] in {"publish", "publish_device"}
+                for item in self._lease_events
             ),
             "phase54_sample_lease_consumes": sum(
                 item["operation"] == "consume" for item in self._lease_events
             ),
             "phase54_sample_lease_events": list(self._lease_events),
+            "phase55_device_sample_publishes": sum(
+                item["operation"] == "publish_device" for item in self._lease_events
+            ),
         }
 
 

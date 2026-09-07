@@ -7321,3 +7321,180 @@ limits, zero fallback, three matched wins, destination service below 2.5
 seconds, five destination components below 10 seconds, and a measured complete
 model median below 130 seconds. That would attack orchestration and remaining
 owner-state movement, not merely tune an already fast inner kernel.
+
+## 266. What did Phase 55 actually build?
+
+Phase 55 built two connected pieces.
+
+First, it made an ahead-of-time plan book for the ten destination calculations
+used by this public model. Earlier versions opened ActivitySim expression
+files, interpreted their meaning, worked out every input, and generated GPU
+code when a run started. Phase 55 does that planning once in a special
+developer capture run. A normal production run reads the reviewed plan book
+and goes straight to the already-defined GPU inputs.
+
+Second, it made a CUDA sample-compaction step. After the GPU draws 30 possible
+destinations for each traveler, many draws may repeat the same place. The new
+kernel counts repeats, orders the unique places exactly as ActivitySim expects,
+and lets the next GPU stage reuse the compact destination buffer through the
+lease system built in Phase 54.
+
+## 267. What does “ahead of time” or AOT mean?
+
+Imagine a school play. A just-in-time system reads the script, assigns roles,
+and plans every scene after the audience arrives. An ahead-of-time system does
+that preparation during rehearsal and brings a checked stage plan to the
+performance.
+
+Here, the “script” is a travel-model expression such as “driving time times a
+coefficient, plus parking cost, plus a household effect.” The AOT plan records
+which columns, constants, coefficients, and travel-time arrays the GPU needs.
+This reduces repeated Python planning. It does not change the mathematics.
+
+## 268. What are the plan atlas and a cubin?
+
+The **plan atlas** is a typed JSON file containing ten reviewed destination
+plans. “Typed” means it remembers whether a value was a list, tuple, map,
+integer, or decimal instead of guessing when it is loaded.
+
+A **cubin** is compiled GPU machine code for a particular NVIDIA GPU
+architecture. It is similar to giving a processor an executable file instead
+of source code. This project builds an `sm_86` cubin for the RTX A4000 from the
+same checked CUDA source used since Phase 52.
+
+The cubin is faster to start and easier to review, but it is less portable. A
+different GPU architecture needs its own compiled and tested binary. Phase 55
+stops with an error on the wrong architecture rather than secretly compiling a
+different program.
+
+## 269. How can we trust files made ahead of time?
+
+Phase 55 uses SHA-256 fingerprints. A fingerprint is a long number calculated
+from all bytes in a file. Even a tiny edit produces a different number.
+
+The production runtime checks the atlas fingerprint, each relevant model
+configuration fingerprint, the CUDA source fingerprint, the cubin fingerprint,
+the GPU architecture, the kernel name, and the number of plans. A missing plan
+or mismatch stops the run. Production cannot silently enter capture mode or
+fall back to a generic CPU calculation.
+
+This is a replication guarantee about the reviewed program. It does not prove
+that every future travel model is supported. A changed model must build and
+qualify a new atlas.
+
+## 270. What was learned from the first failed design?
+
+The first atlas stored nearly the entire expression document for every plan.
+It was about 30 MB and made the supposedly faster startup slower. That version
+was rejected.
+
+The second design stores only what execution needs: bindings, coefficients,
+scalar values, source order, alternative count, and proof metadata. It is about
+3.4 MB. The loader also originally requested the same travel-time cube many
+times when several expressions referred to it. The final version resolves each
+immutable cube once and shares it across plans.
+
+This is why benchmarking matters. A design can sound efficient and still lose
+when measured.
+
+## 271. What were the final speed results?
+
+The final experiment ran three fresh Phase 54 controls and three fresh Phase
+55 candidates. Every candidate ran the complete 34-step public ActivitySim
+model for 50,000 households.
+
+| Measured boundary | Phase 54 median | Phase 55 median | Improvement |
+|---|---:|---:|---:|
+| cold two-process destination shards | 3.713 s | 2.737 s | 1.356x; 26.3% lower |
+| monolithic 19-call Phase 55 service | not reconstructed | 2.249 s | below 2.5 s target |
+| five destination components | 10.7 s | 10.1 s | 1.059x; 5.61% lower |
+| complete 34-step model | 138.2 s | 135.909 s | 1.017x; 1.66% lower |
+
+Phase 55 won the destination-component total in all three full pairs. It also
+won complete model time in all three pairs, saving 3.791, 1.291, and 2.691
+seconds. The improvement becomes smaller as more unchanged CPU work is added,
+which is expected.
+
+The five-component median missed the under-10-second stretch target by 0.1
+seconds. The full model missed the under-130-second stretch target by 5.909
+seconds. Those goals remain open even though the replicated comparison passed.
+
+## 272. Did the new compaction kernel make sampling faster?
+
+No, not by itself. This negative result is important.
+
+The Phase 54 sampler median was 2.182 seconds. The final Phase 55 sampler median
+was 2.584 seconds. ActivitySim still demands a pandas DataFrame on the CPU, so
+the compact results must still be copied to host memory and arranged as a
+table. GPU compaction also adds its own sorting work.
+
+Why keep it? The compact GPU buffer can be handed directly to the next GPU
+stage without uploading the destinations again. It is a bridge toward a truly
+device-native workflow. In Phase 55, the AOT savings and downstream reuse are
+larger than the local sampler cost, so the five-component and complete-model
+totals still improve. It would be misleading to call the compaction kernel
+alone a speedup.
+
+## 273. How accurate and repeatable are the results?
+
+All three final full candidates passed every inherited and Phase 55 proof gate.
+Each had exactly 19 atlas hits, 19 expression-code-generation bypasses, 19 CUDA
+sample compactions, 19 lease transfers, and zero fallback calls.
+
+Independent verification compared the published model outputs with the fixed
+public reference. All modeled decision cells were identical. Floating logsum
+diagnostics stayed inside limits declared before the run. As before, the honest
+claim is **exact decisions and bounded floating diagnostics**, not identical
+text for every intermediate decimal.
+
+The final-code shard experiment also ran six separate processes and passed all
+gates. This protects against accidentally timing a warm Python process as if it
+were a fresh run.
+
+## 274. What assumptions limit the claim?
+
+The proof applies to the tested RTX A4000, its `sm_86` instruction set, this
+software environment, 50,000 public benchmark households, 1,454 zones, ten
+known destination plans, 21 mode alternatives, 315 expression terms, five time
+periods, and the current ActivitySim ordering and random-stream rules.
+
+Phase 55 is not a whole model running only on the GPU. ActivitySim still uses
+the CPU for workflow, pandas tables, initialization, reporting, and many model
+steps. The reported 1.017x is an incremental gain over Phase 54, which was
+already heavily GPU accelerated. It should not be confused with the larger
+GPU-versus-regular-ActivitySim comparison established by earlier phases.
+
+## 275. Why is a 1.017x whole-model gain still useful?
+
+It is small, but it is measured against a strong GPU baseline rather than an
+unoptimized CPU prototype. It repeats in all three pairs, keeps every modeled
+decision, and removes runtime compiler work. That makes production behavior
+more predictable as well as faster.
+
+It also identifies the new limiting factors. The destination service itself is
+now only about 2.25 seconds. Most of the roughly 136-second model is elsewhere.
+Making that service infinitely fast could save only a few more seconds. Large
+future gains require removing CPU-shaped tables and accelerating other major
+components, not polishing the same inner kernel forever.
+
+## 276. What should Phase 56 do?
+
+Phase 56 should replace the host sample-table compatibility boundary with a
+general device-native entity and sample store. Person, household, tour,
+destination, probability, repeat-count, and random-state fields should remain
+in versioned GPU columns from sampling through logsums, probability, and final
+choice. ActivitySim should receive a host table only when a public model output
+must be published.
+
+The next proof should require:
+
+- a versioned schema that supports more than these ten hard-coded plans;
+- reproducible binary bundles for each supported GPU architecture;
+- a sampler that beats Phase 54 in all three matched pairs;
+- five destination components below 10 seconds median;
+- a full-model median below 130 seconds;
+- exact decisions, bounded diagnostics, zero fallback, and three matched wins.
+
+That would address the real lesson of Phase 55: the next large gain is no
+longer inside the destination formula. It is in removing the CPU table boundary
+around the formula.

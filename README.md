@@ -1184,3 +1184,27 @@ speed path uses about 441 MiB of GPU workspace.
 
 See the [Phase 54 technical report](docs/phase54-device-owned-destination-packet.md)
 and [consolidated qualification](benchmark-results/phase54-p54final-qualification.json).
+
+## Phase 55 reviewed AOT device-entity execution runtime
+
+Phase 55 removes runtime destination expression parsing and code generation
+with a hash-verified ten-plan atlas, loads a reviewed `sm_86` cubin on the RTX
+A4000, caches immutable skim cubes across plans, and compacts sampled
+destinations on CUDA for direct versioned-lease publication.
+
+Three fresh-process Phase 54/55 full-model pairs all retained exact outputs and
+passed every proof gate. Phase 55 won all three whole-model pairs and all three
+five-destination-component pairs. Medians improved from 138.2 to 135.909
+seconds for the complete 34-step model (**1.017x**, 1.66% lower) and from 10.7
+to 10.1 seconds for the five target components (**1.059x**, 5.61% lower). The
+monolithic 19-call service median is 2.249 seconds, below the 2.5-second target.
+
+Final cold-shard service evidence independently improves the Phase 54 median
+from 3.713 to 2.737 seconds (**1.356x**) and wins all three comparisons. The
+five-component under-10-second and full-model under-130-second stretch targets
+remain open. CUDA compaction is also not a standalone sampler win while
+ActivitySim still requires the host DataFrame; the aggregate gain comes from
+AOT loading and downstream buffer reuse.
+
+See the [Phase 55 technical report](docs/phase55-aot-device-entity-execution-runtime.md)
+and [consolidated qualification](benchmark-results/phase55-p55final3-qualification.json).

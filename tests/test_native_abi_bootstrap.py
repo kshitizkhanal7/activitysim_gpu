@@ -8,6 +8,8 @@ from choiceforge.cuda_skims import CudaDatasetSkimBinding
 from choiceforge.native_abi_bootstrap import (
     NativeSkimCube,
     compile_native_strict_abi,
+    export_native_aot_plan,
+    materialize_native_aot_plan,
 )
 from choiceforge.sharrow_cuda import evaluate_strict_cuda
 from choiceforge.sharrow_ir import specification_ir
@@ -127,6 +129,39 @@ def test_native_abi_can_prepare_contract_without_compiling_unused_kernel():
     assert native.manifest["compiled_this_call"] is False
     assert native.manifest["codegen"]["kernel_compiled"] is False
     assert native.manifest["codegen"]["minimal_output_state"] is True
+
+
+def test_phase55_compact_aot_plan_rematerializes_exact_native_arrays():
+    import numpy as np
+
+    document = _document()
+    cube = cp.asarray(np.arange(9, dtype=np.float32).reshape(3, 3))
+    native = compile_native_strict_abi(
+        document,
+        {"scale": 1.25},
+        lambda source: NativeSkimCube(cube, 3, 1, 2),
+        rows=16,
+        minimal_row_state=True,
+        minimal_output_state=True,
+        compile_kernel=False,
+    )
+    payload = export_native_aot_plan(native)
+    calls = []
+
+    def load(source):
+        calls.append(source)
+        return NativeSkimCube(cube, 3, 1, 2)
+
+    restored = materialize_native_aot_plan(payload, load)
+    assert len(calls) == len(set(calls))
+    assert restored.bindings == native.bindings
+    assert restored.manifest["schema_sha256"] == native.manifest["schema_sha256"]
+    assert cp.array_equal(restored.invocation.coefficients, native.invocation.coefficients)
+    assert cp.array_equal(restored.invocation.float_scalars, native.invocation.float_scalars)
+    assert cp.array_equal(restored.invocation.int_scalars, native.invocation.int_scalars)
+    assert restored.invocation.float_input_sources == native.invocation.float_input_sources
+    assert restored.invocation.int_input_sources == native.invocation.int_input_sources
+    assert restored.invocation.kernel is None
 
 
 def test_native_abi_fails_closed_for_unknown_row_source():

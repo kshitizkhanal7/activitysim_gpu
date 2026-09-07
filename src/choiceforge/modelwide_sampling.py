@@ -36,6 +36,7 @@ _UTILITY_KERNELS = {}
 _PHASE46_CHOICE_KERNELS = {}
 _PHASE46_WEIGHT_KERNEL = None
 _PHASE46_DUPLICATE_KERNEL = None
+_PHASE55_COMPACT_KERNEL = None
 _TELEMETRY = []
 logger = logging.getLogger(__name__)
 
@@ -164,6 +165,123 @@ def _pack_sample_phase46(
         index=index,
         copy=False,
     )
+
+
+def _pack_sample_phase55(
+    cp,
+    choosers,
+    choices,
+    alternative_ids,
+    probabilities,
+    random_draws,
+    first_occurrence,
+    pick_counts,
+    alt_col_name,
+):
+    """Sort and compact the exact sampled rows on CUDA before host publication."""
+    if random_draws.shape[1] > np.iinfo(np.uint8).max:
+        raise Phase45Unsupported(
+            "Phase 55 device compaction supports at most 255 draws per chooser"
+        )
+    kernel = _compile_phase55_compact(cp)
+    counts_per_chooser = cp.sum(first_occurrence, axis=1, dtype=cp.int32)
+    offsets = cp.empty(len(choosers) + 1, dtype=cp.int64)
+    offsets[0] = 0
+    cp.cumsum(counts_per_chooser, dtype=cp.int64, out=offsets[1:])
+    packed_rows = int(offsets[-1].get())
+    packed_choices = cp.empty(packed_rows, dtype=cp.int32)
+    packed_probabilities = cp.empty(packed_rows, dtype=cp.float32)
+    packed_counts = cp.empty(packed_rows, dtype=cp.uint32)
+    packed_draw_positions = cp.empty(packed_rows, dtype=cp.uint8)
+    alternative_device = cp.asarray(np.ascontiguousarray(alternative_ids, dtype=np.int32))
+    kernel(
+        ((len(choosers) + 127) // 128,),
+        (128,),
+        (
+            choices, alternative_device, probabilities, first_occurrence,
+            pick_counts, offsets, packed_choices, packed_probabilities,
+            packed_counts, packed_draw_positions, np.int32(len(choosers)),
+            np.int32(random_draws.shape[1]),
+        ),
+    )
+    host_counts_per = cp.asnumpy(counts_per_chooser)
+    host_choices = cp.asnumpy(packed_choices)
+    host_probabilities = cp.asnumpy(packed_probabilities)
+    host_counts = cp.asnumpy(packed_counts)
+    host_draw_positions = cp.asnumpy(packed_draw_positions).astype(np.intp, copy=False)
+    owner_positions = np.repeat(np.arange(len(choosers), dtype=np.intp), host_counts_per)
+    host_random = random_draws[owner_positions, host_draw_positions]
+    index = pd.Index(
+        np.repeat(np.asarray(choosers.index), host_counts_per),
+        name=choosers.index.name,
+    )
+    sample = pd.DataFrame(
+        {
+            alt_col_name: host_choices,
+            "rand": host_random,
+            "prob": host_probabilities,
+            "pick_count": host_counts,
+        },
+        index=index,
+        copy=False,
+    )
+    return sample, offsets, packed_choices, int(
+        host_counts_per.nbytes + host_choices.nbytes + host_probabilities.nbytes
+        + host_counts.nbytes + host_draw_positions.nbytes
+    )
+
+
+def _compile_phase55_compact(cp):
+    """Return the process-cached reviewed Phase 55 sample compactor."""
+    global _PHASE55_COMPACT_KERNEL
+    if _PHASE55_COMPACT_KERNEL is None:
+        source = r'''
+extern "C" __global__ void phase55_compact_sorted_sample(
+    const int* choices,
+    const int* alternative_ids,
+    const float* probabilities,
+    const unsigned char* first_occurrence,
+    const unsigned int* pick_counts,
+    const long long* offsets,
+    int* packed_choices,
+    float* packed_probabilities,
+    unsigned int* packed_counts,
+    unsigned char* packed_draw_positions,
+    int chooser_rows,
+    int sample_size)
+{
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= chooser_rows) return;
+    const long long base = (long long)row * sample_size;
+    const long long output = offsets[row];
+    const int count = (int)(offsets[row + 1] - output);
+    int previous = -2147483647 - 1;
+    for (int rank = 0; rank < count; ++rank) {
+        int best = 2147483647;
+        int best_draw = -1;
+        for (int draw = 0; draw < sample_size; ++draw) {
+            if (!first_occurrence[base + draw]) continue;
+            const int candidate = alternative_ids[choices[base + draw]];
+            if (candidate > previous && candidate < best) {
+                best = candidate;
+                best_draw = draw;
+            }
+        }
+        if (best_draw < 0) return;
+        const long long target = output + rank;
+        packed_choices[target] = best;
+        packed_probabilities[target] = probabilities[base + best_draw];
+        packed_counts[target] = pick_counts[base + best_draw];
+        packed_draw_positions[target] = (unsigned char)best_draw;
+        previous = best;
+    }
+}
+'''
+        _PHASE55_COMPACT_KERNEL = cp.RawKernel(
+            source, "phase55_compact_sorted_sample", options=("--std=c++11",)
+        )
+        _PHASE55_COMPACT_KERNEL.compile()
+    return _PHASE55_COMPACT_KERNEL
 
 
 def _feature_source(expression: str) -> str:
@@ -408,7 +526,9 @@ extern "C" __global__ void phase46_destination_inverse_cdf(
     )
 
 
-def prewarm_phase46_public_runtime(cp=None, *, exact_guard_runtime="numba") -> dict:
+def prewarm_phase46_public_runtime(
+    cp=None, *, exact_guard_runtime="numba", device_compaction=False
+) -> dict:
     """Compile all four reviewed public program shapes before model steps."""
     cp = cp or _cupy()
     started = time.perf_counter()
@@ -417,6 +537,8 @@ def prewarm_phase46_public_runtime(cp=None, *, exact_guard_runtime="numba") -> d
         _, cache_hit = _compile_utility(cp, expressions)
         compiled += int(not cache_hit)
     _compile_phase46_choice(cp, 1454)
+    if device_compaction:
+        _compile_phase55_compact(cp)
     if exact_guard_runtime == "numba":
         from activitysim.core.choosing import sample_choices_maker_preserve_ordering
 
@@ -433,6 +555,7 @@ def prewarm_phase46_public_runtime(cp=None, *, exact_guard_runtime="numba") -> d
         "programs": len(_PHASE46_PUBLIC_PROGRAMS),
         "new_programs_compiled": compiled,
         "exact_guard_runtime": exact_guard_runtime,
+        "phase55_device_compaction": bool(device_compaction),
         "seconds": time.perf_counter() - started,
     }
 
@@ -648,11 +771,25 @@ def sample_destinations_resident(
     device_choice_complete = time.perf_counter()
     if int(cp.count_nonzero(bad).get()):
         raise Phase45Unsupported("resident choice produced zero or invalid probabilities")
-    host_choices = cp.asnumpy(choices)
-    host_choices = alternative_ids[host_choices]
-    host_probabilities = cp.asnumpy(probabilities)
-    host_first = cp.asnumpy(first)
-    host_counts = cp.asnumpy(counts)
+    phase55 = bool(
+        service is not None
+        and getattr(service, "phase55_device_compaction", False)
+    )
+    guard_host = cp.asnumpy(guard).astype(bool, copy=False)
+    if phase55:
+        if diagnostic_exact_values is not None:
+            raise Phase45Unsupported(
+                "Phase 55 device compaction does not permit the development diagnostic"
+            )
+        host_choices = None
+        host_probabilities = None
+        host_first = None
+        host_counts = None
+    else:
+        host_choices = alternative_ids[cp.asnumpy(choices)]
+        host_probabilities = cp.asnumpy(probabilities)
+        host_first = cp.asnumpy(first)
+        host_counts = cp.asnumpy(counts)
     transfer_complete = time.perf_counter()
     if diagnostic_exact_values is not None:
         from activitysim.core import logit
@@ -728,7 +865,6 @@ def sample_destinations_resident(
                 "Phase45 utility/probability diagnostic completed: "
                 + repr(diagnostic_summary)
             )
-    guard_host = cp.asnumpy(guard).astype(bool, copy=False)
     guard_count = int(np.count_nonzero(guard_host))
     if guard_count:
         from activitysim.core import logit
@@ -759,13 +895,31 @@ def sample_destinations_resident(
             # ActivitySim stores sample-major arrays; resident state is chooser-major.
             exact_choices = exact_choices.T
             exact_probabilities = exact_probabilities.T
-        host_choices[guard_host] = exact_choices
-        host_probabilities[guard_host] = exact_probabilities
         exact_first, exact_counts = _host_duplicate_contract(exact_choices)
-        host_first[guard_host] = exact_first
-        host_counts[guard_host] = exact_counts
+        if phase55:
+            guarded_rows = cp.asarray(np.flatnonzero(guard_host), dtype=cp.int64)
+            alternative_positions = {
+                int(value): position for position, value in enumerate(alternative_ids)
+            }
+            exact_positions = np.vectorize(
+                alternative_positions.__getitem__, otypes=[np.int32]
+            )(exact_choices)
+            choices[guarded_rows] = cp.asarray(exact_positions, dtype=cp.int32)
+            probabilities[guarded_rows] = cp.asarray(exact_probabilities, dtype=cp.float32)
+            first[guarded_rows] = cp.asarray(exact_first, dtype=cp.uint8)
+            counts[guarded_rows] = cp.asarray(exact_counts, dtype=cp.uint32)
+            cp.cuda.Stream.null.synchronize()
+        else:
+            host_choices[guard_host] = exact_choices
+            host_probabilities[guard_host] = exact_probabilities
+            host_first[guard_host] = exact_first
+            host_counts[guard_host] = exact_counts
     guard_complete = time.perf_counter()
     diagnostic_id = os.environ.get("CHOICEFORGE_PHASE46_SAMPLE_DIAGNOSTIC_ID")
+    if phase55 and diagnostic_id is not None:
+        raise Phase45Unsupported(
+            "Phase 55 device compaction does not permit the row diagnostic"
+        )
     if diagnostic_id is not None:
         target = int(diagnostic_id)
         target_positions = np.flatnonzero(np.asarray(choosers.index) == target)
@@ -787,19 +941,34 @@ def sample_destinations_resident(
                 ),
                 flush=True,
             )
-    sample = (
-        _pack_sample(
-            choosers, host_choices, host_probabilities, random_draws,
-            host_first, host_counts, alt_col_name,
+    device_offsets = None
+    device_destinations = None
+    phase55_transfer_bytes = 0
+    if phase55:
+        sample, device_offsets, device_destinations, phase55_transfer_bytes = (
+            _pack_sample_phase55(
+                cp, choosers, choices, alternative_ids, probabilities,
+                random_draws, first, counts, alt_col_name,
+            )
         )
-        if service is None
-        else _pack_sample_phase46(
-            choosers, host_choices, host_probabilities, random_draws,
-            host_first, host_counts, alt_col_name,
+    else:
+        sample = (
+            _pack_sample(
+                choosers, host_choices, host_probabilities, random_draws,
+                host_first, host_counts, alt_col_name,
+            )
+            if service is None
+            else _pack_sample_phase46(
+                choosers, host_choices, host_probabilities, random_draws,
+                host_first, host_counts, alt_col_name,
+            )
         )
-    )
     sample_lease = None
-    if service is not None and getattr(service, "phase54_device_packets", False):
+    if phase55:
+        sample_lease = service.publish_device_destination_sample(
+            sample, alt_col_name, device_offsets, device_destinations
+        )
+    elif service is not None and getattr(service, "phase54_device_packets", False):
         sample_lease = service.publish_destination_sample(sample, alt_col_name)
     finished = time.perf_counter()
     _TELEMETRY.append({
@@ -814,7 +983,12 @@ def sample_destinations_resident(
         "pack_seconds": finished - guard_complete,
         "exact_guard_rows": guard_count,
         "total_seconds": finished - started, "fallback": False,
-        "runtime": "phase46_persistent" if service is not None else "phase45",
+        "runtime": (
+            "phase55_device_compaction" if phase55
+            else "phase46_persistent" if service is not None else "phase45"
+        ),
+        "phase55_device_compaction": phase55,
+        "phase55_compact_transfer_bytes": phase55_transfer_bytes,
         "phase54_sample_lease_published": sample_lease is not None,
         "phase54_sample_lease_generation": (
             sample_lease.generation if sample_lease is not None else None

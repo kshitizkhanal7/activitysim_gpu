@@ -4,8 +4,10 @@ import pytest
 
 from choiceforge.cuda_backend import _cupy, cuda_available
 from choiceforge.modelwide_sampling import (
+    Phase45Unsupported,
     _compile_phase46_choice,
     _pack_sample_phase46,
+    _pack_sample_phase55,
     _preserved_order_choices,
     numpy_preserved_order_choices,
 )
@@ -181,6 +183,65 @@ def test_phase46_compact_packer_matches_activitysim_sorted_contract():
         choosers, choices, probabilities, random_draws, first, counts, "dest_MAZ"
     )
     pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+
+
+def test_phase55_device_compaction_matches_exact_sorted_host_contract():
+    cp = _cupy()
+    rng = np.random.default_rng(550055)
+    rows, draws, alternatives = 83, 30, 1454
+    choosers = pd.DataFrame(index=pd.Index(np.arange(rows) * 19 + 7, name="tour_id"))
+    # A concentrated choice set exercises duplicate removal as it occurs in
+    # destination sampling instead of the nearly-all-unique synthetic case.
+    positions = rng.integers(0, 20, size=(rows, draws), dtype=np.int32)
+    alternative_ids = np.arange(1, alternatives + 1, dtype=np.int32)
+    choices = alternative_ids[positions]
+    probabilities = rng.random((rows, draws), dtype=np.float32)
+    random_draws = rng.random((rows, draws), dtype=np.float64)
+    first, counts = _host_duplicate_contract(positions)
+    expected = _pack_sample_phase46(
+        choosers, choices, probabilities, random_draws, first, counts, "dest_MAZ"
+    )
+    actual, offsets, destinations, transferred = _pack_sample_phase55(
+        cp, choosers, cp.asarray(positions), alternative_ids,
+        cp.asarray(probabilities), random_draws, cp.asarray(first),
+        cp.asarray(counts), "dest_MAZ",
+    )
+    pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+    np.testing.assert_array_equal(cp.asnumpy(destinations), actual.dest_MAZ.to_numpy())
+    np.testing.assert_array_equal(
+        cp.asnumpy(offsets),
+        np.r_[0, np.cumsum(first.sum(axis=1), dtype=np.int64)],
+    )
+    assert transferred < choices.nbytes + probabilities.nbytes + first.nbytes + counts.nbytes
+
+
+def test_phase55_device_compaction_rejects_draw_positions_that_do_not_fit_abi():
+    with pytest.raises(Phase45Unsupported, match="at most 255 draws"):
+        _pack_sample_phase55(
+            object(), None, None, None, None, np.empty((1, 256)), None, None, "zone_id"
+        )
+
+
+def test_phase55_direct_device_sample_lease_reuses_compacted_buffers():
+    cp = _cupy()
+    service = Phase46DestinationService(cp)
+    service.phase54_device_packets = True
+    service.phase55_device_compaction = True
+    sample = pd.DataFrame(
+        {"zone_id": [3, 7, 2, 8, 9]},
+        index=pd.Index([10, 10, 20, 20, 20], name="tour_id"),
+    )
+    offsets = cp.asarray([0, 2, 5], dtype=cp.int64)
+    destinations = cp.asarray(sample.zone_id.to_numpy(), dtype=cp.int32)
+    lease = service.publish_device_destination_sample(
+        sample, "zone_id", offsets, destinations
+    )
+    assert lease.offsets_device.data.ptr == offsets.data.ptr
+    assert lease.destinations_device.data.ptr == destinations.data.ptr
+    assert service.consume_destination_sample(sample, "zone_id") is lease
+    summary = service.summary()
+    assert summary["phase55_device_sample_publishes"] == 1
+    assert summary["phase54_sample_lease_consumes"] == 1
 
 
 def test_phase47_numpy_guard_matches_activitysim_numba_contract():

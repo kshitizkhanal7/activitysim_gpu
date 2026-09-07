@@ -228,6 +228,14 @@ def main() -> int:
             "exact controlled normals and wait table on the GPU"
         ),
     )
+    parser.add_argument(
+        "--phase55-device-entity-execution-runtime",
+        action="store_true",
+        help=(
+            "consume a hash-verified ahead-of-time destination plan atlas and "
+            "compact sampled destinations on CUDA before direct lease publication"
+        ),
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -302,6 +310,9 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase55_device_entity_execution_runtime:
+        args.phase54_device_owned_destination_packet = True
+        os.environ["CHOICEFORGE_PHASE55_DEVICE_ENTITY_EXECUTION_RUNTIME"] = "1"
     if args.phase54_device_owned_destination_packet:
         args.phase53_device_resident_destination_data_plane = True
         os.environ["CHOICEFORGE_PHASE54_DEVICE_OWNED_DESTINATION_PACKET"] = "1"
@@ -1421,7 +1432,8 @@ def main() -> int:
 
             phase46_service.phase47_device_final = True
             phase46_prewarm = prewarm_phase46_public_runtime(
-                exact_guard_runtime="numpy"
+                exact_guard_runtime="numpy",
+                device_compaction=args.phase55_device_entity_execution_runtime,
             )
             phase47_prewarm = prewarm_phase47_public_runtime()
             if args.phase48_resident_destination_graph:
@@ -1438,15 +1450,20 @@ def main() -> int:
                     phase46_service.destination_supergraph_bridge = phase49_bridge
                     if args.phase50_device_generated_destination_inputs:
                         from choiceforge.destination_input_supergraph import (
+                            DeviceEntityExecutionRuntime,
                             DeviceOwnedDestinationPacket,
                             DestinationInputSupergraph,
                             FusedDestinationInputSupergraph,
                             PersistentTiledDestinationInputSupergraph,
                             DeviceResidentDestinationDataPlane,
                             prewarm_phase52_public_runtime,
+                            prewarm_phase55_public_runtime,
                         )
 
                         runtime_type = (
+                            DeviceEntityExecutionRuntime
+                            if args.phase55_device_entity_execution_runtime
+                            else
                             DeviceOwnedDestinationPacket
                             if args.phase54_device_owned_destination_packet
                             else
@@ -1460,8 +1477,10 @@ def main() -> int:
                             else DestinationInputSupergraph
                         )
                         if args.phase52_persistent_tiled_destination:
-                            phase52_prewarm = prewarm_phase52_public_runtime(
-                                phase46_service.cp
+                            phase52_prewarm = (
+                                prewarm_phase55_public_runtime(phase46_service.cp)
+                                if args.phase55_device_entity_execution_runtime
+                                else prewarm_phase52_public_runtime(phase46_service.cp)
                             )
                         runtime_kwargs = {
                             "cbd_threshold": raw_cbd_threshold,
@@ -1470,6 +1489,8 @@ def main() -> int:
                         if args.phase54_device_owned_destination_packet:
                             phase46_service.phase54_device_packets = True
                             runtime_kwargs["sample_service"] = phase46_service
+                        if args.phase55_device_entity_execution_runtime:
+                            phase46_service.phase55_device_compaction = True
                         phase50_runtime = runtime_type(phase49_bridge, **runtime_kwargs)
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
@@ -1509,8 +1530,14 @@ def main() -> int:
             original_compute_location_choice_logsums
         )
 
-    destination_phase = 54 if args.phase54_device_owned_destination_packet else 53
+    destination_phase = (
+        55 if args.phase55_device_entity_execution_runtime else
+        54 if args.phase54_device_owned_destination_packet else 53
+    )
     destination_runtime_key = (
+        "phase55_device_entity_execution_runtime"
+        if args.phase55_device_entity_execution_runtime
+        else
         "phase54_device_owned_destination_packet"
         if args.phase54_device_owned_destination_packet
         else "phase53_device_resident_destination_data_plane"
@@ -1597,6 +1624,17 @@ def main() -> int:
                             ) == 1.0
                             for event in summary.get("events", [])
                         )
+                    )
+                ),
+                "phase55_all_twelve_calls_use_locked_aot_plans": (
+                    not args.phase55_device_entity_execution_runtime
+                    or (
+                        summary.get("phase55_calls") == 12
+                        and summary.get("phase55_plan_atlas_hits") == 12
+                        and summary.get("phase55_codegen_bypasses") == 12
+                        and summary.get("phase55_atlas_entries") == 10
+                        and (phase52_prewarm or {}).get("compiled") is False
+                        and bool((phase52_prewarm or {}).get("cubin_sha256"))
                     )
                 ),
             },
@@ -1706,6 +1744,17 @@ def main() -> int:
                             ) == 1.0
                             for event in summary.get("events", [])
                         )
+                    )
+                ),
+                "phase55_all_seven_calls_use_locked_aot_plans": (
+                    not args.phase55_device_entity_execution_runtime
+                    or (
+                        summary.get("phase55_calls") == 7
+                        and summary.get("phase55_plan_atlas_hits") == 7
+                        and summary.get("phase55_codegen_bypasses") == 7
+                        and summary.get("phase55_atlas_entries") == 10
+                        and (phase52_prewarm or {}).get("compiled") is False
+                        and bool((phase52_prewarm or {}).get("cubin_sha256"))
                     )
                 ),
             },
@@ -2658,6 +2707,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            55 if args.phase55_device_entity_execution_runtime else
             54 if args.phase54_device_owned_destination_packet else
             53 if args.phase53_device_resident_destination_data_plane else
             52 if args.phase52_persistent_tiled_destination else
@@ -2683,6 +2733,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with a hash-verified AOT destination "
+            "plan atlas, CUDA sample compaction, and direct device lease publication"
+            if args.phase55_device_entity_execution_runtime else
             "full public ActivitySim model with versioned sampled-destination CUDA "
             "leases, bit-exact GPU legacy normals, and device-generated wait tables"
             if args.phase54_device_owned_destination_packet else
@@ -2843,6 +2896,10 @@ def main() -> int:
         "phase54_device_owned_destination_packet": (
             phase50_summary
             if args.phase54_device_owned_destination_packet else None
+        ),
+        "phase55_device_entity_execution_runtime": (
+            phase50_summary
+            if args.phase55_device_entity_execution_runtime else None
         ),
         "candidate_rows": report_candidate_rows,
         "integrated_batches": len(batch_telemetry),
@@ -3117,6 +3174,15 @@ def main() -> int:
                 "phase42_native_codegen_compiles_ten_abis_then_reuses_twenty": (
                     (
                         (
+                            args.phase55_device_entity_execution_runtime
+                            # Phase 55 loads all destination ABIs from the
+                            # reviewed atlas, leaving only the ten trip ABIs
+                            # for the shared runtime compiler.
+                            and compiler.get("native_codegen_cache", {}).get("misses") == 10
+                            and compiler.get("native_codegen_cache", {}).get("hits") == 20
+                        )
+                        or
+                        (
                             not args.phase50_device_generated_destination_inputs
                             and compiler.get("native_codegen_cache", {}).get("misses") == 10
                             and compiler.get("native_codegen_cache", {}).get("hits") == 20
@@ -3243,7 +3309,11 @@ def main() -> int:
                 "phase46_all_sampling_calls_use_persistent_runtime": (
                     len(phase45_sampling or []) == 19
                     and all(
-                        item.get("runtime") == "phase46_persistent"
+                        item.get("runtime") == (
+                            "phase55_device_compaction"
+                            if args.phase55_device_entity_execution_runtime
+                            else "phase46_persistent"
+                        )
                         for item in phase45_sampling or []
                     )
                 ),
@@ -3437,6 +3507,7 @@ def main() -> int:
                         persistent_inputs.get("phase52_calls", 0)
                         + persistent_inputs.get("phase53_calls", 0)
                         + persistent_inputs.get("phase54_calls", 0)
+                        + persistent_inputs.get("phase55_calls", 0)
                     ) == 19
                     and persistent_inputs.get("tile_rows") == [4]
                 ),
@@ -3478,6 +3549,7 @@ def main() -> int:
                     and (
                         data_plane.get("phase53_calls", 0)
                         + data_plane.get("phase54_calls", 0)
+                        + data_plane.get("phase55_calls", 0)
                     ) == 19
                     and data_plane.get("upstream_compact_owner_calls") == 19
                 ),
@@ -3506,7 +3578,10 @@ def main() -> int:
             {
                 "phase54_all_nineteen_calls_use_sampler_device_leases": (
                     device_packet.get("calls") == 19
-                    and device_packet.get("phase54_calls") == 19
+                    and (
+                        device_packet.get("phase54_calls", 0)
+                        + device_packet.get("phase55_calls", 0)
+                    ) == 19
                     and device_packet.get("device_sample_lease_calls") == 19
                     and phase54_service.get("phase54_sample_lease_publishes") == 19
                     and phase54_service.get("phase54_sample_lease_consumes") == 19
@@ -3526,6 +3601,31 @@ def main() -> int:
                 "phase54_retains_exact_public_destination_cardinality": (
                     device_packet.get("rows") == 4_696_676
                     and device_packet.get("owners") == 201_390
+                ),
+            }
+        )
+    if args.phase55_device_entity_execution_runtime:
+        entity_runtime = phase50_summary or {}
+        phase55_service = phase46_service.summary()
+        sampling_events = phase45_sampling or []
+        report["proof_gates"].update(
+            {
+                "phase55_all_nineteen_calls_use_reviewed_aot_plans": (
+                    entity_runtime.get("phase55_calls") == 19
+                    and entity_runtime.get("phase55_plan_atlas_hits") == 19
+                    and entity_runtime.get("phase55_codegen_bypasses") == 19
+                    and entity_runtime.get("phase55_atlas_entries") == 10
+                ),
+                "phase55_all_samples_compacted_and_leased_on_cuda": (
+                    len(sampling_events) == 19
+                    and all(event.get("phase55_device_compaction") for event in sampling_events)
+                    and phase55_service.get("phase55_device_sample_publishes") == 19
+                    and phase55_service.get("phase54_sample_lease_consumes") == 19
+                ),
+                "phase55_retains_exact_public_destination_cardinality": (
+                    entity_runtime.get("calls") == 19
+                    and entity_runtime.get("rows") == 4_696_676
+                    and entity_runtime.get("owners") == 201_390
                 ),
             }
         )
