@@ -1208,3 +1208,31 @@ AOT loading and downstream buffer reuse.
 
 See the [Phase 55 technical report](docs/phase55-aot-device-entity-execution-runtime.md)
 and [consolidated qualification](benchmark-results/phase55-p55final3-qualification.json).
+
+## Phase 56 verified model-wide resident runtime
+
+Phase 56 removes the largest remaining measured startup cost: rebuilding the
+same 6.452 GB Sharrow skim image in every fresh process. It builds the image
+once, seals the complete cache and its metadata with SHA-256, fingerprints all
+three authoritative sources, and fails closed if any runtime fact changes. A
+narrow tested compatibility bridge also resolves Sharrow 2.13's NumPy-memmap
+ownership truth-value defect on this Windows environment.
+
+Three fresh-process Phase 55/56 pairs all pass every proof gate and reproduce
+the published modeled decisions exactly. Complete lifecycle median, including
+Phase 56 validation, falls from 128.300 to 118.836 seconds (**1.080x**, 7.38%
+lower, 9.464 seconds saved). `initialize_landuse` falls from 14.100 to 0.600
+seconds (**23.5x**). Individual Phase 56 totals are 118.836, 119.039, and
+118.137 seconds, so the project clears its sub-130-second complete-model goal
+in all three candidates.
+
+Against the separately measured 205.4-second median for regular pinned
+ActivitySim on the same public workload, Phase 56's 118.836-second median is a
+cumulative **1.728x speedup**, 42.14% less time, and 86.564 seconds saved. This
+context is not an interleaved Phase 56/CPU pair; the Phase 55/56 experiment is
+the replicated evidence for Phase 56's incremental 1.080x gain.
+
+This is a verified startup/data-plane gain layered on the Phase 55 GPU runtime,
+not a new inner-kernel speed claim. See the
+[Phase 56 technical report](docs/phase56-verified-modelwide-runtime.md) and
+[consolidated qualification](benchmark-results/phase56-p56formal-qualification.json).

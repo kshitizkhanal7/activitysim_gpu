@@ -1,0 +1,34 @@
+{
+  "contract": "choiceforge-phase56-verified-sharrow-memmap-v1",
+  "cache": {
+    "bytes": 6452305336,
+    "mtime_ns": 1788746059473273400,
+    "sha256": "be14ef6e94f18b08bff7558fc0a637855c06e6ab702a04e1fda6dd20c7898625"
+  },
+  "metadata": {
+    "bytes": 33448,
+    "sha256": "8dbab28dc23a4808116d8bff2a684e80d35cd82e02ae8fb5e12481f8c32d50be"
+  },
+  "sources": [
+    {
+      "name": "skims.omx",
+      "bytes": 733866957,
+      "mtime_ns": 1695657088313588000,
+      "sha256": "04bddb2dd6b829a2ce25a27369d3276143fa9a354989ebd30ed9bba92f8e9bfb"
+    },
+    {
+      "name": "land_use.csv",
+      "bytes": 131248,
+      "mtime_ns": 1695657052980383400,
+      "sha256": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203"
+    },
+    {
+      "name": "network_los.yaml",
+      "bytes": 1124,
+      "mtime_ns": 1786967584870818900,
+      "sha256": "7bdd31d07330546d30a30a7f93ba70d26f715a7d579c6fc2af9f525743195995"
+    }
+  ],
+  "artifact_sha256": "3219491eb91904d8ea8c59a099d6fe95a1f3f2ced7eef597609e45d0012b9c1f",
+  "qualification_seconds": 4.7121063999366015
+}

@@ -236,6 +236,24 @@ def main() -> int:
             "compact sampled destinations on CUDA before direct lease publication"
         ),
     )
+    parser.add_argument(
+        "--phase56-modelwide-resident-runtime",
+        action="store_true",
+        help=(
+            "extend Phase 55 with a source-hash-verified, persistent file-backed "
+            "Sharrow skim image so fresh model processes do not rebuild 6.45 GB"
+        ),
+    )
+    parser.add_argument(
+        "--phase56-skim-cache",
+        type=Path,
+        default=ROOT / "cache_sharrow" / "phase56_taz.mmap",
+    )
+    parser.add_argument(
+        "--phase56-build-skim-cache",
+        action="store_true",
+        help="explicit developer mode: build and fully hash the Phase 56 skim image",
+    )
     parser.add_argument("--households-sample-size", type=int, default=50_000)
     parser.add_argument("--reference-pipeline", type=Path, required=True)
     parser.add_argument(
@@ -310,6 +328,11 @@ def main() -> int:
         help="optional host capture for numeric debugging; never use for qualification",
     )
     args = parser.parse_args()
+    if args.phase56_modelwide_resident_runtime:
+        args.phase55_device_entity_execution_runtime = True
+        os.environ["CHOICEFORGE_PHASE56_MODELWIDE_RESIDENT_RUNTIME"] = "1"
+    if args.phase56_build_skim_cache and not args.phase56_modelwide_resident_runtime:
+        parser.error("--phase56-build-skim-cache requires the Phase 56 runtime")
     if args.phase55_device_entity_execution_runtime:
         args.phase54_device_owned_destination_packet = True
         os.environ["CHOICEFORGE_PHASE55_DEVICE_ENTITY_EXECUTION_RUNTIME"] = "1"
@@ -486,6 +509,7 @@ def main() -> int:
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
     original_network_los_load_data = activitysim_los.Network_LOS.load_data
+    original_network_skim_backing_store = activitysim_los.Network_LOS.skim_backing_store
     original_runner_call = Runner.__call__
     original_runner_by_name = Runner.by_name
     original_location_choice_simulate = (
@@ -505,6 +529,9 @@ def main() -> int:
     original_activitysim_choice = vts.interaction_sample_simulate
     original_choice = activitysim_scheduling.interaction_sample_simulate_choiceforge
     diagnostic_cache_host = None
+    phase56_cache_validation = None
+    phase56_cache_built = False
+    phase56_sharrow_bridge = None
     resident_records = []
     current_raw_source = None
     current_native_manifest = None
@@ -531,6 +558,35 @@ def main() -> int:
     phase50_runtime = None
     raw_mode_constants = None
     raw_cbd_threshold = None
+    if args.phase56_modelwide_resident_runtime:
+        from choiceforge.phase56_skim_cache import (
+            install_sharrow_memmap_compatibility_bridge,
+            validate_phase56_cache,
+        )
+
+        phase56_sharrow_bridge = install_sharrow_memmap_compatibility_bridge()
+
+        phase56_cache = args.phase56_skim_cache.resolve()
+        phase56_cache.parent.mkdir(parents=True, exist_ok=True)
+        phase56_metadata = Path(str(phase56_cache) + ".meta.pkl")
+        if args.phase56_build_skim_cache:
+            if phase56_cache.exists() or phase56_metadata.exists():
+                raise FileExistsError(
+                    "Phase 56 build refuses to overwrite an existing skim image"
+                )
+        else:
+            phase56_cache_validation = validate_phase56_cache(
+                phase56_cache, args.project, args.data
+            )
+
+        def phase56_skim_backing_store(self, skim_tag):
+            if skim_tag == "taz":
+                return "memmap:" + str(phase56_cache)
+            return original_network_skim_backing_store(self, skim_tag)
+
+        activitysim_los.Network_LOS.skim_backing_store = (
+            phase56_skim_backing_store
+        )
     if (
         args.resident_raw_table_input_report
         or native_abi_enabled
@@ -1508,6 +1564,15 @@ def main() -> int:
         vts.skims_for_logsums = original_skims_for_logsums
         activitysim_los.Network_LOS.load_skim_info = original_network_los_load_skim_info
         activitysim_los.Network_LOS.load_data = original_network_los_load_data
+        activitysim_los.Network_LOS.skim_backing_store = (
+            original_network_skim_backing_store
+        )
+        if phase56_sharrow_bridge is not None:
+            from choiceforge.phase56_skim_cache import (
+                restore_sharrow_memmap_compatibility_bridge,
+            )
+
+            restore_sharrow_memmap_compatibility_bridge(*phase56_sharrow_bridge)
         vts.interaction_sample_simulate = original_activitysim_choice
         simulate.simple_simulate_logsums = original_simple_simulate_logsums
         activitysim_scheduling.interaction_sample_simulate_choiceforge = original_choice
@@ -1529,6 +1594,43 @@ def main() -> int:
         activitysim_logsums.compute_location_choice_logsums = (
             original_compute_location_choice_logsums
         )
+
+    if args.phase56_build_skim_cache:
+        from choiceforge.phase56_skim_cache import (
+            create_phase56_manifest,
+            validate_phase56_cache,
+        )
+
+        create_phase56_manifest(
+            args.phase56_skim_cache, args.project, args.data
+        )
+        phase56_cache_validation = validate_phase56_cache(
+            args.phase56_skim_cache,
+            args.project,
+            args.data,
+            verify_cache_content=True,
+        )
+        phase56_cache_built = True
+        build_report = {
+            "phase": 56,
+            "scope": "out-of-band construction and full hashing of the public skim image",
+            "elapsed_seconds": elapsed,
+            "exit_code": int(exit_code or 0),
+            "phase56_modelwide_resident_runtime": phase56_cache_validation,
+            "proof_gates": {
+                "activitysim_build_step_completed": int(exit_code or 0) == 0,
+                "cache_created": bool(phase56_cache_validation),
+                "full_cache_digest_verified": bool(
+                    phase56_cache_validation.get("full_cache_digest_verified")
+                ),
+                "all_cache_contract_checks_pass": bool(
+                    phase56_cache_validation.get("all_checks_pass")
+                ),
+            },
+        }
+        args.report.write_text(json.dumps(build_report, indent=2) + "\n")
+        print(json.dumps(build_report, indent=2))
+        return 0 if all(build_report["proof_gates"].values()) else 2
 
     destination_phase = (
         55 if args.phase55_device_entity_execution_runtime else
@@ -2707,6 +2809,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            56 if args.phase56_modelwide_resident_runtime else
             55 if args.phase55_device_entity_execution_runtime else
             54 if args.phase54_device_owned_destination_packet else
             53 if args.phase53_device_resident_destination_data_plane else
@@ -2733,6 +2836,9 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public ActivitySim model with the Phase 55 AOT device runtime "
+            "and a verified persistent model-wide Sharrow skim image"
+            if args.phase56_modelwide_resident_runtime else
             "full public ActivitySim model with a hash-verified AOT destination "
             "plan atlas, CUDA sample compaction, and direct device lease publication"
             if args.phase55_device_entity_execution_runtime else
@@ -2821,6 +2927,8 @@ def main() -> int:
             "CUDA nesting, device cache scatter, timetable preparation, choice, "
             "and timetable mutation"
         ),
+        "phase56_modelwide_resident_runtime": phase56_cache_validation,
+        "phase56_cache_built_this_run": phase56_cache_built,
         "elapsed_seconds_including_resume_overhead": elapsed,
         "exit_code": int(exit_code or 0),
         "mandatory_tours": int(len(expected)),
@@ -2967,6 +3075,11 @@ def main() -> int:
         "activitysim_all_model_steps_seconds": float(
             sum(model_timing_seconds.values())
         ),
+        "phase56_seconds_including_validation": (
+            float(sum(model_timing_seconds.values()))
+            + float((phase56_cache_validation or {}).get("runtime_validation_seconds", 0.0))
+            if args.phase56_modelwide_resident_runtime else None
+        ),
     }
     report["proof_gates"] = {
         "activitysim_completed": report["exit_code"] == 0,
@@ -2989,6 +3102,24 @@ def main() -> int:
         ),
         "checkpoint_written": checkpoint is not None,
     }
+    if args.phase56_modelwide_resident_runtime:
+        cache_proof = phase56_cache_validation or {}
+        report["proof_gates"].update(
+            {
+                "phase56_verified_persistent_skim_image_used": (
+                    cache_proof.get("all_checks_pass") is True
+                    and int(cache_proof.get("cache_bytes", 0)) > 6_000_000_000
+                    and not phase56_cache_built
+                ),
+                "phase56_all_source_digests_verified": (
+                    len(cache_proof.get("source_sha256", {})) == 3
+                    and all(cache_proof.get("source_sha256", {}).values())
+                ),
+                "phase56_initialization_rebuild_eliminated": (
+                    float(model_timing_seconds.get("initialize_landuse", 999.0)) < 3.0
+                ),
+            }
+        )
     if args.native_skim_store:
         report["proof_gates"].update(
             {

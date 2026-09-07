@@ -1,0 +1,29 @@
+{
+  "phase": 56,
+  "scope": "out-of-band construction and full hashing of the public skim image",
+  "elapsed_seconds": 23.06279020011425,
+  "exit_code": 0,
+  "phase56_modelwide_resident_runtime": {
+    "contract": "choiceforge-phase56-verified-sharrow-memmap-v1",
+    "cache_path": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\cache_sharrow\\phase56_taz.mmap",
+    "cache_bytes": 6452305336,
+    "cache_sha256": "be14ef6e94f18b08bff7558fc0a637855c06e6ab702a04e1fda6dd20c7898625",
+    "metadata_sha256": "8dbab28dc23a4808116d8bff2a684e80d35cd82e02ae8fb5e12481f8c32d50be",
+    "artifact_sha256": "3219491eb91904d8ea8c59a099d6fe95a1f3f2ced7eef597609e45d0012b9c1f",
+    "source_sha256": {
+      "skims.omx": "04bddb2dd6b829a2ce25a27369d3276143fa9a354989ebd30ed9bba92f8e9bfb",
+      "land_use.csv": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203",
+      "network_los.yaml": "7bdd31d07330546d30a30a7f93ba70d26f715a7d579c6fc2af9f525743195995"
+    },
+    "full_cache_digest_verified": true,
+    "artifact_qualification_seconds": 4.7121063999366015,
+    "runtime_validation_seconds": 4.716258900007233,
+    "all_checks_pass": true
+  },
+  "proof_gates": {
+    "activitysim_build_step_completed": true,
+    "cache_created": true,
+    "full_cache_digest_verified": true,
+    "all_cache_contract_checks_pass": true
+  }
+}

@@ -7498,3 +7498,163 @@ The next proof should require:
 That would address the real lesson of Phase 55: the next large gain is no
 longer inside the destination formula. It is in removing the CPU table boundary
 around the formula.
+
+## 277. What did Phase 56 actually choose to do?
+
+It changed priorities after measuring the whole program again.
+
+The earlier plan was to build an even broader GPU entity store. That is still a
+useful idea. But the new profile found a larger and easier-to-prove delay: every
+fresh run rebuilt the same giant travel-time data structure. That setup took
+about 14 to 19 seconds. Meanwhile, the destination service improved through
+Phases 45-55 was already only about 2.25 seconds.
+
+Even a magically instant destination service could not save as much time as
+removing the repeated setup. Phase 56 therefore solved the measured largest
+removable problem first.
+
+## 278. What is a skim, and why is it so large?
+
+A **skim** is a travel lookup table. Give it an origin zone, a destination
+zone, a time of day, and a travel measure, and it can return something such as
+driving time, transit time, distance, or cost.
+
+This benchmark has 1,454 zones, many travel measures, and five time periods.
+The computer rearranges the compact source file into arrays that formulas can
+read quickly. The resulting Sharrow memory image is 6,452,305,336 bytes, about
+6.45 GB. Rebuilding it is like unpacking the same large reference book before
+every exam.
+
+## 279. What is a memory-mapped file?
+
+A **memory-mapped file**, or memmap, is a file that a program can use as if it
+were a large array in memory. The operating system loads the needed pages when
+the program touches them. Another fresh process can reopen the already arranged
+data instead of decoding and copying the source again.
+
+Phase 56 builds the 6.45 GB image once. Later model runs attach it in about 0.6
+seconds. The file stays on this machine and is not placed in GitHub because it
+is large and can be reproduced from the public inputs.
+
+## 280. Does reusing a cache risk using old or wrong data?
+
+Yes, unless the cache has a strict identity check. A fast wrong answer would
+be a failure.
+
+Phase 56 calculates SHA-256 fingerprints for the complete 6.45 GB cache, its
+layout description, the original `skims.omx`, `land_use.csv`, and
+`network_los.yaml`. It also fingerprints a manifest that records those facts.
+Before a normal run, it rechecks the sources, metadata, file size, modification
+time, contract version, and manifest fingerprint. Any mismatch stops the run.
+
+The slow complete cache fingerprint is checked when the artifact is built and
+formally qualified. Normal runs use strong source checks plus cache identity
+facts so they do not spend several seconds rereading all 6.45 GB. This rule is
+written down and tested; it is not an informal promise that "the file looks
+right."
+
+## 281. What bug did Phase 56 find in Sharrow?
+
+Sharrow already supported memory-mapped data, but its version in this public
+environment had a small ownership bug. After writing the large NumPy array, it
+asked Python whether the whole array was "true" or "false." An array with
+billions of values has no single sensible yes-or-no answer, so NumPy stopped
+with an error.
+
+The project added a narrow bridge. When, and only when, that argument is a
+NumPy memmap, the bridge supplies Sharrow's documented ownership flag. Sharrow
+then reopens the same file and continues its normal reconstruction. The bridge
+is removed after the run, and a unit test proves the special case. This is a
+compatibility repair, not a change to travel-model mathematics.
+
+## 282. How fast is Phase 56?
+
+Three independent Phase 55 controls were each followed by a fresh Phase 56
+candidate:
+
+| Trial | Phase 55 | Phase 56 | Time saved | Speedup |
+|---:|---:|---:|---:|---:|
+| 1 | 127.100 s | 118.836 s | 8.264 s | 1.070x |
+| 2 | 128.300 s | 119.039 s | 9.261 s | 1.078x |
+| 3 | 128.400 s | 118.137 s | 10.263 s | 1.087x |
+| median | 128.300 s | 118.836 s | 9.464 s | 1.080x |
+
+The median complete-model time is 7.38% lower. Initialization alone falls from
+14.1 to 0.6 seconds, a 23.5x speedup. Every Phase 56 candidate finishes below
+120 seconds, so the old under-130-second goal is cleared three times.
+
+For the larger project picture, regular pinned ActivitySim was separately
+measured at a 205.4-second three-run median on this machine and workload. The
+latest 118.836-second result is therefore a cumulative **1.728x speedup**,
+42.14% less time, and 86.564 seconds saved. That older CPU experiment was not
+interleaved with Phase 56, so use the Phase 55/56 table to describe what Phase
+56 alone contributed.
+
+## 283. Is the comparison fair?
+
+The Phase 56 number includes about 0.528 seconds of cache validation and the
+inherited Phase 55 prewarm cost. Those costs are not hidden before the timer.
+The one-time cache construction is reported separately because it is not
+repeated for every model run. Building ActivitySim through initialization takes
+about 23 seconds; hashing and fully rechecking the new artifact takes about 4.7
+more seconds.
+
+All runs use the same public 50,000-household, 1,454-zone model and the same RTX
+A4000. Each candidate is a fresh process. Each output is compared with the fixed
+public reference before large temporary results are removed.
+
+## 284. Did speed change the answers?
+
+No published modeled decision changed in any of the three candidates. Every
+inherited GPU proof gate also remains active: exact controlled random streams,
+bounded floating diagnostics, the reviewed Phase 55 plan atlas and cubin,
+device sample leases, and zero silent fallback.
+
+The final qualification has nine additional gates. They prove the cache build,
+manifest fingerprint, shared artifact identity, three runtime validations,
+three sub-three-second initializations, three exact comparisons, three complete
+model wins, and a median below 130 seconds. All nine pass.
+
+## 285. Is Phase 56 a GPU kernel speedup?
+
+Not by itself. It is a whole-system speedup around an already GPU-accelerated
+model. The CUDA kernels from earlier phases still do the accelerated travel
+calculations, but Phase 56 stops the CPU process from rebuilding invariant
+travel data before those kernels can work.
+
+This distinction matters. The honest claim is **Phase 56 makes the complete
+GPU-enabled model 1.080x faster than Phase 55 on this benchmark**. It would be
+wrong to say that a new arithmetic kernel became 1.080x faster. Good performance
+engineering improves the measured bottleneck, even when the bottleneck is data
+preparation rather than multiplication.
+
+## 286. Does Phase 56 make Phases 1-55 unnecessary?
+
+No. Phase 56 reuses data faster, but it does not replace the GPU execution,
+exact random-number rules, expression compiler, native buffers, destination
+service, output verifier, or replication harness built earlier. Without those
+pieces, attaching skims quickly would only start a slower CPU-shaped model a
+few seconds sooner.
+
+The phases answer different questions. Earlier phases prove that important
+travel decisions can run on the GPU without changing published choices. Phase
+56 proves that the complete accelerated system can launch efficiently and
+repeatably.
+
+## 287. What should the next major phase do?
+
+Phase 57 should aim for a complete lifecycle below 105 seconds. It should use
+the Phase 56 verified launch path and attack whole remaining components, not
+shave microseconds from the already small destination kernel.
+
+The largest median components now include mandatory tour scheduling at about
+14 seconds, trip mode choice and trip destination near 10 seconds each, and
+several 6-7-second frequency, scheduling, and output steps. The next system
+should keep a general versioned person-household-tour entity store on the GPU,
+fuse one complete component from input columns through final choice, and create
+a CPU table only at the required publication boundary.
+
+Success should again mean exact decisions, bounded diagnostics, no silent
+fallback, three fresh matched wins, and a large whole-model improvement. The
+ambitious target is not "another phase exists." It is roughly 14 more seconds
+removed from a model that now takes about 119 seconds.
