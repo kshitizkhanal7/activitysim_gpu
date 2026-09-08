@@ -15,14 +15,16 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 57: the live GPU scheduling path cuts its targeted step
-from 16.5 to 8.0 seconds in three matched public-model runs, preserving every
-checked travel decision. The observed full-model median falls from 142.08 to
-128.16 seconds versus the previous GPU version. A separate compact-kernel test
-is 2.63x faster than the strongest tested compiled CPU configuration. The
-under-105-second target is still unmet, and the full runtime remains a
-benchmark-specific hybrid prototype. Sections 288-295 explain the results,
-assumptions, rejected experiments, and remaining work.
+Latest result, Phase 58: six balanced old/new pairs reduce charged full-model
+time from 110.97 to 103.81 seconds, a 6.45% reduction, with every checked travel
+decision preserved. All six candidates meet the charged under-105-second target.
+Launch-to-exit time is 111.02 seconds, versus 118.27 for the previous GPU version
+and 306.36 for newly measured regular single-process CPU ActivitySim. That is
+2.76x faster than that CPU configuration on the elapsed-time clock, not a claim
+against every possible CPU implementation. The three targeted trip components
+take 27.52% less time when their component medians are added. The application
+remains a benchmark-specific hybrid. Sections 296-303 explain the new runtime,
+CPU attribution controls, rejected normal-RNG shortcut, and remaining limits.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -7842,3 +7844,204 @@ for every city or scenario.
 The next success is not another impressive tiny-kernel ratio. It is a lower
 complete-run time, including all required work, with repeatable travel choices
 and a clearer path for another researcher to reproduce and extend it.
+
+## 296. What is Phase 58 trying to change?
+
+Imagine planning an afternoon: leave school, visit a shop, then return home.
+You cannot arrive home before leaving the shop. A travel model has to respect
+these dependencies for hundreds of thousands of trips. A **chain** is simply
+this ordered set of related trips.
+
+Earlier versions often sent a trip's result back to the CPU before computing
+the next dependent trip. Phase 58 lets one GPU worker finish the short chain
+for one person-tour, while many other workers handle other tours. Intermediate
+departure times stay on the GPU. The CPU receives the completed iteration's
+answers and decides which failed trip groups need another attempt.
+
+This is not the same as making the entire model GPU-only. The CPU still handles
+tables, some random-number arithmetic, failed-group retries, and final reports.
+We have moved a larger connected calculation onto the GPU, not eliminated the CPU.
+
+A scheduling "failure" means a draw did not find a supported departure time
+inside the permitted window, not that a simulated vehicle crashed. ActivitySim
+retries the affected trip group and, on its final attempt, applies its existing
+correction rule. The new kernel preserves that rule. In the first formal pair,
+both versions consumed 210,110 scheduling draws and recorded the same 66,899
+failed attempts, including repeated attempts for some trips. The new version
+needed 100 iteration calls instead of 548 smaller scheduling calls.
+
+## 297. How can a random model reproduce exactly the same trips?
+
+The model does not use uncontrolled randomness. Each trip has an identity and
+a reproducible stream of numbers. Think of a numbered deck of cards assigned
+to each trip. Its **seed** chooses the deck; its **offset** says which card to
+draw next. Rearranging the trips in a table must not change their decks.
+
+The new shared service generates uniform random numbers on the GPU, using the
+same algorithm as ActivitySim. Uniform means every equal-sized interval between
+zero and one has the same probability. The CPU still owns the official record
+of seeds and offsets. The GPU reads that record and advances it exactly once
+for each required draw. Later parts of the model must see the same next card.
+
+An **epoch** means the currently active model step. A deck from destination
+choice cannot silently be reused as if it belonged to mode choice. The service
+checks the active step and restores its temporary hooks when the step finishes.
+Tests change seeds, shuffle trip order, select subsets, and compare later draws,
+not just the first answer. This catches errors that otherwise appear much later.
+
+## 298. What changes when choosing between car, transit, walking and other modes?
+
+A **utility** is the model's numerical score for an option. A **probability**
+turns those scores into chances. Related options are grouped in **nests**: two
+similar car options are more alike than driving and walking. The model combines
+probabilities through this family tree, then uses a random draw to pick a mode.
+
+Before Phase 58, GPU-generated scores came back to the CPU for much of that
+probability and choice work. Now the scores feed the next GPU calculation
+directly. Only final mode labels and small diagnostic results need publication.
+For the public development run, this avoids downloading a 37.2-megabyte table
+of mode scores. It also avoids constructing the large CPU probability table.
+
+Floating-point numbers are rounded approximations. Two processors can disagree
+by a tiny amount, especially after logarithms and exponentials. Usually such a
+difference does not change a choice. Near the dividing line between two choices,
+however, it might. The new selector flags draws within one billionth of a
+probability boundary and checks those rows with the actual upstream CPU
+calculation, using the same already-drawn number. It never draws a second card
+or looks up a saved benchmark answer.
+
+That one-billionth guard is a tested engineering precaution, not a mathematical
+proof covering every imaginable input. Full runs must still pass an independent
+comparison of all published travel decisions. Diagnostic scores have explicit
+small tolerances; exact decisions do not mean every decimal is identical.
+
+## 299. What did the stronger CPU comparison teach us?
+
+| System | What it tells us |
+|---|---|
+| Regular CPU ActivitySim | How the whole accelerated project compares with the original application |
+| Accelerated stack with compact CPU scheduling | Whether the improved compact layout also works well on the CPU |
+| Accelerated stack with compact GPU scheduling | What using the GPU adds at that same small boundary |
+
+In two new runs, regular CPU ActivitySim took 300.2 and 299.8 seconds for its
+model steps. The other two systems both took about 111.4 seconds, including
+their charged validation and warm-up work. Compact CPU and GPU scheduling were
+effectively tied for the whole application. The earlier small GPU kernel really
+was faster, but its advantage saved milliseconds rather than many seconds.
+
+The lesson is not that GPUs are unhelpful. It is that avoiding giant tables is
+an algorithm improvement that can help both processors. We must measure larger
+connected GPU work to demonstrate a meaningful additional application benefit.
+The full accelerated stack contains many other GPU changes; its total advantage
+cannot be assigned to this one scheduling kernel.
+
+The new regular CPU timing is slower than the old 205.4-second historical result.
+We report the actual new observations instead of choosing whichever old number
+makes a preferred story. Computer load and caches can change absolute times.
+The regular CPU run uses the pinned single-process configuration with one
+numerical worker. We have not shown that it is the fastest possible CPU setup.
+The separate 48-worker CPU control changes only the small feasibility kernel.
+
+## 300. Which tempting shortcut did we reject, and why?
+
+Not all random numbers have a uniform distribution. A **normal distribution**
+is the familiar bell-shaped curve, where values near the middle are more common.
+The model uses such numbers while constructing some travel-time inputs.
+
+We tried extending an older GPU normal-number generator to all new trip random
+calls. More demanding tests found 12 differences among 3,168 values. These were
+tiny rounding differences, sometimes just one bit, even though the next-card
+positions were correct. The older generator had matched its earlier fixed
+benchmark, but that did not prove identical arithmetic for every seed and offset.
+
+We rejected the broader shortcut and kept these ordinary normal draws on the CPU.
+The audit and a script to reproduce it are saved. We did not loosen the tests
+or call the differences harmless without checking how they would be used.
+There is also a tested shortcut for a truly zero-variance expression, where the
+random part cannot affect the answer; the full development run did not use it,
+so it gets no credit for the speed improvement.
+
+This is an important distinction: a failed extra optimization does not erase
+the separately verified improvements. It tells us exactly where a stronger
+arithmetic implementation or proof is still needed.
+
+## 301. How is the final speed experiment made harder to fool?
+
+We run the previous GPU version and the new version in fresh processes. For one
+pair, the old version goes first; for the next, the new version goes first.
+Six pairs therefore give each version three turns in each position. This reduces
+the risk that whichever runs second always benefits from a warmed-up computer.
+
+The source files receive digital fingerprints, called **hashes**. If code changes
+during or between matched runs, the qualification rejects the timing series.
+Every run must complete all 34 steps and pass the independent output checks.
+We keep two clocks: model work plus required validation/prewarm, and the entire
+process from launch to exit. Both must improve in every qualified pair.
+
+Repeated processes can still reuse files and previously compiled code, so these
+are not completely cold-computer measurements. No other heavy tests run alongside
+them. Component times are recorded in tenths of a second, so tiny differences
+in unchanged steps are not evidence that those steps were optimized.
+
+The six runs use the same public population and seed. They test repeatability of
+speed, not six different cities. Changed-input and changed-seed unit tests cover
+the new kernels; the earlier benchmark-specific mandatory-scheduling artifacts
+still prevent a claim of unrestricted whole-model scenario support.
+
+The 105-second target refers to the charged model-work clock. It does not mean
+the entire application must disappear from the screen within 105 seconds.
+Launch-to-exit wall time includes additional startup and bookkeeping and is
+reported separately. We also perform a final comparison of saved output files
+after the timed process finishes; that comparison is an experiment check,
+not a travel-model calculation hidden inside one version's timing.
+
+## 302. What did the finished Phase 58 experiment achieve?
+
+All six matched pairs improved both clocks. Every candidate preserved every
+checked published travel decision, and all 264 automated repository tests pass.
+The checker reports `replicated_improvement_target_met`: the charged model
+median is below 105 seconds, without waiving correctness or repetition.
+
+| What we measured | Previous GPU version | Phase 58 |
+|---|---:|---:|
+| Charged complete-model median | 110.97 seconds | 103.81 seconds |
+| Launch-to-exit median | 118.27 seconds | 111.02 seconds |
+| Trip destination median | 9.75 seconds | 9.00 seconds |
+| Trip scheduling median | 6.20 seconds | 3.65 seconds |
+| Trip mode choice median | 9.85 seconds | 6.05 seconds |
+
+The full model takes 6.45% less charged time, saving about 7.16 seconds. Adding
+the three targeted component medians gives 25.80 versus 18.70 seconds, a 27.52%
+reduction. Nearly all the observed full-model saving is therefore visible in
+the components we actually changed. The six candidate totals range from 103.23
+to 104.03 seconds. The smallest matched saving is 6.20 seconds; the largest is
+8.19 seconds. There is no losing pair hidden by the average.
+
+Against the newly measured regular CPU configuration, charged model time falls
+from 300.00 to 103.81 seconds: 2.89x as fast. Actual launch-to-exit time falls
+from 306.36 to 111.02 seconds: 2.76x as fast. The CPU controls were measured
+before the six old/new GPU pairs, not inside every pair. Those cumulative
+comparisons and the stronger paired incremental comparison are distinct evidence.
+
+Some unchanged steps are not faster, and a few are slower than regular CPU
+ActivitySim. The technical report includes all 34 component rows, not just
+the winners. The complete application benefits from many earlier GPU kernels,
+better data layouts, and cached immutable inputs. We do not attribute every
+saved second to GPU hardware alone.
+
+## 303. What remains after this successful phase?
+
+We now have a repeatedly faster live trip runtime on this public benchmark.
+CPU retries, table publication and older benchmark-specific scheduling artifacts
+remain.
+
+Next is a **versioned data store**: one shared home for person, tour and trip
+facts, with rules for marking copies outdated when a fact changes. Correct
+updates must be tested before removing further CPU/GPU handoffs. Ordinary
+normal arithmetic also needs a stronger shared implementation.
+
+Broader support requires removing inherited benchmark dependencies and testing
+changed populations and seeds through the entire model. Today's checks do not
+prove a replacement for every ActivitySim city or configuration. Faster execution
+preserves the checked computation; it does not make the behavioral model more
+accurate about real people.

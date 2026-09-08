@@ -1263,3 +1263,34 @@ ActivitySim implementation or a newly matched regular-CPU comparison.
 See the [Phase 57 report and all-component table](docs/phase57-live-scheduling.md),
 [qualification](benchmark-results/phase57-p57formal-qualification.json), and
 [plain-English explainer](docs/choiceforge-plain-english-explainer.md).
+
+## Phase 58 live trip runtime: replicated sub-105-second charged model
+
+Six balanced fresh-process Phase 57/58 pairs preserve every checked published
+decision and improve both model time and process wall in every pair. Charged
+median falls from **110.97 to 103.81 seconds** (1.069x, **6.45% less time**).
+All six candidates meet the charged sub-105-second target. Process wall medians
+are **118.27 versus 111.02 seconds**; this is not a sub-105-second wall-time claim.
+
+Trip destination, scheduling and mode-choice medians fall from 9.75/6.20/9.85
+to 9.00/3.65/6.05 seconds. The new runtime shares live keyed uniform generation,
+keeps dependent departure chains on CUDA within each iteration, and connects
+strict GPU mode utilities directly to nested probabilities and selection.
+
+Fresh regular single-process CPU ActivitySim controls have a 300.00-second
+model median and 306.36-second process-wall median: cumulative comparisons of
+**2.890x charged** and **2.759x wall** against Phase 58. These CPU runs precede
+the matched GPU pairs; they do not establish the fastest possible CPU deployment.
+The accelerated stack's separate 48-thread compact-CPU control ties compact
+GPU scheduling in whole-model time, clarifying that layout savings are not
+exclusively a GPU hardware advantage.
+
+All **264 tests pass**. A wider normal-RNG audit found 12 tiny value differences
+in 3,168 comparisons, so general reuse of the older GPU normal generator was
+rejected. Phase 58 ordinary normal draws stay on CPU. Earlier mandatory-scheduling
+reference artifacts remain; this is a qualified fixed-workload hybrid, not a
+general GPU-only ActivitySim implementation.
+
+See the [Phase 58 report and complete component table](docs/phase58-live-trip-runtime.md),
+[qualification](benchmark-results/phase58-formal-qualification.json), and updated
+[plain-English explainer](docs/choiceforge-plain-english-explainer.md).

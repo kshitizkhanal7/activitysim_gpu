@@ -59,7 +59,7 @@ def period_pairs_cuda(windows, footprints, slots):
     return cp.asnumpy(first), cp.asnumpy(counts)
 
 
-def representative_rows(state, tours, alts, timetable, window_id_col):
+def representative_rows(state, tours, alts, timetable, window_id_col, *, backend="cuda"):
     started = time.perf_counter()
     network = state.get_injectable("network_los")
     out = network.skim_time_period_label(alts["start"], as_cat=True)
@@ -70,7 +70,13 @@ def representative_rows(state, tours, alts, timetable, window_id_col):
         raise ValueError("Phase 57 live scheduling requires positional TDD identities")
     slots = out.cat.codes.to_numpy(dtype=np.int32)*5 + inc.cat.codes.to_numpy(dtype=np.int32)
     rows = timetable.window_row_ix.apply_to(np.asarray(tours[window_id_col]))
-    first, counts = period_pairs_cuda(timetable.windows[rows], timetable.tdd_footprints, slots)
+    if backend == "cpu":
+        from .phase58_cpu_control import period_pairs_cpu
+        first, counts = period_pairs_cpu(timetable.windows[rows], timetable.tdd_footprints, slots)
+    elif backend == "cuda":
+        first, counts = period_pairs_cuda(timetable.windows[rows], timetable.tdd_footprints, slots)
+    else:
+        raise ValueError(f"unknown feasibility backend: {backend}")
     if np.any(counts == 0):
         raise ValueError("Phase 57 found a tour without feasible time alternatives")
     ordered = np.argsort(first, axis=1, kind="stable")
@@ -82,6 +88,7 @@ def representative_rows(state, tours, alts, timetable, window_id_col):
     result["out_period"] = pd.Categorical.from_codes(selected_slots//5, dtype=out.dtype)
     result["in_period"] = pd.Categorical.from_codes(selected_slots%5, dtype=inc.dtype)
     return result, {
+        "backend": backend,
         "tours": len(tours), "full_interaction_rows_avoided": int(counts.sum()),
         "representative_rows": len(result), "pair_download_bytes": first.nbytes+counts.nbytes,
         "seconds": time.perf_counter()-started,

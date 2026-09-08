@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 from pathlib import Path
 
@@ -303,16 +304,22 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
+    latest = json.loads((ROOT / "benchmark-results/phase58-formal-qualification.json").read_text())
+    if latest["status"] not in {"replicated_improvement_target_met", "replicated_improvement_target_not_met"}:
+        raise ValueError("The explainer cover requires a qualified Phase 58 result")
+    previous = latest["medians"]["gpu"]["charged_total_seconds"]
+    current = latest["medians"]["candidate"]["charged_total_seconds"]
+    wall = latest["medians"]["candidate"]["process_wall_seconds"]
     metrics = Table(
         [
             [
-                Paragraph("1.561x", STYLES["metric_num"]),
-                Paragraph("1.896 GB", STYLES["metric_num"]),
+                Paragraph(f'{latest["previous_gpu_over_latest_gpu"]:.3f}x', STYLES["metric_num"]),
+                Paragraph(f"{current:.1f} s", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("full-model speedup<br/>vs regular ActivitySim", STYLES["metric_label"]),
-                Paragraph("dense input transfer<br/>avoided per run", STYLES["metric_label"]),
+                Paragraph("incremental full-model<br/>speedup vs Phase 57", STYLES["metric_label"]),
+                Paragraph("charged full-model<br/>median seconds", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -350,11 +357,12 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            "Read left to right: early phases establish strict CPU answers, generated CUDA, controlled random-number tests, and complete-output verification. Later phases keep skims and trip state on the GPU, remove dense transfers, and move the full 1,454-zone destination sampler onto CUDA. Phase 42 turns exact arithmetic rules into a hash-addressed compiler. Phases 43-49 remove repeated random-state rows, generic choice plumbing, and the inter-stage mode-logsum round trip. Phases 50-53 eliminate dense destination inputs and repeated owner rows, fuse a checked expression program, prewarm a persistent four-row service, and intercept compact owner facts before pandas expands them. Phase 54 links sampling to logsums with versioned GPU buffer leases and exact GPU random/wait construction. Phase 55 adds a hash-verified ten-plan AOT atlas, an RTX A4000 cubin, shared skim-cube caching, and CUDA sample compaction. Against the already GPU-accelerated Phase 54 control, three complete pairs reduce median full-model time from 138.2 to 135.909 seconds and win all three pairs. The five destination components fall from 10.7 to 10.1 seconds, while the monolithic destination service reaches 2.249 seconds. All modeled decisions remain exact; negative results, remaining stretch targets, assumptions, bounded diagnostics, variance, CPU/GPU claim boundaries, memory cost, and portability limits are explained inside.",
+            f"Latest evidence, Phase 58: six balanced old/new pairs on the public 50,000-household model reduce the charged median from {previous:.2f} to {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. Every checked travel decision matches; diagnostic scores remain within their stated tolerances. The cumulative comparison is {latest['regular_cpu_over_latest_gpu']:.3f}x against separately measured fresh, pinned single-process CPU ActivitySim controls, not a claim about the fastest possible CPU implementation. "
+            "Start with the one-minute version, then read the concepts and chronological evidence. The earlier phases establish strict references, generated CUDA, controlled randomness and complete-output checks. Later phases keep inputs and intermediate results on the GPU. Phase 58 adds live trip random streams, within-tour scheduling chains and mode utility-to-choice execution. Ordinary trip normal draws remain on CPU after a stronger audit rejected broader GPU reuse. This remains a benchmark-specific hybrid prototype: assumptions, failed experiments, CPU/GPU attribution limits and unfinished generalization are explained rather than hidden.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated September 4, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated September 8, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

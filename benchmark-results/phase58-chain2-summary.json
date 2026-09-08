@@ -1,0 +1,241 @@
+{
+  "complete": true,
+  "design": "order reversed on even repetitions; no concurrent benchmarks",
+  "runs": [
+    {
+      "mode": "candidate",
+      "trial": 1,
+      "position": 0,
+      "order": [
+        "candidate"
+      ],
+      "process_wall_seconds": 111.07513770018704,
+      "components": {
+        "initialize_landuse": 0.6,
+        "initialize_households": 4.4,
+        "compute_accessibility": 1.6,
+        "school_location": 3.9,
+        "workplace_location": 2.0,
+        "auto_ownership_simulate": 1.4,
+        "free_parking": 1.0,
+        "cdap_simulate": 6.9,
+        "mandatory_tour_frequency": 1.5,
+        "mandatory_tour_scheduling": 7.0,
+        "joint_tour_frequency": 1.2,
+        "joint_tour_composition": 0.7,
+        "joint_tour_participation": 2.1,
+        "joint_tour_destination": 1.9,
+        "joint_tour_scheduling": 1.5,
+        "non_mandatory_tour_frequency": 7.3,
+        "non_mandatory_tour_destination": 2.0,
+        "non_mandatory_tour_scheduling": 6.8,
+        "tour_mode_choice_simulate": 5.4,
+        "atwork_subtour_frequency": 1.0,
+        "atwork_subtour_destination": 1.4,
+        "atwork_subtour_scheduling": 1.7,
+        "atwork_subtour_mode_choice": 1.1,
+        "stop_frequency": 3.5,
+        "trip_purpose": 1.1,
+        "trip_destination": 9.0,
+        "trip_purpose_and_destination": 0.6,
+        "trip_scheduling": 3.7,
+        "trip_mode_choice": 6.1,
+        "write_data_dictionary": 1.5,
+        "track_skim_usage": 0.4,
+        "write_trip_matrices": 6.5,
+        "write_tables": 1.8,
+        "summarize": 4.5
+      },
+      "model_steps_seconds": 103.09999999999998,
+      "validation_seconds": 0.5238926000893116,
+      "prewarm_seconds": 0.008398700039833784,
+      "charged_total_seconds": 103.63229130012913,
+      "exact": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv"
+        ],
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv"
+        ],
+        "diagnostic_columns": {
+          "destination_logsum": {
+            "text_cells_different": 26734,
+            "max_abs": 1.0000000003174137e-05,
+            "mean_abs": 1.508109979467238e-07,
+            "gate": 0.0001
+          },
+          "mode_choice_logsum": {
+            "text_cells_different": 577293,
+            "max_abs": 3.813521463058578e-06,
+            "mean_abs": 6.924596511066589e-08,
+            "gate": 1e-05
+          },
+          "school_location_logsum": {
+            "text_cells_different": 5516,
+            "max_abs": 3.8146972620722863e-06,
+            "mean_abs": 1.1743809304866628e-07,
+            "gate": 1e-05
+          },
+          "workplace_location_logsum": {
+            "text_cells_different": 5658,
+            "max_abs": 1.9073486328125e-06,
+            "mean_abs": 7.684772483532951e-08,
+            "gate": 1e-05
+          }
+        },
+        "diagnostic_outputs": {
+          "final_persons.csv": {
+            "school_location_logsum": {
+              "text_cells_different": 5516,
+              "max_abs": 3.8146972620722863e-06,
+              "mean_abs": 1.1743809304866628e-07,
+              "gate": 1e-05
+            },
+            "workplace_location_logsum": {
+              "text_cells_different": 5658,
+              "max_abs": 1.9073486328125e-06,
+              "mean_abs": 7.684772483532951e-08,
+              "gate": 1e-05
+            }
+          },
+          "final_tours.csv": {
+            "destination_logsum": {
+              "text_cells_different": 8554,
+              "max_abs": 3.000000003083869e-06,
+              "mean_abs": 9.718364032606835e-08,
+              "gate": 0.0001
+            },
+            "mode_choice_logsum": {
+              "text_cells_different": 172141,
+              "max_abs": 3.813521463058578e-06,
+              "mean_abs": 7.665524322183288e-08,
+              "gate": 1e-05
+            }
+          },
+          "final_trips.csv": {
+            "destination_logsum": {
+              "text_cells_different": 18180,
+              "max_abs": 1.0000000003174137e-05,
+              "mean_abs": 2.0565241838139527e-07,
+              "gate": 0.0001
+            },
+            "mode_choice_logsum": {
+              "text_cells_different": 405152,
+              "max_abs": 2.8958556210767483e-06,
+              "mean_abs": 6.630725596622227e-08,
+              "gate": 1e-05
+            }
+          }
+        },
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 26734,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.508109979467238e-07,
+        "diagnostic_gate": 0.0001,
+        "mode_choice_logsum_max_abs": 3.813521463058578e-06,
+        "mode_choice_logsum_gate": 1e-05,
+        "success": true,
+        "claim_boundary": "all modeled decision columns in every published table are exact; declared logsum diagnostics are bounded, not byte-identical"
+      },
+      "command": [
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Scripts\\python.exe",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\run_phase22_integrated_scheduling.py",
+        "--project",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended",
+        "--data",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full",
+        "--output",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-chain2-candidate-1",
+        "--config-overlay",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase33_choiceforge",
+        "--config-overlay",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs_sh",
+        "--full-model",
+        "--households-sample-size",
+        "50000",
+        "--native-abi-live",
+        "--reference-pipeline",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p17modeproof16-baseline-50000-1\\pipeline.parquetpipeline",
+        "--report",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-chain2-candidate-1.json",
+        "--checkpoint",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-chain2-candidate-1-checkpoint.json",
+        "--kernel-reports",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-chain2-candidate-1-kernels",
+        "--phase57-live-scheduling",
+        "--phase58-trip-runtime"
+      ],
+      "profiled_not_performance_evidence": false,
+      "source_sha256": {
+        "src\\choiceforge\\__init__.py": "0ba610396f0ea1cbcb18ad7d2b54112d0cae2d53a63cd62cbf3b4c25854aaedd",
+        "src\\choiceforge\\activitysim_adapter.py": "2209bbb51735affe50aa2ea8e2a223ad7a0d9956ddc2f2724e8b70bc39ac6dcb",
+        "src\\choiceforge\\activitysim_destination.py": "59c44875441f0c2162704d1ee0a72c71a6085f5914d486413999e43409eb467a",
+        "src\\choiceforge\\activitysim_expression.py": "996db9cfc53e48814bee4e268dd0f0db7cf14dec94dfd01ec3443061e386818e",
+        "src\\choiceforge\\activitysim_mode_choice.py": "b154c137255c79e83ad842b18f7cc271f944514560fab974a56d06842afc59d3",
+        "src\\choiceforge\\activitysim_scheduling.py": "448c1e6bef231f05cff3c893db2cb891377f185dc852d4b877b30eb97158b5ea",
+        "src\\choiceforge\\activitysim_trip_scheduling.py": "cd07beb15c4e0c77dc4f22cffb6c5f3cdfc317c29efb1fda191295ce16927f55",
+        "src\\choiceforge\\api.py": "820135a87b39a60dae19e604953a05f6b307570b7d6dc03b4375c157886c78e8",
+        "src\\choiceforge\\arithmetic_abi.py": "d1c616cfa055056ee51b37abba1404fa2315a2ae7b2fe235dd7d34a5e0a9a913",
+        "src\\choiceforge\\calibrated_chain.py": "d68070ec35fd07b10992d901f49d3f28e758c0939fa4a2a029f7cffe7ea65cc7",
+        "src\\choiceforge\\cuda_backend.py": "a9fbadb7ccc23578862fd3ef31d31ab4b86a3f14b072e9fee66a41998a9d3337",
+        "src\\choiceforge\\cuda_skims.py": "9925da3f8b3fad29500eac3c00856a45995d5979a62ec4f28d68e66469674ca8",
+        "src\\choiceforge\\destination_input_supergraph.py": "912b2f2c592579d2ee91e780e1ac613e6ba2838356c6ea4fa7c16f03fd29f4d6",
+        "src\\choiceforge\\destination_supergraph.py": "7fcdb690c246d5330eb07d7b0872e21a53b4be28db76883e75a323cca10c4312",
+        "src\\choiceforge\\destination_utility.py": "9310886e0da75d9df2be317ff20b6d30b602c2b08ed23cb6dd327b4cc6098cf8",
+        "src\\choiceforge\\device_input_expansion.py": "64f26c2a9b19aa436e0aeea3f609fdcc0be13ae29b21d6bbdb0650e4d2e26602",
+        "src\\choiceforge\\device_resident_runtime.py": "d3dc086bbe24b809ebe08e8bafc09581c77ec33cd819c17def71a488a106c6a0",
+        "src\\choiceforge\\fused_mnl.py": "c8257abec4ec57cfe5b663d7bcba1e72879123d2cdcf16534c7d9242423b80ca",
+        "src\\choiceforge\\gpu_native.py": "9da69889f4f3916e6d871e7dbb805a3470c92d38b5e6277cd46cef776ccc8006",
+        "src\\choiceforge\\gpu_scheduling_integration.py": "7443fa5d351e0ee8420631ff0900b9a5e7c2ca1c1187b9850d44f6d40a3a446a",
+        "src\\choiceforge\\gpu_scheduling_pipeline.py": "a0731fc13e795c7cf5e31d1e2ac60846dedefa46e00c206a2d319300443d835a",
+        "src\\choiceforge\\interaction_backend.py": "dce311379368b8a937db647ba092e8084969f98543dca060822cc9a4819d191f",
+        "src\\choiceforge\\modelwide_choice.py": "8aad08f8145383a99729112c33bff2ed1cb9957860cdd0b601b1f1eaf1accf38",
+        "src\\choiceforge\\modelwide_final.py": "7d0151ad18c19497c39b4596b1723216331fac5e96f4bc988e222a1b4fd40323",
+        "src\\choiceforge\\modelwide_graph.py": "d6b921a06f3059865c35d7e9aae08d990a3f83bd8f244ae7fe17530889ab5359",
+        "src\\choiceforge\\modelwide_sampling.py": "519c63d3b0c55843dc3291e3c6491595543e1aa38873e965f1706b5bf602aa26",
+        "src\\choiceforge\\modelwide_service.py": "2c6d8cfd434e70e6abec9ea0be8d7f328d13caa71a921ad0571e798a1df5be7b",
+        "src\\choiceforge\\native_abi_bootstrap.py": "e8a4eb9ce07db4341d74fe0016947d599cfa698f13f617257807961afb12ee70",
+        "src\\choiceforge\\native_skim_store.py": "4df5f380a5f1c52c5685f63b7263a2a2f8909953c24855fc3728218e15beac78",
+        "src\\choiceforge\\nested_logit.py": "613e03cbbb359c1ba8f62ede9d9327dfa9264165fbd63620846a6e09f178fdc8",
+        "src\\choiceforge\\numba_backend.py": "70f70acf3079586cae953a8ec01c6209fdd383ccbf31774c0fed1e4726fe3a50",
+        "src\\choiceforge\\phase56_skim_cache.py": "cf44782322bbb930fa8de68dd5103db58240ef9fe5824227c56b2313b4a983cd",
+        "src\\choiceforge\\phase57_live_scheduling.py": "9cf86445f238c1077b5ae0d6b10301ac7501bed5b2e97b7d0ebe6fa414e99c6b",
+        "src\\choiceforge\\phase58_cpu_control.py": "22c928d7e57d918caf267e324641f499b98dda0488919a9d8f26818dc24b8f80",
+        "src\\choiceforge\\phase58_mode_reduction.py": "2bd4e1f9c469ea1a4d5816e2b427346a88a75cfe3ba3e430746d71014cb2ee82",
+        "src\\choiceforge\\phase58_schedule_chain.py": "4f0886f87dc461c58bc56b8bafdb4de0be9b49cad25e3436837ce77b942e2c18",
+        "src\\choiceforge\\phase58_trip_runtime.py": "4016611459adefaccb93e77ff003b83486f453a2195539f339f3000ee6e7acf6",
+        "src\\choiceforge\\raw_table_input_generation.py": "66a673746e62588973f11dbae332a66de720c1834072fc7ae73dce4e9b4e39b0",
+        "src\\choiceforge\\reference.py": "286d2562ddc4a0ba2591ce00714b7328c1bf94bd5f1ab467ead15857f53d1c45",
+        "src\\choiceforge\\resident_skim_cache.py": "d68b30fb11a9884def9251d206b171e3e6546bc5b7a8f0e9ef5484c9d96cfe15",
+        "src\\choiceforge\\scheduling_compiler.py": "fb98b97c300422b92707fc98f55e4653d25ceae0cb6903261554a87be44cee17",
+        "src\\choiceforge\\semantic_input_generation.py": "355516e8447a8da991f8234f76b0437707bc4645b464d09ccdc1c32bc5659801",
+        "src\\choiceforge\\sharrow_cuda.py": "4e34c08eb8bfc157055b8b232ce4bac5364517615beecf63b32231f05daa89db",
+        "src\\choiceforge\\sharrow_ir.py": "360d68963f0b53f34946deb7e04ac178edacc22025cabe277d410c1abe67c317",
+        "src\\choiceforge\\tour_expansion.py": "bc91b42eea214018142cbeaa603b9da965f5d1d50a00d5261d23473a35ffcdb8",
+        "src\\choiceforge\\trip_destination_final.py": "04deaa54f99f47d531c8dde055cddbf9997d68ea27e4f4313e73e580eb298391",
+        "src\\choiceforge\\trip_destination_resident.py": "8702352b991a6b7072dcee4fa16c9e0bb4cd7c32efcb06527d3c7a38a7014860",
+        "src\\choiceforge\\trip_destination_sampling.py": "e4cf094a367b2cfadeaeec60e07f78d0b82ddc44715add507c00192a2dc343d9",
+        "src\\choiceforge\\trip_logsum_native.py": "fb500eb06b9a9abb03f189e1da58000240580c895bf6636bd47efbd93be92738",
+        "scripts\\run_phase58_comparison.py": "470fbff95eaa2db7626a7a6b6487fe4fe062bb1cab843538b2568d38f3bce52a",
+        "scripts\\run_phase22_integrated_scheduling.py": "0088fc7974f7663dfd29acb2adce12ef4d3b099c117dc07100606cec744ab444",
+        "scripts\\verify_phase15_outputs.py": "a1c75ce1fcac1efc1a6a3e72e31818c6b53eb9272c55e38f842b5af76729526d"
+      },
+      "thread_environment": {
+        "NUMBA_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-chain2-candidate-1"
+    }
+  ]
+}

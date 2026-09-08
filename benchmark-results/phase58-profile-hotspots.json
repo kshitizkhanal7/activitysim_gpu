@@ -1,0 +1,2723 @@
+{
+  "trip_destination": {
+    "total_profiled_seconds": 13.803054900000015,
+    "by_cumulative": [
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\runner.py",
+        "line": 305,
+        "function": "by_name",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.000809,
+        "cumulative_seconds": 13.821251100000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 75,
+        "function": "run_named_step",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0006358000000000001,
+        "cumulative_seconds": 13.363626900000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 245,
+        "function": "run_step",
+        "primitive_calls": 1,
+        "calls": 2,
+        "self_seconds": 0.0004983,
+        "cumulative_seconds": 13.3629911
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 44,
+        "function": "wrapper",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 2.33e-05,
+        "cumulative_seconds": 13.3566569
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_destination.py",
+        "line": 1684,
+        "function": "trip_destination",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 6.8e-05,
+        "cumulative_seconds": 13.241685100000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 495,
+        "function": "wrapper",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.000768,
+        "cumulative_seconds": 13.233009200000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_destination.py",
+        "line": 1337,
+        "function": "run_trip_destination",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.026825400000000003,
+        "cumulative_seconds": 13.232241100000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 1837,
+        "function": "choose_trip_destinations_batched",
+        "primitive_calls": 3,
+        "calls": 3,
+        "self_seconds": 0.0216158,
+        "cumulative_seconds": 12.741079000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 342,
+        "function": "_native_trip_logsum_values",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0034305000000000004,
+        "cumulative_seconds": 4.5304843
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_logsum_native.py",
+        "line": 1174,
+        "function": "populate_normalized",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 1.5368034000000002,
+        "cumulative_seconds": 2.9387166000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 868,
+        "function": "_prepare_logsum_bundle",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0113713,
+        "cumulative_seconds": 2.286514
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_destination_resident.py",
+        "line": 710,
+        "function": "sample_trip_destinations_resident_exact_abi",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0017561,
+        "cumulative_seconds": 2.2223456
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_destination_resident.py",
+        "line": 453,
+        "function": "sample_trip_destinations_resident",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.39059910000000003,
+        "cumulative_seconds": 2.2205895
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_destination.py",
+        "line": 1020,
+        "function": "trip_destination_simulate",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0009185,
+        "cumulative_seconds": 1.8874782
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 2239,
+        "function": "timed_interaction",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0001336,
+        "cumulative_seconds": 1.7677277
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 2152,
+        "function": "<lambda>",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0008413,
+        "cumulative_seconds": 1.7675845000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_destination_final.py",
+        "line": 140,
+        "function": "compact_interaction_sample_simulate",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0020641,
+        "cumulative_seconds": 1.7667432
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 714,
+        "function": "_trip_logsum_contract",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0011422000000000001,
+        "cumulative_seconds": 1.620422
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 2166,
+        "function": "timed_eval_interaction",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.00040270000000000003,
+        "cumulative_seconds": 1.4815959
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\interaction_simulate.py",
+        "line": 28,
+        "function": "eval_interaction_utilities",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0020361000000000003,
+        "cumulative_seconds": 1.4811847
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\flow.py",
+        "line": 754,
+        "function": "apply_flow",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.00027390000000000004,
+        "cumulative_seconds": 1.4384966000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 787,
+        "function": "_phase43_compact_draws_for_bundles",
+        "primitive_calls": 3,
+        "calls": 3,
+        "self_seconds": 0.0023582,
+        "cumulative_seconds": 1.3802379
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 366135,
+        "calls": 366135,
+        "self_seconds": 1.0081633,
+        "cumulative_seconds": 1.2278015
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\native_abi_bootstrap.py",
+        "line": 314,
+        "function": "compile_native_strict_abi",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0033665,
+        "cumulative_seconds": 1.1617321
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_logsum_native.py",
+        "line": 1001,
+        "function": "_normalized_packet",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.08833650000000001,
+        "cumulative_seconds": 1.1553392
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\flow.py",
+        "line": 137,
+        "function": "get_flow",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.00030700000000000004,
+        "cumulative_seconds": 1.086756
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\flow.py",
+        "line": 457,
+        "function": "new_flow",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0018451000000000001,
+        "cumulative_seconds": 1.0644287000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 824,
+        "function": "<listcomp>",
+        "primitive_calls": 3,
+        "calls": 3,
+        "self_seconds": 3.09e-05,
+        "cumulative_seconds": 0.9545314
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 1092,
+        "function": "normal_for_df",
+        "primitive_calls": 6,
+        "calls": 6,
+        "self_seconds": 0.00024650000000000003,
+        "cumulative_seconds": 0.9544966
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 525,
+        "function": "normal_for_df",
+        "primitive_calls": 6,
+        "calls": 6,
+        "self_seconds": 0.006884100000000001,
+        "cumulative_seconds": 0.9542315
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1950563,
+        "calls": 2601269,
+        "self_seconds": 0.2739027,
+        "cumulative_seconds": 0.9010678000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 580,
+        "function": "<listcomp>",
+        "primitive_calls": 6,
+        "calls": 6,
+        "self_seconds": 0.220698,
+        "cumulative_seconds": 0.886615
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 896,
+        "function": "random_for_df",
+        "primitive_calls": 33,
+        "calls": 33,
+        "self_seconds": 0.0001406,
+        "cumulative_seconds": 0.8450585
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 212,
+        "function": "random_for_df",
+        "primitive_calls": 33,
+        "calls": 33,
+        "self_seconds": 0.007644700000000001,
+        "cumulative_seconds": 0.8447881
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\native_abi_bootstrap.py",
+        "line": 202,
+        "function": "_compile_bindings",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.014376100000000001,
+        "cumulative_seconds": 0.761654
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 33,
+        "calls": 33,
+        "self_seconds": 0.18933740000000002,
+        "cumulative_seconds": 0.7512219
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_ir.py",
+        "line": 64,
+        "function": "specification_ir",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.014631600000000002,
+        "cumulative_seconds": 0.738889
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\reshape\\merge.py",
+        "line": 135,
+        "function": "merge",
+        "primitive_calls": 61,
+        "calls": 61,
+        "self_seconds": 0.0010339000000000001,
+        "cumulative_seconds": 0.7321393
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\relationships.py",
+        "line": 1450,
+        "function": "setup_flow",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0002357,
+        "cumulative_seconds": 0.7299209000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\flows.py",
+        "line": 998,
+        "function": "__new__",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.00032520000000000004,
+        "cumulative_seconds": 0.7296511
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\filesystem.py",
+        "line": 654,
+        "function": "read_settings_file",
+        "primitive_calls": 52,
+        "calls": 52,
+        "self_seconds": 0.0013973000000000002,
+        "cumulative_seconds": 0.7290797
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\reshape\\merge.py",
+        "line": 882,
+        "function": "get_result",
+        "primitive_calls": 61,
+        "calls": 61,
+        "self_seconds": 0.0100535,
+        "cumulative_seconds": 0.7259434
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\__init__.py",
+        "line": 74,
+        "function": "load",
+        "primitive_calls": 54,
+        "calls": 54,
+        "self_seconds": 0.0010117000000000001,
+        "cumulative_seconds": 0.6345369000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\constructor.py",
+        "line": 47,
+        "function": "get_single_data",
+        "primitive_calls": 54,
+        "calls": 54,
+        "self_seconds": 0.00011360000000000001,
+        "cumulative_seconds": 0.6270036
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\flows.py",
+        "line": 1578,
+        "function": "__initialize_2",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0010547,
+        "cumulative_seconds": 0.6055931
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\composer.py",
+        "line": 29,
+        "function": "get_single_node",
+        "primitive_calls": 54,
+        "calls": 54,
+        "self_seconds": 0.00021180000000000003,
+        "cumulative_seconds": 0.596164
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\native_abi_bootstrap.py",
+        "line": 173,
+        "function": "_ordered_sources",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0140774,
+        "cumulative_seconds": 0.5770441000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\composer.py",
+        "line": 50,
+        "function": "compose_document",
+        "primitive_calls": 54,
+        "calls": 54,
+        "self_seconds": 0.00011080000000000001,
+        "cumulative_seconds": 0.5768546
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\composer.py",
+        "line": 63,
+        "function": "compose_node",
+        "primitive_calls": 54,
+        "calls": 8468,
+        "self_seconds": 0.013998100000000001,
+        "cumulative_seconds": 0.576462
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\composer.py",
+        "line": 117,
+        "function": "compose_mapping_node",
+        "primitive_calls": 54,
+        "calls": 360,
+        "self_seconds": 0.004904100000000001,
+        "cumulative_seconds": 0.5747458000000001
+      }
+    ],
+    "by_self": [
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_logsum_native.py",
+        "line": 1174,
+        "function": "populate_normalized",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 1.5368034000000002,
+        "cumulative_seconds": 2.9387166000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 366135,
+        "calls": 366135,
+        "self_seconds": 1.0081633,
+        "cumulative_seconds": 1.2278015
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_destination_sampling.py",
+        "line": 329,
+        "function": "_gpu_utilities",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.3915613,
+        "cumulative_seconds": 0.5091196
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_destination_resident.py",
+        "line": 453,
+        "function": "sample_trip_destinations_resident",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.39059910000000003,
+        "cumulative_seconds": 2.2205895
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\json\\encoder.py",
+        "line": 205,
+        "function": "iterencode",
+        "primitive_calls": 145,
+        "calls": 145,
+        "self_seconds": 0.32628690000000005,
+        "cumulative_seconds": 0.32628690000000005
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.eval>",
+        "primitive_calls": 80263,
+        "calls": 80263,
+        "self_seconds": 0.28966630000000004,
+        "cumulative_seconds": 0.3366738
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3962,
+        "function": "_get_indexer",
+        "primitive_calls": 907,
+        "calls": 907,
+        "self_seconds": 0.28017240000000004,
+        "cumulative_seconds": 0.28479720000000003
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_CNJLKUHHFMYP3RDJQEGFMCPTWNTSY63W\\__init__.py",
+        "line": 1364,
+        "function": "idotter",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.2771249,
+        "cumulative_seconds": 0.2771832
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1950563,
+        "calls": 2601269,
+        "self_seconds": 0.2739027,
+        "cumulative_seconds": 0.9010678000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 120,
+        "function": "_take_nd_ndarray",
+        "primitive_calls": 2869,
+        "calls": 2869,
+        "self_seconds": 0.23736690000000002,
+        "cumulative_seconds": 0.3183185
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method psutil_windows.proc_memory_uss>",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.23421370000000002,
+        "cumulative_seconds": 0.23421370000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\generic.py",
+        "line": 42,
+        "function": "_instancecheck",
+        "primitive_calls": 59419,
+        "calls": 59419,
+        "self_seconds": 0.22436450000000002,
+        "cumulative_seconds": 0.2481846
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 580,
+        "function": "<listcomp>",
+        "primitive_calls": 6,
+        "calls": 6,
+        "self_seconds": 0.220698,
+        "cumulative_seconds": 0.886615
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\reshape\\merge.py",
+        "line": 2399,
+        "function": "_factorize_keys",
+        "primitive_calls": 31,
+        "calls": 31,
+        "self_seconds": 0.21349710000000002,
+        "cumulative_seconds": 0.2142675
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\xarray\\core\\dataset.py",
+        "line": 1296,
+        "function": "_construct_dataarray",
+        "primitive_calls": 8217,
+        "calls": 8217,
+        "self_seconds": 0.2130834,
+        "cumulative_seconds": 0.3097747
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 33,
+        "calls": 33,
+        "self_seconds": 0.18933740000000002,
+        "cumulative_seconds": 0.7512219
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'copy' of 'numpy.ndarray' objects>",
+        "primitive_calls": 5323,
+        "calls": 5323,
+        "self_seconds": 0.17113340000000002,
+        "cumulative_seconds": 0.17113340000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\missing.py",
+        "line": 305,
+        "function": "_isna_string_dtype",
+        "primitive_calls": 929,
+        "calls": 929,
+        "self_seconds": 0.1605541,
+        "cumulative_seconds": 0.1605988
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 1372,
+        "function": "_node_sources",
+        "primitive_calls": 43560,
+        "calls": 157500,
+        "self_seconds": 0.1563271,
+        "cumulative_seconds": 0.5614419
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'argsort' of 'numpy.ndarray' objects>",
+        "primitive_calls": 660,
+        "calls": 660,
+        "self_seconds": 0.1485467,
+        "cumulative_seconds": 0.1485467
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pyarrow\\parquet\\core.py",
+        "line": 1191,
+        "function": "write_table",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.1385771,
+        "cumulative_seconds": 0.1385771
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\typing.py",
+        "line": 1602,
+        "function": "__subclasscheck__",
+        "primitive_calls": 323310,
+        "calls": 323310,
+        "self_seconds": 0.12609720000000002,
+        "cumulative_seconds": 0.3217959
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_logsum_native.py",
+        "line": 185,
+        "function": "<listcomp>",
+        "primitive_calls": 180,
+        "calls": 180,
+        "self_seconds": 0.1101695,
+        "cumulative_seconds": 0.1101695
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method io.open>",
+        "primitive_calls": 286,
+        "calls": 286,
+        "self_seconds": 0.1091752,
+        "cumulative_seconds": 0.11986260000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method nt.stat>",
+        "primitive_calls": 1602,
+        "calls": 1602,
+        "self_seconds": 0.10389680000000001,
+        "cumulative_seconds": 0.1042044
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\collections\\__init__.py",
+        "line": 442,
+        "function": "_make",
+        "primitive_calls": 366096,
+        "calls": 366096,
+        "self_seconds": 0.10025010000000001,
+        "cumulative_seconds": 0.1609942
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\llvmlite\\binding\\ffi.py",
+        "line": 210,
+        "function": "__call__",
+        "primitive_calls": 1387,
+        "calls": 1389,
+        "self_seconds": 0.0993099,
+        "cumulative_seconds": 0.11305820000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 1107,
+        "function": "__getitem__",
+        "primitive_calls": 87181,
+        "calls": 87181,
+        "self_seconds": 0.0920051,
+        "cumulative_seconds": 0.3344489
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\trip_logsum_native.py",
+        "line": 1001,
+        "function": "_normalized_packet",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.08833650000000001,
+        "cumulative_seconds": 1.1553392
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 2295,
+        "function": "_merge_blocks",
+        "primitive_calls": 943,
+        "calls": 943,
+        "self_seconds": 0.0880162,
+        "cumulative_seconds": 0.163363
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\typing.py",
+        "line": 1327,
+        "function": "__instancecheck__",
+        "primitive_calls": 323310,
+        "calls": 323310,
+        "self_seconds": 0.0866928,
+        "cumulative_seconds": 0.40848870000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.issubclass>",
+        "primitive_calls": 370986,
+        "calls": 370986,
+        "self_seconds": 0.073576,
+        "cumulative_seconds": 0.15979700000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\reader.py",
+        "line": 99,
+        "function": "forward",
+        "primitive_calls": 70274,
+        "calls": 70274,
+        "self_seconds": 0.0726662,
+        "cumulative_seconds": 0.0771617
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+        "line": 218,
+        "function": "vstack",
+        "primitive_calls": 465,
+        "calls": 465,
+        "self_seconds": 0.0657187,
+        "cumulative_seconds": 0.067581
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'get' of 'cupy._core.core._ndarray_base' objects>",
+        "primitive_calls": 240,
+        "calls": 240,
+        "self_seconds": 0.06529030000000001,
+        "cumulative_seconds": 0.0659885
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\relationships.py",
+        "line": 1700,
+        "function": "_arg_tokenizer",
+        "primitive_calls": 1916,
+        "calls": 6887,
+        "self_seconds": 0.0651207,
+        "cumulative_seconds": 0.3484397
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.len>",
+        "primitive_calls": 693041,
+        "calls": 754754,
+        "self_seconds": 0.0643769,
+        "cumulative_seconds": 0.08633450000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'repeat' of 'numpy.ndarray' objects>",
+        "primitive_calls": 240,
+        "calls": 240,
+        "self_seconds": 0.06305720000000001,
+        "cumulative_seconds": 0.06305720000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method numpy.asanyarray>",
+        "primitive_calls": 4302,
+        "calls": 4302,
+        "self_seconds": 0.0618227,
+        "cumulative_seconds": 0.0625533
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\reshape\\merge.py",
+        "line": 2371,
+        "function": "_left_join_on_index",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.0616905,
+        "cumulative_seconds": 0.26778420000000003
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 1786,
+        "function": "_emit_node",
+        "primitive_calls": 15160,
+        "calls": 81240,
+        "self_seconds": 0.0606266,
+        "cumulative_seconds": 0.0722639
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method numpy.asarray>",
+        "primitive_calls": 27740,
+        "calls": 29385,
+        "self_seconds": 0.059499,
+        "cumulative_seconds": 0.10720550000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'take' of 'numpy.ndarray' objects>",
+        "primitive_calls": 996,
+        "calls": 996,
+        "self_seconds": 0.058231700000000004,
+        "cumulative_seconds": 0.058231700000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+        "primitive_calls": 10808,
+        "calls": 10808,
+        "self_seconds": 0.0570084,
+        "cumulative_seconds": 0.0570084
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\nested_logit.py",
+        "line": 223,
+        "function": "mtc21_nested_logsums_cuda",
+        "primitive_calls": 30,
+        "calls": 30,
+        "self_seconds": 0.055602500000000006,
+        "cumulative_seconds": 0.06852180000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 1232,
+        "function": "_get_value",
+        "primitive_calls": 87170,
+        "calls": 87170,
+        "self_seconds": 0.055264100000000003,
+        "cumulative_seconds": 0.1401221
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\scanner.py",
+        "line": 145,
+        "function": "need_more_tokens",
+        "primitive_calls": 100796,
+        "calls": 100796,
+        "self_seconds": 0.0516201,
+        "cumulative_seconds": 0.09396850000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 2801,
+        "function": "check_dict_or_set_indexers",
+        "primitive_calls": 92512,
+        "calls": 92512,
+        "self_seconds": 0.0515595,
+        "cumulative_seconds": 0.0783957
+      },
+      {
+        "file": "<frozen abc>",
+        "line": 121,
+        "function": "__subclasscheck__",
+        "primitive_calls": 324046,
+        "calls": 324058,
+        "self_seconds": 0.0513056,
+        "cumulative_seconds": 0.08626850000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 2320,
+        "function": "is_unique",
+        "primitive_calls": 1136,
+        "calls": 1136,
+        "self_seconds": 0.0504003,
+        "cumulative_seconds": 0.0644813
+      }
+    ]
+  },
+  "trip_mode_choice": {
+    "total_profiled_seconds": 13.08521590000002,
+    "by_cumulative": [
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\runner.py",
+        "line": 305,
+        "function": "by_name",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0009368000000000001,
+        "cumulative_seconds": 13.1085835
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 75,
+        "function": "run_named_step",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 6.300000000000001e-06,
+        "cumulative_seconds": 12.612312300000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 245,
+        "function": "run_step",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 5.1000000000000006e-05,
+        "cumulative_seconds": 12.612306
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 44,
+        "function": "wrapper",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0113147,
+        "cumulative_seconds": 12.608124400000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_mode_choice.py",
+        "line": 56,
+        "function": "trip_mode_choice",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.006856,
+        "cumulative_seconds": 12.596809700000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_mode_choice.py",
+        "line": 85,
+        "function": "_mode_choice_simulate_cuda",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 6.64e-05,
+        "cumulative_seconds": 7.4920369
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_mode_choice.py",
+        "line": 109,
+        "function": "_generated_mode_choice_simulate",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.00010480000000000001,
+        "cumulative_seconds": 7.491970500000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\mode.py",
+        "line": 25,
+        "function": "mode_choice_simulate",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0007358,
+        "cumulative_seconds": 7.4918424
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1834,
+        "function": "simple_simulate",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0002347,
+        "cumulative_seconds": 7.4603624
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 495,
+        "function": "wrapper",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0052757,
+        "cumulative_seconds": 7.459119800000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1705,
+        "function": "_simple_simulate",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0005731,
+        "cumulative_seconds": 7.4538431
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1466,
+        "function": "eval_nl",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0110308,
+        "cumulative_seconds": 7.340883700000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\expressions.py",
+        "line": 185,
+        "function": "annotate_preprocessors",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0051203,
+        "cumulative_seconds": 4.3062483
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\expressions.py",
+        "line": 20,
+        "function": "compute_columns",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0087133,
+        "cumulative_seconds": 4.0002322
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\assign.py",
+        "line": 207,
+        "function": "assign_variables",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.013001200000000001,
+        "cumulative_seconds": 3.8300578
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 571,
+        "function": "eval_utilities",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0006459,
+        "cumulative_seconds": 2.7042490000000003
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_mode_choice.py",
+        "line": 116,
+        "function": "generated_apply_flow",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.002115,
+        "cumulative_seconds": 2.6151980000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 885384,
+        "calls": 885384,
+        "self_seconds": 2.1233037,
+        "cumulative_seconds": 2.6053081000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\logit.py",
+        "line": 747,
+        "function": "make_choices",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0031804000000000003,
+        "cumulative_seconds": 2.2869023
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 896,
+        "function": "random_for_df",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 5.53e-05,
+        "cumulative_seconds": 2.0160671000000003
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 212,
+        "function": "random_for_df",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0165945,
+        "cumulative_seconds": 2.0159752
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 1092,
+        "function": "normal_for_df",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0013942000000000002,
+        "cumulative_seconds": 1.9883165
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 525,
+        "function": "normal_for_df",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.017046500000000003,
+        "cumulative_seconds": 1.9694614000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.eval>",
+        "primitive_calls": 80400,
+        "calls": 80400,
+        "self_seconds": 0.3160142,
+        "cumulative_seconds": 1.8869542000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.3252621,
+        "cumulative_seconds": 1.8634978000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 580,
+        "function": "<listcomp>",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.7471554,
+        "cumulative_seconds": 1.8142278
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 204,
+        "function": "evaluate_strict_cuda",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.8632916,
+        "cumulative_seconds": 1.7038802000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 12524,
+        "function": "_min_count_stat_function",
+        "primitive_calls": 340,
+        "calls": 340,
+        "self_seconds": 0.0110162,
+        "cumulative_seconds": 1.1496656
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 11462,
+        "function": "_reduce",
+        "primitive_calls": 331,
+        "calls": 331,
+        "self_seconds": 0.49357100000000004,
+        "cumulative_seconds": 1.1312329
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\skim_dataset.py",
+        "line": 375,
+        "function": "__getitem__",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.0004998,
+        "cumulative_seconds": 0.9629752
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\skim_dataset.py",
+        "line": 291,
+        "function": "lookup",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.0019098000000000001,
+        "cumulative_seconds": 0.9624754000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\selectors.py",
+        "line": 206,
+        "function": "__call__",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.006249,
+        "cumulative_seconds": 0.9393507000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\sharrow\\selectors.py",
+        "line": 102,
+        "function": "_filter",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.0048782,
+        "cumulative_seconds": 0.9316757000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1271,
+        "function": "compute_base_probabilities",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.007439,
+        "cumulative_seconds": 0.9205983000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_mode_choice.py",
+        "line": 227,
+        "function": "_strict_inputs",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0002831,
+        "cumulative_seconds": 0.8653311
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1182,
+        "function": "compute_nested_exp_utilities",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.012846000000000002,
+        "cumulative_seconds": 0.8200105000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_destination.py",
+        "line": 177,
+        "function": "_cached_strict_ir",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0004112,
+        "cumulative_seconds": 0.7506542
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_ir.py",
+        "line": 64,
+        "function": "specification_ir",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.015041500000000001,
+        "cumulative_seconds": 0.7274532
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 11700,
+        "function": "prod",
+        "primitive_calls": 210,
+        "calls": 210,
+        "self_seconds": 0.0005187000000000001,
+        "cumulative_seconds": 0.7193875000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 12575,
+        "function": "prod",
+        "primitive_calls": 210,
+        "calls": 210,
+        "self_seconds": 0.0003501,
+        "cumulative_seconds": 0.7179835
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4073,
+        "function": "__getitem__",
+        "primitive_calls": 6091,
+        "calls": 6091,
+        "self_seconds": 0.0180171,
+        "cumulative_seconds": 0.5331988000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 1232,
+        "function": "compute_nested_probabilities",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0159306,
+        "cumulative_seconds": 0.5228375000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1534271,
+        "calls": 1864424,
+        "self_seconds": 0.20434850000000002,
+        "cumulative_seconds": 0.46114740000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4282,
+        "function": "__setitem__",
+        "primitive_calls": 1134,
+        "calls": 1866,
+        "self_seconds": 0.0098394,
+        "cumulative_seconds": 0.4532723
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py",
+        "line": 530,
+        "function": "eval_coefficients",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.0012872,
+        "cumulative_seconds": 0.44829480000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 392,
+        "function": "__init__",
+        "primitive_calls": 7779,
+        "calls": 7920,
+        "self_seconds": 0.060750900000000004,
+        "cumulative_seconds": 0.4354638
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 12563,
+        "function": "sum",
+        "primitive_calls": 130,
+        "calls": 130,
+        "self_seconds": 0.0002635,
+        "cumulative_seconds": 0.4322957
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 11688,
+        "function": "sum",
+        "primitive_calls": 120,
+        "calls": 120,
+        "self_seconds": 0.00035200000000000005,
+        "cumulative_seconds": 0.42579520000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\base.py",
+        "line": 895,
+        "function": "_map_values",
+        "primitive_calls": 310,
+        "calls": 320,
+        "self_seconds": 0.0012105,
+        "cumulative_seconds": 0.41905180000000003
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\algorithms.py",
+        "line": 1667,
+        "function": "map_array",
+        "primitive_calls": 310,
+        "calls": 310,
+        "self_seconds": 0.033629200000000005,
+        "cumulative_seconds": 0.4136419
+      }
+    ],
+    "by_self": [
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 885384,
+        "calls": 885384,
+        "self_seconds": 2.1233037,
+        "cumulative_seconds": 2.6053081000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 204,
+        "function": "evaluate_strict_cuda",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.8632916,
+        "cumulative_seconds": 1.7038802000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 580,
+        "function": "<listcomp>",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.7471554,
+        "cumulative_seconds": 1.8142278
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 11462,
+        "function": "_reduce",
+        "primitive_calls": 331,
+        "calls": 331,
+        "self_seconds": 0.49357100000000004,
+        "cumulative_seconds": 1.1312329
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.3252621,
+        "cumulative_seconds": 1.8634978000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.eval>",
+        "primitive_calls": 80400,
+        "calls": 80400,
+        "self_seconds": 0.3160142,
+        "cumulative_seconds": 1.8869542000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3962,
+        "function": "_get_indexer",
+        "primitive_calls": 1252,
+        "calls": 1252,
+        "self_seconds": 0.2971938,
+        "cumulative_seconds": 0.30325850000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\xarray\\core\\nputils.py",
+        "line": 168,
+        "function": "__getitem__",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.2527159,
+        "cumulative_seconds": 0.2642995
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\collections\\__init__.py",
+        "line": 442,
+        "function": "_make",
+        "primitive_calls": 885364,
+        "calls": 885364,
+        "self_seconds": 0.2459433,
+        "cumulative_seconds": 0.3886794
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method psutil_windows.proc_memory_uss>",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.2431113,
+        "cumulative_seconds": 0.2431113
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'copy' of 'numpy.ndarray' objects>",
+        "primitive_calls": 4539,
+        "calls": 4539,
+        "self_seconds": 0.2204174,
+        "cumulative_seconds": 0.2204174
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 120,
+        "function": "_take_nd_ndarray",
+        "primitive_calls": 2974,
+        "calls": 2974,
+        "self_seconds": 0.2158564,
+        "cumulative_seconds": 0.28097710000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1534271,
+        "calls": 1864424,
+        "self_seconds": 0.20434850000000002,
+        "cumulative_seconds": 0.46114740000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\arraylike.py",
+        "line": 253,
+        "function": "array_ufunc",
+        "primitive_calls": 600,
+        "calls": 600,
+        "self_seconds": 0.1977344,
+        "cumulative_seconds": 0.24122290000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 180,
+        "function": "blknos",
+        "primitive_calls": 7756,
+        "calls": 7756,
+        "self_seconds": 0.1970097,
+        "cumulative_seconds": 0.1995522
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pyarrow\\parquet\\core.py",
+        "line": 1191,
+        "function": "write_table",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.18252000000000002,
+        "cumulative_seconds": 0.18252000000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\choosing.py",
+        "line": 6,
+        "function": "choice_maker",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.17832240000000002,
+        "cumulative_seconds": 0.17835420000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+        "primitive_calls": 7388,
+        "calls": 7388,
+        "self_seconds": 0.1696137,
+        "cumulative_seconds": 0.1696137
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method numpy.asanyarray>",
+        "primitive_calls": 7803,
+        "calls": 7803,
+        "self_seconds": 0.1414111,
+        "cumulative_seconds": 0.1433374
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\logit.py",
+        "line": 277,
+        "function": "utils_to_probs",
+        "primitive_calls": 100,
+        "calls": 100,
+        "self_seconds": 0.1398832,
+        "cumulative_seconds": 0.1725856
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\algorithms.py",
+        "line": 457,
+        "function": "isin",
+        "primitive_calls": 111,
+        "calls": 121,
+        "self_seconds": 0.11929060000000001,
+        "cumulative_seconds": 0.15011960000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\json\\encoder.py",
+        "line": 205,
+        "function": "iterencode",
+        "primitive_calls": 65,
+        "calls": 65,
+        "self_seconds": 0.11923260000000001,
+        "cumulative_seconds": 0.1192591
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 1372,
+        "function": "_node_sources",
+        "primitive_calls": 29040,
+        "calls": 105000,
+        "self_seconds": 0.1064485,
+        "cumulative_seconds": 0.3857566
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method __new__ of type object at 0x00007FF8DCB3DFE0>",
+        "primitive_calls": 904681,
+        "calls": 904681,
+        "self_seconds": 0.1005308,
+        "cumulative_seconds": 0.1005308
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.len>",
+        "primitive_calls": 1205834,
+        "calls": 1297009,
+        "self_seconds": 0.09961360000000001,
+        "cumulative_seconds": 0.130535
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 2295,
+        "function": "_merge_blocks",
+        "primitive_calls": 203,
+        "calls": 203,
+        "self_seconds": 0.09931350000000001,
+        "cumulative_seconds": 0.17805890000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 1107,
+        "function": "__getitem__",
+        "primitive_calls": 87170,
+        "calls": 87170,
+        "self_seconds": 0.091421,
+        "cumulative_seconds": 0.332537
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'take' of 'numpy.ndarray' objects>",
+        "primitive_calls": 1732,
+        "calls": 1732,
+        "self_seconds": 0.0867806,
+        "cumulative_seconds": 0.0867806
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_cuda.py",
+        "line": 1418,
+        "function": "_pack_inputs",
+        "primitive_calls": 10,
+        "calls": 10,
+        "self_seconds": 0.08343410000000001,
+        "cumulative_seconds": 0.1969412
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
+        "line": 218,
+        "function": "vstack",
+        "primitive_calls": 155,
+        "calls": 155,
+        "self_seconds": 0.0745142,
+        "cumulative_seconds": 0.0753288
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\typing.py",
+        "line": 1602,
+        "function": "__subclasscheck__",
+        "primitive_calls": 162480,
+        "calls": 162480,
+        "self_seconds": 0.06623470000000001,
+        "cumulative_seconds": 0.16764020000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 1726,
+        "function": "_interleave",
+        "primitive_calls": 270,
+        "calls": 270,
+        "self_seconds": 0.0631733,
+        "cumulative_seconds": 0.0724753
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 392,
+        "function": "__init__",
+        "primitive_calls": 7779,
+        "calls": 7920,
+        "self_seconds": 0.060750900000000004,
+        "cumulative_seconds": 0.4354638
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'astype' of 'numpy.ndarray' objects>",
+        "primitive_calls": 3568,
+        "calls": 3568,
+        "self_seconds": 0.058238200000000004,
+        "cumulative_seconds": 0.058238200000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\numpy\\lib\\_shape_base_impl.py",
+        "line": 625,
+        "function": "column_stack",
+        "primitive_calls": 20,
+        "calls": 20,
+        "self_seconds": 0.0576129,
+        "cumulative_seconds": 0.0578033
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 1232,
+        "function": "_get_value",
+        "primitive_calls": 87170,
+        "calls": 87170,
+        "self_seconds": 0.0556875,
+        "cumulative_seconds": 0.1418609
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 2801,
+        "function": "check_dict_or_set_indexers",
+        "primitive_calls": 94812,
+        "calls": 94812,
+        "self_seconds": 0.0533071,
+        "cumulative_seconds": 0.0810757
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method nt.stat>",
+        "primitive_calls": 858,
+        "calls": 858,
+        "self_seconds": 0.0500163,
+        "cumulative_seconds": 0.0500709
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\construction.py",
+        "line": 517,
+        "function": "sanitize_array",
+        "primitive_calls": 11359,
+        "calls": 11359,
+        "self_seconds": 0.0493521,
+        "cumulative_seconds": 0.19587310000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3784,
+        "function": "get_loc",
+        "primitive_calls": 93386,
+        "calls": 93386,
+        "self_seconds": 0.048970200000000005,
+        "cumulative_seconds": 0.07626430000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\typing.py",
+        "line": 1327,
+        "function": "__instancecheck__",
+        "primitive_calls": 162480,
+        "calls": 162480,
+        "self_seconds": 0.0483815,
+        "cumulative_seconds": 0.2160217
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\cast.py",
+        "line": 1166,
+        "function": "maybe_infer_to_datetimelike",
+        "primitive_calls": 7025,
+        "calls": 7025,
+        "self_seconds": 0.0436018,
+        "cumulative_seconds": 0.06939000000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.issubclass>",
+        "primitive_calls": 226082,
+        "calls": 226082,
+        "self_seconds": 0.0421802,
+        "cumulative_seconds": 0.0866408
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 6258,
+        "function": "__finalize__",
+        "primitive_calls": 14479,
+        "calls": 14479,
+        "self_seconds": 0.0412691,
+        "cumulative_seconds": 0.0584399
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method numpy.asarray>",
+        "primitive_calls": 27880,
+        "calls": 28061,
+        "self_seconds": 0.0398637,
+        "cumulative_seconds": 0.0464246
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\yaml\\reader.py",
+        "line": 99,
+        "function": "forward",
+        "primitive_calls": 38482,
+        "calls": 38482,
+        "self_seconds": 0.039409400000000004,
+        "cumulative_seconds": 0.0417908
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 353,
+        "function": "wrapper",
+        "primitive_calls": 416,
+        "calls": 416,
+        "self_seconds": 0.039237100000000004,
+        "cumulative_seconds": 0.0397247
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method cupy._core.core.array>",
+        "primitive_calls": 130,
+        "calls": 130,
+        "self_seconds": 0.0376639,
+        "cumulative_seconds": 0.0379585
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_ir.py",
+        "line": 581,
+        "function": "_coefficient",
+        "primitive_calls": 79590,
+        "calls": 79590,
+        "self_seconds": 0.0373869,
+        "cumulative_seconds": 0.042833300000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\sharrow_ir.py",
+        "line": 79,
+        "function": "<dictcomp>",
+        "primitive_calls": 3790,
+        "calls": 3790,
+        "self_seconds": 0.034823900000000005,
+        "cumulative_seconds": 0.3721323
+      }
+    ]
+  },
+  "trip_scheduling": {
+    "total_profiled_seconds": 8.860965500000004,
+    "by_cumulative": [
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\runner.py",
+        "line": 305,
+        "function": "by_name",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0008258,
+        "cumulative_seconds": 8.8611758
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 75,
+        "function": "run_named_step",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0006624000000000001,
+        "cumulative_seconds": 8.3886175
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 245,
+        "function": "run_step",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 2.9100000000000003e-05,
+        "cumulative_seconds": 8.387955100000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py",
+        "line": 44,
+        "function": "wrapper",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0006072,
+        "cumulative_seconds": 8.3878961
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py",
+        "line": 462,
+        "function": "trip_scheduling",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.0134418,
+        "cumulative_seconds": 8.3872889
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py",
+        "line": 365,
+        "function": "run_trip_scheduling",
+        "primitive_calls": 100,
+        "calls": 100,
+        "self_seconds": 0.0129882,
+        "cumulative_seconds": 7.9464638
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py",
+        "line": 196,
+        "function": "schedule_trips_in_leg",
+        "primitive_calls": 200,
+        "calls": 200,
+        "self_seconds": 0.0226143,
+        "cumulative_seconds": 6.3042167000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_trip_scheduling.py",
+        "line": 245,
+        "function": "_make_scheduling_choices_cuda",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0189439,
+        "cumulative_seconds": 5.0221415
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_trip_scheduling.py",
+        "line": 152,
+        "function": "choose",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0673997,
+        "cumulative_seconds": 4.3980785000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 896,
+        "function": "random_for_df",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0008945,
+        "cumulative_seconds": 1.7531425
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 212,
+        "function": "random_for_df",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0135294,
+        "cumulative_seconds": 1.7513238000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\cupy\\__init__.py",
+        "line": 824,
+        "function": "asnumpy",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0007530000000000001,
+        "cumulative_seconds": 1.4277674
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'get' of 'cupy._core.core._ndarray_base' objects>",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 1.4254996,
+        "cumulative_seconds": 1.4269345
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.19542220000000002,
+        "cumulative_seconds": 1.1870468
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4073,
+        "function": "__getitem__",
+        "primitive_calls": 13899,
+        "calls": 13899,
+        "self_seconds": 0.041941900000000004,
+        "cumulative_seconds": 1.0865139000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 210658,
+        "calls": 210658,
+        "self_seconds": 0.5703497000000001,
+        "cumulative_seconds": 0.9916246000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py",
+        "line": 72,
+        "function": "set_tour_hour",
+        "primitive_calls": 101,
+        "calls": 101,
+        "self_seconds": 0.0132279,
+        "cumulative_seconds": 0.8432982
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3827,
+        "function": "get_indexer",
+        "primitive_calls": 7356,
+        "calls": 10092,
+        "self_seconds": 0.043175700000000004,
+        "cumulative_seconds": 0.679601
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\ops\\common.py",
+        "line": 62,
+        "function": "new_method",
+        "primitive_calls": 6292,
+        "calls": 6593,
+        "self_seconds": 0.0085185,
+        "cumulative_seconds": 0.6650526
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 642,
+        "function": "reindex_indexer",
+        "primitive_calls": 4777,
+        "calls": 4777,
+        "self_seconds": 0.019850600000000003,
+        "cumulative_seconds": 0.6219918
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 1177,
+        "function": "__getitem__",
+        "primitive_calls": 4347,
+        "calls": 4895,
+        "self_seconds": 0.013241200000000002,
+        "cumulative_seconds": 0.619376
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py",
+        "line": 133,
+        "function": "update_tour_earliest",
+        "primitive_calls": 100,
+        "calls": 100,
+        "self_seconds": 0.007065200000000001,
+        "cumulative_seconds": 0.617222
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 392,
+        "function": "__init__",
+        "primitive_calls": 10092,
+        "calls": 10093,
+        "self_seconds": 0.0838029,
+        "cumulative_seconds": 0.5774829
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 4164,
+        "function": "_take_with_is_copy",
+        "primitive_calls": 2062,
+        "calls": 2062,
+        "self_seconds": 0.0049847,
+        "cumulative_seconds": 0.5326077
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 4049,
+        "function": "take",
+        "primitive_calls": 2161,
+        "calls": 2161,
+        "self_seconds": 0.0098025,
+        "cumulative_seconds": 0.5263127000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 883,
+        "function": "__setitem__",
+        "primitive_calls": 1098,
+        "calls": 1098,
+        "self_seconds": 0.0081045,
+        "cumulative_seconds": 0.5261637
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4141,
+        "function": "_getitem_bool_array",
+        "primitive_calls": 1455,
+        "calls": 1455,
+        "self_seconds": 0.0051476000000000004,
+        "cumulative_seconds": 0.5135842
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 59,
+        "function": "take_nd",
+        "primitive_calls": 22277,
+        "calls": 24696,
+        "self_seconds": 0.036983100000000005,
+        "cumulative_seconds": 0.49846290000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\blocks.py",
+        "line": 1353,
+        "function": "take_nd",
+        "primitive_calls": 16161,
+        "calls": 16161,
+        "self_seconds": 0.0327066,
+        "cumulative_seconds": 0.49521420000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 888,
+        "function": "take",
+        "primitive_calls": 2161,
+        "calls": 2161,
+        "self_seconds": 0.006194000000000001,
+        "cumulative_seconds": 0.4942919
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\multi.py",
+        "line": 688,
+        "function": "from_frame",
+        "primitive_calls": 549,
+        "calls": 549,
+        "self_seconds": 0.0025132,
+        "cumulative_seconds": 0.4766321
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3962,
+        "function": "_get_indexer",
+        "primitive_calls": 7282,
+        "calls": 9470,
+        "self_seconds": 0.2140127,
+        "cumulative_seconds": 0.4422687
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 6198,
+        "function": "_get_indexer_strict",
+        "primitive_calls": 2647,
+        "calls": 2647,
+        "self_seconds": 0.0171411,
+        "cumulative_seconds": 0.43039910000000003
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1610957,
+        "calls": 1637836,
+        "self_seconds": 0.23184010000000002,
+        "cumulative_seconds": 0.42857540000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 1398,
+        "function": "_getitem_axis",
+        "primitive_calls": 1850,
+        "calls": 1850,
+        "self_seconds": 0.006689100000000001,
+        "cumulative_seconds": 0.426364
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 120,
+        "function": "_take_nd_ndarray",
+        "primitive_calls": 22277,
+        "calls": 22277,
+        "self_seconds": 0.2483603,
+        "cumulative_seconds": 0.4160957
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 6222,
+        "function": "_construct_result",
+        "primitive_calls": 6284,
+        "calls": 6284,
+        "self_seconds": 0.019519400000000003,
+        "cumulative_seconds": 0.414972
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\multi.py",
+        "line": 475,
+        "function": "from_arrays",
+        "primitive_calls": 549,
+        "calls": 549,
+        "self_seconds": 0.004800400000000001,
+        "cumulative_seconds": 0.4001136
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 5155,
+        "function": "reindex",
+        "primitive_calls": 2261,
+        "calls": 2261,
+        "self_seconds": 0.0034142,
+        "cumulative_seconds": 0.3947165
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 5365,
+        "function": "reindex",
+        "primitive_calls": 2261,
+        "calls": 2261,
+        "self_seconds": 0.009338200000000001,
+        "cumulative_seconds": 0.39130230000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 4330,
+        "function": "reindex",
+        "primitive_calls": 3954,
+        "calls": 3954,
+        "self_seconds": 0.012376900000000001,
+        "cumulative_seconds": 0.3904248
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 6129,
+        "function": "_cmp_method",
+        "primitive_calls": 3843,
+        "calls": 3843,
+        "self_seconds": 0.010896600000000001,
+        "cumulative_seconds": 0.38766160000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\arrays\\categorical.py",
+        "line": 3089,
+        "function": "factorize_from_iterables",
+        "primitive_calls": 549,
+        "calls": 549,
+        "self_seconds": 0.0019494000000000002,
+        "cumulative_seconds": 0.35945760000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\arrays\\categorical.py",
+        "line": 3110,
+        "function": "<genexpr>",
+        "primitive_calls": 2745,
+        "calls": 2745,
+        "self_seconds": 0.0018669000000000001,
+        "cumulative_seconds": 0.3574684
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\arrays\\categorical.py",
+        "line": 3046,
+        "function": "factorize_from_iterable",
+        "primitive_calls": 2196,
+        "calls": 2196,
+        "self_seconds": 0.0129069,
+        "cumulative_seconds": 0.3556015
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 706,
+        "function": "<listcomp>",
+        "primitive_calls": 2168,
+        "calls": 2168,
+        "self_seconds": 0.010721000000000001,
+        "cumulative_seconds": 0.35356770000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 6174,
+        "function": "get_indexer_for",
+        "primitive_calls": 5042,
+        "calls": 5042,
+        "self_seconds": 0.0049441,
+        "cumulative_seconds": 0.3506309
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 6306,
+        "function": "__getattr__",
+        "primitive_calls": 26681,
+        "calls": 26681,
+        "self_seconds": 0.0331177,
+        "cumulative_seconds": 0.34811830000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexing.py",
+        "line": 1335,
+        "function": "_getitem_iterable",
+        "primitive_calls": 1201,
+        "calls": 1201,
+        "self_seconds": 0.0029765,
+        "cumulative_seconds": 0.34211460000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 5636,
+        "function": "_reindex_axes",
+        "primitive_calls": 1307,
+        "calls": 1307,
+        "self_seconds": 0.0043369,
+        "cumulative_seconds": 0.330697
+      }
+    ],
+    "by_self": [
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'get' of 'cupy._core.core._ndarray_base' objects>",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 1.4254996,
+        "cumulative_seconds": 1.4269345
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 177,
+        "function": "_generators_for_df",
+        "primitive_calls": 210658,
+        "calls": 210658,
+        "self_seconds": 0.5703497000000001,
+        "cumulative_seconds": 0.9916246000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 120,
+        "function": "_take_nd_ndarray",
+        "primitive_calls": 22277,
+        "calls": 22277,
+        "self_seconds": 0.2483603,
+        "cumulative_seconds": 0.4160957
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method psutil_windows.proc_memory_uss>",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.2480089,
+        "cumulative_seconds": 0.2480089
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 1610957,
+        "calls": 1637836,
+        "self_seconds": 0.23184010000000002,
+        "cumulative_seconds": 0.42857540000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3962,
+        "function": "_get_indexer",
+        "primitive_calls": 7282,
+        "calls": 9470,
+        "self_seconds": 0.2140127,
+        "cumulative_seconds": 0.4422687
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\activitysim-phase8-source\\activitysim\\core\\random.py",
+        "line": 248,
+        "function": "<listcomp>",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.19542220000000002,
+        "cumulative_seconds": 1.1870468
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pyarrow\\parquet\\core.py",
+        "line": 1191,
+        "function": "write_table",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.1564676,
+        "cumulative_seconds": 0.1564676
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+        "primitive_calls": 37813,
+        "calls": 37813,
+        "self_seconds": 0.1149045,
+        "cumulative_seconds": 0.1149045
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 6258,
+        "function": "__finalize__",
+        "primitive_calls": 36071,
+        "calls": 36071,
+        "self_seconds": 0.10127820000000001,
+        "cumulative_seconds": 0.1459863
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.len>",
+        "primitive_calls": 550734,
+        "calls": 716007,
+        "self_seconds": 0.0908853,
+        "cumulative_seconds": 0.1417275
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\reshape\\merge.py",
+        "line": 2399,
+        "function": "_factorize_keys",
+        "primitive_calls": 227,
+        "calls": 227,
+        "self_seconds": 0.0850519,
+        "cumulative_seconds": 0.08840830000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\series.py",
+        "line": 392,
+        "function": "__init__",
+        "primitive_calls": 10092,
+        "calls": 10093,
+        "self_seconds": 0.0838029,
+        "cumulative_seconds": 0.5774829
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 6323,
+        "function": "__setattr__",
+        "primitive_calls": 76032,
+        "calls": 76032,
+        "self_seconds": 0.0793402,
+        "cumulative_seconds": 0.1816104
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\generic.py",
+        "line": 42,
+        "function": "_instancecheck",
+        "primitive_calls": 263827,
+        "calls": 263827,
+        "self_seconds": 0.0784962,
+        "cumulative_seconds": 0.178433
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\construction.py",
+        "line": 517,
+        "function": "sanitize_array",
+        "primitive_calls": 17810,
+        "calls": 17810,
+        "self_seconds": 0.078333,
+        "cumulative_seconds": 0.267787
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\generic.py",
+        "line": 37,
+        "function": "_check",
+        "primitive_calls": 263827,
+        "calls": 263827,
+        "self_seconds": 0.0705542,
+        "cumulative_seconds": 0.0970038
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 2320,
+        "function": "is_unique",
+        "primitive_calls": 4667,
+        "calls": 4667,
+        "self_seconds": 0.06949340000000001,
+        "cumulative_seconds": 0.11949820000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\activitysim_trip_scheduling.py",
+        "line": 152,
+        "function": "choose",
+        "primitive_calls": 548,
+        "calls": 548,
+        "self_seconds": 0.0673997,
+        "cumulative_seconds": 4.3980785000000004
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\algorithms.py",
+        "line": 548,
+        "function": "factorize_array",
+        "primitive_calls": 1848,
+        "calls": 1848,
+        "self_seconds": 0.0646731,
+        "cumulative_seconds": 0.1082102
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\AppData\\Roaming\\uv\\python\\cpython-3.11.14-windows-x86_64-none\\Lib\\collections\\__init__.py",
+        "line": 442,
+        "function": "_make",
+        "primitive_calls": 210110,
+        "calls": 210110,
+        "self_seconds": 0.058512100000000004,
+        "cumulative_seconds": 0.0929133
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 281,
+        "function": "__init__",
+        "primitive_calls": 36074,
+        "calls": 36074,
+        "self_seconds": 0.0573098,
+        "cumulative_seconds": 0.0728516
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 1031,
+        "function": "iget",
+        "primitive_calls": 12237,
+        "calls": 12237,
+        "self_seconds": 0.0560302,
+        "cumulative_seconds": 0.08021990000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\algorithms.py",
+        "line": 457,
+        "function": "isin",
+        "primitive_calls": 299,
+        "calls": 299,
+        "self_seconds": 0.0544219,
+        "cumulative_seconds": 0.0582056
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\cast.py",
+        "line": 550,
+        "function": "maybe_promote",
+        "primitive_calls": 20213,
+        "calls": 20213,
+        "self_seconds": 0.0535455,
+        "cumulative_seconds": 0.055111200000000006
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.getattr>",
+        "primitive_calls": 420085,
+        "calls": 420392,
+        "self_seconds": 0.0526012,
+        "cumulative_seconds": 0.0682528
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'copy' of 'numpy.ndarray' objects>",
+        "primitive_calls": 13265,
+        "calls": 13265,
+        "self_seconds": 0.05209370000000001,
+        "cumulative_seconds": 0.05209370000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'set' of 'cupy._core.core._ndarray_base' objects>",
+        "primitive_calls": 2192,
+        "calls": 2192,
+        "self_seconds": 0.049013100000000004,
+        "cumulative_seconds": 0.0520754
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 650,
+        "function": "_simple_new",
+        "primitive_calls": 24448,
+        "calls": 24448,
+        "self_seconds": 0.0477961,
+        "cumulative_seconds": 0.0613758
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 475,
+        "function": "__new__",
+        "primitive_calls": 6714,
+        "calls": 6714,
+        "self_seconds": 0.0462783,
+        "cumulative_seconds": 0.24701430000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'take' of 'numpy.ndarray' objects>",
+        "primitive_calls": 8176,
+        "calls": 8176,
+        "self_seconds": 0.0447264,
+        "cumulative_seconds": 0.0447264
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 5385,
+        "function": "__getitem__",
+        "primitive_calls": 25670,
+        "calls": 25670,
+        "self_seconds": 0.043371400000000004,
+        "cumulative_seconds": 0.0813813
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 3827,
+        "function": "get_indexer",
+        "primitive_calls": 7356,
+        "calls": 10092,
+        "self_seconds": 0.043175700000000004,
+        "cumulative_seconds": 0.679601
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\common.py",
+        "line": 1444,
+        "function": "_is_dtype_type",
+        "primitive_calls": 66676,
+        "calls": 66676,
+        "self_seconds": 0.0426672,
+        "cumulative_seconds": 0.0917556
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4073,
+        "function": "__getitem__",
+        "primitive_calls": 13899,
+        "calls": 13899,
+        "self_seconds": 0.041941900000000004,
+        "cumulative_seconds": 1.0865139000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 564,
+        "function": "_take_preprocess_indexer_and_fill_value",
+        "primitive_calls": 22277,
+        "calls": 22277,
+        "self_seconds": 0.0410313,
+        "cumulative_seconds": 0.12135560000000001
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 912,
+        "function": "__len__",
+        "primitive_calls": 147149,
+        "calls": 147149,
+        "self_seconds": 0.039034200000000005,
+        "cumulative_seconds": 0.0516987
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 317,
+        "function": "apply",
+        "primitive_calls": 8248,
+        "calls": 8248,
+        "self_seconds": 0.037629100000000006,
+        "cumulative_seconds": 0.296773
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\array_algos\\take.py",
+        "line": 59,
+        "function": "take_nd",
+        "primitive_calls": 22277,
+        "calls": 24696,
+        "self_seconds": 0.036983100000000005,
+        "cumulative_seconds": 0.49846290000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method numpy.asanyarray>",
+        "primitive_calls": 6275,
+        "calls": 6275,
+        "self_seconds": 0.034619000000000004,
+        "cumulative_seconds": 0.0347784
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method __new__ of type object at 0x00007FF8DCB3DFE0>",
+        "primitive_calls": 261483,
+        "calls": 261483,
+        "self_seconds": 0.0336708,
+        "cumulative_seconds": 0.0336708
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\generic.py",
+        "line": 6306,
+        "function": "__getattr__",
+        "primitive_calls": 26681,
+        "calls": 26681,
+        "self_seconds": 0.0331177,
+        "cumulative_seconds": 0.34811830000000005
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\blocks.py",
+        "line": 1353,
+        "function": "take_nd",
+        "primitive_calls": 16161,
+        "calls": 16161,
+        "self_seconds": 0.0327066,
+        "cumulative_seconds": 0.49521420000000005
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method psutil_windows.ppid_map>",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 0.0326943,
+        "cumulative_seconds": 0.0326943
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 5564,
+        "function": "equals",
+        "primitive_calls": 29943,
+        "calls": 29943,
+        "self_seconds": 0.031862600000000005,
+        "cumulative_seconds": 0.1104054
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\dtypes\\common.py",
+        "line": 139,
+        "function": "is_object_dtype",
+        "primitive_calls": 42608,
+        "calls": 42608,
+        "self_seconds": 0.030407700000000003,
+        "cumulative_seconds": 0.0971375
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\internals\\managers.py",
+        "line": 727,
+        "function": "_slice_take_blocks_ax0",
+        "primitive_calls": 2714,
+        "calls": 2714,
+        "self_seconds": 0.0299639,
+        "cumulative_seconds": 0.2382582
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\numpy\\_core\\_ufunc_config.py",
+        "line": 496,
+        "function": "inner",
+        "primitive_calls": 549,
+        "calls": 549,
+        "self_seconds": 0.029511500000000003,
+        "cumulative_seconds": 0.030395000000000002
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\frame.py",
+        "line": 4637,
+        "function": "_get_item_cache",
+        "primitive_calls": 13882,
+        "calls": 13882,
+        "self_seconds": 0.028103700000000002,
+        "cumulative_seconds": 0.2945721
+      },
+      {
+        "file": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Lib\\site-packages\\pandas\\core\\indexes\\base.py",
+        "line": 843,
+        "function": "_engine",
+        "primitive_calls": 5680,
+        "calls": 5680,
+        "self_seconds": 0.0256379,
+        "cumulative_seconds": 0.08176560000000001
+      }
+    ]
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "status": "rejected_general_exact_normal_rng",
+  "compared": 3168,
+  "different": 12,
+  "ledger_exact": true,
+  "mismatches": [
+    {
+      "seed": 0,
+      "step": "trip_destination",
+      "size": 3,
+      "broadcast": false,
+      "different": 1,
+      "max_abs": 2.7755575615628914e-17,
+      "example_cpu": 0.1844057704611237,
+      "example_gpu": 0.18440577046112372
+    },
+    {
+      "seed": 0,
+      "step": "trip_destination",
+      "size": 3,
+      "broadcast": true,
+      "different": 2,
+      "max_abs": 2.220446049250313e-16,
+      "example_cpu": -0.9320016038681164,
+      "example_gpu": -0.9320016038681161
+    },
+    {
+      "seed": 17,
+      "step": "trip_destination",
+      "size": 3,
+      "broadcast": true,
+      "different": 2,
+      "max_abs": 1.1102230246251565e-16,
+      "example_cpu": 0.6468040681388068,
+      "example_gpu": 0.6468040681388066
+    },
+    {
+      "seed": 17,
+      "step": "trip_destination",
+      "size": 3,
+      "broadcast": true,
+      "different": 1,
+      "max_abs": 2.7755575615628914e-17,
+      "example_cpu": -0.24858983026889586,
+      "example_gpu": -0.2485898302688959
+    },
+    {
+      "seed": 17,
+      "step": "trip_scheduling",
+      "size": 3,
+      "broadcast": true,
+      "different": 1,
+      "max_abs": 2.7755575615628914e-17,
+      "example_cpu": 0.19268704417922586,
+      "example_gpu": 0.19268704417922589
+    },
+    {
+      "seed": 17,
+      "step": "trip_scheduling",
+      "size": 7,
+      "broadcast": true,
+      "different": 2,
+      "max_abs": 1.1102230246251565e-16,
+      "example_cpu": 0.5018769187908172,
+      "example_gpu": 0.5018769187908171
+    },
+    {
+      "seed": 991,
+      "step": "trip_destination",
+      "size": 7,
+      "broadcast": false,
+      "different": 1,
+      "max_abs": 2.7755575615628914e-17,
+      "example_cpu": 0.22631776624029273,
+      "example_gpu": 0.2263177662402927
+    },
+    {
+      "seed": 991,
+      "step": "trip_mode_choice",
+      "size": 7,
+      "broadcast": false,
+      "different": 2,
+      "max_abs": 1.1102230246251565e-16,
+      "example_cpu": 0.28253530448793546,
+      "example_gpu": 0.2825353044879355
+    }
+  ],
+  "production_decision": "Phase58 ordinary normals remain on authoritative CPU; no tolerance relaxation."
+}

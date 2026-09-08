@@ -331,7 +331,16 @@ def main() -> int:
         "--phase57-live-scheduling", action="store_true",
         help="generate feasible representative rows on CUDA and recompute all six live logsums",
     )
+    parser.add_argument("--phase58-compact-cpu-control", action="store_true")
+    parser.add_argument("--phase58-profile-trips", type=Path)
+    parser.add_argument("--phase58-trip-runtime", action="store_true")
     args = parser.parse_args()
+    if args.phase58_trip_runtime:
+        args.phase57_live_scheduling = True
+    if args.phase58_compact_cpu_control:
+        import numba
+        numba.set_num_threads(1)  # only the measured compact reduction uses 48
+        args.phase57_live_scheduling = True
     if args.phase57_live_scheduling:
         args.phase56_modelwide_resident_runtime = True
         args.native_abi_live = True
@@ -515,6 +524,7 @@ def main() -> int:
     original_compute_tour_scheduling_logsums = vts.compute_tour_scheduling_logsums
     original_tdd_interaction_dataset = vts.tdd_interaction_dataset
     phase57_live_events = []
+    phase58_runtime = None
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1121,7 +1131,10 @@ def main() -> int:
         expected_ids = scheduler.batches[scheduler.cursor]["host"]["chooser_ids"]
         if not np.array_equal(tours.index, expected_ids):
             raise ValueError("Phase 57 live tour ordering differs from scheduling contract")
-        rows, event = representative_rows(state, tours, alts, timetable, window_id_col)
+        rows, event = representative_rows(
+            state, tours, alts, timetable, window_id_col,
+            backend="cpu" if args.phase58_compact_cpu_control else "cuda",
+        )
         event["batch"] = scheduler.cursor
         phase57_live_events.append(event)
         return rows
@@ -1160,6 +1173,7 @@ def main() -> int:
         )
 
     def run_full_model_step(self, model_name):
+        nonlocal phase58_runtime
         nonlocal full_model_native_release_calls, full_model_native_release_seconds
         nonlocal full_model_native_release_freed_bytes
         nonlocal full_model_native_release_after_model
@@ -1368,9 +1382,31 @@ def main() -> int:
             else:
                 activitysim_tour_destination.interaction_sample_simulate = compact_choice
                 activitysim_tour_destination.interaction_sample = resident_sample
+        profiler = None
+        trip_context = None
+        if args.phase58_trip_runtime and model_name_text in {
+            "trip_destination", "trip_scheduling", "trip_mode_choice"
+        }:
+            from choiceforge.phase58_trip_runtime import TripRuntime
+            if phase58_runtime is None:
+                phase58_runtime = TripRuntime()
+            trip_context = phase58_runtime.for_step(self._obj, model_name_text)
+            trip_context.__enter__()
+        if args.phase58_profile_trips and model_name_text in {
+            "trip_destination", "trip_scheduling", "trip_mode_choice"
+        }:
+            import cProfile
+            profiler = cProfile.Profile()
+            profiler.enable()
         try:
             result = original_runner_by_name(self, model_name)
         finally:
+            if trip_context is not None:
+                trip_context.__exit__(None, None, None)
+            if profiler is not None:
+                profiler.disable()
+                args.phase58_profile_trips.mkdir(parents=True, exist_ok=True)
+                profiler.dump_stats(str(args.phase58_profile_trips / f"{model_name_text}.pstats"))
             if args.phase33_model_wide and location_candidate_enabled:
                 simulate.simple_simulate_logsums = original_simple_simulate_logsums
             activitysim_location_choice.interaction_sample_simulate = (
@@ -1508,6 +1544,14 @@ def main() -> int:
     from activitysim.cli import main as activitysim_main
 
     cli = ["activitysim", "run"]
+    if args.phase58_compact_cpu_control:
+        # ActivitySim otherwise overwrites NUMBA_NUM_THREADS after the pool is
+        # initialized. Keep the pool at 48, but mask to one except in our CPU
+        # reduction; all other math libraries remain explicitly single-threaded.
+        cli.append("--fast")
+        for variable in ("MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+                         "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"):
+            os.environ[variable] = "1"
     for overlay in args.config_overlay or []:
         cli.extend(["-c", str(overlay.resolve())])
     cli.extend([
@@ -2856,6 +2900,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            58 if args.phase58_trip_runtime else
             57 if args.phase57_live_scheduling else
             56 if args.phase56_modelwide_resident_runtime else
             55 if args.phase55_device_entity_execution_runtime else
@@ -2884,6 +2929,12 @@ def main() -> int:
             (32 if args.full_model else 22)
         ),
         "scope": (
+            "full public model with live keyed GPU trip RNG, device scheduling chains "
+            "and mode utility-to-choice; CPU retry cohorts and table publication retained"
+            if args.phase58_trip_runtime else
+            "full accelerated public model with identical live period-pair compaction "
+            "on compiled 48-thread CPU as a hardware attribution control"
+            if args.phase58_compact_cpu_control else
             "full public model with current-timetable CUDA feasibility and period-pair "
             "compaction, six newly computed GPU logsums, and fresh matrix/summary generation"
             if args.phase57_live_scheduling else
@@ -2980,6 +3031,9 @@ def main() -> int:
         ),
         "phase56_modelwide_resident_runtime": phase56_cache_validation,
         "phase56_cache_built_this_run": phase56_cache_built,
+        "phase58_compact_cpu_control": args.phase58_compact_cpu_control,
+        "phase58_trip_runtime": phase58_runtime.summary() if phase58_runtime else None,
+        "phase58_profiling_enabled": args.phase58_profile_trips is not None,
         "phase57_live_scheduling": {
             "contract": "choiceforge-phase57-live-period-pairs-v1",
             "events": phase57_live_events,
@@ -3189,6 +3243,24 @@ def main() -> int:
             "phase57_dense_host_alternatives_eliminated": live_proof["full_interaction_rows_avoided"] == 15_242_743,
             "phase57_all_six_logsums_recomputed": len(native_manifests) == 6,
             "phase57_no_result_replay": live_proof["result_replay_enabled"] is False,
+        })
+    if args.phase58_trip_runtime:
+        trip_proof = report["phase58_trip_runtime"] or {}
+        trip_events = trip_proof.get("events", [])
+        chains = trip_proof.get("chain_events", [])
+        modes = trip_proof.get("mode_events", [])
+        report["proof_gates"].update({
+            "phase58_all_three_live_trip_epochs": trip_proof.get("epochs") == 3
+                and {e["step"] for e in trip_events} == {"trip_destination", "trip_scheduling", "trip_mode_choice"},
+            "phase58_device_only_scheduling_and_mode_draws": all(
+                any(e["step"] == step and e["kind"] == "cuda_uniform" and e.get("device_only") for e in trip_events)
+                for step in ("trip_scheduling", "trip_mode_choice")),
+            "phase58_live_chain_iterations_used": len(chains) > 0 and sum(e["choosers"] for e in chains) > 0,
+            "phase58_no_intermediate_chain_choice_download": len(chains) > 0
+                and all(e["intermediate_choice_download_bytes"] == 0 for e in chains),
+            "phase58_all_trip_modes_reduced_on_device": len(modes) == 10
+                and sum(e["rows"] for e in modes) == trip_proof.get("expected_mode_rows"),
+            "phase58_no_saved_trip_results": trip_proof.get("result_replay_enabled") is False,
         })
     if args.native_skim_store:
         report["proof_gates"].update(

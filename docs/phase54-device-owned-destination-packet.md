@@ -74,6 +74,13 @@ Unit tests additionally compare GPU normals bit for bit with NumPy legacy
 exactly with the float32 host reference. Unsupported shape, index, generation,
 source-object, or column contracts fail closed.
 
+Later audit (Phase 58): a wider seed/step/offset matrix found 12 tiny normal-value
+differences among 3,168 comparisons, despite exact ledger positions. The unit
+tests above established equality for their tested cases, not a universal
+bit-identical normal generator. Phase 58 therefore does not reuse this generator
+as its general trip RNG. The fixed-workload Phase 54 output qualification remains
+separate; see [the audit and retained CPU boundary](phase58-live-trip-runtime.md).
+
 ## Traffic and memory accounting
 
 Across the 19 calls, Phase 54 still eliminates 1,953,817,216 bytes of dense
