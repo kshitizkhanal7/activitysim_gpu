@@ -1,0 +1,219 @@
+{
+  "scope": "writer-only: identical actual public matrix values; annotation and aggregation excluded",
+  "input_sha256": "5899baddcf4e94581b3f4f017e8d8d219d39901be08e138cffc5a92010a3bdab",
+  "runs": [
+    {
+      "trial": 1,
+      "position": 0,
+      "mode": "upstream",
+      "seconds": 0.877976500429213,
+      "exact": true,
+      "event": null,
+      "file_bytes": 3549645
+    },
+    {
+      "trial": 1,
+      "position": 1,
+      "mode": "sparse16",
+      "seconds": 1.01456129970029,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 12486,
+        "compressed_chunk_bytes": 1580999,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 16,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 177977,
+        "seconds": 1.0143031999468803
+      },
+      "file_bytes": 2252293
+    },
+    {
+      "trial": 1,
+      "position": 2,
+      "mode": "sparse32",
+      "seconds": 0.48727979976683855,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 5642,
+        "compressed_chunk_bytes": 1566095,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 32,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 43026,
+        "seconds": 0.4870733004063368
+      },
+      "file_bytes": 1915852
+    },
+    {
+      "trial": 1,
+      "position": 3,
+      "mode": "sparse64",
+      "seconds": 0.22122120019048452,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 2263,
+        "compressed_chunk_bytes": 1639418,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 64,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 9904,
+        "seconds": 0.22087959991768003
+      },
+      "file_bytes": 1824536
+    },
+    {
+      "trial": 2,
+      "position": 0,
+      "mode": "sparse64",
+      "seconds": 0.21430979995056987,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 2263,
+        "compressed_chunk_bytes": 1639418,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 64,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 9904,
+        "seconds": 0.2140027000568807
+      },
+      "file_bytes": 1824536
+    },
+    {
+      "trial": 2,
+      "position": 1,
+      "mode": "sparse32",
+      "seconds": 0.5302667999640107,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 5642,
+        "compressed_chunk_bytes": 1566095,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 32,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 43026,
+        "seconds": 0.5300205000676215
+      },
+      "file_bytes": 1915852
+    },
+    {
+      "trial": 2,
+      "position": 2,
+      "mode": "sparse16",
+      "seconds": 0.9000969999469817,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 12486,
+        "compressed_chunk_bytes": 1580999,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 16,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 177977,
+        "seconds": 0.9000144000165164
+      },
+      "file_bytes": 2252293
+    },
+    {
+      "trial": 2,
+      "position": 3,
+      "mode": "upstream",
+      "seconds": 0.9935318999923766,
+      "exact": true,
+      "event": null,
+      "file_bytes": 3549645
+    },
+    {
+      "trial": 3,
+      "position": 0,
+      "mode": "upstream",
+      "seconds": 0.9611841002479196,
+      "exact": true,
+      "event": null,
+      "file_bytes": 3549645
+    },
+    {
+      "trial": 3,
+      "position": 1,
+      "mode": "sparse16",
+      "seconds": 1.1005136999301612,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 12486,
+        "compressed_chunk_bytes": 1580999,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 16,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 177977,
+        "seconds": 1.1004443001002073
+      },
+      "file_bytes": 2252293
+    },
+    {
+      "trial": 3,
+      "position": 2,
+      "mode": "sparse32",
+      "seconds": 0.563767600338906,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 5642,
+        "compressed_chunk_bytes": 1566095,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 32,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 43026,
+        "seconds": 0.5634763999842107
+      },
+      "file_bytes": 1915852
+    },
+    {
+      "trial": 3,
+      "position": 3,
+      "mode": "sparse64",
+      "seconds": 0.27945049991831183,
+      "exact": true,
+      "event": {
+        "omx_files": 1,
+        "matrices": 23,
+        "written_chunks": 2263,
+        "compressed_chunk_bytes": 1639418,
+        "dense_logical_bytes": 388997344,
+        "compression_workers": 4,
+        "chunk_size": 64,
+        "gpu_acceleration_claimed": false,
+        "zero_only_chunks_omitted": 9904,
+        "seconds": 0.27924879966303706
+      },
+      "file_bytes": 1824536
+    }
+  ],
+  "medians_seconds": {
+    "sparse16": 1.01456129970029,
+    "sparse32": 0.5302667999640107,
+    "sparse64": 0.22122120019048452,
+    "upstream": 0.9611841002479196
+  }
+}

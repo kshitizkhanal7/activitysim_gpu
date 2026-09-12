@@ -334,7 +334,16 @@ def main() -> int:
     parser.add_argument("--phase58-compact-cpu-control", action="store_true")
     parser.add_argument("--phase58-profile-trips", type=Path)
     parser.add_argument("--phase58-trip-runtime", action="store_true")
+    parser.add_argument("--phase59-device-retries", action="store_true")
+    parser.add_argument("--phase59-live-mandatory", action="store_true")
+    parser.add_argument("--phase59-scenario-gates", action="store_true")
+    parser.add_argument("--phase59-sparse-matrices", action="store_true")
+    parser.add_argument("--phase59-capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase59_live_mandatory:
+        args.phase59_device_retries = True
+    if args.phase59_device_retries:
+        args.phase58_trip_runtime = True
     if args.phase58_trip_runtime:
         args.phase57_live_scheduling = True
     if args.phase58_compact_cpu_control:
@@ -512,19 +521,22 @@ def main() -> int:
     from choiceforge.cuda_backend import _cupy
 
     scheduler_started = time.perf_counter()
-    scheduler = IntegratedGpuMandatoryScheduler(
-        args.inputs,
-        # Phase 31 must not recreate Sharrow merely to adjudicate the 57
-        # already-qualified scheduling ambiguities.  The sparse reference map
-        # is derived from the frozen public proof artifact and stays on CUDA.
-        device_boundary_reference=native_abi_enabled,
-    )
+    if args.phase59_live_mandatory:
+        from choiceforge.phase59_live_mandatory import LiveMandatoryScheduler
+        scheduler = LiveMandatoryScheduler()
+    else:
+        scheduler = IntegratedGpuMandatoryScheduler(
+            args.inputs,
+            # Legacy, explicitly benchmark-qualified sparse reference map.
+            device_boundary_reference=native_abi_enabled,
+        )
     scheduler_initialization_seconds = time.perf_counter() - scheduler_started
     original_compute = vts._compute_logsums
     original_compute_tour_scheduling_logsums = vts.compute_tour_scheduling_logsums
     original_tdd_interaction_dataset = vts.tdd_interaction_dataset
     phase57_live_events = []
     phase58_runtime = None
+    phase59_matrix_events = []
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -781,6 +793,13 @@ def main() -> int:
             draws = rng.normal_for_df(raw_alt_tdd, broadcast=True, size=6)
             draws = draws.to_numpy(copy=False) if hasattr(draws, "to_numpy") else np.asarray(draws)
             first = ~raw_alt_tdd.index.duplicated(keep="first")
+            if args.phase59_live_mandatory:
+                scheduler.live_logsum_inputs = {
+                    "state":raw_state, "rows":raw_alt_tdd, "tours":raw_tours,
+                    "purpose":raw_purpose, "settings":model_settings, "network_los":_network_los,
+                    "skims":raw_skims, "trace_label":trace_label,
+                    "normals":pd.DataFrame(np.asarray(draws[first], dtype=np.float64), index=raw_alt_tdd.index[first]),
+                }
             current_raw_source = {
                 "tours": raw_tours.copy(),
                 "land_use": raw_state.get_dataframe("land_use")[[
@@ -1040,6 +1059,8 @@ def main() -> int:
         draws = np.asarray(
             state.get_rn_generator().random_for_df(choosers), dtype=np.float64
         ).reshape(-1)
+        if args.phase59_live_mandatory:
+            scheduler.bind_spec(choosers, alternatives, spec)
         meta = scheduler.batches[scheduler.cursor]["meta"]
         live_values = np.empty(
             (len(choosers), len(meta["chooser_columns"])), dtype=np.float64
@@ -1059,7 +1080,15 @@ def main() -> int:
         def resolve_boundaries(positions, raw_cache):
             boundary_choosers = choosers.iloc[positions]
             boundary_ids = np.asarray(boundary_choosers.index, dtype=np.int64)
-            boundary_alternatives = alternatives.loc[boundary_ids].copy()
+            if args.phase59_live_mandatory:
+                live_alts, timetable, window_col, batch_label = scheduler.batch_context
+                # Phase 57 alternatives contain only period representatives.
+                # Adjudication needs ALL live feasible alternatives for these rows.
+                boundary_alternatives = original_tdd_interaction_dataset(
+                    state, boundary_choosers, live_alts, timetable, choice_column,
+                    window_col, batch_label+".live_boundary")
+            else:
+                boundary_alternatives = alternatives.loc[boundary_ids].copy()
             row_ids = np.asarray(boundary_alternatives.index, dtype=np.int64)
             first = np.r_[True, row_ids[1:] != row_ids[:-1]]
             if not np.array_equal(row_ids[first], boundary_ids):
@@ -1080,6 +1109,16 @@ def main() -> int:
                 )
 
             slots = period(starts) * 5 + period(ends)
+            if args.phase59_live_mandatory:
+                from choiceforge.phase59_boundary_logsums import recompute, period_slots
+                cpu_rows, cpu_logsums = recompute(scheduler.live_logsum_inputs, boundary_ids,
+                                                  original_compute, original_simple_simulate_logsums)
+                cpu_owners = pd.Index(boundary_ids).get_indexer(cpu_rows.index)
+                cpu_slots = period_slots(cpu_rows)
+                difference = np.abs(raw_cache[cpu_owners, cpu_slots]-cpu_logsums)
+                raw_cache[cpu_owners, cpu_slots] = cpu_logsums
+                scheduler.boundary_logsum_events.append({"rows":len(cpu_rows), "choosers":len(boundary_ids),
+                    "max_gpu_cpu_logsum_abs":float(difference.max()), "additional_random_draws":0})
             boundary_alternatives["mode_choice_logsum"] = raw_cache[owners, slots]
             boundary_draws = draws[positions]
 
@@ -1118,6 +1157,8 @@ def main() -> int:
             live_values,
             boundary_resolver=resolve_boundaries,
         )
+        if args.phase59_live_mandatory:
+            scheduler.live_logsum_inputs = None
         return pd.Series(selected, index=choosers.index)
 
     def phase57_live_tdd_dataset(
@@ -1128,6 +1169,8 @@ def main() -> int:
                 state, tours, alts, timetable, choice_column, window_id_col, trace_label
             )
         from choiceforge.phase57_live_scheduling import representative_rows
+        if args.phase59_live_mandatory:
+            scheduler.begin_batch(tours, alts, timetable, window_id_col, trace_label)
         expected_ids = scheduler.batches[scheduler.cursor]["host"]["chooser_ids"]
         if not np.array_equal(tours.index, expected_ids):
             raise ValueError("Phase 57 live tour ordering differs from scheduling contract")
@@ -1384,16 +1427,25 @@ def main() -> int:
                 activitysim_tour_destination.interaction_sample = resident_sample
         profiler = None
         trip_context = None
+        matrix_module = original_matrix_writer = None
+        if args.phase59_sparse_matrices and model_name_text == "write_trip_matrices":
+            from activitysim.abm.models import trip_matrices as matrix_module
+            from choiceforge.phase59_sparse_matrices import write_matrices as sparse_matrix_writer
+            original_matrix_writer = matrix_module.write_matrices
+            def record_sparse_matrices(*a, **k):
+                phase59_matrix_events.append(sparse_matrix_writer(*a, **k))
+            matrix_module.write_matrices = record_sparse_matrices
         if args.phase58_trip_runtime and model_name_text in {
             "trip_destination", "trip_scheduling", "trip_mode_choice"
         }:
             from choiceforge.phase58_trip_runtime import TripRuntime
             if phase58_runtime is None:
-                phase58_runtime = TripRuntime()
+                phase58_runtime = TripRuntime(device_retries=args.phase59_device_retries)
+                phase58_runtime.mode_capture_directory = args.phase59_capture_mode_inputs
             trip_context = phase58_runtime.for_step(self._obj, model_name_text)
             trip_context.__enter__()
         if args.phase58_profile_trips and model_name_text in {
-            "trip_destination", "trip_scheduling", "trip_mode_choice"
+            "trip_destination", "trip_scheduling", "trip_mode_choice", "write_trip_matrices"
         }:
             import cProfile
             profiler = cProfile.Profile()
@@ -1401,6 +1453,8 @@ def main() -> int:
         try:
             result = original_runner_by_name(self, model_name)
         finally:
+            if original_matrix_writer is not None:
+                matrix_module.write_matrices = original_matrix_writer
             if trip_context is not None:
                 trip_context.__exit__(None, None, None)
             if profiler is not None:
@@ -1453,6 +1507,8 @@ def main() -> int:
             phase52_early_release_seconds += time.perf_counter() - release_started
             phase52_early_release_freed_bytes += max(0, before - after)
         if args.full_model and model_name_text == "mandatory_tour_scheduling":
+            if args.phase59_live_mandatory:
+                scheduler.finish()
             full_model_scheduler_checkpoint = scheduler.checkpoint()
             # The scheduling-only hooks must end here, but its immutable CUDA
             # skim cubes are also inputs to trip destination and trip mode.
@@ -1637,6 +1693,7 @@ def main() -> int:
                         if args.phase55_device_entity_execution_runtime:
                             phase46_service.phase55_device_compaction = True
                         phase50_runtime = runtime_type(phase49_bridge, **runtime_kwargs)
+                        phase50_runtime.phase59_scenario_settings = args.phase59_scenario_gates
         else:
             phase46_prewarm = prewarm_phase46_public_runtime()
     exit_code = 0
@@ -1685,6 +1742,9 @@ def main() -> int:
         activitysim_logsums.compute_location_choice_logsums = (
             original_compute_location_choice_logsums
         )
+
+    if exit_code:
+        raise RuntimeError(f"ActivitySim failed with exit code {exit_code}; see the original error in the run log")
 
     if args.phase56_build_skim_cache:
         from choiceforge.phase56_skim_cache import (
@@ -2900,6 +2960,7 @@ def main() -> int:
         phase50_summary = phase50_runtime.summary()
     report = {
         "phase": (
+            59 if args.phase59_device_retries else
             58 if args.phase58_trip_runtime else
             57 if args.phase57_live_scheduling else
             56 if args.phase56_modelwide_resident_runtime else
@@ -4346,6 +4407,53 @@ def main() -> int:
             ),
             encoding="utf-8",
         )
+    if args.phase59_sparse_matrices:
+        report["phase59_sparse_matrices"] = phase59_matrix_events
+        report["proof_gates"]["phase59_all_115_matrices_written"] = (
+            len(phase59_matrix_events) == 1 and phase59_matrix_events[0]["omx_files"] == 5
+            and phase59_matrix_events[0]["matrices"] == 115)
+    if args.phase59_live_mandatory:
+        report["phase59_live_mandatory"] = {
+            "live_cpu_logsum_rechecks":scheduler.boundary_logsum_events,
+            "captured_input_artifact_read": False, "saved_boundary_answers_used": False,
+            "spec_compiled_from_live_model": True, "live_boundary_cpu_rows": report["exact_boundary_rows"],
+            "scope": "MTC timetable vocabulary; live CPU boundary adjudication; independent post-run output oracle",
+            "legacy_inline_artifact_comparisons": "not performed; zero-valued compatibility counters are not comparison evidence",
+        }
+        for obsolete in ("all_57_boundary_choices_adjudicated_on_device", "zero_boundary_logsum_download",
+                         "live_cache_structure_exact_and_values_bounded", "live_random_stream_exact",
+                         "integrated_choices_exact"):
+            report["proof_gates"].pop(obsolete, None)
+        report["proof_gates"].update({
+            "phase59_no_saved_mandatory_boundary_answers": scheduler.boundary_map_entries == 0,
+            "phase59_live_mandatory_batch_lifecycle_complete": scheduler.complete,
+            "phase59_live_mandatory_outputs_match_external_oracle": report["proof_gates"]["activitysim_outputs_exact"],
+        })
+    if args.phase59_scenario_gates:
+        if not args.phase59_live_mandatory:
+            raise ValueError("Scenario qualification requires the live mandatory scheduler")
+        # Retain the full original audit. Fixed 50k/seed-0 row counts are NOT
+        # scenario invariants; do not silently relabel those checks as passing.
+        report["fixed_benchmark_proof_gates"] = report["proof_gates"]
+        required = (
+            "activitysim_completed", "no_cuda_fallbacks", "no_bulk_modeled_logsum_download",
+            "activitysim_outputs_exact", "checkpoint_written", "all_34_model_steps_timed",
+            "phase56_verified_persistent_skim_image_used", "phase56_all_source_digests_verified",
+            "phase57_no_result_replay", "phase58_all_three_live_trip_epochs",
+            "phase58_device_only_scheduling_and_mode_draws", "phase58_live_chain_iterations_used",
+            "phase58_no_intermediate_chain_choice_download", "phase58_no_saved_trip_results",
+            "phase59_no_saved_mandatory_boundary_answers", "phase59_live_mandatory_batch_lifecycle_complete",
+            "phase59_live_mandatory_outputs_match_external_oracle",
+        )
+        report["proof_gates"] = {name:report["fixed_benchmark_proof_gates"][name] for name in required}
+        report["proof_gates"]["phase59_all_current_trip_modes_reduced_on_device"] = (
+            sum(e["rows"] for e in report["phase58_trip_runtime"]["mode_events"])
+            == report["phase58_trip_runtime"]["expected_mode_rows"])
+        report["proof_gates"]["phase59_all_current_mandatory_batches_have_live_logsums"] = (
+            report["integrated_batches"] == len(native_manifests) == len(phase57_live_events))
+        if args.phase59_sparse_matrices:
+            report["proof_gates"]["phase59_all_115_matrices_written"] = report["fixed_benchmark_proof_gates"]["phase59_all_115_matrices_written"]
+        report["qualification_scope"] = "changed scenario: live contracts plus independent output oracle; original fixed-benchmark audit retained separately"
     args.report.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     resident_ok = (

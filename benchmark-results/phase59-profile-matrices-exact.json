@@ -1,0 +1,971 @@
+{
+  "exact": true,
+  "files": {
+    "trips_am.omx": {
+      "data/BIKE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "ef35eda481165b2f2747d73a55efedd674e289d70e00db7b7d840de200e63534"
+      },
+      "data/DRIVEALONEFREE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "28865786dffc7f4cd0f1734505b7f53a38b8434cd9fc93e73027d978b8b6b7c7"
+      },
+      "data/DRIVEALONEPAY_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c71aa9bf3ff9c3b7643bb7cc306542dac3fb35182c72d96a1cc036df41d3f148"
+      },
+      "data/DRIVE_COM_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c9f5f355e055ca7be2c294faf109c192b23f27fe6c84c794736fe8d23a6ca718"
+      },
+      "data/DRIVE_EXP_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0df15b6d02d6fd707bc9aabfd0f8b77dfc79751c303a64f592854c72c72547a9"
+      },
+      "data/DRIVE_HVY_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "9b426eb631e3a102e254bfc405e3c0dec2cc1f22714b21b9de22ec7afaf4e0e1"
+      },
+      "data/DRIVE_LOC_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "5ccb4aff99bee91cfc33c38a7cf5df819bf7371c5e5459a2e0b7b5dd16928374"
+      },
+      "data/DRIVE_LRF_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "49f744da101458211e7fbf8db8c2b9181ab463e470e42c330f468d227b44a1f6"
+      },
+      "data/SHARED2FREE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "8773dd87b8c9599720293a35150b0d9ae8a73dc979d9deea47b1df600139124a"
+      },
+      "data/SHARED2PAY_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "078c7c6e5e345c629d091390a0603c32c0e71c4a7f19770d2a8734c7b5e36799"
+      },
+      "data/SHARED3FREE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "86ce284cdac55d9a21de65d9c5682ac014aff493a375527fc587c6007254d25e"
+      },
+      "data/SHARED3PAY_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "223d4554e3289c3151480052e7f0238247e0b5f4fedb82dfdea57fb96019331e"
+      },
+      "data/WALK_COM_DRIVE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "abb5794ec089a76f391433577d9701144c44a69081ab482f99b1b8b5ea7dae0e"
+      },
+      "data/WALK_COM_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "d15f3e3bf3b8d7ce08a182f2ad88563581ba931e44666baa46777afc8fba5944"
+      },
+      "data/WALK_DRIVE_HVY_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "17f477bd1555f8784b2ba1d55cee2dbfb2d6c15eb5bac21bb4cb622bc5cdaa2f"
+      },
+      "data/WALK_EXP_DRIVE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "a48344653c8bd2a121dad874debcab570ff3ef4ce27a7f92116616ed9a2c41bd"
+      },
+      "data/WALK_EXP_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "6fa99d59819fa3c6b731e5446096c3d8f05371ca2fa28536bbced90763dc609e"
+      },
+      "data/WALK_HVY_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "21722bf045d3204c4b88dc26256e351f4019a75d531a737b1d1ce0b4baea7b5b"
+      },
+      "data/WALK_LOC_DRIVE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "bc7d7d9634f90aa55aff0a9d39d4059b87188c6c20013dc37169d6759cec321d"
+      },
+      "data/WALK_LOC_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "5d518114afd0591afebdb555786ce8c1ef014eb793659ca004a94b37cb17d814"
+      },
+      "data/WALK_LRF_DRIVE_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "926b71642de4ad7f97b338f9ad55467d610fc9b2e2e61bfa2a2f3ca01a24fe0b"
+      },
+      "data/WALK_LRF_WALK_AM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "794340c20b1a26172b81062c223fb363eda3cfaaf169e338129f75c84345d8be"
+      },
+      "lookup/_original_zone_id": {
+        "dtype": "uint32",
+        "shape": [
+          1454
+        ],
+        "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+      }
+    },
+    "trips_ea.omx": {
+      "data/BIKE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "30583397edb6d0af59a16fded3b011c26dba2750525a259a4438051185aa313c"
+      },
+      "data/DRIVEALONEFREE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "d7028f3c1a05a14cd8b693bd850abe56be11d43fae19aa11345afe16059c756e"
+      },
+      "data/DRIVEALONEPAY_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/DRIVE_COM_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "22d6da3aa314d381a3c0f5665441329508aeaae700dabe13f7aefffb7d09edfc"
+      },
+      "data/DRIVE_EXP_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "5dd86e629a1f61af32bb70e5324007cb81d10e07568ff954ffdbcc302dbd546b"
+      },
+      "data/DRIVE_HVY_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c51da4a15c58eedb75caf947aa4fb9dc2731ad5cec120fe2c57e209b693e2ba7"
+      },
+      "data/DRIVE_LOC_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "fcc7d432fb88d904f23a2acb8041b9cf67ea282923576f9a3043863f87e2e0ee"
+      },
+      "data/DRIVE_LRF_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "1b4f4cca11e5f56f86be33b8498894692f52ce474bb9702377a9fd13164ab211"
+      },
+      "data/SHARED2FREE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "43e448eaec9cde62eceaa065a07811e901dec0b1d19a6807d36a5d25fc541b52"
+      },
+      "data/SHARED2PAY_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/SHARED3FREE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0e300da6384e7612aed8fff9566586098b83300ea048fdbf045e281f2f5794fa"
+      },
+      "data/SHARED3PAY_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_COM_DRIVE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_COM_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "dd5fa5599c21d0f6ed7a5d2b151bdc51d5f25806ea6457b71cf40aff9289ce7b"
+      },
+      "data/WALK_DRIVE_HVY_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "044415da9a021658ad6be8200fd3b3bdb0d8706b080ca34636c24f125c6900e7"
+      },
+      "data/WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "481da6f2b9b1c07b7742b3125d49de4d6de9fcb8cef3b304a198b75048c8e2a7"
+      },
+      "data/WALK_EXP_DRIVE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_EXP_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "54734ac95febc3aa3e8bd1c76169d3e534bc9d7fe8f50376b41a7e423e53fe57"
+      },
+      "data/WALK_HVY_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "b75eef7af3d04e752ec53651b63a4304d71ce3f64a53419ef144c3caa7ffa583"
+      },
+      "data/WALK_LOC_DRIVE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_LOC_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0458dbd5207d8ccea2d3ad64e49c4172bfee464cd482e288201df5942e5941ca"
+      },
+      "data/WALK_LRF_DRIVE_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_LRF_WALK_EA": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "95d4b24318a9eaa203d553e2c592a9abe68ab716776104083de54e168931caee"
+      },
+      "lookup/_original_zone_id": {
+        "dtype": "uint32",
+        "shape": [
+          1454
+        ],
+        "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+      }
+    },
+    "trips_ev.omx": {
+      "data/BIKE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "97adc10cde435c70c9f39968476be5bdbffe49529d3d410dd3117ddd4ecde56b"
+      },
+      "data/DRIVEALONEFREE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "51861569591bcd2481d5cd24872ef4958a50f84f488a2fb1a03b358aaf2cebfe"
+      },
+      "data/DRIVEALONEPAY_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/DRIVE_COM_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "f6f5622018f4755ae6f77bd9fc932c36dffc849836b2c1b84887180beb440c17"
+      },
+      "data/DRIVE_EXP_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/DRIVE_HVY_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "72829b7f8e1de36807076615f9729f1b3dcd1f7102e4546ad9d005c9270eae8d"
+      },
+      "data/DRIVE_LOC_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c6419b378e9ccd284c8211f2f1d69b77d843a8f5ba148c226249a18992b5ce13"
+      },
+      "data/DRIVE_LRF_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "6d8d04a70a9134042800f3c95df4b872ce0784d0637a48d3a93a3e208960b4b2"
+      },
+      "data/SHARED2FREE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ddb2bc198cce1fbda17f5c52ca0e43f41026b9ba82288f836155439ce30112f"
+      },
+      "data/SHARED2PAY_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/SHARED3FREE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "7f568de37cce6b38987438217619d02f40855556281423d66c5bb94c5be53da0"
+      },
+      "data/SHARED3PAY_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_COM_DRIVE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "e7fcd9bc6bdd5501f0862c2beff8ae025d0f2e52a0a19f6dbc6bc45917b1e7d8"
+      },
+      "data/WALK_COM_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "e8b37949d903675501794e74ca393623c5de0abb512788b72f13b2c1382bfebd"
+      },
+      "data/WALK_DRIVE_HVY_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "ea096546bc46a1e0906ed317053287d5b0919449cfb2ef0f909c371d3eb41555"
+      },
+      "data/WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "bd5445720e9d2d68cec9046f907a8394d8d7b2b59a0afecc91e5cd408cfc0b8b"
+      },
+      "data/WALK_EXP_DRIVE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "a6df6928af2a7d2a462948e4fbdde7c1d01559e093cd27af3aa5e43b67d0d3ad"
+      },
+      "data/WALK_EXP_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "95cba717e01cd44aa7a4aa208728b6a03db388f554ca24005a7c8e47a58d74a0"
+      },
+      "data/WALK_HVY_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0a7b695f80f63b9d1cf48f1babb48b930b27d891d8effa3df063b8921d61bb8d"
+      },
+      "data/WALK_LOC_DRIVE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c792961838e32e682515ef6bf1f321017bbb0db6c6a48ec0f5d0e270a0591672"
+      },
+      "data/WALK_LOC_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "eeb2f83af771725d6b90726dd3131e8dd023cde33588a39604d54f0c7afa5cdb"
+      },
+      "data/WALK_LRF_DRIVE_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "65d883af642b1a1197e3c026e9048421334f4fd4e562bb0579a81c39a6f8a237"
+      },
+      "data/WALK_LRF_WALK_EV": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "605331994e340df9112fa19fb5e700d4a8b2ab0d76789da0f44adb143cbfc881"
+      },
+      "lookup/_original_zone_id": {
+        "dtype": "uint32",
+        "shape": [
+          1454
+        ],
+        "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+      }
+    },
+    "trips_md.omx": {
+      "data/BIKE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "e8f10fb97098de6bf33c32c7776743ccff289a85987d1b11c6b439e3afde158c"
+      },
+      "data/DRIVEALONEFREE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "144d2afd13315d7c8d88e3852f43625395f7e51656f281e8887fd011bee30a59"
+      },
+      "data/DRIVEALONEPAY_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/DRIVE_COM_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "4e0402739ef072f295763a666f6c7339ec3b20bda79c45b155b28645832f4b79"
+      },
+      "data/DRIVE_EXP_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "6c513f73399a613dacc8cc55e07fc46f822bdf3daade4565c4a8c85f6ab8988e"
+      },
+      "data/DRIVE_HVY_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "ebfe3a012dda322b1d31537ab64e5dbdc9cda8fcaf54f951ded28baddb1cc4a0"
+      },
+      "data/DRIVE_LOC_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2a88e690a7a5087f5cb5e272882bdd95abba6fb284cd51b0de1467af74595ddf"
+      },
+      "data/DRIVE_LRF_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "37796e77941f5d8c1185fef2651e4d55a9b45d461f19eb49943645eee9e926d0"
+      },
+      "data/SHARED2FREE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "acd3e3b8b2af7d8fb82442c72969484a947c2057c76590e3b3c286eec11c39aa"
+      },
+      "data/SHARED2PAY_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/SHARED3FREE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "b1f790a0f317767da149eca9923baefcc2b8f1642e494e98ec08d73a977ce996"
+      },
+      "data/SHARED3PAY_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_COM_DRIVE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "dbbecb66e7d7402994cc18e24e455061af307d14961f6fa862a3207a096740a0"
+      },
+      "data/WALK_COM_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "fda0c1268ac83e00114e3efc66dc637920a8a9696ca8a6afe953d7d824dcada2"
+      },
+      "data/WALK_DRIVE_HVY_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "3ef5e722c194e356ba44b56d1eefd34c3eef04d91964b7191a2f5294aac265d0"
+      },
+      "data/WALK_EXP_DRIVE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "ff17ef6188caebd42f40703cccc7263933ca10bafb2529f2df8ac0113dde3772"
+      },
+      "data/WALK_EXP_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "b412b94800014a563bc08f6496ecb9f6f1735f034c6f30ea5cbea6f25aa3b763"
+      },
+      "data/WALK_HVY_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0be108387861b6631c802bf7ef6e27b3495a20d4fdb0c25143acd481f36fab68"
+      },
+      "data/WALK_LOC_DRIVE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "a06e5549e2946711a6e6f035c4b6efc23fea577f125006365c8c84f58437b243"
+      },
+      "data/WALK_LOC_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "41010e9aab7db86f101f05f39ec53433b183291b69160edbd8db63934875f26b"
+      },
+      "data/WALK_LRF_DRIVE_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "f07e805a484fbb3708df893e2242a6f7b0d3dc2083f2250259bde00938af3e09"
+      },
+      "data/WALK_LRF_WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "4f56e64e5078429708a2826120bf048ef865512ea3239fd943f29cb70b103fea"
+      },
+      "data/WALK_MD": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "aaa61e11c90ae8566f4a535c5ab0b761ab51d2e60968616c29563ef0ae5d68b4"
+      },
+      "lookup/_original_zone_id": {
+        "dtype": "uint32",
+        "shape": [
+          1454
+        ],
+        "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+      }
+    },
+    "trips_pm.omx": {
+      "data/BIKE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "70136551c94fabfe18f4d6317f1406fae1c37b338f7958d2c211029db5a4cbd9"
+      },
+      "data/DRIVEALONEFREE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "581ec6ab00e36c1504a3e73a8f59de9c9d64356a421b63f2cfff1613bb7d4cf3"
+      },
+      "data/DRIVEALONEPAY_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "47af3b050b2c5095efb8e4422eb955aaf09a289c462d766ba2aebef248bcc32e"
+      },
+      "data/DRIVE_COM_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "a589d64d7219149ac3e2f4a9b025864e6989cc178e31cd8886e8089f3f10de68"
+      },
+      "data/DRIVE_EXP_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "66cbacab77d2127c92dd4939cb7fe0c36bfee37d3109dff2f36f2df3e0b0f091"
+      },
+      "data/DRIVE_HVY_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "deb2bc984af9c9bdc0827fd12652cd9240154fbaad1380725ff229707997d4dd"
+      },
+      "data/DRIVE_LOC_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "54b00238357ee25e62f8234afac02d2f29f43e2e051127a28b355b5b42bcea96"
+      },
+      "data/DRIVE_LRF_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "11a5aa33dc63d1962c7b1144e3ee391fa4a483a6f88898fa5365c3a272bab2c7"
+      },
+      "data/SHARED2FREE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "62cfc0e4fd934d0d087738b58c2087337ea49b790cb513c2a8d40868622b51e3"
+      },
+      "data/SHARED2PAY_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "b4856e5946e06c28276aea7492a5d4f6800b18aef4f6b6ddafc88109b1e5cf6a"
+      },
+      "data/SHARED3FREE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "82493d8aad93c215deb143b6ab417ef1180cbfaa7a338d9ba12325ca3900aef7"
+      },
+      "data/SHARED3PAY_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+      },
+      "data/WALK_COM_DRIVE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "fb6193b7f3ddb969c5901a8edede8640741cb02f64b0de3e3b1abfdea01207f0"
+      },
+      "data/WALK_COM_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "17e8c64ed13ebc5b4882dd1e6c60accb0875f0aa5c130be27c4fe273405f094b"
+      },
+      "data/WALK_DRIVE_HVY_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "fdb150c1771e07ab592aeacf885370e39391d2007e9f7d06242c49d71a309833"
+      },
+      "data/WALK_EXP_DRIVE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "753d747360c79ed8ae8ad11931d19262eb48bf814a036bc9ab7f026c8b861f2e"
+      },
+      "data/WALK_EXP_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "c7f12b454510caaa0a89c10e9d429cc04dd113fb03d15ee1c29824cb4437a873"
+      },
+      "data/WALK_HVY_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "61c93904ae02a0fe9964199f2af1d46b26c6e48e0424abece16ab7703f727030"
+      },
+      "data/WALK_LOC_DRIVE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "159ab62c5ae8f46034d7164bc00dd27f1152046a357c4838b5cc62482c7b9a38"
+      },
+      "data/WALK_LOC_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "152c66d0829621b4965de5414fba125293605c4e42274f65dae1f460ff0105cc"
+      },
+      "data/WALK_LRF_DRIVE_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "7f786f33ffe1210f5d020a6809a27450253282b380c5fdc1999e24c48b09e410"
+      },
+      "data/WALK_LRF_WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "830ad75f67173c90dde537f9e8f81d3b123e1037f7c63e02ac954ff62833189a"
+      },
+      "data/WALK_PM": {
+        "dtype": "float64",
+        "shape": [
+          1454,
+          1454
+        ],
+        "sha256": "0f6d07a87b94bea71125adc261d68cb186ab512bc62aad22068e5241da0eb5f1"
+      },
+      "lookup/_original_zone_id": {
+        "dtype": "uint32",
+        "shape": [
+          1454
+        ],
+        "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+      }
+    }
+  },
+  "policy": "all logical dataset bytes, shapes, dtypes and zone mappings exact; container metadata excluded"
+}

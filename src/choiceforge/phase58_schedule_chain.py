@@ -63,9 +63,8 @@ class ChainSchedulingService(TripSchedulingDeviceService):
         self.runtime = runtime
         self.chain_kernel = self.cp.RawKernel(SOURCE, "chains", options=("--fmad=false",))
 
-    def run(self, state, trips, tours, settings, is_last_iteration):
+    def pack(self, trips, tours, settings):
         from activitysim.abm.models import trip_scheduling as upstream
-        started = time.perf_counter()
         if (settings.scheduling_mode != "departure" or settings.preprocessor is not None
                 or upstream._logic_version(settings) != 2
                 or settings.FAILFIX != "choose_most_initial"):
@@ -106,16 +105,21 @@ class ChainSchedulingService(TripSchedulingDeviceService):
             raise ValueError("Phase 58 chain probability keys missing")
         drawrow = np.full(len(frame), -1, np.int32)
         drawrow[~fixed] = np.arange(len(active), dtype=np.int32)
-        draws = self.runtime.uniform(state, active, device_only=True) if len(active) else self.cp.empty(1)
         arrays = [ptr, out, num, count, fixed, frame.tour_hour, frame.earliest, frame.latest, specrow, drawrow]
         host = [np.ascontiguousarray(a, dtype=np.int32) for a in arrays]
+        return frame, active, len(uniques), host, firstout, firstin
+
+    def run(self, state, trips, tours, settings, is_last_iteration):
+        started = time.perf_counter()
+        frame, active, groups, host, firstout, firstin = self.pack(trips, tours, settings)
+        draws = self.runtime.uniform(state, active, device_only=True) if len(active) else self.cp.empty(1)
         device = [self.cp.asarray(a) for a in host]
         result = self.cp.empty(len(frame), self.cp.int32)
         failed = self.cp.zeros(len(frame), self.cp.uint8)
         start, end = self.cp.cuda.Event(), self.cp.cuda.Event()
         start.record()
-        self.chain_kernel(((len(uniques)+127)//128,), (128,),
-            (device[0], np.int32(len(uniques)), *device[1:], draws, self.spec_probabilities,
+        self.chain_kernel(((groups+127)//128,), (128,),
+            (device[0], np.int32(groups), *device[1:], draws, self.spec_probabilities,
              np.int32(len(self.probability_columns)), np.int32(settings.DEPART_ALT_BASE),
              np.int32(firstout), np.int32(firstin), np.int32(is_last_iteration), result, failed))
         end.record()
@@ -130,7 +134,7 @@ class ChainSchedulingService(TripSchedulingDeviceService):
         self.telemetry.kernel_seconds += self.cp.cuda.get_elapsed_time(start,end)/1000
         self.telemetry.total_service_seconds += time.perf_counter()-started
         self.runtime.chain_events.append({"rows":len(frame), "choosers":len(active),
-            "groups":len(uniques), "failures_before_final_coercion":failures,
+            "groups":groups, "failures_before_final_coercion":failures,
             "last_iteration":bool(is_last_iteration), "seconds":time.perf_counter()-started,
             "intermediate_choice_download_bytes":0})
         return pd.Series(choices[choices >= 0], index=frame.index[choices >= 0])

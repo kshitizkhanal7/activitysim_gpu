@@ -15,16 +15,22 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 58: six balanced old/new pairs reduce charged full-model
-time from 110.97 to 103.81 seconds, a 6.45% reduction, with every checked travel
-decision preserved. All six candidates meet the charged under-105-second target.
-Launch-to-exit time is 111.02 seconds, versus 118.27 for the previous GPU version
-and 306.36 for newly measured regular single-process CPU ActivitySim. That is
-2.76x faster than that CPU configuration on the elapsed-time clock, not a claim
-against every possible CPU implementation. The three targeted trip components
-take 27.52% less time when their component medians are added. The application
-remains a benchmark-specific hybrid. Sections 296-303 explain the new runtime,
-CPU attribution controls, rejected normal-RNG shortcut, and remaining limits.
+Latest result, Phase 59: the complete public 50,000-household model takes
+109.84 seconds from launch to exit, compared with 314.90 seconds for newly
+measured regular single-process CPU ActivitySim. That is 2.87 times faster,
+or about 65% less waiting, on this machine and configuration. Against the
+previous accelerated version measured in six balanced pairs, the gain is
+smaller: 112.52 to 109.84 seconds, a 2.38% reduction. Every pair improves.
+The ambitious under-100-second target was **not met**.
+
+Every checked travel decision, all 115 travel matrices and all 24 report
+values agree; four reports have documented `5` versus `5.0` departure-key
+formatting differences. Three changed scenarios also pass. The runtime now
+handles complete departure retries, shares versioned data, and no longer needs
+captured mandatory-scheduling answers. It remains a supported-domain CPU/GPU
+hybrid. Faster CPU algorithms and output writing deserve part of the credit:
+this is not a claim that the GPU wins every calculation. Sections 304-314
+explain the implementation, stronger tests, actual results and remaining limits.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -8045,3 +8051,288 @@ changed populations and seeds through the entire model. Today's checks do not
 prove a replacement for every ActivitySim city or configuration. Faster execution
 preserves the checked computation; it does not make the behavioral model more
 accurate about real people.
+
+## 304. Why does Phase 59 test a different population and random seed?
+
+A fast calculator is not very useful if it works only for the numbers used in
+its demonstration. Earlier phases established repeatable speed on one public
+population. Phase 59 asks a different question: can the connected model accept
+changed live inputs and still reproduce a newly run ordinary CPU model?
+
+A **random seed** chooses a repeatable sequence of random numbers. Changing it
+can change people's simulated choices, even though their characteristics and
+the behavior equations are unchanged. A **population sample** changes which
+households participate. A **retry limit** changes how often the model may try
+again after failing to fit a trip into its available time window.
+
+These changes exercise different paths through the program. For example, the
+10,000-household, seed-991 test encountered 22 destination alternatives where
+the original run had used other widths. Two inherited guards accepted only a
+short list of familiar widths. We extended the reviewed arithmetic to every
+actual width from 1 through 32 and tested each width. We did not add fake
+alternatives to make the old shape fit: that could change rounding and choices.
+
+Another old guard treated a new configuration directory as a changed model.
+The replacement still checks the original equations and coefficient files by
+hash. It permits only a narrowly defined seed/sample settings overlay. An
+unreviewed equation or constant is still rejected. Supporting these scenarios
+does not mean that every city's configuration is now supported.
+
+## 305. How can scheduling stop depending on a saved demonstration?
+
+Imagine teaching a calculator by giving it yesterday's completed worksheet.
+Reproducing that worksheet is a useful test, but the real calculator must also
+solve today's worksheet without looking at yesterday's answers.
+
+The new mandatory-tour scheduler reads today's model equations, people, tours,
+available times and random draws. It builds its small table of travel-mode
+accessibility values from live GPU calculations. The scheduler's constructor
+does not load captured scheduling inputs. The experiment deliberately points
+the old artifact argument at a nonexistent directory to check this separation.
+
+Seven timetable expressions and two temporary assignments form a supported
+vocabulary. Their meaning and order are checked before compilation. Every
+feasible time alternative must have a finite live accessibility value; a
+missing cache entry cannot silently become zero.
+
+Rounding is still delicate near a choice boundary. Those few rows are solved
+again by the live CPU calculation, including the accessibility inputs, using
+all feasible times and the same already-consumed random values. Rechecking
+only the last equation with GPU-produced inputs is not sufficient: the seed-17
+experiment caught two wrong corrections by that weaker guard. This does not
+read a saved answer or draw a second random number. An independent comparison with the CPU run occurs after
+the simulation. Test answers belong in the examiner, not in the calculator.
+
+## 306. What does a complete GPU retry controller do?
+
+A **tour** is a sequence of trips that returns to its starting point. A model
+might try to place several trips inside a person's available hours. If one
+leg fails, it may retry that leg. A leg that already succeeded stays finished.
+
+Previously, the CPU repeatedly assembled the unfinished group, sent work to
+the GPU and collected results. The new controller gives each GPU thread one
+person-tour and lets it carry out the entire retry sequence. It returns the
+final departure choices and an account of how many random numbers each trip
+actually used. The CPU still prepares the initial compact inputs and publishes
+the final table.
+
+There is a subtle rule: when an outbound leg finishes, later inbound retries
+must follow exactly the upstream model's treatment of that now-absent leg.
+Using a plausible but different lower time bound would change the algorithm.
+Tests compare the complete upstream retry loop, not just one easy iteration.
+
+For speed, the GPU prepares enough random values for up to 100 attempts before
+it knows how many will be needed. Think of laying out a deck of cards but only
+marking the cards actually played as used. Unused values do not advance the
+model's random-number ledger. This costs extra memory; the report records the
+random buffer and generator-state sizes rather than pretending they are free.
+
+The stronger compiled CPU control delivers an important warning: the compact
+retry calculation itself is faster on this CPU than on this GPU. The observed
+component benefit comes mainly from eliminating repeated Python and table
+processing. An algorithm improvement and a hardware advantage are not the
+same claim. We retain the negative CPU/GPU result alongside the successes.
+
+## 307. What is a versioned device data store?
+
+Suppose a class shares a spreadsheet. If somebody changes a departure time,
+another person must not unknowingly use yesterday's copy. A version number is
+a simple way to say which edition a calculation is allowed to use.
+
+The device store keeps numeric columns for people, tours and trips, indexed by
+stable IDs rather than accidental row positions. Publishing equal data reuses
+its GPU copy. Publishing changed data creates a new version. Reordering or
+removing rows invalidates the previous layout. Deleting a table explicitly
+invalidates its leases, which are permission slips for reading one version.
+Even positive and negative zero are distinguished in the stored byte pattern.
+
+A consumer must check its lease immediately before reading. A raw GPU pointer
+cannot revoke itself, so keeping such a pointer after mutation is outside the
+contract. CPU tables remain authoritative at publication boundaries. Snapshot
+checks and uploads cost time and memory, and that cost stays inside the run.
+
+The retry controller uses the store's working columns. Other components still
+use their existing input paths. This is a tested foundation for sharing more
+data, not a claim that the whole model already lives exclusively on the GPU.
+
+## 308. Why can writing the same matrices faster matter?
+
+An **origin-destination matrix** is a grid: a row is a starting zone, a column
+is an ending zone, and a cell contains an amount of travel. The model publishes
+115 such matrices in five standard OMX files. Every cell and every zone label
+must remain present logically, even if a different file layout is used.
+
+Many cells are zero. The new writer divides a matrix into square tiles, leaves
+all-zero tiles at the file format's standard zero fill value, and compresses
+the remaining tiles with ordinary gzip and byte shuffling. Four CPU workers
+compress tiles; one writer places them in the file. Ordinary OMX readers see
+the same complete grid. Even a stored negative zero is preserved.
+
+Tests tried several tile sizes. On an actual public morning-period output,
+128-by-128 tiles took about 0.19 seconds to write, compared with 0.94 seconds
+for the upstream writer. That roughly 4.9-times ratio excludes the work of
+calculating and grouping the trips. It is also a CPU file-writing improvement,
+not a GPU speedup. The full model must be timed separately.
+
+Profiling showed that putting the grouping operation on the GPU could save
+less than a second even if it were free. Writing compressed output was the
+larger opportunity. We therefore kept the existing grouping arithmetic and
+optimized storage. No matrices, reports or model steps were removed to make
+the stopwatch look better.
+
+## 309. Why do cold caches and disk choice change the answer?
+
+A compiler translates program instructions into machine code. Its first use
+can be slow; a **cache** keeps the translated code for later runs. A fresh
+process can reuse that cache, so fresh-process timing is not the same as a
+completely cold-computer measurement.
+
+While the SSD had little available space, new diagnostic outputs were written
+to the larger hard disk without deleting earlier results. An empty compiler
+cache caused extensive first-use compilation. The successful 10,000-household
+changed-seed diagnostic took about 793 seconds. It proved output agreement,
+not good speed. That cost remains disclosed even though later runs reuse
+compiled code.
+
+The SSD subsequently had enough free space for new experiments. Timed CPU and
+GPU comparisons use the same storage and cache policy, with no concurrent
+heavy benchmarks. We do not compare one system's hard-disk cold start with
+the other's SSD cached run and call the difference a GPU advantage.
+
+## 310. How should we interpret the final Phase 59 experiment?
+
+There are three separate questions. **Correctness** asks whether the tested
+CPU and accelerated runs make the same decisions and produce the same matrix
+values. **Repeatability** asks whether measured speed improvements recur in
+balanced fresh-process pairs. **Generality** asks how far the supported input
+domain extends beyond those tests.
+
+Changing seeds, population size and a model setting strengthens the third
+claim, but three scenarios cannot establish a universal theorem. Small logsum
+diagnostics retain explicit numerical bounds; exact travel decisions do not
+mean every intermediate floating-point number is identical. Faster computation
+does not make the behavioral model itself a more accurate prediction of people.
+
+The acceptance checker separates the engineering target of finishing in under
+100 seconds from correctness. A faster, correct candidate that misses that
+target must be labeled as a target miss. The source version must match across
+the final paired runs and scenario runs. Missing outputs, exceeded numerical
+bounds, mixed source versions or an improperly ordered pair reject qualification.
+
+## 311. What do the stronger CPU comparisons teach us?
+
+Imagine comparing two kitchens. One has a faster oven, but it also uses a
+better recipe and spends less time carrying ingredients around. A faster
+dinner does not tell us how much credit belongs to the oven alone.
+
+We therefore give both processors the same compact calculation. For actual
+public-model mode-choice inputs covering 442,682 trips, the GPU's final
+probability-and-choice reducer is about 1.60 times faster than the best tested
+compiled CPU version. The CPU was allowed up to 48 threads. The comparison
+does not include creating the input scores, moving data or starting a compiler.
+It measures one calculation, not an entire model run.
+
+For the compact departure-retry calculation, the result reverses: the CPU is
+about 3.37 times faster. That is useful evidence, not something to hide. It
+suggests a future runtime should choose its processor based on measured cost,
+rather than insisting that every calculation run on the graphics card.
+
+The GPU retry implementation also keeps extra random-number state and unused
+possible draws ready. In the 50,000-household test, those two allocations are
+about 217 MB and 70 MB, plus about 20 MB of working arrays and additional entity
+snapshots. Here MB means one million bytes. These figures do not measure every
+allocation in the complete application. Reducing table overhead can be useful
+while still spending extra memory; both sides of that tradeoff matter.
+
+## 312. Are the published reports really the same?
+
+The model does not only choose individual trips. It also writes 24 summary
+reports and 115 travel matrices in five files. Planners read those products,
+so checking only the internal choices would leave a gap.
+
+The report check requires the same files, column names, row order and values.
+Four reports have one harmless difference: a departure hour can be written
+as `5` or `5.0`. Both mean exactly five. The checker allows that spelling change
+only in those reports' departure-time column, with no rounding tolerance.
+Changing a trip count, losing a row or changing a real time value still fails.
+It records both versions' file fingerprints and lists the spelling differences.
+Thus we claim exact report values, not identical text bytes everywhere.
+
+Matrix checks are stricter about the stored numbers: every matrix's numeric
+bytes, shape, data type and zone labels must agree. The compressed file itself
+can have a different layout while presenting exactly the same numbers to a
+standard reader. Think of storing the same book on different shelves: the
+shelf arrangement can change, but no words may disappear.
+
+## 313. Why can a major engineering change produce a modest speed gain?
+
+A complete model is like a relay race. Making one runner much faster does not
+remove the time spent by everyone else. This phase removes repeated retry
+coordination and speeds up output writing, but also pays for version checks,
+data snapshots and a stronger live CPU check of difficult scheduling choices.
+Those new checks replace a narrower benchmark-dependent shortcut. Their cost
+belongs in the stopwatch, even though they make the result more trustworthy.
+
+This is why there are two kinds of progress. A speed improvement makes a
+supported run finish sooner. A stronger correctness contract makes the result
+usable with more kinds of inputs. We want both, but should not count one as the
+other. Passing three changed scenarios is valuable even if it does not make
+the original scenario dramatically faster.
+
+To make the next large difference, the next experiment should target the
+remaining expensive complete steps and their data preparation, not multiply
+small kernel speedups together. A CPU/GPU dispatcher could select the faster
+processor for a supported calculation. More consumers could use the versioned
+data store directly, avoiding repeated transfers and table rebuilding. Each
+change still needs exact decision and random-ledger checks, changed-scenario
+tests and a complete-model timing comparison. A proposed saving is not an
+achieved saving until that experiment is run.
+
+## 314. What did the completed Phase 59 experiment achieve?
+
+| Complete model clock | Regular CPU | Previous accelerated version | Latest version |
+|---|---:|---:|---:|
+| Launch to exit | 314.90 seconds | 112.52 seconds | 109.84 seconds |
+| Charged model work | 308.40 seconds | 104.82 seconds | 102.69 seconds |
+
+These are medians, the middle of the measured values. The accelerated versions
+were measured in six pairs, alternating which ran first. The latest version
+won every pair on both clocks. The two new regular CPU controls ran afterward,
+so that comparison is useful but was not an interleaved CPU/GPU experiment.
+All runs used fresh processes and existing compiler caches on the same machine.
+The CPU baseline is ordinary pinned ActivitySim with numerical libraries using
+one thread, not the fastest imaginable rewritten CPU model.
+
+In everyday terms, a run falls from about five minutes fifteen seconds to
+one minute fifty seconds compared with that regular CPU setup. This phase alone
+saves about 2.68 seconds compared with the previous accelerated version.
+The latest version still needs roughly ten more seconds of improvement to
+reach the 100-second goal. No candidate reached that target; none was omitted
+to make the result look better.
+
+| Selected work | Previous accelerated version | Latest version |
+|---|---:|---:|
+| Choosing work/school tour times | 7.15 seconds | 10.80 seconds |
+| Scheduling individual trip departures | 3.70 seconds | 2.30 seconds |
+| Writing travel matrices | 6.60 seconds | 2.50 seconds |
+
+The first row gets slower because we now check difficult choices using their
+complete live inputs instead of relying on the narrower previous arrangement.
+The other two rows get faster. These are component medians, so adding them
+does not give an exact full-model saving. The separate technical comparison
+lists every one of the 34 steps, including those with no gain.
+
+Correctness testing covers the original public sample and three changed cases:
+10,000 households with seed 991, 50,000 households with seed 17, and a setting
+allowing seven departure attempts. All match independently generated regular
+CPU outputs. This establishes repeatable results for those tested inputs,
+not a proof for every city, seed, model equation or computer. Near-boundary
+checks are an explicitly tested engineering safeguard, not a universal theorem
+about floating-point arithmetic. Matching the reference means the optimization
+does not change the tested simulation; it does not prove that the simulation
+perfectly predicts real people.
+
+The next large opportunity is to reduce complete-step data preparation and
+CPU/GPU handoffs while extending the live-input contract to more scenarios.
+The current result is a stronger, modestly faster hybrid system with clear
+evidence. It is not a finished GPU-only replacement for all of ActivitySim.

@@ -231,7 +231,9 @@ def device_compact_interaction_sample_simulate(
         raise ValueError("Phase 47 requires the public Sharrow skim wrapper")
     offsets, counts = ragged_offsets(alternatives, choosers)
     width = int(counts.max())
-    if width not in PUBLIC_FINAL_WIDTHS:
+    # The old four widths were observed benchmark outcomes, not algorithmic
+    # limits. Preserve the actual width (padding to 32 changes FP summation).
+    if not 1 <= width <= 32:
         raise ValueError(f"Phase 47 unsupported ragged width: {width}")
     cp = service.cp
     distance, destination_count, _, rank = cuda_cube_from_activitysim(skims, "DIST")

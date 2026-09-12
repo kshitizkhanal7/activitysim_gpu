@@ -165,7 +165,9 @@ extern "C" __global__ void phase48_numpy_exp_correction(
 def _compile_resident_choice(cp, width: int):
     """Compile one-draw exact-probability selection with an exported row sum."""
     width = int(width)
-    if width not in CONTRACT.widths:
+    # CONTRACT.widths are the common prewarm shapes, not the full live domain.
+    # Compile the actual width so NumPy's reduction order is unchanged.
+    if not 1 <= width <= 32:
         raise ValueError(f"Phase 48 unsupported compact width: {width}")
     if width in _CHOICE_KERNELS:
         return _CHOICE_KERNELS[width], True

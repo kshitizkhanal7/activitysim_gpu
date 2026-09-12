@@ -1,0 +1,1398 @@
+{
+  "complete": true,
+  "design": "order reversed on even repetitions; no concurrent benchmarks",
+  "runs": [
+    {
+      "mode": "candidate",
+      "trial": 1,
+      "position": 0,
+      "order": [
+        "candidate"
+      ],
+      "process_wall_seconds": 69.32138400012627,
+      "components": {
+        "initialize_landuse": 0.7,
+        "initialize_households": 3.9,
+        "compute_accessibility": 1.6,
+        "school_location": 3.8,
+        "workplace_location": 1.0,
+        "auto_ownership_simulate": 1.3,
+        "free_parking": 0.6,
+        "cdap_simulate": 6.1,
+        "mandatory_tour_frequency": 1.1,
+        "mandatory_tour_scheduling": 4.6,
+        "joint_tour_frequency": 1.0,
+        "joint_tour_composition": 0.7,
+        "joint_tour_participation": 1.8,
+        "joint_tour_destination": 1.4,
+        "joint_tour_scheduling": 1.3,
+        "non_mandatory_tour_frequency": 2.7,
+        "non_mandatory_tour_destination": 1.3,
+        "non_mandatory_tour_scheduling": 1.8,
+        "tour_mode_choice_simulate": 3.6,
+        "atwork_subtour_frequency": 0.7,
+        "atwork_subtour_destination": 1.0,
+        "atwork_subtour_scheduling": 0.9,
+        "atwork_subtour_mode_choice": 0.8,
+        "stop_frequency": 2.3,
+        "trip_purpose": 0.6,
+        "trip_destination": 5.7,
+        "trip_purpose_and_destination": 0.5,
+        "trip_scheduling": 0.7,
+        "trip_mode_choice": 3.0,
+        "write_data_dictionary": 1.0,
+        "track_skim_usage": 0.5,
+        "write_trip_matrices": 1.3,
+        "write_tables": 0.7,
+        "summarize": 1.5
+      },
+      "model_steps_seconds": 61.5,
+      "validation_seconds": 0.5334057998843491,
+      "prewarm_seconds": 0.017989300191402435,
+      "charged_total_seconds": 62.05139510007575,
+      "exact": {
+        "decision_columns_exact": true,
+        "decision_cells_different": 0,
+        "decision_rows_different": 0,
+        "byte_identical_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv"
+        ],
+        "byte_identical_non_trip_outputs": [
+          "final_accessibility.csv",
+          "final_households.csv",
+          "final_joint_tour_participants.csv",
+          "final_land_use.csv"
+        ],
+        "diagnostic_columns": {
+          "destination_logsum": {
+            "text_cells_different": 5408,
+            "max_abs": 1.0000000003174137e-05,
+            "mean_abs": 1.5433189350507383e-07,
+            "gate": 0.0001
+          },
+          "mode_choice_logsum": {
+            "text_cells_different": 114646,
+            "max_abs": 3.8068919074873975e-06,
+            "mean_abs": 7.002901270823276e-08,
+            "gate": 1e-05
+          },
+          "school_location_logsum": {
+            "text_cells_different": 1139,
+            "max_abs": 1.9073486363652137e-06,
+            "mean_abs": 1.201036420824557e-07,
+            "gate": 1e-05
+          },
+          "workplace_location_logsum": {
+            "text_cells_different": 1142,
+            "max_abs": 1.9073486328125e-06,
+            "mean_abs": 7.839074393456369e-08,
+            "gate": 1e-05
+          }
+        },
+        "diagnostic_outputs": {
+          "final_persons.csv": {
+            "school_location_logsum": {
+              "text_cells_different": 1139,
+              "max_abs": 1.9073486363652137e-06,
+              "mean_abs": 1.201036420824557e-07,
+              "gate": 1e-05
+            },
+            "workplace_location_logsum": {
+              "text_cells_different": 1142,
+              "max_abs": 1.9073486328125e-06,
+              "mean_abs": 7.839074393456369e-08,
+              "gate": 1e-05
+            }
+          },
+          "final_tours.csv": {
+            "destination_logsum": {
+              "text_cells_different": 1734,
+              "max_abs": 3.000000003083869e-06,
+              "mean_abs": 9.991377451959417e-08,
+              "gate": 0.0001
+            },
+            "mode_choice_logsum": {
+              "text_cells_different": 34156,
+              "max_abs": 3.8068919074873975e-06,
+              "mean_abs": 7.772954199992873e-08,
+              "gate": 1e-05
+            }
+          },
+          "final_trips.csv": {
+            "destination_logsum": {
+              "text_cells_different": 3674,
+              "max_abs": 1.0000000003174137e-05,
+              "mean_abs": 2.0965032321333288e-07,
+              "gate": 0.0001
+            },
+            "mode_choice_logsum": {
+              "text_cells_different": 80490,
+              "max_abs": 1.907348622154359e-06,
+              "mean_abs": 6.697812399611362e-08,
+              "gate": 1e-05
+            }
+          }
+        },
+        "diagnostic_column": "destination_logsum",
+        "diagnostic_text_cells_different": 5408,
+        "diagnostic_max_abs": 1.0000000003174137e-05,
+        "diagnostic_mean_abs": 1.5433189350507383e-07,
+        "diagnostic_gate": 0.0001,
+        "mode_choice_logsum_max_abs": 3.8068919074873975e-06,
+        "mode_choice_logsum_gate": 1e-05,
+        "success": true,
+        "claim_boundary": "all modeled decision columns in every published table are exact; declared logsum diagnostics are bounded, not byte-identical"
+      },
+      "command": [
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Scripts\\python.exe",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\run_phase22_integrated_scheduling.py",
+        "--project",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended",
+        "--data",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full",
+        "--output",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59final10k-candidate-1",
+        "--config-overlay",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase59_seed991",
+        "--config-overlay",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase33_choiceforge",
+        "--config-overlay",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs_sh",
+        "--full-model",
+        "--households-sample-size",
+        "10000",
+        "--native-abi-live",
+        "--reference-pipeline",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59scenario10k1-regular-1\\pipeline.parquetpipeline",
+        "--report",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p59final10k-candidate-1.json",
+        "--checkpoint",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p59final10k-candidate-1-checkpoint.json",
+        "--kernel-reports",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p59final10k-candidate-1-kernels",
+        "--phase57-live-scheduling",
+        "--phase59-scenario-gates",
+        "--phase58-trip-runtime",
+        "--phase59-device-retries",
+        "--phase59-live-mandatory",
+        "--inputs",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\phase59-no-reference-artifact",
+        "--phase59-sparse-matrices"
+      ],
+      "profiled_not_performance_evidence": false,
+      "source_sha256": {
+        "src\\choiceforge\\__init__.py": "0ba610396f0ea1cbcb18ad7d2b54112d0cae2d53a63cd62cbf3b4c25854aaedd",
+        "src\\choiceforge\\activitysim_adapter.py": "2209bbb51735affe50aa2ea8e2a223ad7a0d9956ddc2f2724e8b70bc39ac6dcb",
+        "src\\choiceforge\\activitysim_destination.py": "59c44875441f0c2162704d1ee0a72c71a6085f5914d486413999e43409eb467a",
+        "src\\choiceforge\\activitysim_expression.py": "996db9cfc53e48814bee4e268dd0f0db7cf14dec94dfd01ec3443061e386818e",
+        "src\\choiceforge\\activitysim_mode_choice.py": "b154c137255c79e83ad842b18f7cc271f944514560fab974a56d06842afc59d3",
+        "src\\choiceforge\\activitysim_scheduling.py": "448c1e6bef231f05cff3c893db2cb891377f185dc852d4b877b30eb97158b5ea",
+        "src\\choiceforge\\activitysim_trip_scheduling.py": "cd07beb15c4e0c77dc4f22cffb6c5f3cdfc317c29efb1fda191295ce16927f55",
+        "src\\choiceforge\\api.py": "820135a87b39a60dae19e604953a05f6b307570b7d6dc03b4375c157886c78e8",
+        "src\\choiceforge\\arithmetic_abi.py": "d1c616cfa055056ee51b37abba1404fa2315a2ae7b2fe235dd7d34a5e0a9a913",
+        "src\\choiceforge\\calibrated_chain.py": "d68070ec35fd07b10992d901f49d3f28e758c0939fa4a2a029f7cffe7ea65cc7",
+        "src\\choiceforge\\cuda_backend.py": "a9fbadb7ccc23578862fd3ef31d31ab4b86a3f14b072e9fee66a41998a9d3337",
+        "src\\choiceforge\\cuda_skims.py": "9925da3f8b3fad29500eac3c00856a45995d5979a62ec4f28d68e66469674ca8",
+        "src\\choiceforge\\destination_input_supergraph.py": "ef40524b00b6d433051de96ba81597109e08f52041714f3088eabe214402146a",
+        "src\\choiceforge\\destination_supergraph.py": "7fcdb690c246d5330eb07d7b0872e21a53b4be28db76883e75a323cca10c4312",
+        "src\\choiceforge\\destination_utility.py": "9310886e0da75d9df2be317ff20b6d30b602c2b08ed23cb6dd327b4cc6098cf8",
+        "src\\choiceforge\\device_input_expansion.py": "64f26c2a9b19aa436e0aeea3f609fdcc0be13ae29b21d6bbdb0650e4d2e26602",
+        "src\\choiceforge\\device_resident_runtime.py": "d3dc086bbe24b809ebe08e8bafc09581c77ec33cd819c17def71a488a106c6a0",
+        "src\\choiceforge\\fused_mnl.py": "c8257abec4ec57cfe5b663d7bcba1e72879123d2cdcf16534c7d9242423b80ca",
+        "src\\choiceforge\\gpu_native.py": "9da69889f4f3916e6d871e7dbb805a3470c92d38b5e6277cd46cef776ccc8006",
+        "src\\choiceforge\\gpu_scheduling_integration.py": "7443fa5d351e0ee8420631ff0900b9a5e7c2ca1c1187b9850d44f6d40a3a446a",
+        "src\\choiceforge\\gpu_scheduling_pipeline.py": "a0731fc13e795c7cf5e31d1e2ac60846dedefa46e00c206a2d319300443d835a",
+        "src\\choiceforge\\interaction_backend.py": "dce311379368b8a937db647ba092e8084969f98543dca060822cc9a4819d191f",
+        "src\\choiceforge\\modelwide_choice.py": "8aad08f8145383a99729112c33bff2ed1cb9957860cdd0b601b1f1eaf1accf38",
+        "src\\choiceforge\\modelwide_final.py": "40195d825fcfd4c06a039e567e4daff658701ba7f2ef7e5f67376b8ede558ecc",
+        "src\\choiceforge\\modelwide_graph.py": "e9b60616477a106efe677f3440a3d74daf572beaa43dff5699fbd0c449c44f48",
+        "src\\choiceforge\\modelwide_sampling.py": "519c63d3b0c55843dc3291e3c6491595543e1aa38873e965f1706b5bf602aa26",
+        "src\\choiceforge\\modelwide_service.py": "2c6d8cfd434e70e6abec9ea0be8d7f328d13caa71a921ad0571e798a1df5be7b",
+        "src\\choiceforge\\native_abi_bootstrap.py": "e8a4eb9ce07db4341d74fe0016947d599cfa698f13f617257807961afb12ee70",
+        "src\\choiceforge\\native_skim_store.py": "4df5f380a5f1c52c5685f63b7263a2a2f8909953c24855fc3728218e15beac78",
+        "src\\choiceforge\\nested_logit.py": "613e03cbbb359c1ba8f62ede9d9327dfa9264165fbd63620846a6e09f178fdc8",
+        "src\\choiceforge\\numba_backend.py": "70f70acf3079586cae953a8ec01c6209fdd383ccbf31774c0fed1e4726fe3a50",
+        "src\\choiceforge\\phase56_skim_cache.py": "cf44782322bbb930fa8de68dd5103db58240ef9fe5824227c56b2313b4a983cd",
+        "src\\choiceforge\\phase57_live_scheduling.py": "9cf86445f238c1077b5ae0d6b10301ac7501bed5b2e97b7d0ebe6fa414e99c6b",
+        "src\\choiceforge\\phase58_cpu_control.py": "22c928d7e57d918caf267e324641f499b98dda0488919a9d8f26818dc24b8f80",
+        "src\\choiceforge\\phase58_mode_reduction.py": "1cb658668c6ccf0aa54312fc001062641c687a4a85279aa344d07a0177f3c4ca",
+        "src\\choiceforge\\phase58_schedule_chain.py": "0d084ec4b77d8339349f28a0340d60f7c141a74617a9f6117a3a30b0b8af2943",
+        "src\\choiceforge\\phase58_trip_runtime.py": "dc15c3ace710b8f2e5313de6618564430502dbc5557acace7e535cfcd851645b",
+        "src\\choiceforge\\phase59_config_contract.py": "844505cdc88b52780b6f43c1f1a9e24c3587da0c2136603bc5961d21e4cd2e59",
+        "src\\choiceforge\\phase59_cpu_algorithms.py": "15bbd9be7fd96d202614d270bff65859e2ae3b43636f89cca66ef8cd74579f3b",
+        "src\\choiceforge\\phase59_entity_store.py": "9acf07bf2799eb19d4218b2a893dbc04ccd2d5a8ec02ae41fed9b09abfd71f98",
+        "src\\choiceforge\\phase59_live_mandatory.py": "b8d8d02ed176420273f0005efac3f56f6cef72a007200da8b34093fef3c1d5b5",
+        "src\\choiceforge\\phase59_retry.py": "e1d85eabd8cfa1866b733d1ccb8c8f20eda796571b396873327a25867ba4bd87",
+        "src\\choiceforge\\phase59_sparse_matrices.py": "e1b24be9753e0412a563baed6cef025ed814cafb8d2c9955b70fe1ed58757846",
+        "src\\choiceforge\\raw_table_input_generation.py": "66a673746e62588973f11dbae332a66de720c1834072fc7ae73dce4e9b4e39b0",
+        "src\\choiceforge\\reference.py": "286d2562ddc4a0ba2591ce00714b7328c1bf94bd5f1ab467ead15857f53d1c45",
+        "src\\choiceforge\\resident_skim_cache.py": "d68b30fb11a9884def9251d206b171e3e6546bc5b7a8f0e9ef5484c9d96cfe15",
+        "src\\choiceforge\\scheduling_compiler.py": "fb98b97c300422b92707fc98f55e4653d25ceae0cb6903261554a87be44cee17",
+        "src\\choiceforge\\semantic_input_generation.py": "355516e8447a8da991f8234f76b0437707bc4645b464d09ccdc1c32bc5659801",
+        "src\\choiceforge\\sharrow_cuda.py": "4e34c08eb8bfc157055b8b232ce4bac5364517615beecf63b32231f05daa89db",
+        "src\\choiceforge\\sharrow_ir.py": "360d68963f0b53f34946deb7e04ac178edacc22025cabe277d410c1abe67c317",
+        "src\\choiceforge\\tour_expansion.py": "bc91b42eea214018142cbeaa603b9da965f5d1d50a00d5261d23473a35ffcdb8",
+        "src\\choiceforge\\trip_destination_final.py": "04deaa54f99f47d531c8dde055cddbf9997d68ea27e4f4313e73e580eb298391",
+        "src\\choiceforge\\trip_destination_resident.py": "8702352b991a6b7072dcee4fa16c9e0bb4cd7c32efcb06527d3c7a38a7014860",
+        "src\\choiceforge\\trip_destination_sampling.py": "e4cf094a367b2cfadeaeec60e07f78d0b82ddc44715add507c00192a2dc343d9",
+        "src\\choiceforge\\trip_logsum_native.py": "fb500eb06b9a9abb03f189e1da58000240580c895bf6636bd47efbd93be92738",
+        "scripts\\run_phase58_comparison.py": "2da29ac8ecd6d05bd42331eca39af458b847b6b81ae511c1c2e1d12273904288",
+        "scripts\\run_phase22_integrated_scheduling.py": "70199ad44915bc014a983d5d0c07299f689a2b4098d234b112b9f78f6d2e70f2",
+        "scripts\\verify_phase15_outputs.py": "a1c75ce1fcac1efc1a6a3e72e31818c6b53eb9272c55e38f842b5af76729526d",
+        "scripts\\verify_phase59_matrices.py": "d5d67823b5540f97cc6401734e0d7ff77dc0f8cec445434fb68565d8b2e0b66d"
+      },
+      "configuration_sha256": {
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\accessibility.csv": "b6a43a9dcb4750a4f4b9b99a142b469999e3056492ae090b0eca2284b0fae076",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\accessibility.yaml": "4a722d862e97d2bd8300391347275c9288d13bfec692cf017c1b28bcd0b6dc7d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_households.csv": "0c772af8d496f9efe2b02a134edb4490e0b3f7481d8e0c16f9ffad765677cb18",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_households_cdap.csv": "a5b46d11ec01d1c9649c4bf7de9f6a7fdf324faf5bea576a339e45141386dc99",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_households_workplace.csv": "ee7eba7d52ccf1a4425439694829b06e4889abbe14de41063377b4ea1405391b",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_landuse.csv": "6a75835a0f8a376aff52e8a54ef7c1367185fba9ac6caf0b12437717cf9597c0",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons.csv": "aff8fca62770dd65c359ade2894938ffb627f0acbe801a2bdcf364db42ee55f0",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_after_hh.csv": "206c69a5230e37f0ce4d9a12eeb1a9aa5c4ffa17289ef63bb1da4aec0ca0c6bc",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_cdap.csv": "414df1bb4939520e26c3b652292860eab9738657539a3763a6c59ce4c579809d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_jtp.csv": "de6fe143b8b166222e48836ee7a8fa4fc7b3a0a31aacabbd7e517d8bfc42d350",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_mtf.csv": "f64e419ac823c183c762f0c70bade731de6d35d76d352c787ff7c62602645a31",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_nmtf.csv": "fabe745f331592a7ef338e5f32ef8a14be31f829dfaf3c64d966c62dc1bf68a2",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_school.csv": "aa2386096ca4999e93081478fa8ba8a8ba87d206dc9bc07a57251daae2dd1099",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\annotate_persons_workplace.csv": "ac6b7df688c83ed2048e02462a260ae040963135bdfa382939209d7d57e8263e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_destination.csv": "0ef372b0b9f11c5d1ab6d6fb1513d531e28172d7dd754301c20ffcab271fbd17",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_destination.yaml": "69d8e5ed2f45a1600a523bc6c02ddd8c7ddf81254ffd280d9f99326b152890a2",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_destination_coefficients.csv": "62ebde82255037d42f6bc231d1d20595082bd04cb0782d10dd9636f946140c8e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_destination_sample.csv": "a86040047368d74d8ede635bf91cc1d85ef0377148058e21f5629b161ae69164",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_frequency.csv": "b1a494b011eecaaeef7977b4b3a71a39193b781c69ed3941219cbed76b8cbba7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_frequency.yaml": "15a7fae098ec94c1baa540eed7db70ce85895634e2d1ce744cfa2cf14fd6c45e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_frequency_alternatives.csv": "62b0b24803874cbcf50f4099013b08648726bd3cbbf6e00a8bff0c769b341a06",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_frequency_annotate_tours_preprocessor.csv": "dc123a1f19b53149a8021c4c3d4b20b0b7121dfa31fc99ffa8a851be5ae68b67",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\atwork_subtour_frequency_coefficients.csv": "dc1d126e7a6f7c7d3373432256897174841170da541468c4d373e54357bd0aec",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\auto_ownership.csv": "a9c28a59e46a606cb9df617777250d4b8d5a02290ff7d36b4cd861b7c6667de6",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\auto_ownership.yaml": "a9c55c1b310edcdb3d96ac2a83339196f13f21810a792fb3a1385eeb3611076f",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\auto_ownership_coefficients.csv": "b5073579c25c28c605a68c57b9969cfdf2676cf7cf019bd3d6d8e66938c93692",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\cdap.yaml": "07e7ebf20371e209bd9bf2b2feef906a29c3482ad617a62804858144470fe64e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\cdap_coefficients.csv": "3bc1684134cb975c17180649be0dd82b7e7ad9934c255d79a48f0d16738e2d2c",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\cdap_fixed_relative_proportions.csv": "b0ff30d6ea8e60d8f0956fd9d9a778c5c6097467fe748477df3675cf081c88ce",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\cdap_indiv_and_hhsize1.csv": "71d2f72cfe343e21ffbbb7562dcd39102d6a3c439a021acd3eec95f7e866d9d8",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\cdap_interaction_coefficients.csv": "a242e524c45a4ab73681458158cd28e1909974c944eecbbad1c158e6dc47a39b",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\constants.yaml": "6c105bbad8bbb684d3db727ab9830372300b60c7771be9f22e84848a4995d716",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\data_dictionary.yaml": "cd947102c23fabf7c18e25ddeefe03626651041c8de73606c830cf72fcfbc1ca",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\destination_choice_size_terms.csv": "3beadcbfca4a0895eb9011bfd8fc6fd4ebd9e474b13e07a954cd7819e8db5349",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\free_parking.csv": "1865bf569d6427c869a1f327be287f299f74a11c1db75b529f965f56de7e4976",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\free_parking.yaml": "f67babed94d8e04419f008ae11b7fcc58a30a3db65120ed44c2328f8de577408",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\free_parking_annotate_persons_preprocessor.csv": "a87f4770240a08e24c3d6c64772ca66f89dfb66c58c6ce0b6eb6cc9d6cd109ba",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\free_parking_coefficients.csv": "62331a37e4a0473e03cd29de24c5fcea4ed329c28da41a9ac1ed60eecba437f5",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\initialize_households.yaml": "818654b1eead5e0cd871cd4cf843d47f97a44b1524e70170f42c22beff9f261a",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\initialize_landuse.yaml": "9547bb8987116a96da5a41c370c4e325b25317697605400e63470aea3e631a90",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_composition.csv": "831043a5307e6666b2f40ebc82804a4d7b465c09dfe1725788b31542d079b775",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_composition.yaml": "ea4303610bd0c71871fb056df4b240ae1d4b8b06b6859f22bcb24d572e96171e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_composition_annotate_households_preprocessor.csv": "46e71a29c23a76ac8268ebb28c90d1c3d523d9dcdf1d59bf5ab03ce92dfb6214",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_composition_coefficients.csv": "6641f677de27335e75762494155549bd6dbbcefccb13294fa5d1bfc925b37910",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_destination.yaml": "26f719d31f622680a1fb41b2028477b1536a193197104e26b1e34cd6feee6aff",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_frequency.csv": "38c1e498eb2ff326ff84a2fa30c75fa2bc7a1ecc3c011da617a516299b8a3e69",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_frequency.yaml": "7138240d7f93c0cf8a25144d43f52e93f83f9554aea57a0b6508d3b77a283769",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_frequency_alternatives.csv": "952f088b9770e1ede49ae76217033db5c603b53dc13539239cd8e9280da30bc7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_frequency_annotate_households_preprocessor.csv": "6e72bb29b20f54956918da2345d9924f69de7749d8eaed76aaca4782f4afefe9",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_frequency_coefficients.csv": "af24061a4e4d94f711ff393c48ecdb8c59c5c79aa651f136290a0340392cf28f",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_participation.csv": "c19660a472c36e9e87d607d1afca7f3bce03b11d5c5daf7e3d0e80bf8f80ccb5",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_participation.yaml": "d3ef84fed0ddc361288348a7b57ff1f274de78a15bddbe7ecc6d60c9ff71a236",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_participation_annotate_participants_preprocessor.csv": "522b2b88ad3322101b85ab0e4417284e9c9fc2c0cd9e65f9c795883a1d407c19",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_participation_coefficients.csv": "2b623e2fd33c5d359f68cf1cf8de06812ab268b719f994e70283bf74e9361386",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_scheduling.yaml": "1e635544ee766d759cda98877303e35118965e572e8982704010638e6dfea626",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\joint_tour_scheduling_annotate_tours_preprocessor.csv": "97da7c79a85232cb6aa9c99f522b34728fe62858c2226ce78dce08ad819b9100",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\logging.yaml": "500a591ed5cd520fc3e942f9f04aaebf22701df2195cf09d46c92e59c858cb23",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency.csv": "0079f05ca6fa46608bd86cba4814b8e800a1e550d0b54b407711962e29722cc0",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency.yaml": "15521adea4279d2c038ccfcbb87fd31000a9a024033a4df1a68fc02028268944",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency_alternatives.csv": "5bbfd18739d202a8de1c5926016e2cbeabe271ef3d131d6d3f18b2f16bb2351d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_frequency_coefficients.csv": "9c77a887024ca4a255dda99f7c1511c4177e4b7e728b435b48ad02d4a4052e73",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\mandatory_tour_scheduling.yaml": "76f4eac5e84418c258fb04cfa5e0445d9d94921a84b1c42d5da368353fdac620",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\network_los.yaml": "7bdd31d07330546d30a30a7f93ba70d26f715a7d579c6fc2af9f525743195995",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_destination.csv": "424b0b55ca18d705990ca32cf323f80ecca730903bde6c920ca20f5c9658e235",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_destination.yaml": "3fab8edf5f2caaed0bb53d254837328121b780b68bd0f3ff18c0ce430d1d7d2f",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_destination_coefficients.csv": "2abc8f7666db4f81e208447ccc0bac79f4642b1f38f16e3f9e954e980bd844fc",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_destination_sample.csv": "5819c4a2b13984f4134c8080834b5b18091c086abc3d3b30bb10fe7c86a79482",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency.csv": "48f9534babf85141d176d6fe6652f5c032daa790aba3447f70e1e70ac79d65a9",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency.yaml": "be17f8a7d82162ea0c873f43dca668e2fc1054877b9855948144fa6fda55a200",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_alternatives.csv": "648cf70a65dbe9eec7519f06192563cec2cd0b4aece8d1e589eb24d1c62ed167",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_annotate_persons_preprocessor.csv": "a53bcbfa218988e793a2a38c7b219844af918ca708ae5ea035b509fa15d7bf79",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_DRIVING.csv": "30392c3f08e5e73323bd04f3a01ca59bf822a949245913fcfe8345279a38a891",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_FULL.csv": "f049b01daacb1f4a003ace5ab27fc99ee1fc510b2c06fbb63839e7967a7eb798",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_NONWORK.csv": "59942b7eae7c2fe6fedba2313e455d9ced47d9437ac36cb43608fa9966dd7746",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_PART.csv": "2612c1052cf382e73ec36090e776e591d4029b6d7aa526fc4ec712a48d73a55e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_PRESCHOOL.csv": "0ce3af398b0b959c2ab0e8e317294889a06d8841733021e13131193facd513ad",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_RETIRED.csv": "85233a24e47dbf28227c496b8054be385ef8b15ed9230794e611e36b7c924af7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_SCHOOL.csv": "14346f86b535c946a6cd49562fdd1adf4d63b4126403b48cd3f9de982346304c",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_coefficients_PTYPE_UNIVERSITY.csv": "63df66ce43f34c16a88b1011a3c2e4cfc8cb7ed8010f7c9dd2310ceb2a401698",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_frequency_extension_probs.csv": "9aa34b56df8074b258f62d925462a74872d4204431304c9f76c2436503878e8b",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_scheduling.yaml": "c565fd63a4d8b59effba246b50a93bbf4ce7fbe3a6ca1f030644f34ee7c60fcf",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\non_mandatory_tour_scheduling_annotate_tours_preprocessor.csv": "75cf2c7cd63f4fecd4e137e25701c31ce5731ff4f56f8ad969adfd5fd7a695a7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\school_location.csv": "0224441783210ff641dc47258a1c5b0364e7c7568054d840651ff38cd2d82e32",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\school_location.yaml": "e9356e56453e14bd3723f341933bb46094baa82f37fde551082520bb37ac91fa",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\school_location_coefficients.csv": "c6caac118d8c0e835d72c6905e9f40a4dcde623b0209329fa280d8b96c627e21",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\school_location_sample.csv": "c16736ff1de70e18a7b6f865c75601c30c1af9345de088fcbcebc4ebe26f0aa6",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\settings.yaml": "50881b7a4d7c840c9ba593885466bd537f4559fd002dbccfea973fb0ebe30dde",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\shadow_pricing.yaml": "4dc1d86cf88b7defb7f4d04fe6155a25f457d0e737d835c0dc2074f3eb6c7f12",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency.yaml": "a899c5345cd2da5261632582b606599f0d4923fa232d84e9cd14dde0d862137c",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_alternatives.csv": "274c6904fa008890467cbe24a82dfb0a0005abcd6722788b29ab5b979ed20096",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_annotate_tours_preprocessor.csv": "97550ae3a3b463fb7d8b6cff3f6e5e4533048bb12ac28388e149001aaf94230a",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_atwork.csv": "3b77d43909a2265c1b5407acc9ef26352285cf989c8117d38bd0c1a44ab5a432",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_atwork.csv": "56698a1f70166eba6b88b53a2e15e51c60ccc0d407e5f561abad12f14a284d18",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_eatout.csv": "58687f260f5d4fb55eedb7dbb02c759b22743970c88a7285fd50786eb97943fd",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_escort.csv": "811c44b21c2232072a86529e4e78a3dada83bf50bf37e3d3815ca3b15fc40fc5",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_othdiscr.csv": "d2c7e78f429c086fcbe562c846c835fc6c00c9251a83324c4f3e4eddb5ce65ef",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_othmaint.csv": "90c7527e668d97b180ea2e2d6bfe47070ccd81b0fd06efbd6adf811ffb0b80c1",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_school.csv": "48efaccf75a2224d48c67e75fce82ae474c6237da829101042034ad3f77869be",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_shopping.csv": "3a0c7ac3efc4276dba37b654bd1bbddf8408ad4ccbb978642f17c8d3caccf7ff",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_social.csv": "1369938fa87430e814a893991852a862af52c1b9991d971bab10caec61dc515d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_univ.csv": "999bbbe1379f5cb928a86eafd8ba3f737b8595bfab8fa2b294b6c9156f218ca2",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_coefficients_work.csv": "291244c16f084c2e89f0eb40ecaf2694e00e4600b877612cb99a7ccc5a6bb883",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_eatout.csv": "69939c84c3451e9bb0b17da2a4f7130e32dd80aa3ff512118a4d43d05733af27",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_escort.csv": "adf5bd452260607290c1e9afd028cb4b6a6f16b09c982bbac29c30380bf93c30",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_othdiscr.csv": "607075ef3ba5d8837f81a9355c0cec921c2efbb37bb79f9c800d75468c2b6aec",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_othmaint.csv": "df64545e2f88b3b21ec70a34f8394c6a566eab11008643432fac85ace784e2b9",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_school.csv": "33e4dcc32f1a48f0bb22cacafcc4f1bc6432f0943ca2bda72ad4c78c33d6208c",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_shopping.csv": "54f83736919fa536a2f9f12409d04c8c9e773a3db3a3fed5271428a8501c257d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_social.csv": "236619eab64f375caf73b3820fea1b485fd8d6d127bc1cda44af91822d163990",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_univ.csv": "ecc67d8aa750524dd2db91645e9312fcfbf33e64acd1495b8bc252918df22362",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\stop_frequency_work.csv": "8d20b74eb7634b57e94afcd9590963ebe8d7012c5da306f3281be36090da8a8f",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\summarize.csv": "23897a45415846229a1530ea84f367382ccf875165f561c9274656950dcc1347",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\summarize.yaml": "7c812768489ecc6577dce03dc9bdc1f14a666d75f03ddfd9c3251efdaf9b84aa",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\summarize_preprocessor.csv": "b98100c1eb89a83dd0e767dcbed74ff98576f089db215be1e9983b0a0115883b",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_departure_and_duration_alternatives.csv": "1ed3fca80a34bf27ef967b36ddcc9ec478b2e53c857172f3a5c6a1527ea173cc",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_departure_and_duration_segments.csv": "8d2ae04ea605ebda5ed313916a10365fa1fe5720aacd59c3f7100c86732c58cf",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_mode_choice.csv": "051c8c7b2c7fdc4ffa138e5ac610cc1086b81718d5fb99374bc45437dbbd030a",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_mode_choice.yaml": "66db9708967f4f0de3479bfbdcf15cf7bcd3a965827eea97e6cf7ef5e4286dce",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_mode_choice_annotate_choosers_preprocessor.csv": "95ac276c6adf741db136f545454c8040d508793fd2ccfa000d5ac35490a7fef8",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_mode_choice_coefficients.csv": "48f0968bbe4ce2f1c1df9d1b5659d8a6e471cf7b1623297ee0bd40f925d329b2",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_mode_choice_coefficients_template.csv": "9ebd86687868d4e23106c6b0d8eee12dcfa5e61c865e3fbbb7a8fef827f42f1d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_atwork.csv": "d12b18b02f3303250adb07642bf8806d4f7a10be3da2924c461fd14d946b66a0",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_atwork.yaml": "d9acefc51a85b1caf84835b76d3040352ba4dd598a169614e03299304df7c785",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_atwork_coefficients.csv": "9a62804ec25ce7d0c02ed3697c4a7e3b84105a6c128ffe92078ed72d7ec070a7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_atwork_preprocessor.csv": "7d76c3ff49204667c55b513ef5b77fcddae3af97b6928f672a97453fff9f47af",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_joint.csv": "0b5211902a6892fe3209b4b6015029da6073a5f253ed077b5decb055a5577b83",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_joint_coefficients.csv": "71a6c785160dc23d210323b389979e6d549b31b8c840d8bec933716bd6d5c5ae",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_nonmandatory.csv": "9d3bf0b30470260835902952623e6ba71bc62a1bee290b2b5dd13384901fbc62",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_nonmandatory_coefficients.csv": "76812e7308be6b86c7e34fb63a0eaa6bfcfbaba0868f1122b7dc6f8f42c1fc3e",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_school.csv": "d1a85999ce78e1303171931f1d1d45aa9d2fc0dd280af998526a3bdeaa5802b6",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_school_coefficients.csv": "fe094398a6a9eaf6bbb639989f31390b201cfaee628dd476e5954fd14fad4846",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_work.csv": "c6c4eb6f644932c55ed7b60fd7b25da901e87307511a85dcd5cce14ba1be3415",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\tour_scheduling_work_coefficients.csv": "6c946de5cdd934090d2fea2be011d182960d39db6073feaa77cf694580945a8d",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_destination.csv": "0fa70f6327f25ae12e2cae4057242c636ce998f16e37f5d7b4978e57b1369971",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_destination.yaml": "a160de66d3b80a027e02582606f14044dda88916fb56e36952372b7fb1b4c7e8",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_destination_annotate_trips_preprocessor.csv": "5ed9ccd3069170e71864e30a79d36a319068c1d5ed2b8dd9e3cbf7d0d1d17520",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_destination_coefficients.csv": "35c79464225197e36cdd59edc518ed83f686a17c8f2d12b012717c861990d76f",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_destination_sample.csv": "d05fdadf31b4bbf1f651d703402d74e1a1baefeacb51dd0802424fe8d8f21376",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_mode_choice.csv": "b1d3e257f9229c7f5150c5759fcc2ff41bf7d73aa2c8f467b67d20e0a378bc90",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_mode_choice.yaml": "c131d1601584ff2796206f8f322c325e19a84e8c1a104d33b5a85367047e2853",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_mode_choice_annotate_trips_preprocessor.csv": "a9093f84a6a4fa7fa1e90fe84a5f9a8a07427c477b0805771baa274205744307",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_mode_choice_coefficients.csv": "a1ef98bd153a335bab2f425ffe20bac358972a531e7cefcc7d865b18afe041a7",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_mode_choice_coefficients_template.csv": "8f6ce31dbeb247767fe62ac7feae58d9a5bd2abdab7dfdb832205a673582183b",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_purpose.yaml": "402510e603afb9ec699b93e51e60b5311d4b50b3440460dc78115d85ccacac55",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_purpose_and_destination.yaml": "cfc510ac45646dce6d708afe233b44050d74ff7608cc0156f224e44448f56850",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_purpose_annotate_trips_preprocessor.csv": "6c4168f692e5fbe9f70fb39f5e5ca848d5975292499dce4485397f85fb4863ce",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_purpose_probs.csv": "e1d30109ccf2fc979745085f4b59293562db9896d03e4ccdf19d41f5592243fc",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_scheduling.yaml": "98c84e7e74093995e8a09a13a7a1f727f04fb345610cbbf454ed22efdf1898d6",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\trip_scheduling_probs.csv": "ccb918de21ba6d3fd2c8ca5592927b516b2e53bc560179ed1e79c12c05ba4dfb",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\workplace_location.csv": "9caf6a908e50d73d8922616720b9aadea5b96a26b02e02abcf936cc86e01ff1c",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\workplace_location.yaml": "6c5c80342bcd9cd048817d44486607a55347f23bbf743ac50386a00d470336df",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\workplace_location_coefficients.csv": "7a7aaac283c9d55912fa22a9fa498eefb28405ae3a5e7980875d44fcbf270501",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\workplace_location_sample.csv": "2faba2335c73811f2470b24b844b193027b5349d07c1a4c8cae446b5bb576669",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\write_data_dictionary.yaml": "5c92f41db4ba22ad4f57a71bbebef38d8b7e379066e0957cc7793030e5a281da",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\write_trip_matrices.yaml": "cbdf91d4dfeb3f5a3bfd03374b73f07ba1e987b14059e3fd016053e6bd1b28d0",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs\\write_trip_matrices_annotate_trips_preprocessor.csv": "4ee26f62792fc06788f5fd23e165560fe40bcddfd1e0234c40cb9ecc4e954e33",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\configs_sh\\settings.yaml": "1eabb58e6a5902ad36870f528aae6cab3ed63a6b31a144208cbb4f216c4e8de8",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase33_choiceforge\\non_mandatory_tour_scheduling.yaml": "cfed267fae58985a95dba5ceab12f5fa286795a6d3e2e82852d725e5c0402e03",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase33_choiceforge\\trip_destination.yaml": "7a331e94274ea0fe75939adcc9bfeec7834b9718dacf8564a4020a9ab05b2483",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\configs_phase59_seed991\\settings.yaml": "bf8a6546aab3ec97bc3a077ffa41dfa798a6aad1e38745b6fa040034e2397967"
+      },
+      "scratch_environment": {
+        "TEMP": "C:\\Users\\kkhanal2\\AppData\\Local\\Temp",
+        "TMP": "C:\\Users\\kkhanal2\\AppData\\Local\\Temp",
+        "CUPY_CACHE_DIR": null,
+        "NUMBA_CACHE_DIR": null
+      },
+      "thread_environment": {
+        "NUMBA_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59final10k-candidate-1",
+      "reference": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59scenario10k1-regular-1",
+      "scenario_overlay": "benchmark-data\\configs_phase59_seed991",
+      "regular_scenario_baseline_self_check_not_external_proof": false,
+      "matrices": {
+        "exact": true,
+        "files": {
+          "trips_am.omx": {
+            "data/BIKE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "59bd2e67340b713bdded2663de7b4559c9acf23a62c91c645c7ce4ffa6258304"
+            },
+            "data/DRIVEALONEFREE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "75d5dc348304891d5b2915a567ecc40c02a214e6307c9ca89d293087bda85d33"
+            },
+            "data/DRIVEALONEPAY_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "b7bf84c2ed032950fcb9fef2e16c0c212e6a2e35df140b401563653510c2b368"
+            },
+            "data/DRIVE_COM_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "889d186e19a9846e94673a7dee8ae6291c4fd8b6a0a14ef7e6ba1f93e06f5f19"
+            },
+            "data/DRIVE_EXP_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "80c7d8c94e89105d478b9e54446c71b204720133a2e588e831afc5e1c534485a"
+            },
+            "data/DRIVE_HVY_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2bcdb025bba38e408e029b0741b14bec2fdef1db5797827eb24a41822b675700"
+            },
+            "data/DRIVE_LOC_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d0fa23fa069afb39885cee198837aa124219f3f5af496e4fdb16e495b49db847"
+            },
+            "data/DRIVE_LRF_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "8cb88b0889c6a5e1b1b833af5f1f13d0e87c21f9da0accfae4905b45e22e2dc8"
+            },
+            "data/SHARED2FREE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "4ff7a5e954fb9b739c1ff416e6423504ac330dd6e5f493ef973a42c4f6295c07"
+            },
+            "data/SHARED2PAY_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "be265e57d90fa34a8df127ab4697164e74547fdcb4c333d621a4e2fc4d0209e8"
+            },
+            "data/SHARED3FREE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "52d8e642236331ff132dafb8efcce8df98c30882792474d25988ebb76ce4213c"
+            },
+            "data/SHARED3PAY_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "99a1e931597e849b72b86f4daf407d8d1858af8c2c7b339f54a6b3ad3bcf6c0e"
+            },
+            "data/WALK_COM_DRIVE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "4b0a1baaf2c926ab0611cf55c15c04e6cd6859ad1b3a7d0b73024f2f6eef1046"
+            },
+            "data/WALK_DRIVE_HVY_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "4698f9c996f10f72412f6d150c7396ff1d4cbe81bdf567a9787f4111a59636ff"
+            },
+            "data/WALK_EXP_DRIVE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_EXP_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "ee16949967c4c12dac1273df9c15e45729a8033fa0f8b78e76338743ca4e2b9b"
+            },
+            "data/WALK_HVY_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "e175f405b740e3d3e9e76ddaeefc0fb8359d3934db3435fae00764c45c9f8693"
+            },
+            "data/WALK_LOC_DRIVE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "11629ffb8fc73b28d015d7d4d28ad012781d4041fd582fd8b9df4cb8ba4122b0"
+            },
+            "data/WALK_LOC_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "c7ed3191e50419c4a29a316206ef3bc9b74e816a22440a9597042fe45d7bd8a2"
+            },
+            "data/WALK_LRF_DRIVE_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3b530374f27d4f13eaf738e4a5402a6fdd85a37013af4f34621f5b6b49299208"
+            },
+            "data/WALK_LRF_WALK_AM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "5ee24fd0a06ed773c94f779f561b8fdfbc9a8743c518cabda5d7e180f7bb3910"
+            },
+            "lookup/_original_zone_id": {
+              "dtype": "uint32",
+              "shape": [
+                1454
+              ],
+              "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+            }
+          },
+          "trips_ea.omx": {
+            "data/BIKE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "74fe56c55d71be595f9ebadab234b73e53bab55d60b64079cdcd35e876c3c44a"
+            },
+            "data/DRIVEALONEFREE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "984346612c039afbd5f9954c5e4d269c16c2b357c27f42f3af1b11203a7092c3"
+            },
+            "data/DRIVEALONEPAY_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_COM_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3a49bf3da02fd7e1d4c02b1ccc88508b29874a898459c411e4f1278d5738f6bf"
+            },
+            "data/DRIVE_EXP_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "472c4e58e499f1aa971799a5df441fee33d480a43df54731a5a82ad774df8b3f"
+            },
+            "data/DRIVE_HVY_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "96d78a321c1008d8b9c301b0af77b26066c68fdb1801f500a048447c91a2eed8"
+            },
+            "data/DRIVE_LOC_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "bb9f9c63748f671d5703a5007cbf6476d4cdd0af20b4e84186c93f69ac5481d0"
+            },
+            "data/DRIVE_LRF_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "0c3c3468f2d598dbcc98dd85dc9235876b25e1c6033d79c9886a9fb4211d5ff2"
+            },
+            "data/SHARED2FREE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "83341af009a14c06adc42bc7db78ea4720522a233b0dd1899e507aba4627a111"
+            },
+            "data/SHARED2PAY_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/SHARED3FREE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "937e88b53bf33cb53eb7430d9b474a5fc1dffbc54731461e4594f9ff9582a55d"
+            },
+            "data/SHARED3PAY_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_DRIVE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_DRIVE_HVY_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "a14f4c28aa8325a5cfadd00f1c84ac773e1d5aa5ae4222bf8c061f13d18d6bcf"
+            },
+            "data/WALK_EXP_DRIVE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_EXP_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "182e090672bd73217eb5bab1266893b520515c1519db188f668323e0029ff86c"
+            },
+            "data/WALK_HVY_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "8d19029dbbeb5bbbd9a1283674d71214aa4662ef39c0d1cbf0d5477481442d00"
+            },
+            "data/WALK_LOC_DRIVE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_LOC_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "a22d278377a0f1237917622e06fb84c649a4b29279ee78ddb997c219b5596289"
+            },
+            "data/WALK_LRF_DRIVE_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_LRF_WALK_EA": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d37cbfed5fe3c7db828ed7f3582cf2b7b9a127257a3fdca94aca658ef8853232"
+            },
+            "lookup/_original_zone_id": {
+              "dtype": "uint32",
+              "shape": [
+                1454
+              ],
+              "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+            }
+          },
+          "trips_ev.omx": {
+            "data/BIKE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "fdea5e067e59e34ed2128b562fa0da70115bb081d9006d0283af0585179b9ce0"
+            },
+            "data/DRIVEALONEFREE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2baf7954b1b4ec3b753318ecce24cc80285b9129d69f2dbdc37e99549d052280"
+            },
+            "data/DRIVEALONEPAY_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_COM_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_EXP_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_HVY_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "27e503a2562df539d5252351547bb9ef98bf2b68b85a5ef34ffd37822fa799cc"
+            },
+            "data/DRIVE_LOC_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_LRF_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "39d1b28094914721a54cf8580564cd3d83283df665feace24fe2e4150490e7d1"
+            },
+            "data/SHARED2FREE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "7dcd37f5fe6fc6aa885d35fc881584a0efcdad6e9e52dd680f34a71bb1fa1450"
+            },
+            "data/SHARED2PAY_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/SHARED3FREE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "30827a94aedc760d2c13f6fb7f8bdb5efc9de6153fee90be708d8cd2cacb882f"
+            },
+            "data/SHARED3PAY_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_DRIVE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "47dbee598f184ca00f50e0ef1ab7ac6bdaa0687d579c2d1df808dc6e29d898d8"
+            },
+            "data/WALK_COM_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "40698c0c8e1ce765262295352cc8d2297070d2637e71c2eb96c86e8569fb4283"
+            },
+            "data/WALK_DRIVE_HVY_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "755bfc57a75542726a0fd4e6bd26d0789f1b22f68d8aa89a952626ff49854888"
+            },
+            "data/WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "c204a1b1d71228398fabf6a76a0b9906bb8b9ae1e26b26b7fe8009618e60f725"
+            },
+            "data/WALK_EXP_DRIVE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d927085b818f04f7aa6978a14802d0630aa18b45c3ba4204b0b1b0aa9ff263f4"
+            },
+            "data/WALK_EXP_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3f03a68a1c4963e8d030775df7ddebc44a05e0131bbaf263ca6c1199751b8b4c"
+            },
+            "data/WALK_HVY_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "91d082e2c4fcbe7e1d3d25106de65cde7b952c95a31ea7144dfcf64e6fbcf195"
+            },
+            "data/WALK_LOC_DRIVE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "84906aef42f7844e34bb01f521d07819669d4b14997d089856d9afead7b8451b"
+            },
+            "data/WALK_LOC_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "de781d8e2fb60b951a58a7cddcf10f952ef5231c9a756360f9d666f2ffe7ac36"
+            },
+            "data/WALK_LRF_DRIVE_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "abe3d5de515b78163f936257e782d16fd2b9d90d84481242a1b70a08d2a41a1a"
+            },
+            "data/WALK_LRF_WALK_EV": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "b3709c367a7289878ac59f5cf0cadfcc3a83b8d7b3159506e5c7ec74f7fd9bda"
+            },
+            "lookup/_original_zone_id": {
+              "dtype": "uint32",
+              "shape": [
+                1454
+              ],
+              "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+            }
+          },
+          "trips_md.omx": {
+            "data/BIKE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "85fe28162422ca25d5bac0fe04c50f3dc531ec3566a8c94c2ca13273de9a98a7"
+            },
+            "data/DRIVEALONEFREE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "fad8f876e396ee7b5a8363badbd0162392a4ee48ecce9923b5e8b84487f60e98"
+            },
+            "data/DRIVEALONEPAY_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/DRIVE_COM_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "a2bf97e109d1a5ef6d11989d909471af30d442dae485b09036661d9612bfb8c6"
+            },
+            "data/DRIVE_EXP_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "e8018c2922f33ed0f937ffee63d94d998fe9f34f2778776aada38bcc4b72e6d7"
+            },
+            "data/DRIVE_HVY_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "921550bb17cbb2b12f3d24f75fcbb560aaceabad01971f07a26fcc542b45dcb9"
+            },
+            "data/DRIVE_LOC_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "4e3b1927934c4cf41841ad75d49e04bc49659d0f3c7764aa5fe405bd89394986"
+            },
+            "data/DRIVE_LRF_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "fb965afb3434c1c4b8e82bfb09ace66e5a071522f27683a69dbf21bb1ec3d4b8"
+            },
+            "data/SHARED2FREE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "cba3529b5a35a87d8aa986c8b109e12c9bc95ee2ddddc0676f0ed5775fea2939"
+            },
+            "data/SHARED2PAY_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/SHARED3FREE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d6deaa1315dd5d8f0ed9c221e7b50aac9a22540530bef7f8ef1ce09d6b82b056"
+            },
+            "data/SHARED3PAY_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_DRIVE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "e3ef4dbdb1f519773cf8454d0ea9f18421dbb5f0bef3b281c659ef6ace378dcf"
+            },
+            "data/WALK_COM_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_DRIVE_HVY_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "7b5218b660cd3d5f551af0fa54a0f9e9d613d2d76aa241fdff965bfd41474851"
+            },
+            "data/WALK_EXP_DRIVE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "420cb4897266b08a01674d4808b880ce14de044849ebc03b65dcd5adf3b05931"
+            },
+            "data/WALK_EXP_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "e6c1555e9dd698ffb93a5390c3187acbc55be788823a4abb97af3212b188fddc"
+            },
+            "data/WALK_HVY_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "075a2057a36469f28b41ae7f3d4b1d55b3161a68262978937fcb33bf6252637a"
+            },
+            "data/WALK_LOC_DRIVE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "1a387ea83f485c1ad16847ce1fed7a37edff4801c7516897bbf671f2db385aae"
+            },
+            "data/WALK_LOC_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "eed7e705f7082f88106cc6c1668b7d4e8cef297a5a8a901e4a65c0ef702403f1"
+            },
+            "data/WALK_LRF_DRIVE_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "b0e1dad128fd786f1520bb56959a607056e0f20e9ab5b8b663749fce0eabe39f"
+            },
+            "data/WALK_LRF_WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "440b8ad675979eea31a490a1a6b65e8c9d4957e455ea875231176fba0d224c18"
+            },
+            "data/WALK_MD": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "e009826743d9db48a7976181fce6e864d43e1e72d54c4d0073bae2e5cb793395"
+            },
+            "lookup/_original_zone_id": {
+              "dtype": "uint32",
+              "shape": [
+                1454
+              ],
+              "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+            }
+          },
+          "trips_pm.omx": {
+            "data/BIKE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "5604ca8544e848567d1e523027d223c8043b19abce4f7c4f8fd324b525ffff38"
+            },
+            "data/DRIVEALONEFREE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "7cd79f4455f6d5f645ffabb617cff65467fbc922aeb065b1c09a0adf3362ae9e"
+            },
+            "data/DRIVEALONEPAY_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3230f35b2c3b3dbf6104baee68569ff7abd561cf0a29020c2703800583178f27"
+            },
+            "data/DRIVE_COM_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "39ce9a00c667adf2d4eefdd81ad9ef60b28cb8c8008c6aedf501e9325813b017"
+            },
+            "data/DRIVE_EXP_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "752cbf2f3e9d603cca4c64517120744072aa2c5b93a95f08b8faae47a10bbae7"
+            },
+            "data/DRIVE_HVY_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "1fd5459870896fb8ce1ca568ea2575824e05fc4a7aff6fdb801a91585aac56b7"
+            },
+            "data/DRIVE_LOC_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3bb2dfe30369d1f91625b98bb2ce722a49ff60193e863322011ec674c5f7fe8f"
+            },
+            "data/DRIVE_LRF_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "a2aa9d446fcc1fa724fa72c1a8025b94e9a8f1312d12c89bb95a164d650b64c0"
+            },
+            "data/SHARED2FREE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "5df9d1bb66d8b115675671ae3fe25620a58f433398341b4833dc571a79a7aa28"
+            },
+            "data/SHARED2PAY_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "8a21a243f031a919514bd4605466d146066a543fb18138a499ed796527c4103f"
+            },
+            "data/SHARED3FREE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "29d7a68a633c8b5a02e1129073fe6c488031eb3c08adeb58d90f3e74dfb87a95"
+            },
+            "data/SHARED3PAY_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "2ff3bb89ba74bcac1997f34a717030fb87570cafcea7925221e5e2ff9d0ee19a"
+            },
+            "data/WALK_COM_DRIVE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "3ec6d820336ec22170d41f4fce3f5c9f29b166a53cf62f16f0503d4ab26ae809"
+            },
+            "data/WALK_COM_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d598da18c198f9fe63f463fbbdba718fe4587401b34af76e35f21cf601b37121"
+            },
+            "data/WALK_DRIVE_HVY_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "ebdb29da504ef0028f06e1528cb480c97a29f9ed9f5b0e3f7c467c5210478e6a"
+            },
+            "data/WALK_EXP_DRIVE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "f4796ec72b382658df4b862cafb887dac79b424b881143c7b0e3eea9b08e4b4d"
+            },
+            "data/WALK_EXP_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "965b4f16f0d44effb5a9c40ffb0733a22acaa2fe779da1907198cb5b32266e66"
+            },
+            "data/WALK_HVY_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "a3813b97946327457f117ffd6edcaa0eab7eac73fa2a6253016c834316b0df0e"
+            },
+            "data/WALK_LOC_DRIVE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "9190097fff4ca5f19c7c17e2976d6ad8df6946e12a46aba0710af583022fbd47"
+            },
+            "data/WALK_LOC_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "f8b13572479e2d0d2da474e1db795fdfc01a0a3c17ce3ad2d7e65906ad7e6e4b"
+            },
+            "data/WALK_LRF_DRIVE_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "f5625113661ef49e0e3debb726f588051478b28dd68f626558a0514b0572b3d7"
+            },
+            "data/WALK_LRF_WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "0d15a84adabb7ec838fa7a2727124e1cda11c95f82e28de99c5b7bb74d73a326"
+            },
+            "data/WALK_PM": {
+              "dtype": "float64",
+              "shape": [
+                1454,
+                1454
+              ],
+              "sha256": "d2399649b92fd648fa8a32b650e93fee9474356fccef14953e80183771b0510e"
+            },
+            "lookup/_original_zone_id": {
+              "dtype": "uint32",
+              "shape": [
+                1454
+              ],
+              "sha256": "24204e0ba3677daabf48953fdd7a989aec223d91074e0dfe6fefe8fd5a139144"
+            }
+          }
+        },
+        "policy": "all logical dataset bytes, shapes, dtypes and zone mappings exact; container metadata excluded"
+      }
+    }
+  ]
+}

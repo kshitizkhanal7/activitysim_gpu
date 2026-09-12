@@ -1,0 +1,18 @@
+{
+  "status": "rejected_candidate_not_qualified",
+  "reference": "o-p58-p59finalseed17-regular-1",
+  "candidate": "o-p58-p59finalseed17-candidate-1",
+  "scope": "50,000 households, seed 17; first checkpoint divergence is mandatory tour scheduling",
+  "mandatory_frequency_modeled_rows_different": 0,
+  "mandatory_scheduling_modeled_rows_different": 2,
+  "final_tour_modeled_rows_different": 3,
+  "final_tour_modeled_cells_different": 10,
+  "diagnostic_run": "o-p58-p59seed17diag1-candidate-1",
+  "observations": [
+    {"tour_id": 199304237, "reference_tdd": 63, "gpu_initial_tdd": 63, "weak_guard_tdd": 64, "boundary_distance": 9.146446156016452e-09},
+    {"tour_id": 180064364, "reference_tdd": 105, "gpu_initial_tdd": 105, "weak_guard_tdd": 104, "boundary_distance": 5.91381005277114e-08}
+  ],
+  "interpretation": "A CPU final-equation recheck that consumes GPU-produced accessibility inputs is not an exact CPU reference. The replacement recomputes complete live CPU accessibility for boundary rows, reusing live normal draws and checking the ledger is unchanged.",
+  "not_performance_evidence": true,
+  "runtime_reads_this_file": false
+}

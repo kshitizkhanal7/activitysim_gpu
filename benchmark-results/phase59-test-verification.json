@@ -1,0 +1,12 @@
+{
+  "command": ".venv-phase8/Scripts/python.exe -m pytest -q",
+  "date": "2026-09-12",
+  "exit_code": 0,
+  "passed": 413,
+  "failed": 0,
+  "skipped": 0,
+  "warnings": 48,
+  "elapsed_seconds": 43.88,
+  "warnings_scope": "upstream Pydantic/pandas deprecations and non-fatal pytest cache write permission warning",
+  "timing_series_overlap": false
+}

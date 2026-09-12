@@ -304,22 +304,23 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
-    latest = json.loads((ROOT / "benchmark-results/phase58-formal-qualification.json").read_text())
-    if latest["status"] not in {"replicated_improvement_target_met", "replicated_improvement_target_not_met"}:
-        raise ValueError("The explainer cover requires a qualified Phase 58 result")
+    latest = json.loads((ROOT / "benchmark-results/phase59-formal-qualification.json").read_text())
+    if latest["status"] not in {"replicated_improvement_wall_target_met", "replicated_improvement_wall_target_not_met",
+                                 "correctness_qualified_performance_not_replicated"}:
+        raise ValueError("The explainer cover requires completed Phase 59 qualification")
     previous = latest["medians"]["gpu"]["charged_total_seconds"]
     current = latest["medians"]["candidate"]["charged_total_seconds"]
     wall = latest["medians"]["candidate"]["process_wall_seconds"]
     metrics = Table(
         [
             [
-                Paragraph(f'{latest["previous_gpu_over_latest_gpu"]:.3f}x', STYLES["metric_num"]),
-                Paragraph(f"{current:.1f} s", STYLES["metric_num"]),
+                Paragraph(f'{latest["wall_speedup"]:.3f}x', STYLES["metric_num"]),
+                Paragraph(f"{wall:.1f} s", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("incremental full-model<br/>speedup vs Phase 57", STYLES["metric_label"]),
-                Paragraph("charged full-model<br/>median seconds", STYLES["metric_label"]),
+                Paragraph("wall median ratio<br/>Phase 58 / Phase 59", STYLES["metric_label"]),
+                Paragraph("launch-to-exit<br/>median seconds", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
         ],
@@ -357,12 +358,15 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            f"Latest evidence, Phase 58: six balanced old/new pairs on the public 50,000-household model reduce the charged median from {previous:.2f} to {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. Every checked travel decision matches; diagnostic scores remain within their stated tolerances. The cumulative comparison is {latest['regular_cpu_over_latest_gpu']:.3f}x against separately measured fresh, pinned single-process CPU ActivitySim controls, not a claim about the fastest possible CPU implementation. "
-            "Start with the one-minute version, then read the concepts and chronological evidence. The earlier phases establish strict references, generated CUDA, controlled randomness and complete-output checks. Later phases keep inputs and intermediate results on the GPU. Phase 58 adds live trip random streams, within-tour scheduling chains and mode utility-to-choice execution. Ordinary trip normal draws remain on CPU after a stronger audit rejected broader GPU reuse. This remains a benchmark-specific hybrid prototype: assumptions, failed experiments, CPU/GPU attribution limits and unfinished generalization are explained rather than hidden.",
+            f"Latest evidence, Phase 59: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
+            + ("Every pair improves both clocks. " if latest["all_pairs_faster"] else "Not every pair improves both clocks; repeated superiority is not established. ")
+            + ("Every candidate meets the under-100-second wall target. " if latest["all_wall_runs_under_100"] else "The under-100-second wall target is NOT met. ")
+            + "Checked travel decisions, matrix values and report values agree, with documented departure-key text formatting differences and bounded diagnostic scores. Three changed scenarios also pass. "
+            "Start with the one-minute version, then read the concepts and chronological evidence. Phase 59 removes mandatory scheduling's captured-answer dependency, checks complete live CPU inputs near numerical boundaries, and adds complete GPU departure retries, versioned data ownership and faster CPU matrix output. Strong controls find the GPU mode reducer faster but the compact CPU retry algorithm faster. This remains a supported-domain hybrid prototype, not a GPU-only model or a universal equivalence theorem. Assumptions, failed experiments, cold-start costs and remaining limits are explained rather than hidden.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated September 8, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated September 12, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

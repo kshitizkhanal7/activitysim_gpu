@@ -72,10 +72,11 @@ def test_phase54_sample_lease_is_versioned_reused_and_fail_closed():
     assert summary["phase54_sample_lease_consumes"] == 1
 
 
-def test_phase46_precomputed_weights_and_selected_probabilities_are_exact():
+@pytest.mark.parametrize("alternatives", [*range(1, 33), 1454])
+def test_phase46_precomputed_weights_and_selected_probabilities_are_exact(alternatives):
     cp = _cupy()
     rng = np.random.default_rng(460046)
-    rows, alternatives, draws = 37, 1454, 30
+    rows, draws = 37, 30
     utilities = rng.normal(-3.0, 4.0, size=(rows, alternatives)).astype(np.float32)
     row_maxima = utilities.max(axis=1)
     shifted_utilities = utilities - row_maxima[:, None]
@@ -321,7 +322,7 @@ def test_phase48_resumed_mt19937_state_follows_final_chooser_permutation():
     )
 
 
-@pytest.mark.parametrize("width", [21, 25, 29, 30])
+@pytest.mark.parametrize("width", range(1, 33))
 def test_phase48_resident_probability_sum_and_choice_match_numpy(width):
     from choiceforge.modelwide_graph import _compile_resident_choice
 

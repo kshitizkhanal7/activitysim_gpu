@@ -27,12 +27,39 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 repository test suite passes 238 tests, including
+The Python 3.11 repository test suite passes 413 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
 of the strict float32 utility accumulator. The generated strict CUDA path also
 matches the CPU oracle exactly on numeric edge cases and 30 real public batches.
+
+## Latest qualified result: Phase 59
+
+The complete public 50,000-household MTC model takes **109.84 seconds elapsed**,
+versus **314.90 seconds** for two fresh regular CPU controls (**2.867x** faster
+than that configuration). Six balanced Phase 58/59 pairs improve in every pair:
+112.52 to 109.84 seconds elapsed, a **2.38%** incremental reduction. Charged
+medians are 104.82 to 102.69 seconds. **The under-100-second target was missed.**
+
+All 34 steps run. Modeled decisions, all 115 matrices and all 24 summary-report
+values pass, including three changed scenarios. Four reports have explicitly
+permitted exact-equivalent departure-key spelling (`5` versus `5.0`), not
+byte-identical CSVs. Diagnostic logsums retain their stated numerical bounds.
+
+Phase 59 adds live mandatory scheduling without captured answers, complete
+GPU departure retries, versioned person/tour/trip data, and faster CPU matrix
+compression. Strong equivalent-algorithm controls find the real-input GPU mode
+reducer **1.60x faster**, but the compact CPU retry calculation **3.37x faster**.
+The whole-model gain is hybrid engineering, not pure GPU hardware attribution.
+The regular baseline is single-process ActivitySim with numerical libraries
+limited to one thread; separate compiled controls use up to 48 CPU threads.
+
+Read the [technical report](docs/phase59-scenario-runtime.md),
+[all 34 component timings](docs/phase59-component-comparison.md),
+[qualification evidence](benchmark-results/phase59-formal-qualification.json),
+and the [plain-English explainer](docs/choiceforge-plain-english-explainer.md).
+Historical sections below retain their original measurement boundaries.
 
 ## Why this target
 

@@ -548,7 +548,10 @@ class DestinationInputSupergraph:
             raise ValueError("Phase 55 plan atlas contract is unsupported")
         current = _phase55_config_fingerprints(state, logsum_settings)
         if raw.get("config_files") != current:
-            raise ValueError("Phase 55 public model configuration fingerprint changed")
+            from .phase59_config_contract import compatible_config
+            if not (getattr(self, "phase59_scenario_settings", False)
+                    and compatible_config(raw.get("config_files", {}), current, state.filesystem.get_configs_dir())):
+                raise ValueError("Phase 55 public model configuration fingerprint changed")
         self._phase55_atlas_document = raw
         return raw
 

@@ -1,0 +1,391 @@
+{
+  "scope": "warm-cache fresh processes on one workstation; 6 balanced Phase58/59 pairs, then 2 unpaired regular CPU controls; not strongest possible CPU rewrite",
+  "phase59_status": "replicated_improvement_wall_target_not_met",
+  "totals": {
+    "gpu": {
+      "process_wall_seconds": 112.51501715020277,
+      "charged_total_seconds": 104.81949659967793
+    },
+    "candidate": {
+      "process_wall_seconds": 109.8392353001982,
+      "charged_total_seconds": 102.68861715015956
+    },
+    "regular": {
+      "charged_total_seconds": 308.40000000000003,
+      "process_wall_seconds": 314.9011116500478
+    }
+  },
+  "components": [
+    {
+      "step": "initialize_landuse",
+      "gpu": 0.6,
+      "candidate": 0.7,
+      "regular": 14.649999999999999,
+      "regular_over_candidate": 20.928571428571427
+    },
+    {
+      "step": "initialize_households",
+      "gpu": 4.4,
+      "candidate": 4.4,
+      "regular": 5.1,
+      "regular_over_candidate": 1.159090909090909
+    },
+    {
+      "step": "compute_accessibility",
+      "gpu": 1.6,
+      "candidate": 1.55,
+      "regular": 1.7,
+      "regular_over_candidate": 1.096774193548387
+    },
+    {
+      "step": "school_location",
+      "gpu": 4.05,
+      "candidate": 4.2,
+      "regular": 15.399999999999999,
+      "regular_over_candidate": 3.666666666666666
+    },
+    {
+      "step": "workplace_location",
+      "gpu": 2.0,
+      "candidate": 2.0,
+      "regular": 30.75,
+      "regular_over_candidate": 15.375
+    },
+    {
+      "step": "auto_ownership_simulate",
+      "gpu": 1.4,
+      "candidate": 1.4,
+      "regular": 0.8500000000000001,
+      "regular_over_candidate": 0.6071428571428572
+    },
+    {
+      "step": "free_parking",
+      "gpu": 1.0,
+      "candidate": 1.0,
+      "regular": 1.0,
+      "regular_over_candidate": 1.0
+    },
+    {
+      "step": "cdap_simulate",
+      "gpu": 7.0,
+      "candidate": 6.9,
+      "regular": 6.95,
+      "regular_over_candidate": 1.0072463768115942
+    },
+    {
+      "step": "mandatory_tour_frequency",
+      "gpu": 1.5,
+      "candidate": 1.5,
+      "regular": 1.5,
+      "regular_over_candidate": 1.0
+    },
+    {
+      "step": "mandatory_tour_scheduling",
+      "gpu": 7.15,
+      "candidate": 10.8,
+      "regular": 39.05,
+      "regular_over_candidate": 3.61574074074074
+    },
+    {
+      "step": "joint_tour_frequency",
+      "gpu": 1.2,
+      "candidate": 1.4,
+      "regular": 1.3,
+      "regular_over_candidate": 0.9285714285714287
+    },
+    {
+      "step": "joint_tour_composition",
+      "gpu": 0.7,
+      "candidate": 0.7,
+      "regular": 0.7,
+      "regular_over_candidate": 1.0
+    },
+    {
+      "step": "joint_tour_participation",
+      "gpu": 2.1500000000000004,
+      "candidate": 2.1500000000000004,
+      "regular": 2.2,
+      "regular_over_candidate": 1.0232558139534882
+    },
+    {
+      "step": "joint_tour_destination",
+      "gpu": 2.05,
+      "candidate": 2.0,
+      "regular": 3.25,
+      "regular_over_candidate": 1.625
+    },
+    {
+      "step": "joint_tour_scheduling",
+      "gpu": 1.6,
+      "candidate": 1.5,
+      "regular": 1.6,
+      "regular_over_candidate": 1.0666666666666667
+    },
+    {
+      "step": "non_mandatory_tour_frequency",
+      "gpu": 7.3,
+      "candidate": 7.1,
+      "regular": 7.300000000000001,
+      "regular_over_candidate": 1.0281690140845072
+    },
+    {
+      "step": "non_mandatory_tour_destination",
+      "gpu": 2.0,
+      "candidate": 2.0,
+      "regular": 31.75,
+      "regular_over_candidate": 15.875
+    },
+    {
+      "step": "non_mandatory_tour_scheduling",
+      "gpu": 6.8,
+      "candidate": 6.6,
+      "regular": 18.799999999999997,
+      "regular_over_candidate": 2.848484848484848
+    },
+    {
+      "step": "tour_mode_choice_simulate",
+      "gpu": 5.5,
+      "candidate": 5.8,
+      "regular": 5.85,
+      "regular_over_candidate": 1.0086206896551724
+    },
+    {
+      "step": "atwork_subtour_frequency",
+      "gpu": 1.0,
+      "candidate": 1.0,
+      "regular": 1.05,
+      "regular_over_candidate": 1.05
+    },
+    {
+      "step": "atwork_subtour_destination",
+      "gpu": 1.4,
+      "candidate": 1.35,
+      "regular": 7.7,
+      "regular_over_candidate": 5.703703703703703
+    },
+    {
+      "step": "atwork_subtour_scheduling",
+      "gpu": 1.7,
+      "candidate": 1.7,
+      "regular": 1.85,
+      "regular_over_candidate": 1.0882352941176472
+    },
+    {
+      "step": "atwork_subtour_mode_choice",
+      "gpu": 1.1,
+      "candidate": 1.1,
+      "regular": 1.1,
+      "regular_over_candidate": 1.0
+    },
+    {
+      "step": "stop_frequency",
+      "gpu": 3.55,
+      "candidate": 3.5,
+      "regular": 3.6,
+      "regular_over_candidate": 1.0285714285714287
+    },
+    {
+      "step": "trip_purpose",
+      "gpu": 1.1,
+      "candidate": 1.1,
+      "regular": 1.15,
+      "regular_over_candidate": 1.0454545454545452
+    },
+    {
+      "step": "trip_destination",
+      "gpu": 9.0,
+      "candidate": 8.9,
+      "regular": 68.0,
+      "regular_over_candidate": 7.640449438202247
+    },
+    {
+      "step": "trip_purpose_and_destination",
+      "gpu": 0.6,
+      "candidate": 0.6,
+      "regular": 0.6,
+      "regular_over_candidate": 1.0
+    },
+    {
+      "step": "trip_scheduling",
+      "gpu": 3.7,
+      "candidate": 2.3,
+      "regular": 7.0,
+      "regular_over_candidate": 3.0434782608695654
+    },
+    {
+      "step": "trip_mode_choice",
+      "gpu": 6.2,
+      "candidate": 5.9,
+      "regular": 10.95,
+      "regular_over_candidate": 1.8559322033898302
+    },
+    {
+      "step": "write_data_dictionary",
+      "gpu": 1.5,
+      "candidate": 1.5,
+      "regular": 1.65,
+      "regular_over_candidate": 1.0999999999999999
+    },
+    {
+      "step": "track_skim_usage",
+      "gpu": 0.4,
+      "candidate": 0.4,
+      "regular": 0.45,
+      "regular_over_candidate": 1.125
+    },
+    {
+      "step": "write_trip_matrices",
+      "gpu": 6.6,
+      "candidate": 2.5,
+      "regular": 6.85,
+      "regular_over_candidate": 2.7399999999999998
+    },
+    {
+      "step": "write_tables",
+      "gpu": 1.8,
+      "candidate": 1.8,
+      "regular": 1.9500000000000002,
+      "regular_over_candidate": 1.0833333333333335
+    },
+    {
+      "step": "summarize",
+      "gpu": 4.6,
+      "candidate": 4.7,
+      "regular": 4.8,
+      "regular_over_candidate": 1.0212765957446808
+    }
+  ],
+  "regular_cpu_summary_reports": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59regular-regular-1": {
+      "exact": true,
+      "contract": "exact-values-declared-departure-spelling-v1",
+      "report_count": 24,
+      "byte_identical": true,
+      "sha256": {
+        "reference": {
+          "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+          "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+          "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+          "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+          "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+          "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+          "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+          "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+          "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+          "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+          "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+          "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+          "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+          "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+          "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+          "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+          "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+          "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+          "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+          "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+          "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+          "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+          "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+          "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+        },
+        "candidate": {
+          "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+          "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+          "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+          "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+          "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+          "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+          "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+          "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+          "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+          "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+          "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+          "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+          "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+          "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+          "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+          "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+          "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+          "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+          "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+          "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+          "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+          "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+          "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+          "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+        }
+      },
+      "representation_only_differences": {}
+    },
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p59regular-regular-2": {
+      "exact": true,
+      "contract": "exact-values-declared-departure-spelling-v1",
+      "report_count": 24,
+      "byte_identical": true,
+      "sha256": {
+        "reference": {
+          "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+          "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+          "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+          "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+          "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+          "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+          "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+          "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+          "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+          "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+          "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+          "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+          "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+          "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+          "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+          "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+          "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+          "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+          "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+          "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+          "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+          "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+          "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+          "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+        },
+        "candidate": {
+          "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+          "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+          "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+          "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+          "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+          "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+          "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+          "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+          "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+          "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+          "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+          "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+          "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+          "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+          "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+          "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+          "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+          "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+          "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+          "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+          "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+          "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+          "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+          "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+        }
+      },
+      "representation_only_differences": {}
+    }
+  },
+  "regular_over_candidate": {
+    "charged_total_seconds": 3.0032539979483097,
+    "process_wall_seconds": 2.8669273851861896
+  },
+  "evidence_sha256": {
+    "benchmark-results\\phase59-formal-qualification.json": "ce75b5dbcd096cece9bc52a39fa25952c65744c6b3ad4a5bfef1c0ec953c8eff",
+    "benchmark-results\\phase58-p59regular-summary.json": "f48ec2dd7c7b3c74c1f28b923deb8d08c7d9e5e2d00824239e767369f831f736",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\report_phase59_comparison.py": "114cb62f872224d5fd64e44ff1aa587bf8606eb4a3675e3f3bd94f0b4107e94e"
+  }
+}

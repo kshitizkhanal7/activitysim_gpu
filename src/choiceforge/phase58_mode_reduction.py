@@ -128,6 +128,19 @@ def mode_choice_simulate(runtime, state, choosers, spec, nest_spec, skims, local
         expression_float32=True, persistent_plan=True, reuse_buffers=False)
     cp = _cupy()
     draws = runtime.uniform(state, choosers, device_only=True)
+    if getattr(runtime, "mode_capture_directory", None) is not None:
+        # Inputs only, never choices: used for independent same-algorithm CPU
+        # controls. The harness marks these instrumented runs as untimed.
+        import json
+        from pathlib import Path
+        directory = Path(runtime.mode_capture_directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"batch-{len(runtime.mode_events):02d}.npz"
+        if path.exists():
+            raise FileExistsError(path)
+        serializable_nest = nest_spec.model_dump(mode="json") if hasattr(nest_spec, "model_dump") else nest_spec
+        np.savez(path, utilities=cp.asnumpy(generated.utilities), draws=cp.asnumpy(draws),
+                 chooser_ids=choosers.index.to_numpy(), nest_json=json.dumps(serializable_nest), trace_label=str(trace_label))
     choices, logsums, guards, _ = reduce_modes(generated.utilities, draws, nest_spec)
     risk_rows = cp.asnumpy(cp.flatnonzero(guards))
     host_choices, host_logsums = cp.asnumpy(choices), cp.asnumpy(logsums)

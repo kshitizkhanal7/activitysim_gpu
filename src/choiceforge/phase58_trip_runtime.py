@@ -58,7 +58,12 @@ class ResidentSchedulingService(TripSchedulingDeviceService):
 
 
 class TripRuntime:
-    def __init__(self):
+    def __init__(self, *, device_retries=False):
+        self.device_retries = device_retries
+        self.entity_store = None
+        if device_retries:
+            from .phase59_entity_store import EntityStore
+            self.entity_store = EntityStore()
         self.service = None
         self.events = []
         self.mode_events = []
@@ -66,6 +71,25 @@ class TripRuntime:
         self.expected_mode_rows = None
         self.step = None
         self.epoch = 0
+        self.mode_capture_directory = None  # Explicit diagnostic runs only.
+
+    def publish_entities(self, state):
+        if self.entity_store is None or not hasattr(state, "get_dataframe"):
+            return
+        for table, names in {
+            "persons":("household_id", "age", "ptype"),
+            "tours":("person_id", "household_id", "start", "end", "destination"),
+            "trips":("person_id", "tour_id", "household_id", "origin", "destination",
+                      "outbound", "trip_num", "trip_count", "depart"),
+        }.items():
+            frame = state.get_dataframe(table)
+            columns = {name:frame[name].to_numpy() for name in names if name in frame
+                       and frame[name].dtype.kind in "biuf"}
+            if table == "trips" and "trip_mode" in frame:
+                from .nested_logit import MTC21_ALTERNATIVES
+                columns["trip_mode_code"] = pd.Categorical(frame.trip_mode, categories=MTC21_ALTERNATIVES).codes
+            if columns:
+                self.entity_store.publish(table, frame.index, columns)
 
     def uniform(self, state, frame, n=1, *, device_only=False):
         started = time.perf_counter()
@@ -86,6 +110,7 @@ class TripRuntime:
     def for_step(self, state, step):
         if self.step is not None:
             raise ValueError("Phase 58 contexts cannot overlap")
+        self.publish_entities(state)
         upstream_scheduling = mode_module = None
         if step == "trip_scheduling":
             from . import activitysim_trip_scheduling as scheduling_module
@@ -93,6 +118,8 @@ class TripRuntime:
                 raise ValueError("Phase 58 scheduling service must start in a fresh process")
             from activitysim.abm.models import trip_scheduling as upstream_scheduling
             from .phase58_schedule_chain import run_trip_scheduling
+            if self.device_retries:
+                from .phase59_retry import run_trip_scheduling
         if step == "trip_mode_choice":
             from activitysim.abm.models import trip_mode_choice as mode_module
             from .phase58_mode_reduction import mode_choice_simulate
@@ -150,8 +177,10 @@ class TripRuntime:
         if step == "trip_mode_choice":
             original_mode_simulate = mode_module.mode_choice_simulate
             mode_module.mode_choice_simulate = lambda *a, **k: mode_choice_simulate(self, *a, **k)
+        completed = False
         try:
             yield self
+            completed = True
         finally:
             if original_chain is not None:
                 upstream_scheduling.run_trip_scheduling = original_chain
@@ -165,9 +194,13 @@ class TripRuntime:
                 else:
                     setattr(rng, name, previous)
             self.step = None
+            if completed:
+                self.publish_entities(state)
 
     def summary(self):
         return {"contract": "phase58-live-trip-rng-v1", "events": self.events,
+                "device_retry_controller": self.device_retries,
+                "entity_store": self.entity_store.summary() if self.entity_store is not None else None,
                 "mode_events": self.mode_events,
                 "chain_events": self.chain_events,
                 "expected_mode_rows": self.expected_mode_rows,
@@ -178,4 +211,5 @@ class TripRuntime:
                 "zero_variance_rows": sum(e["rows"] for e in self.events if e["kind"] == "zero_variance_normal_identity"),
                 "authoritative_cpu_normal_calls": sum(e["kind"] == "authoritative_cpu_normal" for e in self.events),
                 "result_replay_enabled": False,
-                "scope": "live random channels, device scheduling chains and mode utility-to-choice; CPU retry cohorts, ordinary normals and final table publication retained"}
+                "scope": ("live random channels, complete device departure retries and mode utility-to-choice; CPU annotations, ordinary normals and final table publication retained"
+                          if self.device_retries else "live random channels, device scheduling chains and mode utility-to-choice; CPU retry cohorts, ordinary normals and final table publication retained")}

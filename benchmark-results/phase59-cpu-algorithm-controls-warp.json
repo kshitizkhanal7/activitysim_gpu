@@ -1,0 +1,336 @@
+{
+  "scope": "allocation plus compact computation; already resident inputs; compilation, packing, RNG generation and transfers excluded",
+  "not_a_full_component_or_full_model_speedup": true,
+  "scheduling_input": "public 50k final trip/tour structure, fresh live seed 17, actual probability spec; no expected choices read",
+  "mode_input": "synthetic utilities and draws at the public trip row count; public nesting topology",
+  "rows": 442682,
+  "groups": 175579,
+  "active_trips": 87113,
+  "shared_gpu_random_preparation_seconds": 0.06128849973902106,
+  "controls": {
+    "complete_departure_retries": {
+      "sweep": [
+        {
+          "threads": 1,
+          "samples_seconds": {
+            "cpu": [
+              0.01718629989773035,
+              0.01693050004541874,
+              0.016625700052827597,
+              0.015995000023394823,
+              0.01589979976415634,
+              0.01575089991092682,
+              0.015600899700075388
+            ],
+            "gpu": [
+              0.007494200021028519,
+              0.006902500055730343,
+              0.0076684001833200455,
+              0.0068709999322891235,
+              0.007257399614900351,
+              0.007081800140440464,
+              0.007725900039076805
+            ]
+          },
+          "cpu_median_seconds": 0.015995000023394823,
+          "gpu_median_seconds": 0.007257399614900351,
+          "correctness": {
+            "choices_exact": true,
+            "rng_counts_exact": true,
+            "failure_count_exact": true
+          }
+        },
+        {
+          "threads": 4,
+          "samples_seconds": {
+            "cpu": [
+              0.006923899985849857,
+              0.006866400130093098,
+              0.0072592999786138535,
+              0.006862400099635124,
+              0.007099300157278776,
+              0.006868500262498856,
+              0.007026300299912691
+            ],
+            "gpu": [
+              0.008079299703240395,
+              0.007698200177401304,
+              0.007432699669152498,
+              0.006568899843841791,
+              0.007871599867939949,
+              0.0066179996356368065,
+              0.007371699903160334
+            ]
+          },
+          "cpu_median_seconds": 0.006923899985849857,
+          "gpu_median_seconds": 0.007432699669152498,
+          "correctness": {
+            "choices_exact": true,
+            "rng_counts_exact": true,
+            "failure_count_exact": true
+          }
+        },
+        {
+          "threads": 12,
+          "samples_seconds": {
+            "cpu": [
+              0.0032478999346494675,
+              0.002902599982917309,
+              0.003154800273478031,
+              0.003025300335139036,
+              0.0033056000247597694,
+              0.002909700386226177,
+              0.003326800186187029
+            ],
+            "gpu": [
+              0.007551099639385939,
+              0.008760800119489431,
+              0.007028399966657162,
+              0.00725860008969903,
+              0.00745509983971715,
+              0.007208200171589851,
+              0.007626099977642298
+            ]
+          },
+          "cpu_median_seconds": 0.003154800273478031,
+          "gpu_median_seconds": 0.00745509983971715,
+          "correctness": {
+            "choices_exact": true,
+            "rng_counts_exact": true,
+            "failure_count_exact": true
+          }
+        },
+        {
+          "threads": 24,
+          "samples_seconds": {
+            "cpu": [
+              0.0020250999368727207,
+              0.0021008001640439034,
+              0.002507300116121769,
+              0.001986199989914894,
+              0.002288700081408024,
+              0.0020188000053167343,
+              0.002197700086981058
+            ],
+            "gpu": [
+              0.007799400016665459,
+              0.007915100082755089,
+              0.007360399700701237,
+              0.007082800380885601,
+              0.007227899972349405,
+              0.007230000104755163,
+              0.008226200006902218
+            ]
+          },
+          "cpu_median_seconds": 0.0021008001640439034,
+          "gpu_median_seconds": 0.007360399700701237,
+          "correctness": {
+            "choices_exact": true,
+            "rng_counts_exact": true,
+            "failure_count_exact": true
+          }
+        },
+        {
+          "threads": 48,
+          "samples_seconds": {
+            "cpu": [
+              0.0022582998499274254,
+              0.0022776001133024693,
+              0.002675100229680538,
+              0.001922499854117632,
+              0.0019284998998045921,
+              0.001964000053703785,
+              0.0021695001050829887
+            ],
+            "gpu": [
+              0.007848300039768219,
+              0.006700000260025263,
+              0.006214799825102091,
+              0.005947300232946873,
+              0.006459400057792664,
+              0.0061506000347435474,
+              0.006609800271689892
+            ]
+          },
+          "cpu_median_seconds": 0.0021695001050829887,
+          "gpu_median_seconds": 0.006459400057792664,
+          "correctness": {
+            "choices_exact": true,
+            "rng_counts_exact": true,
+            "failure_count_exact": true
+          }
+        }
+      ],
+      "best_cpu_threads": 24,
+      "best_cpu_over_gpu_ratio": 0.28541930458528725
+    },
+    "nested_mode_reduction": {
+      "sweep": [
+        {
+          "threads": 1,
+          "samples_seconds": {
+            "cpu": [
+              0.16813969984650612,
+              0.1685477001592517,
+              0.16930720023810863,
+              0.16916089970618486,
+              0.1690557999536395,
+              0.16982069984078407,
+              0.16854819981381297
+            ],
+            "gpu": [
+              0.005422200076282024,
+              0.00576619990170002,
+              0.0053425999358296394,
+              0.00504510011523962,
+              0.005470899865031242,
+              0.005038199946284294,
+              0.005424200091511011
+            ]
+          },
+          "cpu_median_seconds": 0.1690557999536395,
+          "gpu_median_seconds": 0.005422200076282024,
+          "correctness": {
+            "off_boundary_choices_exact": true,
+            "guarded_rows": 0,
+            "max_logsum_abs": 3.552713678800501e-15
+          }
+        },
+        {
+          "threads": 4,
+          "samples_seconds": {
+            "cpu": [
+              0.06816969998180866,
+              0.06832340033724904,
+              0.06895009987056255,
+              0.0686722001992166,
+              0.06885999999940395,
+              0.06835279986262321,
+              0.06868440005928278
+            ],
+            "gpu": [
+              0.0065346998162567616,
+              0.006742100231349468,
+              0.00663459999486804,
+              0.006077599711716175,
+              0.006582300178706646,
+              0.006031000055372715,
+              0.006356799975037575
+            ]
+          },
+          "cpu_median_seconds": 0.0686722001992166,
+          "gpu_median_seconds": 0.0065346998162567616,
+          "correctness": {
+            "off_boundary_choices_exact": true,
+            "guarded_rows": 0,
+            "max_logsum_abs": 3.552713678800501e-15
+          }
+        },
+        {
+          "threads": 12,
+          "samples_seconds": {
+            "cpu": [
+              0.023638499900698662,
+              0.023800100199878216,
+              0.02466770028695464,
+              0.02384139969944954,
+              0.024754699785262346,
+              0.02389149973168969,
+              0.024838300421833992
+            ],
+            "gpu": [
+              0.006684500258415937,
+              0.006035400088876486,
+              0.00643849978223443,
+              0.006001300178468227,
+              0.006537300068885088,
+              0.005998699925839901,
+              0.006503299809992313
+            ]
+          },
+          "cpu_median_seconds": 0.02389149973168969,
+          "gpu_median_seconds": 0.00643849978223443,
+          "correctness": {
+            "off_boundary_choices_exact": true,
+            "guarded_rows": 0,
+            "max_logsum_abs": 3.552713678800501e-15
+          }
+        },
+        {
+          "threads": 24,
+          "samples_seconds": {
+            "cpu": [
+              0.012037700042128563,
+              0.01189750013872981,
+              0.01273920014500618,
+              0.011877600103616714,
+              0.012790499720722437,
+              0.011901400052011013,
+              0.01270699966698885
+            ],
+            "gpu": [
+              0.006840100046247244,
+              0.00603180006146431,
+              0.006630099844187498,
+              0.006004299968481064,
+              0.006601699627935886,
+              0.005984099581837654,
+              0.006590900011360645
+            ]
+          },
+          "cpu_median_seconds": 0.012037700042128563,
+          "gpu_median_seconds": 0.006590900011360645,
+          "correctness": {
+            "off_boundary_choices_exact": true,
+            "guarded_rows": 0,
+            "max_logsum_abs": 3.552713678800501e-15
+          }
+        },
+        {
+          "threads": 48,
+          "samples_seconds": {
+            "cpu": [
+              0.007373899687081575,
+              0.007190200034528971,
+              0.008422799874097109,
+              0.0066940998658537865,
+              0.008883600123226643,
+              0.012332700192928314,
+              0.00838869996368885
+            ],
+            "gpu": [
+              0.006946300156414509,
+              0.006082099862396717,
+              0.006899700034409761,
+              0.006240199785679579,
+              0.006679499987512827,
+              0.006032200064510107,
+              0.0075031002052128315
+            ]
+          },
+          "cpu_median_seconds": 0.00838869996368885,
+          "gpu_median_seconds": 0.006679499987512827,
+          "correctness": {
+            "off_boundary_choices_exact": true,
+            "guarded_rows": 0,
+            "max_logsum_abs": 3.552713678800501e-15
+          }
+        }
+      ],
+      "best_cpu_threads": 48,
+      "best_cpu_over_gpu_ratio": 1.2558874136344538
+    }
+  },
+  "source_sha256": {
+    "src\\choiceforge\\phase59_cpu_algorithms.py": "15bbd9be7fd96d202614d270bff65859e2ae3b43636f89cca66ef8cd74579f3b",
+    "src\\choiceforge\\phase59_entity_store.py": "33c6dc4e8ece68a910491c94da803585abdd9451dfe13dfa92686ae5a13ff72e",
+    "src\\choiceforge\\phase59_live_mandatory.py": "781a3a33f8ed393afc3752ebed07ce929f65c02edcbee6d6d4eb9d9fcee31a0b",
+    "src\\choiceforge\\phase59_retry.py": "da029796e93f542e881f2d10992d466f5a1293012149a8876a50f9e6be3f335e"
+  },
+  "thread_environment": {
+    "NUMBA_NUM_THREADS": null,
+    "OMP_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null,
+    "OPENBLAS_NUM_THREADS": null
+  }
+}

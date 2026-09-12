@@ -46,7 +46,8 @@ def test_reordered_nesting_and_bad_coefficients_fail_closed():
         validate(nest, MTC21_ALTERNATIVES)
 
 
-def test_live_cpu_boundary_adjudication_uses_same_draw_once(monkeypatch):
+@pytest.mark.parametrize("capture", [False, True])
+def test_live_cpu_boundary_adjudication_uses_same_draw_once(monkeypatch, tmp_path, capture):
     from choiceforge import activitysim_mode_choice, sharrow_cuda
     from choiceforge.phase58_mode_reduction import mode_choice_simulate
     cp = _cupy()
@@ -65,6 +66,8 @@ def test_live_cpu_boundary_adjudication_uses_same_draw_once(monkeypatch):
         calls.append(k)
         return cp.asarray(draws)
     runtime = SimpleNamespace(uniform=uniform, mode_events=[])
+    if capture:
+        runtime.mode_capture_directory = tmp_path
     telemetry = SimpleNamespace(**dict.fromkeys(("terms", "alternatives", "expression_dtype",
         "persistent_plan", "plan_cache_hit", "plan_build_ms", "binding_resolve_ms", "host_pack_ms",
         "input_upload_ms", "kernel_ms", "cache_key", "source_sha256"), 0))
@@ -72,9 +75,16 @@ def test_live_cpu_boundary_adjudication_uses_same_draw_once(monkeypatch):
     monkeypatch.setattr(activitysim_mode_choice,"_write_report", lambda *a:None)
     monkeypatch.setattr(sharrow_cuda,"evaluate_strict_cuda", lambda *a, **k:
         SimpleNamespace(utilities=cp.asarray(values), telemetry=telemetry))
-    result = mode_choice_simulate(runtime, state, frame, spec, NEST, None, {},
+    from activitysim.core.configuration.logit import LogitNestSpec
+    live_nest = LogitNestSpec.model_validate(NEST) if capture else NEST
+    result = mode_choice_simulate(runtime, state, frame, spec, live_nest, None, {},
                                   "trip_mode", "logsum", "test", "trip_mode")
     np.testing.assert_array_equal(result.trip_mode.cat.codes.to_numpy()-1, logit.choice_maker(probs,draws))
     np.testing.assert_array_equal(result.logsum.to_numpy(), np.log(nested.root.to_numpy()))
     assert len(calls) == 1 and calls[0]["device_only"]
     assert runtime.mode_events[0]["guard_rows"] == len(frame)
+    if capture:
+        with np.load(tmp_path/"batch-00.npz", allow_pickle=False) as data:
+            assert set(data.files) == {"utilities", "draws", "chooser_ids", "nest_json", "trace_label"}
+            np.testing.assert_array_equal(data["utilities"], values)
+            np.testing.assert_array_equal(data["draws"], draws)
