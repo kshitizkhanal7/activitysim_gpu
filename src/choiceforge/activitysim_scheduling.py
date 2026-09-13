@@ -22,6 +22,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
+_PREPARATION_FAST = False
+
 from .scheduling_compiler import CompiledCudaSchedulingModel, SchedulingSchema
 
 logger = logging.getLogger(__name__)
@@ -312,12 +314,18 @@ def _optimized_timetable_primitives(lowered, choosers, alternatives, locals_d):
     ends = np.asarray(alternatives["end"])
     period_values = np.unique(np.r_[starts, ends])
     period_map = {value: int(timetable.time_ix[value]) for value in period_values}
-    start_cols = np.fromiter((period_map[x] for x in starts), dtype=np.int32, count=len(starts))
-    end_cols = np.fromiter((period_map[x] for x in ends), dtype=np.int32, count=len(ends))
-
-    window_for_row = windows[row_chooser]
-    previous_ends = np.isin(window_for_row[np.arange(len(starts)), start_cols], (4, 6))
-    previous_begins = np.isin(window_for_row[np.arange(len(ends)), end_cols], (2, 6))
+    if _PREPARATION_FAST:
+        columns = np.asarray([period_map[x] for x in period_values], dtype=np.int32)
+        start_cols = columns[np.searchsorted(period_values, starts)]
+        end_cols = columns[np.searchsorted(period_values, ends)]
+        previous_ends = np.isin(windows[row_chooser, start_cols], (4, 6))
+        previous_begins = np.isin(windows[row_chooser, end_cols], (2, 6))
+    else:
+        start_cols = np.fromiter((period_map[x] for x in starts), dtype=np.int32, count=len(starts))
+        end_cols = np.fromiter((period_map[x] for x in ends), dtype=np.int32, count=len(ends))
+        window_for_row = windows[row_chooser]
+        previous_ends = np.isin(window_for_row[np.arange(len(starts)), start_cols], (4, 6))
+        previous_begins = np.isin(window_for_row[np.arange(len(ends)), end_cols], (2, 6))
 
     available = windows != 7
     available[:, 0] = False

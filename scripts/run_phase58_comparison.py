@@ -26,6 +26,7 @@ def source_fingerprint():
         "phase55_public_destination_plans.json")]
     paths += [Path(__file__), ROOT / "scripts/run_phase22_integrated_scheduling.py",
               ROOT / "scripts/verify_phase15_outputs.py", ROOT / "scripts/verify_phase59_matrices.py"]
+    paths += [ROOT / "scripts/verify_phase59_reports.py"]
     return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 
@@ -45,6 +46,10 @@ def main():
     parser.add_argument("--repetitions", type=int, default=2)
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--phase59", action="store_true", help="Compare Phase 58 against the developing Phase 59 candidate")
+    parser.add_argument("--phase60", action="store_true", help="Compare Phase 59 with whole-step preparation candidate")
+    parser.add_argument("--frequency-threads", type=int, default=48)
+    parser.add_argument("--frequency-control", action="store_true")
+    parser.add_argument("--regular-numba-threads", type=int, default=1)
     parser.add_argument("--live-mandatory", action="store_true", help="Use Phase 59 live mandatory scheduling in candidate")
     parser.add_argument("--prune-verified-output", action="store_true",
                         help="Remove only this run's reproducible output directory after saving exact audit and file hashes")
@@ -56,9 +61,15 @@ def main():
     parser.add_argument("--sparse-matrices", action="store_true")
     parser.add_argument("--capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase60:
+        args.phase59 = args.live_mandatory = args.sparse_matrices = True
     if not re.fullmatch(r"[a-zA-Z0-9-]+", args.tag):
         parser.error("tag must contain only letters, digits, hyphens")
     modes = args.modes.split(",")
+    if args.frequency_control and (not args.phase60 or modes != ["candidate"] or args.repetitions != 1):
+        parser.error("frequency control requires one instrumented Phase 60 candidate")
+    if args.regular_numba_threads not in (1,4,12,24,48) or args.frequency_threads not in (1,4,12,24,48):
+        parser.error("thread count must be one of 1,4,12,24,48")
     if args.capture_mode_inputs and (modes != ["candidate"] or args.repetitions != 1):
         parser.error("input capture requires one candidate diagnostic run")
     scenario = args.scenario_overlay is not None or args.households != 50000
@@ -98,12 +109,18 @@ def main():
                     raise FileExistsError(path)
             child_env = env.copy()
             child_env["NUMBA_NUM_THREADS"] = "48" if mode == "cpu" else "1"
+            if args.phase60 and mode != "regular":
+                child_env["NUMBA_NUM_THREADS"] = "48"
+                child_env["CHOICEFORGE_NUMBA_INITIAL_THREADS"] = "1"
             child_env["CHOICEFORGE_STRICT_CUDA_CANDIDATE"] = "0" if mode == "regular" else "1"
             child_env["CHOICEFORGE_STRICT_CUDA_MODE_CHOICE"] = "0" if mode == "regular" else "1"
             if mode == "regular":
+                child_env["NUMBA_NUM_THREADS"] = str(args.regular_numba_threads)
                 command = [str(PYTHON.parent / "activitysim.exe"), "run", "-c", "configs_sh",
                            "-c", "configs", "-d", "data_full", "-o", str(output),
                            "--households_sample_size", str(args.households)]
+                if args.regular_numba_threads != 1:
+                    command += ["--fast"]
                 if args.scenario_overlay:
                     command[2:2] = ["-c", str(args.scenario_overlay.resolve())]
                 cwd = PROJECT
@@ -139,6 +156,14 @@ def main():
                         command += ["--phase59-capture-mode-inputs", str(args.capture_mode_inputs.resolve())]
                 if mode == "gpu" and args.phase59:
                     command += ["--phase58-trip-runtime"]
+                if args.phase60:
+                    if mode == "gpu":
+                        command += ["--phase59-device-retries", "--phase59-live-mandatory", "--phase59-sparse-matrices",
+                                    "--inputs", str(ROOT/"phase59-no-reference-artifact")]
+                    if mode == "candidate":
+                        command += ["--phase60-preparation", "--phase60-frequency-threads", str(args.frequency_threads)]
+                        if args.frequency_control:
+                            command += ["--phase60-frequency-control"]
                 if args.profile:
                     command += ["--phase58-profile-trips", str(RESULTS / f"{prefix}-profile")]
                 cwd = ROOT
@@ -162,6 +187,10 @@ def main():
             if args.phase59:
                 from verify_phase59_matrices import verify as verify_matrices
                 matrices = verify_matrices(reference, output)
+            summary_reports = None
+            if args.phase60:
+                from verify_phase59_reports import verify as verify_reports
+                summary_reports = verify_reports(reference, output)
             with (output / "timing_log.csv").open() as stream:
                 components = {r["model_name"]:float(r["seconds"]) for r in csv.DictReader(stream)}
             assert len(components) == 34
@@ -178,12 +207,13 @@ def main():
                    "validation_seconds": validation, "prewarm_seconds": prewarm,
                    "charged_total_seconds": sum(components.values())+validation+prewarm,
                    "exact": json.loads(exact.read_text()), "command": command,
-                   "profiled_not_performance_evidence": bool(args.profile or args.capture_mode_inputs),
+                   "profiled_not_performance_evidence": bool(args.profile or args.capture_mode_inputs or args.frequency_control),
+                   "summary_reports":summary_reports,
                    "source_sha256": fingerprint,
                    "configuration_sha256": config_hashes,
                    "scratch_environment": {k:child_env.get(k) for k in ("TEMP", "TMP", "CUPY_CACHE_DIR", "NUMBA_CACHE_DIR")},
                    "thread_environment": {k:child_env[k] for k in (
-                       "NUMBA_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS") if k in child_env},
+                       "NUMBA_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "CHOICEFORGE_NUMBA_INITIAL_THREADS") if k in child_env},
                    "output": str(output)}
             run["reference"] = str(reference)
             run["scenario_overlay"] = str(args.scenario_overlay) if args.scenario_overlay else None

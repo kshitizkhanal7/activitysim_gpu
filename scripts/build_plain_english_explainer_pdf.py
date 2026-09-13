@@ -304,10 +304,11 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
-    latest = json.loads((ROOT / "benchmark-results/phase59-formal-qualification.json").read_text())
+    latest = json.loads((ROOT / "benchmark-results/phase60-formal-qualification.json").read_text())
+    comparison = json.loads((ROOT / "benchmark-results/phase60-complete-comparison.json").read_text())
     if latest["status"] not in {"replicated_improvement_wall_target_met", "replicated_improvement_wall_target_not_met",
                                  "correctness_qualified_performance_not_replicated"}:
-        raise ValueError("The explainer cover requires completed Phase 59 qualification")
+        raise ValueError("The explainer cover requires completed Phase 60 qualification")
     previous = latest["medians"]["gpu"]["charged_total_seconds"]
     current = latest["medians"]["candidate"]["charged_total_seconds"]
     wall = latest["medians"]["candidate"]["process_wall_seconds"]
@@ -319,7 +320,7 @@ def cover_story():
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("wall median ratio<br/>Phase 58 / Phase 59", STYLES["metric_label"]),
+                Paragraph("wall median ratio<br/>Phase 59 / Phase 60", STYLES["metric_label"]),
                 Paragraph("launch-to-exit<br/>median seconds", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
@@ -358,15 +359,16 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            f"Latest evidence, Phase 59: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
+            f"Latest evidence, Phase 60: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
             + ("Every pair improves both clocks. " if latest["all_pairs_faster"] else "Not every pair improves both clocks; repeated superiority is not established. ")
             + ("Every candidate meets the under-100-second wall target. " if latest["all_wall_runs_under_100"] else "The under-100-second wall target is NOT met. ")
             + "Checked travel decisions, matrix values and report values agree, with documented departure-key text formatting differences and bounded diagnostic scores. Three changed scenarios also pass. "
-            "Start with the one-minute version, then read the concepts and chronological evidence. Phase 59 removes mandatory scheduling's captured-answer dependency, checks complete live CPU inputs near numerical boundaries, and adds complete GPU departure retries, versioned data ownership and faster CPU matrix output. Strong controls find the GPU mode reducer faster but the compact CPU retry algorithm faster. This remains a supported-domain hybrid prototype, not a GPU-only model or a universal equivalence theorem. Assumptions, failed experiments, cold-start costs and remaining limits are explained rather than hidden.",
+            + f"The complete system is {comparison['cpu_over_phase60']['48']['process_wall_seconds']:.3f}x faster than the separately measured regular CPU control using 48 Numba threads, with other numerical libraries at one thread. "
+            "Start with the one-minute version, then read the chronological evidence. Phase 60 replaces repeated CPU table/slot preparation and report-label formatting, constructs live household activity specifications more efficiently, and enables the existing parallel CPU frequency calculation. It preserves Phase 59's live boundary checks. These are hybrid runtime gains, not a new GPU-only kernel speedup. Earlier GPU kernels remain essential to the accelerated system; stronger CPU controls, finite scenario guarantees and remaining limitations are disclosed.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated September 12, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Evidence updated September 13, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

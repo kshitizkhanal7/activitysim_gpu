@@ -1,0 +1,526 @@
+{
+  "exact": true,
+  "contract": "exact-values-declared-departure-spelling-v1",
+  "report_count": 24,
+  "byte_identical": false,
+  "sha256": {
+    "reference": {
+      "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+      "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+      "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+      "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+      "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+      "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+      "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+      "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+      "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+      "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+      "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+      "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+      "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+      "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+      "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+      "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+      "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+      "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+      "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+      "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+      "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+      "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+      "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+      "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+    },
+    "candidate": {
+      "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+      "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+      "non_mandatory_tours_tod_count.csv": "895189ba7829a17b084ab3a4c5fa7704f0102a0f181c2a27c7ddb2dede8b88e5",
+      "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+      "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+      "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+      "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+      "school_tours_tod_count.csv": "8348b37f15dd444c12a4b9c1d5322fb7ecc5524710660908187e0e4d33c51396",
+      "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+      "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+      "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+      "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+      "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+      "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+      "trip_purpose_by_time_of_day.csv": "052852e3d796bd5d002f79893da3fec855434281380a0308e893532e3be0494b",
+      "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+      "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+      "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+      "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+      "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+      "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+      "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+      "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+      "work_tours_tod_count.csv": "61f6c935050f1d064a44110a4e116449eb6f0338d2962b2f5b03bcc8dd7139b6"
+    }
+  },
+  "representation_only_differences": {
+    "non_mandatory_tours_tod_count.csv": [
+      {
+        "row": 2,
+        "column": "depart",
+        "reference": "5.0",
+        "candidate": "5"
+      },
+      {
+        "row": 3,
+        "column": "depart",
+        "reference": "6.0",
+        "candidate": "6"
+      },
+      {
+        "row": 4,
+        "column": "depart",
+        "reference": "7.0",
+        "candidate": "7"
+      },
+      {
+        "row": 5,
+        "column": "depart",
+        "reference": "8.0",
+        "candidate": "8"
+      },
+      {
+        "row": 6,
+        "column": "depart",
+        "reference": "9.0",
+        "candidate": "9"
+      },
+      {
+        "row": 7,
+        "column": "depart",
+        "reference": "10.0",
+        "candidate": "10"
+      },
+      {
+        "row": 8,
+        "column": "depart",
+        "reference": "11.0",
+        "candidate": "11"
+      },
+      {
+        "row": 9,
+        "column": "depart",
+        "reference": "12.0",
+        "candidate": "12"
+      },
+      {
+        "row": 10,
+        "column": "depart",
+        "reference": "13.0",
+        "candidate": "13"
+      },
+      {
+        "row": 11,
+        "column": "depart",
+        "reference": "14.0",
+        "candidate": "14"
+      },
+      {
+        "row": 12,
+        "column": "depart",
+        "reference": "15.0",
+        "candidate": "15"
+      },
+      {
+        "row": 13,
+        "column": "depart",
+        "reference": "16.0",
+        "candidate": "16"
+      },
+      {
+        "row": 14,
+        "column": "depart",
+        "reference": "17.0",
+        "candidate": "17"
+      },
+      {
+        "row": 15,
+        "column": "depart",
+        "reference": "18.0",
+        "candidate": "18"
+      },
+      {
+        "row": 16,
+        "column": "depart",
+        "reference": "19.0",
+        "candidate": "19"
+      },
+      {
+        "row": 17,
+        "column": "depart",
+        "reference": "20.0",
+        "candidate": "20"
+      },
+      {
+        "row": 18,
+        "column": "depart",
+        "reference": "21.0",
+        "candidate": "21"
+      },
+      {
+        "row": 19,
+        "column": "depart",
+        "reference": "22.0",
+        "candidate": "22"
+      },
+      {
+        "row": 20,
+        "column": "depart",
+        "reference": "23.0",
+        "candidate": "23"
+      }
+    ],
+    "school_tours_tod_count.csv": [
+      {
+        "row": 2,
+        "column": "depart",
+        "reference": "5.0",
+        "candidate": "5"
+      },
+      {
+        "row": 3,
+        "column": "depart",
+        "reference": "6.0",
+        "candidate": "6"
+      },
+      {
+        "row": 4,
+        "column": "depart",
+        "reference": "7.0",
+        "candidate": "7"
+      },
+      {
+        "row": 5,
+        "column": "depart",
+        "reference": "8.0",
+        "candidate": "8"
+      },
+      {
+        "row": 6,
+        "column": "depart",
+        "reference": "9.0",
+        "candidate": "9"
+      },
+      {
+        "row": 7,
+        "column": "depart",
+        "reference": "10.0",
+        "candidate": "10"
+      },
+      {
+        "row": 8,
+        "column": "depart",
+        "reference": "11.0",
+        "candidate": "11"
+      },
+      {
+        "row": 9,
+        "column": "depart",
+        "reference": "12.0",
+        "candidate": "12"
+      },
+      {
+        "row": 10,
+        "column": "depart",
+        "reference": "13.0",
+        "candidate": "13"
+      },
+      {
+        "row": 11,
+        "column": "depart",
+        "reference": "14.0",
+        "candidate": "14"
+      },
+      {
+        "row": 12,
+        "column": "depart",
+        "reference": "15.0",
+        "candidate": "15"
+      },
+      {
+        "row": 13,
+        "column": "depart",
+        "reference": "16.0",
+        "candidate": "16"
+      },
+      {
+        "row": 14,
+        "column": "depart",
+        "reference": "17.0",
+        "candidate": "17"
+      },
+      {
+        "row": 15,
+        "column": "depart",
+        "reference": "18.0",
+        "candidate": "18"
+      },
+      {
+        "row": 16,
+        "column": "depart",
+        "reference": "19.0",
+        "candidate": "19"
+      },
+      {
+        "row": 17,
+        "column": "depart",
+        "reference": "20.0",
+        "candidate": "20"
+      },
+      {
+        "row": 18,
+        "column": "depart",
+        "reference": "21.0",
+        "candidate": "21"
+      },
+      {
+        "row": 19,
+        "column": "depart",
+        "reference": "22.0",
+        "candidate": "22"
+      },
+      {
+        "row": 20,
+        "column": "depart",
+        "reference": "23.0",
+        "candidate": "23"
+      }
+    ],
+    "trip_purpose_by_time_of_day.csv": [
+      {
+        "row": 2,
+        "column": "depart",
+        "reference": "5.0",
+        "candidate": "5"
+      },
+      {
+        "row": 3,
+        "column": "depart",
+        "reference": "6.0",
+        "candidate": "6"
+      },
+      {
+        "row": 4,
+        "column": "depart",
+        "reference": "7.0",
+        "candidate": "7"
+      },
+      {
+        "row": 5,
+        "column": "depart",
+        "reference": "8.0",
+        "candidate": "8"
+      },
+      {
+        "row": 6,
+        "column": "depart",
+        "reference": "9.0",
+        "candidate": "9"
+      },
+      {
+        "row": 7,
+        "column": "depart",
+        "reference": "10.0",
+        "candidate": "10"
+      },
+      {
+        "row": 8,
+        "column": "depart",
+        "reference": "11.0",
+        "candidate": "11"
+      },
+      {
+        "row": 9,
+        "column": "depart",
+        "reference": "12.0",
+        "candidate": "12"
+      },
+      {
+        "row": 10,
+        "column": "depart",
+        "reference": "13.0",
+        "candidate": "13"
+      },
+      {
+        "row": 11,
+        "column": "depart",
+        "reference": "14.0",
+        "candidate": "14"
+      },
+      {
+        "row": 12,
+        "column": "depart",
+        "reference": "15.0",
+        "candidate": "15"
+      },
+      {
+        "row": 13,
+        "column": "depart",
+        "reference": "16.0",
+        "candidate": "16"
+      },
+      {
+        "row": 14,
+        "column": "depart",
+        "reference": "17.0",
+        "candidate": "17"
+      },
+      {
+        "row": 15,
+        "column": "depart",
+        "reference": "18.0",
+        "candidate": "18"
+      },
+      {
+        "row": 16,
+        "column": "depart",
+        "reference": "19.0",
+        "candidate": "19"
+      },
+      {
+        "row": 17,
+        "column": "depart",
+        "reference": "20.0",
+        "candidate": "20"
+      },
+      {
+        "row": 18,
+        "column": "depart",
+        "reference": "21.0",
+        "candidate": "21"
+      },
+      {
+        "row": 19,
+        "column": "depart",
+        "reference": "22.0",
+        "candidate": "22"
+      },
+      {
+        "row": 20,
+        "column": "depart",
+        "reference": "23.0",
+        "candidate": "23"
+      }
+    ],
+    "work_tours_tod_count.csv": [
+      {
+        "row": 2,
+        "column": "depart",
+        "reference": "5.0",
+        "candidate": "5"
+      },
+      {
+        "row": 3,
+        "column": "depart",
+        "reference": "6.0",
+        "candidate": "6"
+      },
+      {
+        "row": 4,
+        "column": "depart",
+        "reference": "7.0",
+        "candidate": "7"
+      },
+      {
+        "row": 5,
+        "column": "depart",
+        "reference": "8.0",
+        "candidate": "8"
+      },
+      {
+        "row": 6,
+        "column": "depart",
+        "reference": "9.0",
+        "candidate": "9"
+      },
+      {
+        "row": 7,
+        "column": "depart",
+        "reference": "10.0",
+        "candidate": "10"
+      },
+      {
+        "row": 8,
+        "column": "depart",
+        "reference": "11.0",
+        "candidate": "11"
+      },
+      {
+        "row": 9,
+        "column": "depart",
+        "reference": "12.0",
+        "candidate": "12"
+      },
+      {
+        "row": 10,
+        "column": "depart",
+        "reference": "13.0",
+        "candidate": "13"
+      },
+      {
+        "row": 11,
+        "column": "depart",
+        "reference": "14.0",
+        "candidate": "14"
+      },
+      {
+        "row": 12,
+        "column": "depart",
+        "reference": "15.0",
+        "candidate": "15"
+      },
+      {
+        "row": 13,
+        "column": "depart",
+        "reference": "16.0",
+        "candidate": "16"
+      },
+      {
+        "row": 14,
+        "column": "depart",
+        "reference": "17.0",
+        "candidate": "17"
+      },
+      {
+        "row": 15,
+        "column": "depart",
+        "reference": "18.0",
+        "candidate": "18"
+      },
+      {
+        "row": 16,
+        "column": "depart",
+        "reference": "19.0",
+        "candidate": "19"
+      },
+      {
+        "row": 17,
+        "column": "depart",
+        "reference": "20.0",
+        "candidate": "20"
+      },
+      {
+        "row": 18,
+        "column": "depart",
+        "reference": "21.0",
+        "candidate": "21"
+      },
+      {
+        "row": 19,
+        "column": "depart",
+        "reference": "22.0",
+        "candidate": "22"
+      },
+      {
+        "row": 20,
+        "column": "depart",
+        "reference": "23.0",
+        "candidate": "23"
+      }
+    ]
+  }
+}

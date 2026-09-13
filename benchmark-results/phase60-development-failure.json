@@ -1,0 +1,13 @@
+{
+  "run": "p60dev1",
+  "status": "failed_in_compute_accessibility",
+  "performance_evidence": false,
+  "error": "Cannot set NUMBA_NUM_THREADS to a different value once the threads have been launched (currently have 1, trying to set 48)",
+  "cause": "The default ActivitySim CLI reset NUMBA_NUM_THREADS after the Numba pool had initialized.",
+  "resolution": "Use the upstream --fast CLI option to preserve pool capacity; explicitly retain one thread in other numerical libraries; mask Numba to one except during the selected frequency step. The final matched control uses the same initial pool and mask.",
+  "raw_logs_retained_locally": {
+    "benchmark-results/phase58-p60dev1-candidate-1.stdout.log": "9d7f81403f65e34f2212564d874fc054141adae51c381bfbb1457adec73d9b86",
+    "benchmark-results/phase58-p60dev1-candidate-1.stderr.log": "8ef8d61919e57d9084b3d242652e8dfe024e5774b866499f2b5068f1a525e83c"
+  },
+  "provenance_limit": "Development source was subsequently corrected. This failure record is not a final-source reproduction or a completed model run. Raw logs remain local; their hashes identify the retained originals."
+}

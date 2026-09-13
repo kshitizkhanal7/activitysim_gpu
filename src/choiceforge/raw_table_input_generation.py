@@ -27,6 +27,8 @@ from .device_input_expansion import (
 )
 from .semantic_input_generation import compile_semantic_input_program
 
+_PREPARATION_FAST = False
+
 
 _SEMANTIC_FLOAT = {"column:daily_parking_cost"}
 _SEMANTIC_INT = {
@@ -172,9 +174,13 @@ def _row_topology(metadata: Mapping[str, Any], rows: int):
     end = np.asarray(metadata["end"], dtype=np.int16)
     if start.shape != chooser_ids.shape or end.shape != chooser_ids.shape:
         raise ValueError("Phase 29 time metadata does not match utility rows")
-    pairs, slots = np.unique(
-        np.column_stack((start, end)), axis=0, return_inverse=True
-    )
+    if _PREPARATION_FAST:
+        from .phase60_preparation import pair_slots
+        pairs, slots = pair_slots(start, end)
+    else:
+        pairs, slots = np.unique(
+            np.column_stack((start, end)), axis=0, return_inverse=True
+        )
     return chooser_ids, owner_starts, owners, offsets, pairs, slots.astype(np.int32)
 
 
@@ -404,6 +410,9 @@ def _zone_positions(land_use, zones):
 
 
 def _period_positions(values):
+    if _PREPARATION_FAST:
+        from .phase60_preparation import period_positions
+        return period_positions(values)
     lookup = {"EA": 0, "AM": 1, "MD": 2, "PM": 3, "EV": 4}
     try:
         return np.asarray([lookup[str(value)] for value in values], dtype=np.int64)
@@ -412,6 +421,9 @@ def _period_positions(values):
 
 
 def _slot_values(row_values, slots, slot_count, label):
+    if _PREPARATION_FAST:
+        from .phase60_preparation import slot_values
+        return slot_values(row_values, slots, slot_count, label)
     result = np.empty(slot_count, dtype=np.asarray(row_values).dtype)
     seen = np.zeros(slot_count, dtype=bool)
     for value, slot in zip(row_values, slots):

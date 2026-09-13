@@ -15,22 +15,26 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 59: the complete public 50,000-household model takes
-109.84 seconds from launch to exit, compared with 314.90 seconds for newly
-measured regular single-process CPU ActivitySim. That is 2.87 times faster,
-or about 65% less waiting, on this machine and configuration. Against the
-previous accelerated version measured in six balanced pairs, the gain is
-smaller: 112.52 to 109.84 seconds, a 2.38% reduction. Every pair improves.
-The ambitious under-100-second target was **not met**.
+Latest result, Phase 60: the complete public 50,000-household model takes
+90.16 seconds from launch to exit, compared with 201.61 seconds for newly
+measured regular CPU ActivitySim using 48 Numba threads. That is 2.24 times
+faster, or about 55% less waiting, on this machine and configuration. Against
+the previous accelerated version measured in six balanced pairs, the gain is
+98.42 to 90.16 seconds, an 8.40% reduction. Every pair improves. All six new
+runs finish in 89.91-90.69 seconds, meeting both the **100-second target** and
+the **95-second stretch target**.
 
-Every checked travel decision, all 115 travel matrices and all 24 report
-values agree; four reports have documented `5` versus `5.0` departure-key
-formatting differences. Three changed scenarios also pass. The runtime now
-handles complete departure retries, shares versioned data, and no longer needs
-captured mandatory-scheduling answers. It remains a supported-domain CPU/GPU
-hybrid. Faster CPU algorithms and output writing deserve part of the credit:
-this is not a claim that the GPU wins every calculation. Sections 304-314
-explain the implementation, stronger tests, actual results and remaining limits.
+Every checked travel decision, all 115 travel matrices and values throughout
+all 24 summary reports agree; four reports have documented `5` versus `5.0`
+departure-key formatting differences. Three changed scenarios also pass.
+The runtime handles complete departure retries, shares versioned data, and
+does not need captured mandatory-scheduling answers. It remains a CPU/GPU
+hybrid for the supported model. This phase makes preparation and an existing
+CPU calculation faster while preserving earlier GPU kernels and live CPU
+checks for borderline choices. It is not a new GPU-only hardware speed claim.
+Sections 315 onward explain these changes, the stronger CPU comparison,
+actual results and remaining limits. Earlier sections preserve the history
+and should not be read as the latest timing claim.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -8336,3 +8340,161 @@ The next large opportunity is to reduce complete-step data preparation and
 CPU/GPU handoffs while extending the live-input contract to more scenarios.
 The current result is a stronger, modestly faster hybrid system with clear
 evidence. It is not a finished GPU-only replacement for all of ActivitySim.
+
+## 315. Why does Phase 60 work on the CPU around the GPU?
+
+Imagine a school kitchen with a fast oven. If staff spend most of the lunch
+period repeatedly copying orders and sorting ingredients, buying a faster
+oven will not solve the queue. The GPU is similar: its calculations can be
+fast while the surrounding preparation still takes substantial time.
+
+We profiled complete model steps to find where the time actually went.
+**Profiling** records how much time functions take. That recording adds work,
+so a profiled run is a diagnostic, not the number used to advertise speed.
+The experiment found repeated table construction, Python loops over millions
+of time-slot rows, repeated formatting of identical labels, and a compiled CPU
+calculation running with only one active thread.
+
+Phase 60 addresses those measured costs while leaving the established GPU
+equations and live CPU boundary checks in place. This is an improvement to the
+combined system. It would be misleading to describe the resulting saving as
+proof that a new GPU kernel beats a CPU kernel.
+
+## 316. How can preparation become faster without changing the model?
+
+Several changes replace repeated work with a smaller equivalent operation:
+
+- **Household activity rules:** CDAP coordinates whether family members stay
+  home, do mandatory activities or do other activities. Its rules expand into
+  a table of possible household patterns. The new constructor builds that same
+  ordered table in arrays from today's coefficients, instead of repeatedly
+  growing a table cell by cell. It does not load yesterday's choices.
+- **Time-slot identities:** a pair of supported 16-bit time values can be
+  represented by one unique 32-bit key. Sorting those keys gives exactly the
+  same pair order, including negative values, with less work. Tests sample
+  across the full numerical range, include its endpoints and check repeated pairs.
+- **Timetable lookups:** use a small period lookup and gather the two required
+  coordinates directly. Avoid copying a person's entire day for every possible
+  time choice. Availability values and boundary rules stay unchanged.
+- **Report labels:** if thousands of rows share a bin such as `0.00 - 1.00`,
+  format its label once and reuse it. Bin ranks, numeric conversion, row order
+  and empty/missing-input behavior must remain compatible with the original.
+
+The first tests caught an empty-report case that the new formatting code could
+not handle. The implementation now keeps the original path for empty or
+missing inputs. A faster common path does not excuse incorrect unusual inputs.
+
+## 317. Why give the CPU a stronger chance?
+
+A **thread** is a stream of work a processor can execute. The tested CPU has
+24 physical cores and can handle 48 hardware threads. More threads are not
+always faster, but leaving a genuinely parallel calculation at one thread can
+make a hardware comparison misleading.
+
+The non-mandatory tour-frequency calculation was already compiled by Sharrow
+to run different rows in parallel. We repeated its actual live input batches
+at 1, 4, 12, 24 and 48 CPU threads. Every resulting utility byte matched. The
+sum of the eight segment medians fell from 4.22 seconds at one thread to
+0.27 seconds at 48 threads. Those numbers exclude preparing the inputs and
+publishing the model results; they are not full-step times.
+
+The candidate therefore uses 48 threads for that one step and restores one
+afterward. Other numerical libraries remain limited to one thread. Changing
+the number of workers does not change the within-row arithmetic or random
+draws. Both comparison versions have the same thread-pool capacity, so creating
+that pool is not an unreported advantage for one version.
+
+We also measure a stronger regular CPU ActivitySim configuration with 48 Numba
+threads throughout, alongside its ordinary one-thread setting. Numba is the
+compiler that turns selected Python calculations into machine code. This is
+still one model process, not 48 separate simulations. The stronger comparison
+must be reported even if it makes the GPU-based system's headline ratio smaller.
+
+## 318. What makes the next speed claim credible?
+
+The final test freezes the implementation, runs six old/new pairs in alternating
+order and compares every published output. Each candidate must finish in under
+100 seconds from process launch to exit to meet the target. Three changed
+scenarios must also agree with their independently generated regular CPU outputs.
+The thread-sweep run is excluded because its repeated calculations deliberately
+make it slower.
+
+All previous limits remain: warm compiler caches are not a cold computer;
+component medians are not additive full-model measurements; bounded diagnostic
+scores are not bitwise-identical intermediate arithmetic; and a finite set of
+scenario tests is not a proof for every city or every model configuration.
+The result must distinguish faster preparation, parallel CPU work and earlier
+GPU acceleration rather than assigning all credit to one processor.
+
+## 319. What did Phase 60 actually achieve?
+
+| Complete model configuration | Median waiting time | What this comparison means |
+|---|---:|---|
+| Regular ActivitySim, one Numba thread | 296.18 seconds | The more limited CPU configuration, measured twice |
+| Regular ActivitySim, 48 Numba threads | 201.61 seconds | A stronger CPU control, measured twice |
+| Previous accelerated system, Phase 59 | 98.42 seconds | Six fresh matched control runs |
+| New accelerated system, Phase 60 | 90.16 seconds | Six fresh candidate runs |
+
+The latest complete system is 2.24 times faster than the stronger regular CPU
+configuration. A run that took about 3 minutes 22 seconds now takes about
+1 minute 30 seconds: roughly 1 minute 51 seconds less waiting. Compared with
+the already accelerated Phase 59 system in the same paired experiment, this
+phase saves about 8.27 seconds, or 8.40%. These are different questions and
+must not be presented as the same gain.
+
+All six candidates finish between 89.91 and 90.69 seconds. Each beats its
+matched control on both clocks, and every candidate beats both our 100-second
+goal and the harder 95-second goal. **Charged time**, which counts model steps
+plus recorded validation and prewarming, falls from 91.92 to 83.46 seconds.
+**Elapsed time** is the time from launching the model process until it exits;
+it includes additional process overhead. Independent comparison of completed
+output files happens afterward and is outside both model clocks.
+
+The result keeps every checked modeled decision, all 115 logical matrices and
+values in all 24 summary reports. The existing equivalent departure-label
+formatting rule and numerical limits for diagnostic scores still apply.
+The final implementation also passes 467 repository tests and the three
+changed-input scenarios described above. It is not a claim that every
+intermediate floating-point value is identical or that every possible future
+city configuration has been proven.
+
+For each of the 34 model steps, including ones that remain on the CPU, see the
+[complete CPU and accelerated comparison](phase60-component-comparison.md).
+That table includes fresh one-thread CPU measurements too. Its per-step
+numbers are medians measured separately and rounded by upstream timers; they
+need not add exactly to the full-model median. A component's ratio is a useful
+description, not an independently randomized component experiment.
+
+The biggest incremental step saving is deciding how many non-mandatory tours
+people make: 6.70 to 2.90 seconds, largely by using existing CPU parallelism.
+Mandatory scheduling falls from 10.30 to 8.80 seconds; household activity
+coordination from 6.30 to 4.90 seconds; and non-mandatory scheduling from 6.30
+to 4.90 seconds. Some steps get slightly slower in these measurements. We
+keep those rows too, because success means less total waiting with correct
+outputs, not making every row in a table look better.
+
+## 320. What does this mean for the larger project?
+
+We have made a meaningful dent in the waiting time for a real, calibrated,
+complete public model on this workstation. We have also learned that improving
+the GPU's surrounding work can matter as much as writing another GPU kernel.
+The earlier GPU work is still used; this phase makes the combined system more
+efficient instead of replacing that foundation.
+
+There are important boundaries. The experiment runs 50,000 households within
+the public 1,454-zone geography, not every household in the region. It uses
+previously populated compiler and filesystem caches, not a newly installed
+computer. More processor threads do not automatically accelerate every
+function. Exact reproduction of ActivitySim's outputs also does not prove
+that ActivitySim perfectly predicts what real people will do; behavioral
+validation is a separate transportation-science question.
+
+The next substantial opportunity is to reduce repeated preparation and data
+handoffs in the remaining expensive complete steps, especially trip
+destination and live scheduling. Phase 60 did not add another user of the
+shared GPU entity store or remove CPU boundary checks. Those remain possible
+engineering directions, not completed features or promised speedups. Any next
+change must again beat a strong CPU alternative, improve the complete model,
+and pass the output checks on changed inputs. Separately, a clean-machine
+replication package and cold-start measurements would make this evidence
+easier for another researcher to reproduce.

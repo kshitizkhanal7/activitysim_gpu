@@ -17,6 +17,7 @@ from .cuda_backend import _cupy
 
 
 _PARKING = "column:daily_parking_cost"
+_PREPARATION_FAST = False
 
 
 def _availability_expression(label, gather, auto_column):
@@ -215,9 +216,14 @@ def compile_semantic_input_program(
     slot_count = int(np.max(slots)) + 1
     slot_start = np.empty(slot_count, dtype=np.int16)
     slot_end = np.empty(slot_count, dtype=np.int16)
-    for row, slot in enumerate(slots):
-        slot_start[int(slot)] = start[row]
-        slot_end[int(slot)] = end[row]
+    if _PREPARATION_FAST:
+        from .phase60_preparation import slot_values
+        slot_start = slot_values(start, slots, slot_count, "start")
+        slot_end = slot_values(end, slots, slot_count, "end")
+    else:
+        for row, slot in enumerate(slots):
+            slot_start[int(slot)] = start[row]
+            slot_end[int(slot)] = end[row]
     if not (
         np.array_equal(slot_start[slots], start)
         and np.array_equal(slot_end[slots], end)

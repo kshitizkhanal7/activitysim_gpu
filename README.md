@@ -27,37 +27,41 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 repository test suite passes 413 tests, including
+The Python 3.11 repository test suite passes 467 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
 of the strict float32 utility accumulator. The generated strict CUDA path also
 matches the CPU oracle exactly on numeric edge cases and 30 real public batches.
 
-## Latest qualified result: Phase 59
+## Latest qualified result: Phase 60
 
-The complete public 50,000-household MTC model takes **109.84 seconds elapsed**,
-versus **314.90 seconds** for two fresh regular CPU controls (**2.867x** faster
-than that configuration). Six balanced Phase 58/59 pairs improve in every pair:
-112.52 to 109.84 seconds elapsed, a **2.38%** incremental reduction. Charged
-medians are 104.82 to 102.69 seconds. **The under-100-second target was missed.**
+The complete public 50,000-household MTC model takes **90.16 seconds elapsed**,
+versus **201.61 seconds** for two fresh regular CPU controls using 48 Numba
+threads (**2.236x** faster than that stronger configuration). Six balanced
+Phase 59/60 pairs improve in every pair: **98.42 to 90.16 seconds**, an
+**8.40%** incremental reduction. Charged medians are 91.92 to 83.46 seconds.
+**All six candidates meet both the under-100-second target and the under-95-second
+stretch target**, with elapsed times of 89.91-90.69 seconds.
 
-All 34 steps run. Modeled decisions, all 115 matrices and all 24 summary-report
-values pass, including three changed scenarios. Four reports have explicitly
+All 34 steps run. Modeled decisions, all 115 matrices and values throughout all
+24 summary reports pass, including three changed scenarios. Four reports have explicitly
 permitted exact-equivalent departure-key spelling (`5` versus `5.0`), not
 byte-identical CSVs. Diagnostic logsums retain their stated numerical bounds.
 
-Phase 59 adds live mandatory scheduling without captured answers, complete
-GPU departure retries, versioned person/tour/trip data, and faster CPU matrix
-compression. Strong equivalent-algorithm controls find the real-input GPU mode
-reducer **1.60x faster**, but the compact CPU retry calculation **3.37x faster**.
-The whole-model gain is hybrid engineering, not pure GPU hardware attribution.
-The regular baseline is single-process ActivitySim with numerical libraries
-limited to one thread; separate compiled controls use up to 48 CPU threads.
+Phase 60 reduces CPU specification/slot/timetable preparation and repeated
+report-label formatting, and enables the existing parallel CPU frequency
+calculation. It preserves the established GPU kernels and live CPU checks for
+borderline choices. **This phase is hybrid runtime engineering, not a new
+GPU-only kernel superiority result.** No additional entity-store consumer is
+claimed. The stronger CPU control still runs one model process; other numerical
+libraries remain one-thread. The hybrids use four CPU matrix-compression workers.
+The table also retains fresh one-thread CPU controls. These are warm-cache
+fresh processes on this workstation, not cold-install or universal performance.
 
-Read the [technical report](docs/phase59-scenario-runtime.md),
-[all 34 component timings](docs/phase59-component-comparison.md),
-[qualification evidence](benchmark-results/phase59-formal-qualification.json),
+Read the [technical report](docs/phase60-whole-step-runtime.md),
+[all 34 component timings](docs/phase60-component-comparison.md),
+[qualification evidence](benchmark-results/phase60-formal-qualification.json),
 and the [plain-English explainer](docs/choiceforge-plain-english-explainer.md).
 Historical sections below retain their original measurement boundaries.
 

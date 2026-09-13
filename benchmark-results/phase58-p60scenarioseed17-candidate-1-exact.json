@@ -1,0 +1,96 @@
+{
+  "decision_columns_exact": true,
+  "decision_cells_different": 0,
+  "decision_rows_different": 0,
+  "byte_identical_outputs": [
+    "final_accessibility.csv",
+    "final_households.csv",
+    "final_joint_tour_participants.csv",
+    "final_land_use.csv"
+  ],
+  "byte_identical_non_trip_outputs": [
+    "final_accessibility.csv",
+    "final_households.csv",
+    "final_joint_tour_participants.csv",
+    "final_land_use.csv"
+  ],
+  "diagnostic_columns": {
+    "destination_logsum": {
+      "text_cells_different": 27434,
+      "max_abs": 1.0000000003174137e-05,
+      "mean_abs": 1.5553658325331793e-07,
+      "gate": 0.0001
+    },
+    "mode_choice_logsum": {
+      "text_cells_different": 576340,
+      "max_abs": 3.814697272730427e-06,
+      "mean_abs": 6.952386693987146e-08,
+      "gate": 1e-05
+    },
+    "school_location_logsum": {
+      "text_cells_different": 5668,
+      "max_abs": 3.814697265625e-06,
+      "mean_abs": 1.1939627210886822e-07,
+      "gate": 1e-05
+    },
+    "workplace_location_logsum": {
+      "text_cells_different": 5639,
+      "max_abs": 1.9073486328125e-06,
+      "mean_abs": 7.685817409414989e-08,
+      "gate": 1e-05
+    }
+  },
+  "diagnostic_outputs": {
+    "final_persons.csv": {
+      "school_location_logsum": {
+        "text_cells_different": 5668,
+        "max_abs": 3.814697265625e-06,
+        "mean_abs": 1.1939627210886822e-07,
+        "gate": 1e-05
+      },
+      "workplace_location_logsum": {
+        "text_cells_different": 5639,
+        "max_abs": 1.9073486328125e-06,
+        "mean_abs": 7.685817409414989e-08,
+        "gate": 1e-05
+      }
+    },
+    "final_tours.csv": {
+      "destination_logsum": {
+        "text_cells_different": 8805,
+        "max_abs": 3.000000003083869e-06,
+        "mean_abs": 1.0138343095150487e-07,
+        "gate": 0.0001
+      },
+      "mode_choice_logsum": {
+        "text_cells_different": 171790,
+        "max_abs": 3.814697272730427e-06,
+        "mean_abs": 7.606731690358016e-08,
+        "gate": 1e-05
+      }
+    },
+    "final_trips.csv": {
+      "destination_logsum": {
+        "text_cells_different": 18629,
+        "max_abs": 1.0000000003174137e-05,
+        "mean_abs": 2.1097308969993712e-07,
+        "gate": 0.0001
+      },
+      "mode_choice_logsum": {
+        "text_cells_different": 404550,
+        "max_abs": 3.5113386509522115e-06,
+        "mean_abs": 6.692796721748811e-08,
+        "gate": 1e-05
+      }
+    }
+  },
+  "diagnostic_column": "destination_logsum",
+  "diagnostic_text_cells_different": 27434,
+  "diagnostic_max_abs": 1.0000000003174137e-05,
+  "diagnostic_mean_abs": 1.5553658325331793e-07,
+  "diagnostic_gate": 0.0001,
+  "mode_choice_logsum_max_abs": 3.814697272730427e-06,
+  "mode_choice_logsum_gate": 1e-05,
+  "success": true,
+  "claim_boundary": "all modeled decision columns in every published table are exact; declared logsum diagnostics are bounded, not byte-identical"
+}
