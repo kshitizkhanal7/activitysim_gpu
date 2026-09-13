@@ -47,6 +47,11 @@ def main():
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--phase59", action="store_true", help="Compare Phase 58 against the developing Phase 59 candidate")
     parser.add_argument("--phase60", action="store_true", help="Compare Phase 59 with whole-step preparation candidate")
+    parser.add_argument("--phase61", action="store_true", help="Compare qualified Phase 60 with shared-live-input candidate")
+    parser.add_argument("--phase61-features", default="skims,timetable,tour_modes,entities,normals,uniforms,labels,packing")
+    parser.add_argument("--phase61-capture-inputs", type=Path)
+    parser.add_argument("--phase61-worker-wait-policy",choices=("default","PASSIVE"),default="PASSIVE")
+    parser.add_argument("--phase61-timetable-backend", choices=("cpu","cuda"), default="cpu")
     parser.add_argument("--frequency-threads", type=int, default=48)
     parser.add_argument("--frequency-control", action="store_true")
     parser.add_argument("--regular-numba-threads", type=int, default=1)
@@ -61,6 +66,8 @@ def main():
     parser.add_argument("--sparse-matrices", action="store_true")
     parser.add_argument("--capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase61:
+        args.phase60 = True
     if args.phase60:
         args.phase59 = args.live_mandatory = args.sparse_matrices = True
     if not re.fullmatch(r"[a-zA-Z0-9-]+", args.tag):
@@ -72,6 +79,8 @@ def main():
         parser.error("thread count must be one of 1,4,12,24,48")
     if args.capture_mode_inputs and (modes != ["candidate"] or args.repetitions != 1):
         parser.error("input capture requires one candidate diagnostic run")
+    if args.phase61_capture_inputs and (not args.phase61 or modes != ["candidate"] or args.repetitions != 1):
+        parser.error("Phase 61 capture requires one Phase 61 candidate diagnostic run")
     scenario = args.scenario_overlay is not None or args.households != 50000
     scenario_modes_ok = modes == ["regular", "candidate"] or (modes == ["candidate"] and args.scenario_baseline is not None)
     if scenario and (not scenario_modes_ok or args.repetitions != 1 or not args.live_mandatory):
@@ -112,6 +121,8 @@ def main():
             if args.phase60 and mode != "regular":
                 child_env["NUMBA_NUM_THREADS"] = "48"
                 child_env["CHOICEFORGE_NUMBA_INITIAL_THREADS"] = "1"
+            if args.phase61 and mode == "candidate" and args.phase61_worker_wait_policy != "default":
+                child_env["OMP_WAIT_POLICY"] = args.phase61_worker_wait_policy
             child_env["CHOICEFORGE_STRICT_CUDA_CANDIDATE"] = "0" if mode == "regular" else "1"
             child_env["CHOICEFORGE_STRICT_CUDA_MODE_CHOICE"] = "0" if mode == "regular" else "1"
             if mode == "regular":
@@ -166,6 +177,14 @@ def main():
                             command += ["--phase60-frequency-control"]
                 if args.profile:
                     command += ["--phase58-profile-trips", str(RESULTS / f"{prefix}-profile")]
+                if args.phase61:
+                    if mode == "gpu":
+                        command += ["--phase60-preparation", "--phase60-frequency-threads", str(args.frequency_threads)]
+                    if mode == "candidate":
+                        command += ["--phase61-features",args.phase61_features,
+                                    "--phase61-timetable-backend",args.phase61_timetable_backend]
+                        if args.phase61_capture_inputs:
+                            command += ["--phase61-capture-inputs",str(args.phase61_capture_inputs.resolve())]
                 cwd = ROOT
             fingerprint = source_fingerprint()
             config_hashes = config_fingerprint(args.scenario_overlay)
@@ -207,13 +226,13 @@ def main():
                    "validation_seconds": validation, "prewarm_seconds": prewarm,
                    "charged_total_seconds": sum(components.values())+validation+prewarm,
                    "exact": json.loads(exact.read_text()), "command": command,
-                   "profiled_not_performance_evidence": bool(args.profile or args.capture_mode_inputs or args.frequency_control),
+                   "profiled_not_performance_evidence": bool(args.profile or args.capture_mode_inputs or args.frequency_control or args.phase61_capture_inputs),
                    "summary_reports":summary_reports,
                    "source_sha256": fingerprint,
                    "configuration_sha256": config_hashes,
                    "scratch_environment": {k:child_env.get(k) for k in ("TEMP", "TMP", "CUPY_CACHE_DIR", "NUMBA_CACHE_DIR")},
                    "thread_environment": {k:child_env[k] for k in (
-                       "NUMBA_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "CHOICEFORGE_NUMBA_INITIAL_THREADS") if k in child_env},
+                       "NUMBA_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "CHOICEFORGE_NUMBA_INITIAL_THREADS", "OMP_WAIT_POLICY") if k in child_env},
                    "output": str(output)}
             run["reference"] = str(reference)
             run["scenario_overlay"] = str(args.scenario_overlay) if args.scenario_overlay else None

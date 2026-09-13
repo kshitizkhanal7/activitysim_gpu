@@ -159,7 +159,7 @@ def mode_choice_simulate(runtime, state, choosers, spec, nest_spec, skims, local
     if logsum_column_name is not None:
         result[logsum_column_name] = host_logsums
     t = generated.telemetry
-    _write_report({"phase": 58, "component": "trip_mode_choice", "trace_label": trace_label,
+    _write_report({"phase": 58, "component": getattr(runtime,"mode_component","trip_mode_choice"), "trace_label": trace_label,
         "rows": len(choosers), "terms": t.terms, "alternatives": t.alternatives,
         "candidate_used": True, "fallback_used": False, "expression_dtype": t.expression_dtype,
         "persistent_plan": t.persistent_plan, "plan_cache_hit": t.plan_cache_hit,

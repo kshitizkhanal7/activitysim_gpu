@@ -15,24 +15,27 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 60: the complete public 50,000-household model takes
-90.16 seconds from launch to exit, compared with 201.61 seconds for newly
-measured regular CPU ActivitySim using 48 Numba threads. That is 2.24 times
-faster, or about 55% less waiting, on this machine and configuration. Against
+Latest result, Phase 61: the complete public 50,000-household model takes
+79.22 seconds from launch to exit, compared with 201.17 seconds for newly
+measured regular CPU ActivitySim using 48 Numba threads. That is 2.54 times
+faster, or about 61% less waiting, on this machine and configuration. Against
 the previous accelerated version measured in six balanced pairs, the gain is
-98.42 to 90.16 seconds, an 8.40% reduction. Every pair improves. All six new
-runs finish in 89.91-90.69 seconds, meeting both the **100-second target** and
-the **95-second stretch target**.
+91.33 to 79.22 seconds, a 13.25% reduction. Every pair improves. All six new
+runs finish in 78.75-79.68 seconds. **The 75-second target and 70-second stretch
+target were not met.** A replicated improvement is not the same as meeting
+every goal.
 
 Every checked travel decision, all 115 travel matrices and values throughout
 all 24 summary reports agree; four reports have documented `5` versus `5.0`
 departure-key formatting differences. Three changed scenarios also pass.
 The runtime handles complete departure retries, shares versioned data, and
 does not need captured mandatory-scheduling answers. It remains a CPU/GPU
-hybrid for the supported model. This phase makes preparation and an existing
-CPU calculation faster while preserving earlier GPU kernels and live CPU
-checks for borderline choices. It is not a new GPU-only hardware speed claim.
-Sections 315 onward explain these changes, the stronger CPU comparison,
+hybrid for the supported model. This phase shares some live GPU inputs,
+extends GPU tour-mode and uniform-draw work, and makes CPU preparation and
+normal-number generation faster. Strong CPU comparisons show that some
+small calculations still favor CPU. Live CPU checks for borderline choices
+remain. The full gain is not a GPU-only hardware claim. All 545 tests pass.
+Sections 321 onward explain these changes, the stronger CPU comparison,
 actual results and remaining limits. Earlier sections preserve the history
 and should not be read as the latest timing claim.
 
@@ -8498,3 +8501,263 @@ change must again beat a strong CPU alternative, improve the complete model,
 and pass the output checks on changed inputs. Separately, a clean-machine
 replication package and cold-start measurements would make this evidence
 easier for another researcher to reproduce.
+
+## 321. Phase 61: making the whole team work better
+
+Think of a restaurant with a very fast oven. Buying the oven helps, but dinner
+is still slow if the cooks repeatedly fetch the same ingredients, copy every
+order by hand, or send tiny jobs to the oven that a person could finish sooner.
+Our GPU is like that oven. Phase 61 works on the whole kitchen: the CPU, the
+GPU, the information they share, and the handoffs between model steps.
+
+The starting point was Phase 60's roughly 90-second complete run. We aimed
+for a median below 75 seconds, with 70 seconds as a harder goal. A target is
+not a prediction and does not become a result just because we wrote it down.
+We keep the same travel behavior, random-number rules and output checks.
+
+The model still represents a public sample of 50,000 households across 1,454
+zones. It executes all 34 steps, including output files and reports. We did
+not replace the real calibrated model with a simpler synthetic demonstration.
+
+## 322. What are skims, shared columns and generations?
+
+A **skim** is a lookup table of travel information. If you know an origin,
+destination and time of day, it may tell you the travel time or cost. A
+three-dimensional skim is like several ordinary maps stacked together, one
+for each time period.
+
+The original software provides a flexible way to find these entries. For the
+ordinary in-memory maps used here, we can use the already checked row and
+column positions directly. Special compressed, blended or unusual layouts
+still use the original route. Direct access does not mean ignoring zone
+identity, reversing a journey incorrectly, or assuming that morning and
+evening are interchangeable. Tests caught one time-index mistake before the
+final path was accepted.
+
+A **column** is one field for many records: for example, every trip's departure
+time. A shared device store keeps useful numeric columns on the GPU. Actual
+tour- and trip-mode calculations now consume some of these stored columns.
+Trips can carry shared state from choosing a destination through scheduling
+and into choosing a mode of travel.
+
+The store attaches a **generation number**, like an edition number, to its
+data. A consumer gets a permission slip called a lease for that edition.
+When relevant data changes, an old lease becomes invalid. We also compare
+the live CPU values and their exact data types before borrowing a stored
+column. A newly calculated field does not silently become yesterday's field.
+This protects against a fast but wrong simulation that uses stale information.
+
+Sharing is not free. Checking, copying and moving information still take
+time. We count those costs in the complete run, rather than describing every
+reused column as a guaranteed speed improvement.
+
+The measured new consumers are still a small subset: one participant-count
+column for tours and one direction flag for trips. The store holds more
+columns than these consumers currently use. This is a real working connection,
+not proof that the entire model now lives on the GPU or that all saved data
+movement pays for the store's overhead.
+
+## 323. How can a timetable fit into a few numbers?
+
+The model needs to know whether a person's proposed tour overlaps existing
+commitments. Its timetable contains a small vocabulary of states, including
+start/end boundaries and occupied periods. Two boundaries touching are not
+always the same thing as two activities overlapping.
+
+A **bit** is a switch with two positions, zero or one. One 32-bit integer can
+hold 32 switches. We encode each relevant timetable state in its own row of
+switches. A few bitwise operations can then check exactly the same collision
+rules that originally inspected many period entries. Both a compiled CPU
+function and a GPU kernel use this representation.
+
+The approved fast representation supports at most 32 periods and the existing
+state vocabulary. It does not claim to handle an arbitrary calendar. Every
+call reads the current timetable, including changes or rollbacks. Tests cover
+all 25 pairs of the five possible states, the highest bit, and changed windows.
+The live diagnostic also checks over 17.7 million availability queries against
+the original collision rules.
+
+Here is the crucial lesson: a faster representation is not automatically a
+GPU victory. The CPU can use the same clever representation. If a GPU finishes
+the arithmetic quickly but needs extra delivery time for the data, the CPU
+may finish the real job first. Phase 61 retains both implementations and
+selects the CPU timetable path for the complete qualified candidate.
+
+## 324. How do we make randomness faster without changing anyone's choices?
+
+The model uses **pseudorandom** numbers: numbers produced by a repeatable
+recipe, not unpredictable physical events. Each record has a seed and an
+offset. The seed starts its private number sequence; the offset says how far
+along that sequence it has already moved. The record of these positions is
+the **random ledger**.
+
+A **uniform** draw spreads numbers evenly across a range. A **normal** draw
+follows the familiar bell-shaped pattern: values near the middle are common,
+and extreme values are less common. They are different recipes, so matching
+one does not prove that the other matches.
+
+Earlier model steps now use our already reviewed GPU uniform generator where
+supported. Normal draws use a new compiled CPU batch operation. This removes
+much of the slow one-record-at-a-time Python work while keeping each original
+seed, offset and requested draw count. ActivitySim still performs its existing
+scaling, repeated-record broadcasting and lognormal transformations. Unhandled
+request forms keep the original implementation.
+
+An early normal-generator experiment was wrong. The compiler noticed that
+some skipped draws had unused values and removed them. Those draws were
+essential: skipping ahead changes the next random number. We rejected that
+version. The revised version returns and checks a checksum of the discarded
+draws, so advancing the sequence has an observable result and cannot simply
+be deleted.
+
+This is why running the code matters. The revised normal generator matched
+the original NumPy bit patterns on 933,292 live row streams across 33 batches.
+Separate tests cover different seeds, long offsets, odd draw counts, repeated
+records and the final ledger. Matching a bell-shaped histogram alone would
+not have been enough: two different sets of numbers can have the same shape
+but make different people choose different trips.
+
+## 325. What else changed, and why keep the CPU?
+
+Tour mode choice asks whether a tour uses a car, transit, walking or another
+mode. Phase 61 connects it to the existing resident GPU pipeline for scoring
+and reducing the 21-mode choice tree. Very close decisions still receive the
+existing live CPU check, using the same already-consumed random draw. The
+check does not secretly read a saved answer or roll the dice again.
+
+Other changes are ordinary CPU engineering. A report with thousands of rows
+but a handful of distance bins now formats one label per observed bin and
+reuses it. Trip scheduling can group integer person/tour identities without
+first constructing hundreds of thousands of Python row tuples. Their order
+and group identities remain the same.
+
+We also tested how CPU worker threads wait between jobs. A waiting policy is
+a request to the runtime, not a different travel model. A CPU worker that
+keeps checking for work can compete with the CPU thread launching GPU jobs.
+But putting workers to sleep can also add wake-up costs. We measured this
+tradeoff rather than assuming that one setting must always be better.
+
+The final system is intentionally **hybrid**. GPUs handle substantial parallel
+scoring and choice work; CPUs still handle coordination, selected calculations,
+numerical boundary decisions and file operations. A complete-model speed gain
+cannot honestly be credited only to GPU arithmetic when CPU algorithms and
+data handling also improved.
+
+## 326. What does a fair CPU-versus-GPU test require?
+
+There are three different comparisons in this project:
+
+- **Regular CPU ActivitySim versus the complete accelerated system:** does a
+  planner wait less for the same checked outputs? We include fresh regular
+  CPU controls with both one and 48 Numba threads.
+- **Previous accelerated version versus the new version:** did this phase
+  improve the already fast system? Six matched pairs alternate which version
+  runs first, reducing the risk of favoring one because of run order.
+- **Equivalent CPU and GPU calculations:** which processor is better at a
+  specific task when both get the same good algorithm and actual live inputs?
+  We test several CPU thread counts rather than selecting a weak opponent.
+
+The last comparison has two delivery boundaries. **Resident** means that the
+inputs are already on the processor that needs them. **Transfer-inclusive**
+adds the necessary uploads and downloads. Neither should be mistaken for a
+complete-model time. They omit other work that the actual application still
+has to perform, such as finding the correct records and checking live state.
+
+The timetable and tour-mode controls disclose CPU wins instead of hiding
+them. The normal-generator gain is explicitly a CPU batching result. Earlier
+qualified GPU wins remain part of the project, but they do not prove that
+every new calculation should move to the GPU.
+
+For the complete model we freeze source and configuration files throughout
+each measurement, run no competing benchmark jobs, retain all output checks,
+and distinguish development experiments from final repeated evidence.
+Instrumented runs that save input captures or collect detailed profiles are
+not eligible as performance evidence. A 75-second goal is a separate gate:
+correctness can pass and speed can improve while that goal still fails.
+
+## 327. What did Phase 61 actually achieve?
+
+The final repeated experiment, not the fastest development run, gives these
+complete-model results:
+
+| Configuration | Median elapsed time | Evidence |
+|---|---:|---|
+| Regular CPU ActivitySim, one Numba thread | 296.52 seconds | Two fresh runs |
+| Regular CPU ActivitySim, 48 Numba threads | 201.17 seconds | Two fresh runs |
+| Previous accelerated system, Phase 60 | 91.33 seconds | Six matched controls |
+| New accelerated system, Phase 61 | 79.22 seconds | Six matched candidates |
+
+Against the stronger regular CPU setting, this is 2.54 times faster: about
+3 minutes 21 seconds becomes 1 minute 19 seconds, saving about 2 minutes per
+run. Against the already accelerated Phase 60, this phase saves 12.10 seconds,
+or 13.25%. Those are different comparisons. We do not pretend that all the
+earlier GPU work happened in Phase 61.
+
+Every matched pair improves on both clocks. New elapsed times range from
+78.75 to 79.68 seconds. The charged median, which includes model steps plus
+recorded validation and prewarming, falls from 84.67 to 72.82 seconds. Elapsed
+time additionally includes process overhead. The independent output audit
+occurs after the run and is outside these model clocks.
+
+The 75-second median goal is still 4.22 seconds away. The more ambitious
+70-second goal also fails. We publish the status as a replicated improvement
+with the wall-time target not met, rather than quietly changing the target
+or picking a different clock.
+
+All checked travel decisions, all 115 logical travel matrices and values
+throughout all 24 summary reports agree. Four reports retain the documented
+equivalent departure-key spelling difference, such as `5` versus `5.0`.
+Diagnostic scores still have their existing numerical limits; this is not a
+claim that every intermediate number has identical bits.
+
+Three changed scenarios also pass against independently generated regular
+CPU answers: 10,000 households with seed 991, 50,000 households with seed 17,
+and the 50,000-household retry-7 configuration. These test a smaller sample,
+changed random numbers and changed retry behavior. They are not proof about
+every possible model configuration. The final repository suite passes
+545 tests, before and after qualification.
+
+The [complete 34-step comparison](phase61-component-comparison.md) retains
+every row, including slowdowns. The largest incremental reductions include
+tour mode choice (5.35 to 3.25 seconds), trip mode choice (5.65 to 3.90),
+non-mandatory scheduling (5.00 to 3.30), summary reporting (3.90 to 2.60), and
+mandatory scheduling (8.70 to 7.50). These separately rounded step medians
+need not add exactly to the total median. A step ratio is descriptive, not
+an independently randomized experiment for that step.
+
+## 328. What does this mean, and what remains to do?
+
+We can run this real, calibrated public model substantially faster on the
+existing workstation while reproducing its checked outputs. If someone ran
+100 comparable scenarios, the measured saving against the stronger regular
+CPU setting would amount to roughly 3.4 hours of model execution. That is
+an illustration based on repeated similar runs, not a guarantee for every
+planning project or its total data-preparation time.
+
+The project also has stronger evidence about where not to use GPU arithmetic.
+A compact CPU algorithm can beat a GPU once moving information is counted.
+This does not make earlier GPU wins disappear. It means we should choose a
+processor for the complete task rather than treating GPU use itself as the
+goal.
+
+The next meaningful performance target is work that still consumes whole
+seconds: repeated flow/compiler setup for household activities and the live
+CPU scheduling reference, plus preparation and utility work in trip
+destination. A reusable compiled reference plan must reproduce the same
+arithmetic and preserve the independent live check. Replacing that check with
+saved choices is not an acceptable shortcut.
+
+Shared data also needs broader, demand-driven use. The current new consumers
+read only two columns while the store publishes more. Future work should
+publish what programs actually need, connect additional useful live inputs,
+and prove that the saved copying exceeds the cost of managing the store.
+Trying a compiled CPU reducer inside the GPU utility pipeline is another
+measurable option, but its small isolated win does not promise a large
+complete-model improvement.
+
+Finally, another researcher should reproduce the environment independently,
+measure cold startup and test more scales and configurations. This result
+uses warm caches, one workstation and a 50,000-household sample, not all
+regional households or every ActivitySim feature. Matching the model's
+answers establishes computational replication; proving that those answers
+accurately predict human behavior remains a separate scientific task.

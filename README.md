@@ -27,41 +27,43 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 repository test suite passes 467 tests, including
+The Python 3.11 repository test suite passes 545 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
 of the strict float32 utility accumulator. The generated strict CUDA path also
 matches the CPU oracle exactly on numeric edge cases and 30 real public batches.
 
-## Latest qualified result: Phase 60
+## Latest qualified result: Phase 61
 
-The complete public 50,000-household MTC model takes **90.16 seconds elapsed**,
-versus **201.61 seconds** for two fresh regular CPU controls using 48 Numba
-threads (**2.236x** faster than that stronger configuration). Six balanced
-Phase 59/60 pairs improve in every pair: **98.42 to 90.16 seconds**, an
-**8.40%** incremental reduction. Charged medians are 91.92 to 83.46 seconds.
-**All six candidates meet both the under-100-second target and the under-95-second
-stretch target**, with elapsed times of 89.91-90.69 seconds.
+The complete public 50,000-household MTC model takes **79.22 seconds elapsed**,
+versus **201.17 seconds** for two fresh regular CPU controls using 48 Numba
+threads (**2.539x** faster). Six balanced Phase 60/61 pairs improve in every
+pair: **91.33 to 79.22 seconds**, a **13.25%** incremental reduction. Charged
+medians are 84.67 to 72.82 seconds. Candidates range from 78.75 to 79.68 seconds.
+**The 75-second median target and 70-second stretch target were not met.**
+Fresh one-thread regular CPU controls take 296.52 seconds (3.743x ratio).
 
 All 34 steps run. Modeled decisions, all 115 matrices and values throughout all
 24 summary reports pass, including three changed scenarios. Four reports have explicitly
 permitted exact-equivalent departure-key spelling (`5` versus `5.0`), not
 byte-identical CSVs. Diagnostic logsums retain their stated numerical bounds.
 
-Phase 60 reduces CPU specification/slot/timetable preparation and repeated
-report-label formatting, and enables the existing parallel CPU frequency
-calculation. It preserves the established GPU kernels and live CPU checks for
-borderline choices. **This phase is hybrid runtime engineering, not a new
-GPU-only kernel superiority result.** No additional entity-store consumer is
-claimed. The stronger CPU control still runs one model process; other numerical
-libraries remain one-thread. The hybrids use four CPU matrix-compression workers.
-The table also retains fresh one-thread CPU controls. These are warm-cache
-fresh processes on this workstation, not cold-install or universal performance.
+Phase 61 adds checked direct skim access, real consumers of shared tour/trip
+device columns, resident tour mode choice, compiled CPU normal generation,
+earlier keyed GPU uniforms, compact timetable/chain preparation and cheaper
+report labels. Live CPU checks for borderline choices remain. Strong equivalent
+CPU primitive controls include CPU wins: the selected timetable path is CPU.
+**The full-system gain is hybrid, not proof that every kernel belongs on GPU.**
+Shared-store use is still narrow (two directly consumed columns), not a claim
+that the whole model is device-resident. Other numerical libraries remain
+one-thread; the hybrids retain four CPU matrix-compression workers. These are
+warm-cache fresh processes on this workstation, not cold-install or universal
+performance guarantees.
 
-Read the [technical report](docs/phase60-whole-step-runtime.md),
-[all 34 component timings](docs/phase60-component-comparison.md),
-[qualification evidence](benchmark-results/phase60-formal-qualification.json),
+Read the [technical report](docs/phase61-shared-live-inputs.md),
+[all 34 component timings](docs/phase61-component-comparison.md),
+[qualification evidence](benchmark-results/phase61-formal-qualification.json),
 and the [plain-English explainer](docs/choiceforge-plain-english-explainer.md).
 Historical sections below retain their original measurement boundaries.
 

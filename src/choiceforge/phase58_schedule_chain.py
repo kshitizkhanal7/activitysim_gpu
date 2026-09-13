@@ -9,6 +9,11 @@ import numpy as np
 import pandas as pd
 from .activitysim_trip_scheduling import TripSchedulingDeviceService
 
+
+def chain_groups(frame):
+    codes, unique = pd.factorize(pd.MultiIndex.from_frame(frame[["person_id", "tour_id"]]), sort=False)
+    return codes, len(unique)
+
 SOURCE = r'''
 __device__ int choose(const double* p,int alts,int base,int lo,int hi,double z,int norm) {
  double total=0.; for(int a=0;a<alts;a++)if(a+base>=lo&&a+base<=hi)total+=p[a];
@@ -77,7 +82,7 @@ class ChainSchedulingService(TripSchedulingDeviceService):
         numeric = frame[["earliest", "latest", "tour_hour", "trip_num", "trip_count"]].to_numpy()
         if not np.isfinite(numeric).all() or (numeric < 0).any() or not np.equal(numeric, np.floor(numeric)).all():
             raise ValueError("Phase 58 chain times and ordinals must be nonnegative finite integers")
-        group, uniques = pd.factorize(pd.MultiIndex.from_frame(frame[["person_id", "tour_id"]]), sort=False)
+        group, group_count = chain_groups(frame)
         order = np.lexsort((frame.index.to_numpy(), group))
         frame = frame.iloc[order]
         group = group[order]
@@ -107,7 +112,7 @@ class ChainSchedulingService(TripSchedulingDeviceService):
         drawrow[~fixed] = np.arange(len(active), dtype=np.int32)
         arrays = [ptr, out, num, count, fixed, frame.tour_hour, frame.earliest, frame.latest, specrow, drawrow]
         host = [np.ascontiguousarray(a, dtype=np.int32) for a in arrays]
-        return frame, active, len(uniques), host, firstout, firstin
+        return frame, active, group_count, host, firstout, firstin
 
     def run(self, state, trips, tours, settings, is_last_iteration):
         started = time.perf_counter()

@@ -1,0 +1,671 @@
+{
+  "timetable": {
+    "scope": "all live timetable queries, authoritative collision vocabulary exact; immutable footprint encoding cached on both; GPU transfer scope re-encodes live windows and uploads all masks and query arrays and downloads booleans; excludes identity lookup, host validation and EntityStore bookkeeping on both",
+    "rows": 17794070,
+    "batches": 14,
+    "exact": true,
+    "sweep": [
+      {
+        "threads": 1,
+        "samples_seconds": {
+          "cpu_packed": [
+            0.044631799988565035,
+            0.04417219999595545,
+            0.04394760000286624,
+            0.046124499989673495,
+            0.04448989999946207,
+            0.04425590000755619,
+            0.043911900007515214
+          ],
+          "gpu_resident": [
+            0.0008349999989150092,
+            0.0007083999953465536,
+            0.0006561000045621768,
+            0.0007061000069370493,
+            0.0007295000104932114,
+            0.000817699998151511,
+            0.0007039000047370791
+          ],
+          "cpu_encode_compute": [
+            0.08329389999562409,
+            0.08158009999897331,
+            0.08183149999240413,
+            0.08163060000515543,
+            0.08210700000927318,
+            0.0819708999915747,
+            0.08186279999790713
+          ],
+          "gpu_encode_transfer_compute_download": [
+            0.07175439999264199,
+            0.07039329998951871,
+            0.07195969999884255,
+            0.07078989999718033,
+            0.07147559999430086,
+            0.07181100000161678,
+            0.07363110000733286
+          ]
+        },
+        "medians_seconds": {
+          "cpu_packed": 0.04425590000755619,
+          "gpu_resident": 0.0007083999953465536,
+          "cpu_encode_compute": 0.08186279999790713,
+          "gpu_encode_transfer_compute_download": 0.07175439999264199
+        }
+      },
+      {
+        "threads": 4,
+        "samples_seconds": {
+          "cpu_packed": [
+            0.020688599994173273,
+            0.02099340000131633,
+            0.020789599991985597,
+            0.020975100007490255,
+            0.02085369999986142,
+            0.02090969998971559,
+            0.020917500005452894
+          ],
+          "gpu_resident": [
+            0.0006083999905968085,
+            0.0007507999980589375,
+            0.0007186000002548099,
+            0.0007751999946776778,
+            0.0007489999989047647,
+            0.004696400006650947,
+            0.004593899997416884
+          ],
+          "cpu_encode_compute": [
+            0.05862680000427645,
+            0.06679110000550281,
+            0.06711069999437314,
+            0.06636209999851417,
+            0.06705289999081288,
+            0.06641289999242872,
+            0.0673530999920331
+          ],
+          "gpu_encode_transfer_compute_download": [
+            0.07068279999657534,
+            0.07187740001245402,
+            0.08450100000482053,
+            0.07276679998904001,
+            0.08941590000176802,
+            0.09278159998939373,
+            0.10161120000702795
+          ]
+        },
+        "medians_seconds": {
+          "cpu_packed": 0.02090969998971559,
+          "gpu_resident": 0.0007507999980589375,
+          "cpu_encode_compute": 0.06679110000550281,
+          "gpu_encode_transfer_compute_download": 0.08450100000482053
+        }
+      },
+      {
+        "threads": 12,
+        "samples_seconds": {
+          "cpu_packed": [
+            0.008117400007904507,
+            0.008187399987946264,
+            0.008042000001296401,
+            0.008304700008011423,
+            0.00813919999927748,
+            0.008063799992669374,
+            0.008048200004850514
+          ],
+          "gpu_resident": [
+            0.004629700008081272,
+            0.004730300002847798,
+            0.004644200002076104,
+            0.004780099989147857,
+            0.004708699998445809,
+            0.004774500004714355,
+            0.004691299996920861
+          ],
+          "cpu_encode_compute": [
+            0.05471150000812486,
+            0.05356260000553448,
+            0.05414530000416562,
+            0.05415260000154376,
+            0.05596579999837559,
+            0.05711769999470562,
+            0.054602299991529435
+          ],
+          "gpu_encode_transfer_compute_download": [
+            0.1038193999993382,
+            0.09015329999965616,
+            0.10294009999779519,
+            0.09262260000105016,
+            0.10951480000221636,
+            0.11222009999619331,
+            0.17455599999811966
+          ]
+        },
+        "medians_seconds": {
+          "cpu_packed": 0.008117400007904507,
+          "gpu_resident": 0.004708699998445809,
+          "cpu_encode_compute": 0.054602299991529435,
+          "gpu_encode_transfer_compute_download": 0.1038193999993382
+        }
+      },
+      {
+        "threads": 24,
+        "samples_seconds": {
+          "cpu_packed": [
+            0.0073480999999446794,
+            0.006865200004540384,
+            0.006480399999418296,
+            0.007001500009209849,
+            0.006260299996938556,
+            0.006409699999494478,
+            0.006571999998413958
+          ],
+          "gpu_resident": [
+            0.0046125999942887574,
+            0.004680000012740493,
+            0.004642500003683381,
+            0.004687900000135414,
+            0.004709000000730157,
+            0.0046867000055499375,
+            0.004602899993187748
+          ],
+          "cpu_encode_compute": [
+            0.05322889999661129,
+            0.05273549999401439,
+            0.052914099986082874,
+            0.052848099992843345,
+            0.05422480001288932,
+            0.05289979999361094,
+            0.05247090000193566
+          ],
+          "gpu_encode_transfer_compute_download": [
+            0.1034108999883756,
+            0.09124599999631755,
+            0.10294129999238066,
+            0.09055749999242835,
+            0.10320889999275096,
+            0.09665370000584517,
+            0.10290939999686088
+          ]
+        },
+        "medians_seconds": {
+          "cpu_packed": 0.006571999998413958,
+          "gpu_resident": 0.004680000012740493,
+          "cpu_encode_compute": 0.05289979999361094,
+          "gpu_encode_transfer_compute_download": 0.10290939999686088
+        }
+      },
+      {
+        "threads": 48,
+        "samples_seconds": {
+          "cpu_packed": [
+            0.007778099999995902,
+            0.007726699986960739,
+            0.011745600000722334,
+            0.00725990001228638,
+            0.007292900001630187,
+            0.0075164000008953735,
+            0.006878500003949739
+          ],
+          "gpu_resident": [
+            0.004648400004953146,
+            0.004698999997344799,
+            0.012395499987178482,
+            0.00459219999902416,
+            0.004610599993611686,
+            0.005064700002549216,
+            0.004624199995305389
+          ],
+          "cpu_encode_compute": [
+            0.05523889999312814,
+            0.0537458000035258,
+            0.05686670000432059,
+            0.054621599992970005,
+            0.05443089999607764,
+            0.05403189999924507,
+            0.05354029999580234
+          ],
+          "gpu_encode_transfer_compute_download": [
+            0.10928089999652002,
+            0.09431280000717379,
+            0.1816679000039585,
+            0.1587227999989409,
+            0.10333079998963512,
+            0.09095880000677425,
+            0.10356150000006892
+          ]
+        },
+        "medians_seconds": {
+          "cpu_packed": 0.0075164000008953735,
+          "gpu_resident": 0.004648400004953146,
+          "cpu_encode_compute": 0.05443089999607764,
+          "gpu_encode_transfer_compute_download": 0.10356150000006892
+        }
+      }
+    ],
+    "best_cpu_threads": 24,
+    "transfer_inclusive_cpu_over_gpu": 0.5140424489427067
+  },
+  "tour_modes": {
+    "scope": "actual live tour utilities, draws and nests; equivalent compiled nested reducers; allocations included; transfer-inclusive uploads utilities/draws and downloads reducer outputs; excludes expression evaluation, RNG and live boundary resolution on both; guarded rows remain subject to production CPU checks",
+    "checks": [
+      {
+        "rows": 7887,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 16703,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 16514,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 11427,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 1.7763568394002505e-15
+      },
+      {
+        "rows": 21833,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 20709,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 5256,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 1.7763568394002505e-15
+      },
+      {
+        "rows": 3919,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 8.881784197001252e-16
+      },
+      {
+        "rows": 56231,
+        "guarded": 0,
+        "off_boundary_choices_exact": true,
+        "max_logsum_abs": 1.7763568394002505e-15
+      }
+    ],
+    "sweep": [
+      {
+        "threads": 1,
+        "samples_seconds": {
+          "cpu": [
+            0.08483949999208562,
+            0.08440590000827797,
+            0.08462340000551194,
+            0.08707979999599047,
+            0.08615990000544116,
+            0.08468440000433475,
+            0.08476680000603665
+          ],
+          "gpu_resident": [
+            0.015117400005692616,
+            0.015154799999436364,
+            0.015419499992276542,
+            0.01513149999664165,
+            0.01579910000145901,
+            0.015201799993519671,
+            0.01525250000122469
+          ],
+          "gpu_transfer_inclusive": [
+            0.02222500000789296,
+            0.021776499997940846,
+            0.02214260000619106,
+            0.02189639999414794,
+            0.02263800000946503,
+            0.022018699994077906,
+            0.023148799999034964
+          ]
+        },
+        "medians_seconds": {
+          "cpu": 0.08476680000603665,
+          "gpu_resident": 0.015201799993519671,
+          "gpu_transfer_inclusive": 0.02214260000619106
+        }
+      },
+      {
+        "threads": 4,
+        "samples_seconds": {
+          "cpu": [
+            0.03757479999330826,
+            0.03815380000742152,
+            0.03955409998889081,
+            0.03629599999112543,
+            0.037292499997420236,
+            0.03626520000398159,
+            0.039269000000786036
+          ],
+          "gpu_resident": [
+            0.05263350000313949,
+            0.05338810000102967,
+            0.05377589999989141,
+            0.054171299998415634,
+            0.05480830000306014,
+            0.05390100000659004,
+            0.05009579999023117
+          ],
+          "gpu_transfer_inclusive": [
+            0.1087511999940034,
+            0.10445930001151282,
+            0.10758870000427123,
+            0.10894679999910295,
+            0.10997169998881873,
+            0.10848499998974148,
+            0.11465099999622907
+          ]
+        },
+        "medians_seconds": {
+          "cpu": 0.03757479999330826,
+          "gpu_resident": 0.05377589999989141,
+          "gpu_transfer_inclusive": 0.1087511999940034
+        }
+      },
+      {
+        "threads": 12,
+        "samples_seconds": {
+          "cpu": [
+            0.01279660000000149,
+            0.013913799994043075,
+            0.013556200006860308,
+            0.012627099989913404,
+            0.012294900006963871,
+            0.013933399997767992,
+            0.012556800007587299
+          ],
+          "gpu_resident": [
+            0.05576070000824984,
+            0.05489610000222456,
+            0.055374099989421666,
+            0.055471900006523356,
+            0.053626699998858385,
+            0.055791200007661246,
+            0.05438489999505691
+          ],
+          "gpu_transfer_inclusive": [
+            0.11008829998900183,
+            0.10463209998852108,
+            0.10868620000837836,
+            0.11093959999561775,
+            0.11146180001378525,
+            0.10874630000034813,
+            0.08511349999753293
+          ]
+        },
+        "medians_seconds": {
+          "cpu": 0.01279660000000149,
+          "gpu_resident": 0.055374099989421666,
+          "gpu_transfer_inclusive": 0.10874630000034813
+        }
+      },
+      {
+        "threads": 24,
+        "samples_seconds": {
+          "cpu": [
+            0.008893699996406212,
+            0.007532899995567277,
+            0.00917989999288693,
+            0.006880399989313446,
+            0.006691500006127171,
+            0.0076579000015044585,
+            0.006592399993678555
+          ],
+          "gpu_resident": [
+            0.05313879999448545,
+            0.049576699995668605,
+            0.04608210000151303,
+            0.05047319999721367,
+            0.050648000004002824,
+            0.048768699998618104,
+            0.047878099998342805
+          ],
+          "gpu_transfer_inclusive": [
+            0.08449599999585189,
+            0.08145660000445787,
+            0.07847530000435654,
+            0.08603299999958836,
+            0.10712050000438467,
+            0.10245419999409933,
+            0.10665410000365227
+          ]
+        },
+        "medians_seconds": {
+          "cpu": 0.007532899995567277,
+          "gpu_resident": 0.049576699995668605,
+          "gpu_transfer_inclusive": 0.08603299999958836
+        }
+      },
+      {
+        "threads": 48,
+        "samples_seconds": {
+          "cpu": [
+            0.007258199999341741,
+            0.006682499995804392,
+            0.0062642999982926995,
+            0.006810800012317486,
+            0.006660000013653189,
+            0.00717909999366384,
+            0.006770299994968809
+          ],
+          "gpu_resident": [
+            0.0458712999970885,
+            0.015842299995711073,
+            0.01598300000478048,
+            0.01599470000655856,
+            0.016356899999664165,
+            0.012683900000411086,
+            0.012742300008540042
+          ],
+          "gpu_transfer_inclusive": [
+            0.05990030000975821,
+            0.0211773000046378,
+            0.021068399990326725,
+            0.02131889999145642,
+            0.02122300000337418,
+            0.019059199999901466,
+            0.017539400010718964
+          ]
+        },
+        "medians_seconds": {
+          "cpu": 0.006770299994968809,
+          "gpu_resident": 0.01598300000478048,
+          "gpu_transfer_inclusive": 0.0211773000046378
+        }
+      }
+    ],
+    "best_cpu_threads": 48,
+    "resident_cpu_over_gpu": 0.42359381799060425,
+    "transfer_inclusive_cpu_over_gpu": 0.3196960893733442
+  },
+  "normals": {
+    "scope": "all live standard-normal streams; same seeds, offsets, draw counts; original NumPy row loop versus compiled CPU batch; seed/offset conversion and allocations included; excludes dataframe ledger gather/commit on both; this is NOT a GPU gain",
+    "rows": 933292,
+    "batches": 33,
+    "bit_exact": true,
+    "original": {
+      "samples_seconds": {
+        "original_numpy": [
+          3.4757794000033755,
+          3.4545589000044856,
+          3.4472372000018368,
+          3.4258250999992015,
+          3.4437382000032812,
+          3.6442546999896877,
+          3.4929209999972954
+        ]
+      },
+      "medians_seconds": {
+        "original_numpy": 3.4545589000044856
+      }
+    },
+    "sweep": [
+      {
+        "threads": 1,
+        "samples_seconds": {
+          "compiled_cpu": [
+            1.4092219000012847,
+            1.3828088000009302,
+            1.3628098999906797,
+            1.3688495999958832,
+            1.7951624999986961,
+            1.386576300006709,
+            1.433661499992013
+          ]
+        },
+        "medians_seconds": {
+          "compiled_cpu": 1.386576300006709
+        }
+      },
+      {
+        "threads": 4,
+        "samples_seconds": {
+          "compiled_cpu": [
+            0.4558532000082778,
+            0.45574439999472816,
+            0.4584495000017341,
+            0.4542700999882072,
+            0.45666939999500755,
+            0.452659999995376,
+            0.4605788999906508
+          ]
+        },
+        "medians_seconds": {
+          "compiled_cpu": 0.4558532000082778
+        }
+      },
+      {
+        "threads": 12,
+        "samples_seconds": {
+          "compiled_cpu": [
+            0.15687039999465924,
+            0.15819830000691582,
+            0.15847460000077263,
+            0.15806000000156928,
+            0.15732749999733642,
+            0.16049690000363626,
+            0.15895140000793617
+          ]
+        },
+        "medians_seconds": {
+          "compiled_cpu": 0.15819830000691582
+        }
+      },
+      {
+        "threads": 24,
+        "samples_seconds": {
+          "compiled_cpu": [
+            0.08579230000032112,
+            0.08513229999516625,
+            0.08638359999167733,
+            0.0853824999940116,
+            0.08535330000449903,
+            0.08441560000937898,
+            0.08495640000910498
+          ]
+        },
+        "medians_seconds": {
+          "compiled_cpu": 0.08535330000449903
+        }
+      },
+      {
+        "threads": 48,
+        "samples_seconds": {
+          "compiled_cpu": [
+            0.052630299993325025,
+            0.051440499999444,
+            0.049454300009529106,
+            0.05036310000286903,
+            0.049655900002107956,
+            0.050404299996444024,
+            0.04991260000679176
+          ]
+        },
+        "medians_seconds": {
+          "compiled_cpu": 0.05036310000286903
+        }
+      }
+    ]
+  },
+  "source_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\benchmark_phase61_live_inputs.py": "3460848047aae212323d6ba2d1a1abe749ea80fc428c419a492ae07d03c072f5",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase61_timetable.py": "7e2ffa658e8a827878fcd8f7fff85020c8ec093120f4c89af18b92eb688b297a",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase61_normals.py": "fe04db97975dbe10d1e083ad2018b56f19d00dfb653d199e6a6bad86dc36f2f7",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase58_mode_reduction.py": "ab9559437899457df7dcaba49c407ab4620a90a402f27e10bfefa2d9c5984248",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase59_cpu_algorithms.py": "15bbd9be7fd96d202614d270bff65859e2ae3b43636f89cca66ef8cd74579f3b"
+  },
+  "input_sha256": {
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-000.npz": "62f6be74e6616c116bbbfb62864341204965966fcd1884c69cc6ea7a573faddc",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-001.npz": "3aaa3d2402ef1f4111dfb596b2e68a0d829578c0dc973368ce27b0bee7c0bc19",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-002.npz": "a1d931b808ef0435d670126361445459b54c4616b79c6d3adca480dcb6f9e191",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-003.npz": "977ff9de8a9c75f324672b117a0b0cad9b63418734001e572bc954299b49bb67",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-004.npz": "6fdf21768a01e97b3c730267f5c95adfacbd8b460374dff172b5695598356e01",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-005.npz": "8e4bad6b1dedb62fbe736cd8f17b51732b3328f8c9eb5bbe01a7ec7597e9407f",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-006.npz": "83840a8e7443ce369a3b79102d343e78604be273236a20f156cf0840aed817e2",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-007.npz": "3bf120392ff85fce6339203597fbf29adeadaa3448817c8dc4f2cb60b57940da",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-008.npz": "e517117d597a5ad1caab3008ac490bfa9cd07b00035a747ee5504a98a3d0c03c",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-009.npz": "3ce0c8b3247392b6b41091382d6da10a556b8294f9ab7ebbffb3c876b136f8c4",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-010.npz": "893df7861cc2166a9e61a6b94223d56b8bebf42b74e6f4153377676244bc843c",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-011.npz": "b20d6ac0561a592030aec88d2fbf6290041dd96221e9d8230712ab46f2f334d8",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-012.npz": "f20b719bab7fb698a88d01e92cdcb1eb1c4f243049807642f22e412077df3073",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-013.npz": "b23dee173a8dd96e79d63c8e5f68577a8ea1b9ff8f9d47df126a38a120113d26",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-014.npz": "b5767ea148260106dbb74d82b1a2cd96e7bdb0ec3cd82320aeb79f850461c5c5",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-015.npz": "b0bf93e9c5ab88cb79a502edf87d9acb13c2d9fce1b9cdc27e3f57210cbb63a0",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-016.npz": "22679da026d5c7e6ee2ecf22699805c9014dc81b827b583b42738c70b394ba6f",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-017.npz": "464ea003235dccc11814db2a2159f16cc512c261825c0aece4fbd6b4a7122a63",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-018.npz": "2a8ce1b48845d05baabdb496fdeb427a5e14b3e5a252651f76449e173f46aa94",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-019.npz": "03e74e1dbe04613f8f4ebf0520d7980a6308cd490804eb0bad9adcc9d8766036",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-020.npz": "1664204181c63066033b985ab25057f01bd7d7f9c74d03e3ee145b194813c2bc",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-021.npz": "db1f3a9791211f7cfb5a4f6d851b95c1b4c876f2db4cf18e83781b367487f68a",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-022.npz": "6945ecad8d62be7e46c10ffdaee04bc5ba0ec68c61328973524ff9ff62dfab5d",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-023.npz": "2da31e6079cb46f4fb61fd9db5445acddca37195d17686737727733ee1a3625a",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-024.npz": "776cd7a86e33cef6d0a5a8008a91ea9f7cc2fa5ab2e5512c5069075ff7299d39",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-025.npz": "37a991861d36674e1c2ccd86aea6e7dec18b5abd6660a5457ae5f1a2758a84a0",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-026.npz": "db9410a98d00460d4ac09d88f4202857aa7f98f5badf72fe610dabb405a82d00",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-027.npz": "2999d103d2b1aeba74eff5307bf650a7ee1673a860fc3948dd76dcc475db21f8",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-028.npz": "e951dca51ffa606503f98a7c0136058dc5cbc45d872233b7a21b0ba2194df2bd",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-029.npz": "eb577b23e659fcf00fd474fb2a002d3b35b403922d878c62bf105bd7044fb76f",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-030.npz": "2cece9510cf1bebf81f6dc062bdee91ebb91c870d2281096de954fb9b0c8866e",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-031.npz": "40207abba2f511bfbc05bb12fcf513415000ec36a8711253f36fdcd66c5d3ef2",
+    "benchmark-data\\phase61-live-inputs\\normals\\batch-032.npz": "a62d2d23411c30809768552369c0a618fd4f20b7a63ae7a7d56fcf561352f271",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-000.npz": "2a253224a11be1169b2a4ef906b9dc18e29a6991f9d66facf15cbad1ee19aae1",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-001.npz": "d385000ec1336116c29b0385345c71dcb3bec6b8670b18fef26bb0867dd2b48b",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-002.npz": "592ed7ec12cb91e9096470a19762318ce3f2f259b370340ffa51b99eb99b8bdb",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-003.npz": "147dc02c40e84c25a63a9effd3007c6cb774be1f8cadea5373714124d767c4c5",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-004.npz": "480e62ec6cc2f657718d594f148e90edec05943972dc5d51f15c5a014daedb95",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-005.npz": "63fdf68266ee2509dd3ab82f1ba501deca7d60258d06c7914be20605a1f7daaf",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-006.npz": "2081bfca1f1b3b7035be7c744d93bec32d3034c31d40dce32f038a8417c1416c",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-007.npz": "8ae09365b21a72d1b864d1ae4181431243885f62f10070c9b8786740fec7b683",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-008.npz": "e3f6894ac783e87ed965c361059a1f9cac7c88163849979fed69436ab19cbdf8",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-009.npz": "c2ad659e24e2821f12f2fb6af571aa9320ca742ad3a8d8fdf0763ac1ca53b607",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-010.npz": "cea2aeb9ede0cafd315cf204adb5a8f741602029576841637a13a4cc336a54e5",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-011.npz": "cf0028546e54ecd24f66e86a73e01dd73c45ce6b857edd9d3972ac9dee90401e",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-012.npz": "34506bbed8790b3762c9beccf29874f7515d810d0fc3af915ec8cbc97036cf30",
+    "benchmark-data\\phase61-live-inputs\\timetable\\batch-013.npz": "6816f925fa0e162416763b22804a2f2e852e6f1eb2bcfa47a29a9024350ae76e",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-00.npz": "c776622b22c5ce4ac9ec6c01b153a4d8d0bec9b07e9fd0e8ed3c8008b16808b0",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-01.npz": "a9d18a8a650d78e62c62ec152b59cfdd9c64649c88f070cb3daf517135c4a259",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-02.npz": "46c905b2ab81494c002e2303b69dcc5b6651c11465c97e70a6d759a412dd8e28",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-03.npz": "405d4364ca45a49be0b291bacff987465f4fcb32c0bcc7e1f8e84aeb257159e6",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-04.npz": "970e0ce14bf5296798c14d0ff57c588e00a0f3e7fc0bf8dc9d26878c97cf36b0",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-05.npz": "d9a8d4801c086f54d6d3c212bbf2ab6b19698a106c81f96ada3ad2419aa6efcf",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-06.npz": "558a70468128cdca992a408458d73cdb024d406a2afa71c3715a79ca1d121b3e",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-07.npz": "7f42863da885437e1404e68ac17a48921352fd864fc98b93a57c25c616623ca7",
+    "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-08.npz": "ef1cd01641d507ba0ceece10f83ce6f0444fc45323a274cc44ee1fb3e4a1676f"
+  },
+  "not_full_model_performance": true
+}

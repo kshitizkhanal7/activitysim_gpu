@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "pdf_pages": 158,
+  "frozen_source_files": 409,
+  "source_and_evidence_hashes_unchanged": true,
+  "final_claim_text_checks": true,
+  "visual_review_is_separate": "Poppler pages 1,2,3,154,155,156,157,158 inspected by the assistant; automated text checks do not establish layout quality",
+  "artifact_sha256": {
+    "output\\pdf\\choiceforge-plain-english-explainer.pdf": "1d81523419d8b019ac3037c1fe0a100dc53c5bb53f7ff05d6e72e836fc878d63",
+    "README.md": "35d97b2b444989bf8245a0bd3e79ffa4667fb97e77a3ebdefdc9bb1ab3e176a4",
+    "docs\\choiceforge-plain-english-explainer.md": "1bbd757b2e2ce187349d78352002b77b21165fe4a00573ca7fb365309278b6c9",
+    "docs\\phase61-shared-live-inputs.md": "bd0f3d1fea86bed6e06560375d6b62ba8dd75f913c1d8ed02d0a4998b59aa304",
+    "docs\\phase61-component-comparison.md": "298f6d2763550a102c23a77052309397441eaa2bf7ba15982ebf0719e6642ee0",
+    "scripts\\build_plain_english_explainer_pdf.py": "9ddc877fee5a0fbe73783932ae4b44205af4d7ae1c01d11f5908699dbf5cb970",
+    "scripts\\verify_phase61_delivery.py": "b26428690be99650f6fdd8bc72bb299741cb13060ae293e2dd4e96c9c708369d"
+  }
+}

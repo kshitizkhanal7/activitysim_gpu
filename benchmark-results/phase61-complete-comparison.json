@@ -1,0 +1,1202 @@
+{
+  "status": "replicated_improvement_wall_target_not_met",
+  "totals": {
+    "gpu": {
+      "charged_total_seconds": 84.67126144999784,
+      "process_wall_seconds": 91.32548690000112
+    },
+    "candidate": {
+      "charged_total_seconds": 72.81528680000046,
+      "process_wall_seconds": 79.22109534999618
+    },
+    "regular1": {
+      "charged_total_seconds": 290.65,
+      "process_wall_seconds": 296.5242302500046
+    },
+    "regular48": {
+      "charged_total_seconds": 195.3,
+      "process_wall_seconds": 201.1663680999991
+    }
+  },
+  "components": [
+    {
+      "step": "initialize_landuse",
+      "regular1": 13.8,
+      "regular48": 13.6,
+      "gpu": 0.6,
+      "candidate": 0.6
+    },
+    {
+      "step": "initialize_households",
+      "regular1": 4.55,
+      "regular48": 4.7,
+      "gpu": 4.4,
+      "candidate": 4.4
+    },
+    {
+      "step": "compute_accessibility",
+      "regular1": 1.55,
+      "regular48": 1.6,
+      "gpu": 1.4,
+      "candidate": 1.4
+    },
+    {
+      "step": "school_location",
+      "regular1": 14.55,
+      "regular48": 9.05,
+      "gpu": 3.7,
+      "candidate": 3.6
+    },
+    {
+      "step": "workplace_location",
+      "regular1": 29.5,
+      "regular48": 13.1,
+      "gpu": 1.7,
+      "candidate": 1.7
+    },
+    {
+      "step": "auto_ownership_simulate",
+      "regular1": 0.7,
+      "regular48": 0.75,
+      "gpu": 1.15,
+      "candidate": 1.0
+    },
+    {
+      "step": "free_parking",
+      "regular1": 0.9,
+      "regular48": 0.9,
+      "gpu": 0.7,
+      "candidate": 0.7
+    },
+    {
+      "step": "cdap_simulate",
+      "regular1": 6.5,
+      "regular48": 6.7,
+      "gpu": 5.0,
+      "candidate": 4.55
+    },
+    {
+      "step": "mandatory_tour_frequency",
+      "regular1": 1.5,
+      "regular48": 1.3,
+      "gpu": 1.25,
+      "candidate": 1.35
+    },
+    {
+      "step": "mandatory_tour_scheduling",
+      "regular1": 37.55,
+      "regular48": 23.85,
+      "gpu": 8.7,
+      "candidate": 7.5
+    },
+    {
+      "step": "joint_tour_frequency",
+      "regular1": 1.15,
+      "regular48": 1.1,
+      "gpu": 1.05,
+      "candidate": 0.9
+    },
+    {
+      "step": "joint_tour_composition",
+      "regular1": 0.6,
+      "regular48": 0.6,
+      "gpu": 0.4,
+      "candidate": 0.4
+    },
+    {
+      "step": "joint_tour_participation",
+      "regular1": 2.0,
+      "regular48": 2.1,
+      "gpu": 1.9,
+      "candidate": 2.1
+    },
+    {
+      "step": "joint_tour_destination",
+      "regular1": 3.05,
+      "regular48": 3.1,
+      "gpu": 1.6,
+      "candidate": 1.65
+    },
+    {
+      "step": "joint_tour_scheduling",
+      "regular1": 1.6,
+      "regular48": 1.2,
+      "gpu": 1.25,
+      "candidate": 1.0
+    },
+    {
+      "step": "non_mandatory_tour_frequency",
+      "regular1": 6.85,
+      "regular48": 3.3,
+      "gpu": 3.0,
+      "candidate": 2.4
+    },
+    {
+      "step": "non_mandatory_tour_destination",
+      "regular1": 29.75,
+      "regular48": 12.649999999999999,
+      "gpu": 1.8,
+      "candidate": 1.7
+    },
+    {
+      "step": "non_mandatory_tour_scheduling",
+      "regular1": 17.65,
+      "regular48": 9.25,
+      "gpu": 5.0,
+      "candidate": 3.3
+    },
+    {
+      "step": "tour_mode_choice_simulate",
+      "regular1": 5.4,
+      "regular48": 5.1,
+      "gpu": 5.35,
+      "candidate": 3.25
+    },
+    {
+      "step": "atwork_subtour_frequency",
+      "regular1": 0.9,
+      "regular48": 0.9,
+      "gpu": 0.8,
+      "candidate": 0.6
+    },
+    {
+      "step": "atwork_subtour_destination",
+      "regular1": 7.3,
+      "regular48": 3.9,
+      "gpu": 1.1,
+      "candidate": 0.75
+    },
+    {
+      "step": "atwork_subtour_scheduling",
+      "regular1": 1.5,
+      "regular48": 1.5,
+      "gpu": 1.4,
+      "candidate": 1.1
+    },
+    {
+      "step": "atwork_subtour_mode_choice",
+      "regular1": 0.95,
+      "regular48": 0.9,
+      "gpu": 0.8,
+      "candidate": 0.7
+    },
+    {
+      "step": "stop_frequency",
+      "regular1": 3.2,
+      "regular48": 3.45,
+      "gpu": 3.1,
+      "candidate": 2.9
+    },
+    {
+      "step": "trip_purpose",
+      "regular1": 1.0,
+      "regular48": 0.95,
+      "gpu": 0.8,
+      "candidate": 0.8500000000000001
+    },
+    {
+      "step": "trip_destination",
+      "regular1": 65.0,
+      "regular48": 39.35,
+      "gpu": 8.6,
+      "candidate": 7.9
+    },
+    {
+      "step": "trip_purpose_and_destination",
+      "regular1": 0.5,
+      "regular48": 0.45,
+      "gpu": 0.35,
+      "candidate": 0.35
+    },
+    {
+      "step": "trip_scheduling",
+      "regular1": 6.55,
+      "regular48": 6.6,
+      "gpu": 2.0,
+      "candidate": 1.2
+    },
+    {
+      "step": "trip_mode_choice",
+      "regular1": 10.25,
+      "regular48": 9.1,
+      "gpu": 5.65,
+      "candidate": 3.9
+    },
+    {
+      "step": "write_data_dictionary",
+      "regular1": 1.4,
+      "regular48": 1.4,
+      "gpu": 1.3,
+      "candidate": 1.3
+    },
+    {
+      "step": "track_skim_usage",
+      "regular1": 0.3,
+      "regular48": 0.3,
+      "gpu": 0.2,
+      "candidate": 0.2
+    },
+    {
+      "step": "write_trip_matrices",
+      "regular1": 6.5,
+      "regular48": 6.4,
+      "gpu": 2.4,
+      "candidate": 2.4
+    },
+    {
+      "step": "write_tables",
+      "regular1": 1.7,
+      "regular48": 1.7,
+      "gpu": 1.5,
+      "candidate": 1.55
+    },
+    {
+      "step": "summarize",
+      "regular1": 4.45,
+      "regular48": 4.45,
+      "gpu": 3.9,
+      "candidate": 2.6
+    }
+  ],
+  "cpu_over_phase61": {
+    "1": {
+      "charged_total_seconds": 3.991606883295255,
+      "process_wall_seconds": 3.74299583892359
+    },
+    "48": {
+      "charged_total_seconds": 2.682129104791204,
+      "process_wall_seconds": 2.5393030380513264
+    }
+  },
+  "cpu_reports": {
+    "1": {
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p61formalcpu1-regular-1": {
+        "exact": true,
+        "contract": "exact-values-declared-departure-spelling-v1",
+        "report_count": 24,
+        "byte_identical": true,
+        "sha256": {
+          "reference": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          },
+          "candidate": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          }
+        },
+        "representation_only_differences": {}
+      },
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p61formalcpu1-regular-2": {
+        "exact": true,
+        "contract": "exact-values-declared-departure-spelling-v1",
+        "report_count": 24,
+        "byte_identical": true,
+        "sha256": {
+          "reference": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          },
+          "candidate": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          }
+        },
+        "representation_only_differences": {}
+      }
+    },
+    "48": {
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p61formalcpu48-regular-1": {
+        "exact": true,
+        "contract": "exact-values-declared-departure-spelling-v1",
+        "report_count": 24,
+        "byte_identical": true,
+        "sha256": {
+          "reference": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          },
+          "candidate": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          }
+        },
+        "representation_only_differences": {}
+      },
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-p58-p61formalcpu48-regular-2": {
+        "exact": true,
+        "contract": "exact-values-declared-departure-spelling-v1",
+        "report_count": 24,
+        "byte_identical": true,
+        "sha256": {
+          "reference": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          },
+          "candidate": {
+            "households_count.csv": "456c4528c41b56109e872b75c3003b9a06e470a2e9104b73868b1c810abe18ff",
+            "low_income_share_by_taz_deciles.csv": "188d61538625a2c4af100c85f504c86d036aadb3ad0ea8e1ad6a9527252a6d1a",
+            "non_mandatory_tours_tod_count.csv": "e479883dd6b6ca6f0ce80a9e509d68a046b7826b69e64aeba458e9749df62dd2",
+            "non_motorized_trip_distance_bins.csv": "03e6d7ead6b8b3fdfe73c20bae52d79e36ba61731c37bee28008f47b03252427",
+            "person_tours.csv": "2b8f2b96816562053db0406189cf5dcb4741f58945db4d09575225ae342e578c",
+            "person_trips.csv": "21419b31c5452934e7970f7b929dabf84a32e69e910e45ddd9afe6f2fb91178e",
+            "persons_count.csv": "0cd329bcd8fb75b5aafcd0a2d13d398f4ef041f7cd3dfb8b3b5a0ee385098c3a",
+            "school_tours_tod_count.csv": "94ad611d3e55e9c767637cfe6dda7c64c0a20313513e1f65ccb59f2c21ed466f",
+            "taz_population_density_quintiles.csv": "483a99689d0d948e20871635aab58d4390b6fc3188ccb14f4d85d4a9436ab38c",
+            "total_vmt.csv": "925c41e11e83a972234b47260a920aebf46243003545dcd906338c0836d41fb7",
+            "tour_mode_to_trip_mode.csv": "a235e6c972aae07b839dcff7ccc22c020653d19312a42be510d158c8fc8b9b26",
+            "tours_count.csv": "5a3c03b64db85d236568af112bb60ca459202e122f9001b653c4182f1f1ab93c",
+            "tours_per_household_count.csv": "27b6b2cadef3dd5347bba632c4f8d3c01d25fce19b80178be1f11ec623ec00c0",
+            "trip_by_income_category_major_mode.csv": "c911369308038804361dfc5ef1da4c820cb9e2ae04c5f79eedb2465ce1aeefcc",
+            "trip_purpose_by_time_of_day.csv": "e6f150ec138ddf25c141713d0d72b58feecb436d853416c8562f66338cdbdeeb",
+            "trips_by_mode_count.csv": "d51a731b2a52d12d1eefa1151edeed45942c58b57c6879eef3acfc722f21c36e",
+            "trips_by_purpose_count.csv": "fe638961702c04f40a0b9285386c2cd1f1a38e0857409a00c79c0e73b9c807d0",
+            "trips_count.csv": "a67d03c4315b3fe93cf17df032538c4f5677340deb57a991168ea10917c081dd",
+            "trips_per_household_count.csv": "20ffdfb9eeae72d8d8d67643c4c9819b8824ee00de63f055a32e753bf4c33c55",
+            "vmt_per_capita.csv": "e9021dd10b7b73ebffe34928acede4a3f3421163d98d0994754a24ca5c2ccbe2",
+            "vmt_per_capita_by_home_taz.csv": "72fb40f07e1d348763741ec1243349313cd53482e9a9321f5261eef4e018031d",
+            "vmt_per_capita_by_home_taz_quintiles.csv": "e795a4d2fd88b631f81f43cde1bf68102996654be3308391d78a50fc67189176",
+            "vmt_per_capita_by_work_taz.csv": "31f602624d32815baf153d24612041960d794e4b133e041dc8bf5f3752eba3f4",
+            "work_tours_tod_count.csv": "50de601911403159033c3bdf9f22d745c15839fcdae72a386920a1c53eea8f93"
+          }
+        },
+        "representation_only_differences": {}
+      }
+    }
+  },
+  "kernel_controls": {
+    "timetable": {
+      "scope": "all live timetable queries, authoritative collision vocabulary exact; immutable footprint encoding cached on both; GPU transfer scope re-encodes live windows and uploads all masks and query arrays and downloads booleans; excludes identity lookup, host validation and EntityStore bookkeeping on both",
+      "rows": 17794070,
+      "batches": 14,
+      "exact": true,
+      "sweep": [
+        {
+          "threads": 1,
+          "samples_seconds": {
+            "cpu_packed": [
+              0.04450669999641832,
+              0.04451580000750255,
+              0.0442097999912221,
+              0.04437809999217279,
+              0.04428860000916757,
+              0.04421730000467505,
+              0.04426909999165218
+            ],
+            "gpu_resident": [
+              0.0007062000076984987,
+              0.0006986999942455441,
+              0.0007095000037224963,
+              0.000708799998392351,
+              0.000745099998312071,
+              0.0007049999985611066,
+              0.0006999000033829361
+            ],
+            "cpu_encode_compute": [
+              0.08206859999336302,
+              0.08145990000048187,
+              0.08257310000772122,
+              0.0822562000103062,
+              0.08180419998825528,
+              0.08134380000410601,
+              0.08159130001149606
+            ],
+            "gpu_encode_transfer_compute_download": [
+              0.07077930000377819,
+              0.07055989999207668,
+              0.07293949999439064,
+              0.0709047999989707,
+              0.07089919999998529,
+              0.0704229000111809,
+              0.07082639999862295
+            ]
+          },
+          "medians_seconds": {
+            "cpu_packed": 0.04428860000916757,
+            "gpu_resident": 0.0007062000076984987,
+            "cpu_encode_compute": 0.08180419998825528,
+            "gpu_encode_transfer_compute_download": 0.07082639999862295
+          }
+        },
+        {
+          "threads": 4,
+          "samples_seconds": {
+            "cpu_packed": [
+              0.02141640000627376,
+              0.02134979999391362,
+              0.02115580000099726,
+              0.02145510000991635,
+              0.021125799990841188,
+              0.021295400001690723,
+              0.021040600011474453
+            ],
+            "gpu_resident": [
+              0.000715899994247593,
+              0.0007777999999234453,
+              0.0007899000047473237,
+              0.0009561000042594969,
+              0.0007269000052474439,
+              0.0009651000000303611,
+              0.000712799999746494
+            ],
+            "cpu_encode_compute": [
+              0.06352830000105314,
+              0.06130230000417214,
+              0.06030849998933263,
+              0.06043209999916144,
+              0.060732400001143105,
+              0.0604662000114331,
+              0.0633897999941837
+            ],
+            "gpu_encode_transfer_compute_download": [
+              0.07437380000192206,
+              0.07272989999910351,
+              0.07066509999276605,
+              0.07007499999599531,
+              0.07066739999572746,
+              0.07081240000843536,
+              0.09053119999589399
+            ]
+          },
+          "medians_seconds": {
+            "cpu_packed": 0.021295400001690723,
+            "gpu_resident": 0.0007777999999234453,
+            "cpu_encode_compute": 0.060732400001143105,
+            "gpu_encode_transfer_compute_download": 0.07081240000843536
+          }
+        },
+        {
+          "threads": 12,
+          "samples_seconds": {
+            "cpu_packed": [
+              0.008933200006140396,
+              0.008704100007889792,
+              0.008509099992807023,
+              0.009185100003378466,
+              0.008620199994766153,
+              0.008903199995984323,
+              0.00859860000491608
+            ],
+            "gpu_resident": [
+              0.004672399998526089,
+              0.004702299993368797,
+              0.004844700000830926,
+              0.004713999995146878,
+              0.004822299990337342,
+              0.00475150000420399,
+              0.004756299997097813
+            ],
+            "cpu_encode_compute": [
+              0.050629499994101934,
+              0.05011660000309348,
+              0.049099800002295524,
+              0.04975449999619741,
+              0.05001629999605939,
+              0.0503311000065878,
+              0.049068499996792525
+            ],
+            "gpu_encode_transfer_compute_download": [
+              0.09081080000032671,
+              0.08932669999194331,
+              0.08960889998706989,
+              0.09021260000008624,
+              0.09474720001162495,
+              0.09226600000692997,
+              0.09495500000775792
+            ]
+          },
+          "medians_seconds": {
+            "cpu_packed": 0.008704100007889792,
+            "gpu_resident": 0.00475150000420399,
+            "cpu_encode_compute": 0.05001629999605939,
+            "gpu_encode_transfer_compute_download": 0.09081080000032671
+          }
+        },
+        {
+          "threads": 24,
+          "samples_seconds": {
+            "cpu_packed": [
+              0.009189800010062754,
+              0.0089185999968322,
+              0.007892199995694682,
+              0.008549199992557988,
+              0.00828959999489598,
+              0.008903900001314469,
+              0.0077923999924678355
+            ],
+            "gpu_resident": [
+              0.004766800004290417,
+              0.00477820000378415,
+              0.004774599990923889,
+              0.00475380000716541,
+              0.004755999994813465,
+              0.004773399996338412,
+              0.004778300004545599
+            ],
+            "cpu_encode_compute": [
+              0.051478299996233545,
+              0.05547120000119321,
+              0.05110459998832084,
+              0.05434149999928195,
+              0.052043400006368756,
+              0.053909800000838004,
+              0.049932899986742996
+            ],
+            "gpu_encode_transfer_compute_download": [
+              0.17262019999907352,
+              0.11754259999725036,
+              0.09888920000230428,
+              0.09350949998770375,
+              0.09441390000574756,
+              0.09426579999853857,
+              0.09502360000624321
+            ]
+          },
+          "medians_seconds": {
+            "cpu_packed": 0.008549199992557988,
+            "gpu_resident": 0.004773399996338412,
+            "cpu_encode_compute": 0.052043400006368756,
+            "gpu_encode_transfer_compute_download": 0.09502360000624321
+          }
+        },
+        {
+          "threads": 48,
+          "samples_seconds": {
+            "cpu_packed": [
+              0.010492500005057082,
+              0.009700400012661703,
+              0.009469199998420663,
+              0.01023929999792017,
+              0.009389099999680184,
+              0.009530700001050718,
+              0.009558899997500703
+            ],
+            "gpu_resident": [
+              0.004757100003189407,
+              0.0047550000017508864,
+              0.004674700001487508,
+              0.004711400004453026,
+              0.004844800001592375,
+              0.00474709999980405,
+              0.004715299990493804
+            ],
+            "cpu_encode_compute": [
+              0.052929500001482666,
+              0.05219720001332462,
+              0.05150780000258237,
+              0.052433200005907565,
+              0.05792510000173934,
+              0.054276900002150796,
+              0.05462690000422299
+            ],
+            "gpu_encode_transfer_compute_download": [
+              0.09454180000466295,
+              0.09166140000161249,
+              0.09116769999673124,
+              0.09084629999415483,
+              0.18321970000397414,
+              0.09141670000099111,
+              0.09567750000860542
+            ]
+          },
+          "medians_seconds": {
+            "cpu_packed": 0.009558899997500703,
+            "gpu_resident": 0.00474709999980405,
+            "cpu_encode_compute": 0.052929500001482666,
+            "gpu_encode_transfer_compute_download": 0.09166140000161249
+          }
+        }
+      ],
+      "best_cpu_threads": 12,
+      "transfer_inclusive_cpu_over_gpu": 0.5507747976659103
+    },
+    "tour_modes": {
+      "scope": "actual live tour utilities, draws and nests; equivalent compiled nested reducers; allocations included; transfer-inclusive uploads utilities/draws and downloads reducer outputs; excludes expression evaluation, RNG and live boundary resolution on both; guarded rows remain subject to production CPU checks",
+      "checks": [
+        {
+          "rows": 7887,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 16703,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 16514,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 11427,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 1.7763568394002505e-15
+        },
+        {
+          "rows": 21833,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 20709,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 5256,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 1.7763568394002505e-15
+        },
+        {
+          "rows": 3919,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 8.881784197001252e-16
+        },
+        {
+          "rows": 56231,
+          "guarded": 0,
+          "off_boundary_choices_exact": true,
+          "max_logsum_abs": 1.7763568394002505e-15
+        }
+      ],
+      "sweep": [
+        {
+          "threads": 1,
+          "samples_seconds": {
+            "cpu": [
+              0.12967919999209698,
+              0.13132909999694675,
+              0.13223740000103135,
+              0.15289739999570884,
+              0.12088349999976344,
+              0.11473999998997897,
+              0.10192780000215862
+            ],
+            "gpu_resident": [
+              0.01626600000599865,
+              0.01875570000265725,
+              0.016330099999322556,
+              0.015631799993570894,
+              0.01796609998564236,
+              0.01737630000570789,
+              0.08678620000137016
+            ],
+            "gpu_transfer_inclusive": [
+              0.02143949999299366,
+              0.02258429999346845,
+              0.023317899991525337,
+              0.02326849999371916,
+              0.021411800000350922,
+              0.021301500004483387,
+              0.09941090000211261
+            ]
+          },
+          "medians_seconds": {
+            "cpu": 0.12967919999209698,
+            "gpu_resident": 0.01737630000570789,
+            "gpu_transfer_inclusive": 0.02258429999346845
+          }
+        },
+        {
+          "threads": 4,
+          "samples_seconds": {
+            "cpu": [
+              0.037955899999360554,
+              0.03664740000385791,
+              0.03698820000863634,
+              0.03679260000353679,
+              0.03644409999833442,
+              0.036582900007488206,
+              0.03491659999417607
+            ],
+            "gpu_resident": [
+              0.015573399999993853,
+              0.014327599987154827,
+              0.014264500001445413,
+              0.013900699996156618,
+              0.013568899987149052,
+              0.013378200004808605,
+              0.013638699994771741
+            ],
+            "gpu_transfer_inclusive": [
+              0.025069700001040474,
+              0.01958300000114832,
+              0.026402799994684756,
+              0.021689100001822226,
+              0.01821360000758432,
+              0.017989200001466088,
+              0.0182422000070801
+            ]
+          },
+          "medians_seconds": {
+            "cpu": 0.03664740000385791,
+            "gpu_resident": 0.013900699996156618,
+            "gpu_transfer_inclusive": 0.01958300000114832
+          }
+        },
+        {
+          "threads": 12,
+          "samples_seconds": {
+            "cpu": [
+              0.013420600007520989,
+              0.013338699995074421,
+              0.013088299994706176,
+              0.013444199998048134,
+              0.013100800002575852,
+              0.013408499988145195,
+              0.013077000010525808
+            ],
+            "gpu_resident": [
+              0.013903600003686734,
+              0.01384200000029523,
+              0.013935700000729412,
+              0.012046399991959333,
+              0.012250200001290068,
+              0.012158199999248609,
+              0.012258599992492236
+            ],
+            "gpu_transfer_inclusive": [
+              0.019249300006777048,
+              0.01922299999569077,
+              0.01914540000143461,
+              0.019117200004984625,
+              0.017619699996430427,
+              0.017505800002254546,
+              0.01763849999406375
+            ]
+          },
+          "medians_seconds": {
+            "cpu": 0.013338699995074421,
+            "gpu_resident": 0.012258599992492236,
+            "gpu_transfer_inclusive": 0.019117200004984625
+          }
+        },
+        {
+          "threads": 24,
+          "samples_seconds": {
+            "cpu": [
+              0.009245400011423044,
+              0.009715899999719113,
+              0.008404000007431023,
+              0.009519999992335215,
+              0.008493499990436248,
+              0.00877780000155326,
+              0.008329000003868714
+            ],
+            "gpu_resident": [
+              0.011949600011575967,
+              0.0118959000101313,
+              0.011913200010894798,
+              0.011605300009250641,
+              0.011945400008698925,
+              0.010469200002262369,
+              0.010598199995001778
+            ],
+            "gpu_transfer_inclusive": [
+              0.017027800000505522,
+              0.017082899998058565,
+              0.017108900006860495,
+              0.017268900002818555,
+              0.017092199996113777,
+              0.016468400004669093,
+              0.015437799986102618
+            ]
+          },
+          "medians_seconds": {
+            "cpu": 0.00877780000155326,
+            "gpu_resident": 0.0118959000101313,
+            "gpu_transfer_inclusive": 0.017082899998058565
+          }
+        },
+        {
+          "threads": 48,
+          "samples_seconds": {
+            "cpu": [
+              0.008417400007601827,
+              0.008265299999038689,
+              0.007023199999821372,
+              0.009254700009478256,
+              0.007302900005015545,
+              0.008195299989893101,
+              0.007186199989519082
+            ],
+            "gpu_resident": [
+              0.0107416000100784,
+              0.0104810000048019,
+              0.010106900008395314,
+              0.009640199990826659,
+              0.0101037999993423,
+              0.009808700007852167,
+              0.010260700000799261
+            ],
+            "gpu_transfer_inclusive": [
+              0.018039600006886758,
+              0.016970100012258627,
+              0.014259299990953878,
+              0.013887199995224364,
+              0.016543599995202385,
+              0.016310799997881986,
+              0.014910999991116114
+            ]
+          },
+          "medians_seconds": {
+            "cpu": 0.008195299989893101,
+            "gpu_resident": 0.010106900008395314,
+            "gpu_transfer_inclusive": 0.016310799997881986
+          }
+        }
+      ],
+      "best_cpu_threads": 48,
+      "resident_cpu_over_gpu": 0.8108618847604766,
+      "transfer_inclusive_cpu_over_gpu": 0.5024462313900783
+    },
+    "normals": {
+      "scope": "all live standard-normal streams; same seeds, offsets, draw counts; original NumPy row loop versus compiled CPU batch; seed/offset conversion and allocations included; excludes dataframe ledger gather/commit on both; this is NOT a GPU gain",
+      "rows": 933292,
+      "batches": 33,
+      "bit_exact": true,
+      "original": {
+        "samples_seconds": {
+          "original_numpy": [
+            3.4486710999917705,
+            3.4614184999954887,
+            3.4688107000110904,
+            3.415966300002765,
+            3.4422536000056425,
+            3.4171476000046823,
+            3.3835647000087192
+          ]
+        },
+        "medians_seconds": {
+          "original_numpy": 3.4422536000056425
+        }
+      },
+      "sweep": [
+        {
+          "threads": 1,
+          "samples_seconds": {
+            "compiled_cpu": [
+              1.3867068999970797,
+              1.3823630999977468,
+              1.3669330999982776,
+              1.414022600001772,
+              1.3840884999954142,
+              1.4074831000034465,
+              1.3800919999921462
+            ]
+          },
+          "medians_seconds": {
+            "compiled_cpu": 1.3840884999954142
+          }
+        },
+        {
+          "threads": 4,
+          "samples_seconds": {
+            "compiled_cpu": [
+              0.4546319999935804,
+              0.45253750000847504,
+              0.453481800010195,
+              0.45437479999964125,
+              0.4548301999893738,
+              0.45293829998990986,
+              0.4532398000010289
+            ]
+          },
+          "medians_seconds": {
+            "compiled_cpu": 0.453481800010195
+          }
+        },
+        {
+          "threads": 12,
+          "samples_seconds": {
+            "compiled_cpu": [
+              0.15914799999154638,
+              0.15973099999246188,
+              0.15916219999780878,
+              0.15956749999895692,
+              0.16015159999369644,
+              0.15972530000726692,
+              0.1592707999952836
+            ]
+          },
+          "medians_seconds": {
+            "compiled_cpu": 0.15956749999895692
+          }
+        },
+        {
+          "threads": 24,
+          "samples_seconds": {
+            "compiled_cpu": [
+              0.08762709998700302,
+              0.0881490999890957,
+              0.0863554999959888,
+              0.08982069999910891,
+              0.08860989999084268,
+              0.08753530000103638,
+              0.09093969999230467
+            ]
+          },
+          "medians_seconds": {
+            "compiled_cpu": 0.0881490999890957
+          }
+        },
+        {
+          "threads": 48,
+          "samples_seconds": {
+            "compiled_cpu": [
+              0.052615599997807294,
+              0.05452760000480339,
+              0.05295290000503883,
+              0.05454729999473784,
+              0.05265920000965707,
+              0.05557869999029208,
+              0.05324860000109766
+            ]
+          },
+          "medians_seconds": {
+            "compiled_cpu": 0.05324860000109766
+          }
+        }
+      ]
+    },
+    "source_sha256": {
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\benchmark_phase61_live_inputs.py": "c85848cab2b2a623286f19129e14173910525199bafe7a8d7b0490d4febd022b",
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase61_timetable.py": "be8c8912607aee8842267866114ff3afe6dab12d4aea6e658f7461867b9a9320",
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase61_normals.py": "fe04db97975dbe10d1e083ad2018b56f19d00dfb653d199e6a6bad86dc36f2f7",
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase58_mode_reduction.py": "ab9559437899457df7dcaba49c407ab4620a90a402f27e10bfefa2d9c5984248",
+      "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase59_cpu_algorithms.py": "15bbd9be7fd96d202614d270bff65859e2ae3b43636f89cca66ef8cd74579f3b"
+    },
+    "input_sha256": {
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-000.npz": "62f6be74e6616c116bbbfb62864341204965966fcd1884c69cc6ea7a573faddc",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-001.npz": "3aaa3d2402ef1f4111dfb596b2e68a0d829578c0dc973368ce27b0bee7c0bc19",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-002.npz": "a1d931b808ef0435d670126361445459b54c4616b79c6d3adca480dcb6f9e191",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-003.npz": "977ff9de8a9c75f324672b117a0b0cad9b63418734001e572bc954299b49bb67",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-004.npz": "6fdf21768a01e97b3c730267f5c95adfacbd8b460374dff172b5695598356e01",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-005.npz": "8e4bad6b1dedb62fbe736cd8f17b51732b3328f8c9eb5bbe01a7ec7597e9407f",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-006.npz": "83840a8e7443ce369a3b79102d343e78604be273236a20f156cf0840aed817e2",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-007.npz": "3bf120392ff85fce6339203597fbf29adeadaa3448817c8dc4f2cb60b57940da",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-008.npz": "e517117d597a5ad1caab3008ac490bfa9cd07b00035a747ee5504a98a3d0c03c",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-009.npz": "3ce0c8b3247392b6b41091382d6da10a556b8294f9ab7ebbffb3c876b136f8c4",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-010.npz": "893df7861cc2166a9e61a6b94223d56b8bebf42b74e6f4153377676244bc843c",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-011.npz": "b20d6ac0561a592030aec88d2fbf6290041dd96221e9d8230712ab46f2f334d8",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-012.npz": "f20b719bab7fb698a88d01e92cdcb1eb1c4f243049807642f22e412077df3073",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-013.npz": "b23dee173a8dd96e79d63c8e5f68577a8ea1b9ff8f9d47df126a38a120113d26",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-014.npz": "b5767ea148260106dbb74d82b1a2cd96e7bdb0ec3cd82320aeb79f850461c5c5",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-015.npz": "b0bf93e9c5ab88cb79a502edf87d9acb13c2d9fce1b9cdc27e3f57210cbb63a0",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-016.npz": "22679da026d5c7e6ee2ecf22699805c9014dc81b827b583b42738c70b394ba6f",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-017.npz": "464ea003235dccc11814db2a2159f16cc512c261825c0aece4fbd6b4a7122a63",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-018.npz": "2a8ce1b48845d05baabdb496fdeb427a5e14b3e5a252651f76449e173f46aa94",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-019.npz": "03e74e1dbe04613f8f4ebf0520d7980a6308cd490804eb0bad9adcc9d8766036",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-020.npz": "1664204181c63066033b985ab25057f01bd7d7f9c74d03e3ee145b194813c2bc",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-021.npz": "db1f3a9791211f7cfb5a4f6d851b95c1b4c876f2db4cf18e83781b367487f68a",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-022.npz": "6945ecad8d62be7e46c10ffdaee04bc5ba0ec68c61328973524ff9ff62dfab5d",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-023.npz": "2da31e6079cb46f4fb61fd9db5445acddca37195d17686737727733ee1a3625a",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-024.npz": "776cd7a86e33cef6d0a5a8008a91ea9f7cc2fa5ab2e5512c5069075ff7299d39",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-025.npz": "37a991861d36674e1c2ccd86aea6e7dec18b5abd6660a5457ae5f1a2758a84a0",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-026.npz": "db9410a98d00460d4ac09d88f4202857aa7f98f5badf72fe610dabb405a82d00",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-027.npz": "2999d103d2b1aeba74eff5307bf650a7ee1673a860fc3948dd76dcc475db21f8",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-028.npz": "e951dca51ffa606503f98a7c0136058dc5cbc45d872233b7a21b0ba2194df2bd",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-029.npz": "eb577b23e659fcf00fd474fb2a002d3b35b403922d878c62bf105bd7044fb76f",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-030.npz": "2cece9510cf1bebf81f6dc062bdee91ebb91c870d2281096de954fb9b0c8866e",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-031.npz": "40207abba2f511bfbc05bb12fcf513415000ec36a8711253f36fdcd66c5d3ef2",
+      "benchmark-data\\phase61-live-inputs\\normals\\batch-032.npz": "a62d2d23411c30809768552369c0a618fd4f20b7a63ae7a7d56fcf561352f271",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-000.npz": "2a253224a11be1169b2a4ef906b9dc18e29a6991f9d66facf15cbad1ee19aae1",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-001.npz": "d385000ec1336116c29b0385345c71dcb3bec6b8670b18fef26bb0867dd2b48b",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-002.npz": "592ed7ec12cb91e9096470a19762318ce3f2f259b370340ffa51b99eb99b8bdb",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-003.npz": "147dc02c40e84c25a63a9effd3007c6cb774be1f8cadea5373714124d767c4c5",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-004.npz": "480e62ec6cc2f657718d594f148e90edec05943972dc5d51f15c5a014daedb95",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-005.npz": "63fdf68266ee2509dd3ab82f1ba501deca7d60258d06c7914be20605a1f7daaf",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-006.npz": "2081bfca1f1b3b7035be7c744d93bec32d3034c31d40dce32f038a8417c1416c",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-007.npz": "8ae09365b21a72d1b864d1ae4181431243885f62f10070c9b8786740fec7b683",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-008.npz": "e3f6894ac783e87ed965c361059a1f9cac7c88163849979fed69436ab19cbdf8",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-009.npz": "c2ad659e24e2821f12f2fb6af571aa9320ca742ad3a8d8fdf0763ac1ca53b607",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-010.npz": "cea2aeb9ede0cafd315cf204adb5a8f741602029576841637a13a4cc336a54e5",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-011.npz": "cf0028546e54ecd24f66e86a73e01dd73c45ce6b857edd9d3972ac9dee90401e",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-012.npz": "34506bbed8790b3762c9beccf29874f7515d810d0fc3af915ec8cbc97036cf30",
+      "benchmark-data\\phase61-live-inputs\\timetable\\batch-013.npz": "6816f925fa0e162416763b22804a2f2e852e6f1eb2bcfa47a29a9024350ae76e",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-00.npz": "c776622b22c5ce4ac9ec6c01b153a4d8d0bec9b07e9fd0e8ed3c8008b16808b0",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-01.npz": "a9d18a8a650d78e62c62ec152b59cfdd9c64649c88f070cb3daf517135c4a259",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-02.npz": "46c905b2ab81494c002e2303b69dcc5b6651c11465c97e70a6d759a412dd8e28",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-03.npz": "405d4364ca45a49be0b291bacff987465f4fcb32c0bcc7e1f8e84aeb257159e6",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-04.npz": "970e0ce14bf5296798c14d0ff57c588e00a0f3e7fc0bf8dc9d26878c97cf36b0",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-05.npz": "d9a8d4801c086f54d6d3c212bbf2ab6b19698a106c81f96ada3ad2419aa6efcf",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-06.npz": "558a70468128cdca992a408458d73cdb024d406a2afa71c3715a79ca1d121b3e",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-07.npz": "7f42863da885437e1404e68ac17a48921352fd864fc98b93a57c25c616623ca7",
+      "benchmark-data\\phase61-live-inputs\\tour_modes\\batch-08.npz": "ef1cd01641d507ba0ceece10f83ce6f0444fc45323a274cc44ee1fb3e4a1676f"
+    },
+    "not_full_model_performance": true,
+    "cpu_worker_wait_policy": "PASSIVE; prevents idle CPU workers contending with following GPU trials"
+  },
+  "scope": "Six balanced Phase60/61 pairs; two fresh regular CPU runs each at 1 and 48 Numba threads, separately measured; BLAS/OpenMP one thread. Not a strongest-possible CPU rewrite. Exact output contracts unchanged. Hybrid improvements, not GPU-only attribution.",
+  "evidence_sha256": {
+    "benchmark-results\\phase61-formal-qualification.json": "87019741c81f917120373e53925c9e7dd18c795bd2b66139144de8a3538aaca7",
+    "benchmark-results\\phase58-p61formalcpu1-summary.json": "ed9aeaf973a62c52c2b3a03ae2ddc0ce1bf9b4e17485dceb6e8433b0a0818713",
+    "benchmark-results\\phase58-p61formalcpu48-summary.json": "f703e8ebe91ffd4d0b77df25ac8838fd746eefadaa482641f740d976206168e5",
+    "benchmark-results\\phase61-live-cpu-controls-passive.json": "e513430dd219318dfe2728a4b1b064b9999e38c4aa03b42bb4d5b43bdad95ed8",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\report_phase61_comparison.py": "f4edb95cc007f40d86a57ea25f3745bfda16686120e52ea816ab24db41a09cf4",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\report_phase59_comparison.py": "114cb62f872224d5fd64e44ff1aa587bf8606eb4a3675e3f3bd94f0b4107e94e"
+  }
+}

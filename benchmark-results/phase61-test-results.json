@@ -1,0 +1,8 @@
+{
+  "command": ".venv-phase8/Scripts/python.exe -m pytest -q --disable-warnings",
+  "orchestrator": "scripts/run_phase61_qualification.ps1",
+  "evidence_basis": "Transcribed from captured command stdout; pytest JSON reporting was not enabled",
+  "before_final_series": {"passed": 545, "warnings": 92, "seconds": 32.45, "exit_code": 0},
+  "after_final_series": {"passed": 545, "warnings": 92, "seconds": 32.02, "exit_code": 0},
+  "qualification": "benchmark-results/phase61-formal-qualification.json"
+}

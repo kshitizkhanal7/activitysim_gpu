@@ -342,7 +342,12 @@ def main() -> int:
     parser.add_argument("--phase60-preparation", action="store_true")
     parser.add_argument("--phase60-frequency-threads", type=int, default=48)
     parser.add_argument("--phase60-frequency-control", action="store_true")
+    parser.add_argument("--phase61-features", default="")
+    parser.add_argument("--phase61-capture-inputs", type=Path)
+    parser.add_argument("--phase61-timetable-backend", choices=("cpu","cuda"), default="cpu")
     args = parser.parse_args()
+    if args.phase61_features:
+        args.phase60_preparation = True
     if os.environ.get("CHOICEFORGE_NUMBA_INITIAL_THREADS"):
         import numba
         numba.set_num_threads(int(os.environ["CHOICEFORGE_NUMBA_INITIAL_THREADS"]))
@@ -547,6 +552,11 @@ def main() -> int:
     phase59_matrix_events = []
     phase60_events = []
     phase60_frequency_controls = []
+    phase61_runtime = None
+    if args.phase61_features:
+        from choiceforge.phase61_runtime import Runtime
+        phase61_runtime = Runtime(args.phase61_features, timetable_backend=args.phase61_timetable_backend,
+                                  capture_directory=args.phase61_capture_inputs)
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1436,6 +1446,10 @@ def main() -> int:
                 activitysim_tour_destination.interaction_sample_simulate = compact_choice
                 activitysim_tour_destination.interaction_sample = resident_sample
         profiler = None
+        phase61_context = None
+        if phase61_runtime is not None:
+            phase61_context = phase61_runtime.for_step(self._obj, model_name_text)
+            phase61_context.__enter__()
         preparation_context = None
         if args.phase60_preparation:
             from choiceforge.phase60_preparation import for_step as prepare_step
@@ -1463,7 +1477,7 @@ def main() -> int:
         if args.phase58_profile_trips and model_name_text in {
             "trip_destination", "trip_scheduling", "trip_mode_choice", "write_trip_matrices",
             "mandatory_tour_scheduling", "non_mandatory_tour_frequency", "cdap_simulate",
-            "non_mandatory_tour_scheduling", "summarize"
+            "non_mandatory_tour_scheduling", "tour_mode_choice_simulate", "summarize"
         }:
             import cProfile
             profiler = cProfile.Profile()
@@ -1471,6 +1485,8 @@ def main() -> int:
         try:
             result = original_runner_by_name(self, model_name)
         finally:
+            if phase61_context is not None:
+                phase61_context.__exit__(*sys.exc_info())
             if preparation_context is not None:
                 preparation_context.__exit__(None, None, None)
             if original_matrix_writer is not None:
@@ -3116,6 +3132,7 @@ def main() -> int:
         "phase58_trip_runtime": phase58_runtime.summary() if phase58_runtime else None,
         "phase58_profiling_enabled": args.phase58_profile_trips is not None,
         "phase60_preparation": {"enabled":args.phase60_preparation, "events":phase60_events},
+        "phase61_shared_inputs": phase61_runtime.summary() if phase61_runtime is not None else {"enabled":False},
         "phase60_frequency_control": {"instrumented_not_performance":args.phase60_frequency_control,
                                       "segments":phase60_frequency_controls},
         "phase57_live_scheduling": {
