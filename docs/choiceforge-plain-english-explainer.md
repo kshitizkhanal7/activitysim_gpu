@@ -15,29 +15,32 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 61: the complete public 50,000-household model takes
-79.22 seconds from launch to exit, compared with 201.17 seconds for newly
-measured regular CPU ActivitySim using 48 Numba threads. That is 2.54 times
-faster, or about 61% less waiting, on this machine and configuration. Against
+Latest result, Phase 62: the complete public 50,000-household model takes
+76.81 seconds from launch to exit, compared with 204.84 seconds for newly
+measured regular CPU ActivitySim using 48 Numba threads. That is 2.67 times
+faster, or 62.50% less waiting, on this machine and configuration. Against
 the previous accelerated version measured in six balanced pairs, the gain is
-91.33 to 79.22 seconds, a 13.25% reduction. Every pair improves. All six new
-runs finish in 78.75-79.68 seconds. **The 75-second target and 70-second stretch
-target were not met.** A replicated improvement is not the same as meeting
-every goal.
+80.63 to 76.81 seconds, a 4.73% reduction. Every pair improves. All six new
+runs finish in 76.25-78.14 seconds. **The under-70-second fresh-process target
+and 65-second stretch target were not met.** A replicated improvement is not
+the same as meeting every goal.
 
 Every checked travel decision, all 115 travel matrices and values throughout
 all 24 summary reports agree; four reports have documented `5` versus `5.0`
 departure-key formatting differences. Three changed scenarios also pass.
 The runtime handles complete departure retries, shares versioned data, and
 does not need captured mandatory-scheduling answers. It remains a CPU/GPU
-hybrid for the supported model. This phase shares some live GPU inputs,
-extends GPU tour-mode and uniform-draw work, and makes CPU preparation and
-normal-number generation faster. Strong CPU comparisons show that some
-small calculations still favor CPU. Live CPU checks for borderline choices
-remain. The full gain is not a GPU-only hardware claim. All 545 tests pass.
-Sections 321 onward explain these changes, the stronger CPU comparison,
-actual results and remaining limits. Earlier sections preserve the history
-and should not be read as the latest timing claim.
+hybrid for the supported model. This phase reduces repeated preparation and
+adds a worker that reuses programs while restarting scenarios with fresh
+mutable state. For three scenarios, hybrid elapsed time falls from 235.65 to
+212.34 seconds, a 9.89% reduction. CPU gets equivalent reuse and takes 545.74
+seconds in its persistent worker. These are batch totals, not one-run times.
+Strong CPU comparisons show that some small calculations still favor CPU.
+Live CPU checks for borderline choices remain. The full gain is not a
+GPU-only hardware claim. All 565 tests pass, and all 43 formal model runs
+pass their output audits. Sections 329 onward explain these changes, the
+fair batch comparison, actual results and remaining limits. Earlier sections
+preserve the history and should not be read as the latest timing claim.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -8761,3 +8764,289 @@ uses warm caches, one workstation and a 50,000-household sample, not all
 regional households or every ActivitySim feature. Matching the model's
 answers establishes computational replication; proving that those answers
 accurately predict human behavior remains a separate scientific task.
+
+## 329. Why does Phase 62 focus on preparation rather than another GPU kernel?
+
+A fast restaurant needs more than a fast stove. Someone must read the order,
+find ingredients and wash the utensils. Making the stove twice as fast does
+not halve the customer's wait if these other jobs take most of the time.
+The same is true here: a GPU can finish arithmetic quickly while the CPU is
+still preparing the instructions and arranging the next inputs.
+
+Phase 62 targets those remaining preparation costs. It keeps useful compiled
+programs, avoids rebuilding identical parts of calculation recipes, and
+publishes only the shared columns that a live calculation actually requests.
+It also tests running several scenarios in one long-lived process. These are
+application improvements, not a new claim that GPU arithmetic became faster.
+Earlier GPU kernels and the independent CPU checks still do their jobs.
+
+An **expression** is a small formula, such as travel time multiplied by its
+importance. A **compiler** translates formulas into instructions the computer
+can execute. An **intermediate representation**, or IR, is an organized
+recipe between the written formula and those machine instructions. The same
+recipe can help generate both a CPU reference and a GPU implementation.
+
+The new compiler reuses the parsed structure of an unchanged formula. It
+still reads the current coefficients and creates independent recipe objects.
+Changing a coefficient must change the calculation; reusing an old answer
+would be incorrect. Tests deliberately change coefficients and inputs to
+check this distinction. The shared recipe preserves the project's existing
+arithmetic rules rather than inventing a more convenient rounding policy.
+
+The runtime also avoids repeated successful checks of the same writable
+compiler-cache directory. A cache is a place to keep reusable work. Its
+actual program identities, version checks and writes are not bypassed.
+Deleting or replacing the directory causes a new check. This scoped shortcut
+is for the supported sequential execution, not a guarantee against someone
+changing permissions while the model is running.
+
+## 330. What does "only prepare what is needed" mean?
+
+Think of a spreadsheet with dozens of columns. If a calculation uses two,
+copying every column to another computer wastes work and memory. Previously,
+the shared entity store published substantially more than its new consumers
+read. Phase 62 waits until a live program names the columns it needs.
+
+In the development comparison, retained shared entity data fell from
+42,055,332 bytes to 1,726,514 bytes, about 96% less. The same 19 segment
+consumers still use the two relevant columns: tour participant counts and
+whether a trip is outbound. This is the size of that particular store, not
+the whole model's GPU memory. Nor does a 96% smaller store imply a 96% faster
+model. The useful question is how much waiting the change removes overall.
+
+The runtime checks the live table's identity, data type and exact host values
+before reuse. If the model changes a value, the next calculation must see the
+new value. It does not simply assume that an array at an old memory address
+still contains the same information.
+
+Trip-destination preparation also stops compiling one base GPU program that
+the selected normalized production path never calls. That path uses its own
+fused program. The binding checks and recipe validation remain, and shadow
+or other paths that need the base program still compile it. Avoiding unused
+work is different from skipping a calculation the model needs.
+
+## 331. How can a repeated-scenario worker save time safely?
+
+A **scenario** is one complete model run with specified assumptions and a
+random seed. The seed determines a reproducible sequence of random draws.
+Starting a new Python process for every scenario repeats imports, input-file
+parsing and some program setup. A **persistent worker** is a process that
+stays open to run the next scenario.
+
+Keeping a process open is easy; preventing yesterday's answers from leaking
+into today's calculation is harder. A timetable remembers occupied hours,
+and a random-number ledger remembers which draws belong to which entities.
+Neither should survive as the next scenario's mutable model state.
+
+The selected worker keeps compiled CPU and CUDA programs with matching
+source identities. It rebuilds the ActivitySim and ChoiceForge application
+module graphs between scenarios. Each model invocation constructs a fresh
+workflow state, working tables, timetables and random-number ledgers. The
+reused programs receive the new scenario's live inputs. A recipe may be
+reused; its previous cooked meal may not.
+
+The worker also keeps private snapshots of numeric raw input tables, before
+the model samples or changes them. Each scenario receives a deep copy: a
+separate set of values it can change without changing the stored snapshot.
+The snapshot budget is 1 GiB, roughly one billion bytes; the public benchmark
+uses 668,561,212 bytes. Unsupported input types use the original file reader.
+Both the regular CPU worker and the hybrid worker receive this same reuse
+opportunity, so the comparison does not give only the GPU side free setup.
+
+Input files and generated program files are checked using SHA-256 hashes.
+A hash is a fingerprint of file contents; changed contents should produce a
+different fingerprint. Scenario-boundary checks reject detected changes.
+The supported assumption is that nobody edits the input files during the
+batch. Hashing at boundaries is not a file lock or protection against every
+possible concurrent edit.
+
+## 332. Why was keeping network data on the GPU not selected?
+
+Network **skims** summarize travel conditions between places, such as travel
+time or cost. Keeping them on the GPU sounds attractive because uploading
+them again costs time. Phase 62 implemented a content-checked, 2 GiB skim
+cache and tested that changed values could not reuse an old entry.
+
+The working set was larger than that cache. An entry would be removed to make
+room, then needed again later. This is called **cache thrashing**. Development
+counts showed only four hits but 145 misses per scenario. Checking billions
+of bytes and maintaining the cache also cost time. The content-cached trial
+took 232.55 seconds for three scenarios; a subsequent program-only trial
+took 216.62 seconds. These are development comparisons, not balanced final
+measurements proving an exact causal saving from this one feature.
+
+The selected formal worker therefore does not keep GPU skim arrays between
+scenarios. It reuses programs and private raw input snapshots instead. The
+optional skim cache remains tested code, not the default or a claimed win.
+
+An early cache trial also failed the old rule requiring a large GPU memory
+release after the last consumer. That failure was real: a cache deliberately
+retained some memory. The optional cache now has a separately named bounded
+ownership check. The selected no-cache path still obeys the original release
+rule. We do not relabel an old failed contract as a successful release.
+
+## 333. How do we test whether scenario state really resets?
+
+The batch test runs **A, then B, then A again**. A uses the default public
+50,000-household setup. B changes the seed to 17. The second A must reproduce
+the original independent CPU reference, even after B changed the worker's
+recent execution history. All three runs get their own output directory.
+
+There are four strategies: separate hybrid processes, one persistent hybrid
+process, separate regular CPU processes, and one persistent regular CPU
+process. The whole sequence is repeated with the strategy order reversed.
+That makes 24 complete model executions for the batch experiment alone.
+Both persistent strategies receive the raw-input and CPU program reuse
+opportunities. Every output is audited, not just the last A.
+
+The fresh-process experiment is separate: six alternating Phase 61/62 pairs,
+two regular CPU runs at each of one and 48 Numba threads, and three changed
+scenarios. Together with the batch experiment, that is 43 full-model runs.
+Source and configuration files stay frozen throughout the timed series.
+Tests, detailed profiling and PDF rendering do not run beside the models.
+
+The batch clock includes its first scenario, initial setup, input checks,
+private copies, state resets and process overhead. Independent output audits
+are outside the execution clock for every strategy. Dividing a three-run
+batch time by three describes an average within that batch; it is not the
+time a person should expect when launching one fresh process.
+
+A-B-A, mutation tests and content checks provide concrete evidence for this
+specific worker and public benchmark. They do not prove every possible
+scenario, network, concurrency pattern or unlimited number of repetitions.
+In particular, rebuilding application modules does not prove that every
+third-party library releases every old object. A long-running service needs
+additional memory and lifecycle qualification.
+
+## 334. What did the fresh-process experiment actually achieve?
+
+The final six pairs and fresh CPU controls give these elapsed-time medians.
+A median is the middle measurement after sorting the results; for an even
+number of measurements, it is the average of the two middle ones.
+
+| Configuration | Launch-to-exit median | Repetitions |
+|---|---:|---|
+| Regular CPU ActivitySim, one Numba thread | 299.83 seconds | Two |
+| Regular CPU ActivitySim, 48 Numba threads | 204.84 seconds | Two |
+| Phase 61 hybrid, remeasured in this series | 80.63 seconds | Six |
+| Phase 62 hybrid | 76.81 seconds | Six |
+
+The complete accelerated model is 2.67 times faster than the stronger regular
+CPU setting: about 3 minutes 25 seconds becomes 1 minute 17 seconds. It saves
+128.02 seconds, or 62.50%, per comparable fresh run on this workstation.
+Against Phase 61 in this experiment, it saves 3.81 seconds, or 4.73%. The
+larger overall gain includes all the previous phases; this phase did not
+create that entire advantage from scratch.
+
+Every pair improves on both the elapsed and charged clocks. Phase 62 elapsed
+times range from 76.25 to 78.14 seconds. Charged medians fall from 73.83 to
+70.37 seconds. The elapsed clock includes the remaining process overhead;
+the charged clock includes the model and recorded validation/prewarming.
+Independent output audits happen afterward and are outside both clocks.
+
+The fresh-process target was a median below 70 seconds. At 76.81 seconds,
+it is missed by 6.81 seconds; the 65-second stretch goal is also missed.
+Neither a faster development run nor a later warm batch scenario changes
+that result. The published status is a replicated improvement with the
+target not met.
+
+All checked travel decisions, 115 logical travel matrices and values
+throughout 24 summary reports agree. Four reports have the documented
+equivalent departure-key text difference, such as `5` versus `5.0`.
+Diagnostic intermediate scores keep their existing numerical bounds.
+The three changed scenarios pass too. This establishes replication of the
+specified outputs, not bit-identical values for every intermediate array.
+
+The [34-step table](phase62-component-comparison.md) includes improvements
+and slowdowns. Household activity coordination falls from 4.85 to 3.55
+seconds, mandatory scheduling from 7.50 to 6.90, stop frequency from 2.95
+to 2.50, and trip destination from 7.90 to 7.55. For example, at-work
+subtour frequency instead rises from 0.60 to 0.80. Step timings are rounded
+and their separate medians do not have to sum to the whole-run median.
+We did not individually randomize every optimization, so these are component
+observations, not proof of each change's isolated causal contribution.
+
+## 335. What did the repeated-scenario experiment achieve?
+
+Each cell below is the median total for a complete A-B-A sequence, measured
+twice with the four-strategy order reversed. Both the initial run and process
+setup are included.
+
+| Engine | Three fresh processes | One persistent worker |
+|---|---:|---:|
+| Phase 62 hybrid | 235.65 seconds | 212.34 seconds |
+| Regular CPU, 48 Numba threads | 594.42 seconds | 545.74 seconds |
+
+The hybrid worker saves 23.30 seconds, or 9.89%, across three scenarios.
+CPU reuse saves 48.68 seconds, or 8.19%. That CPU improvement matters:
+comparing the persistent hybrid only with the fresh CPU would give the GPU
+side an unfair setup advantage. With both persistent, the hybrid is 2.57
+times faster, saving 333.40 seconds across this three-scenario workload.
+
+All 24 batch-experiment outputs pass their independent audits, including
+both returns to A for every strategy. Subsequent hybrid scenarios reuse 23
+source-keyed CUDA programs and 19 compiled CPU functions, plus unchanged
+Sharrow generated modules. Both engines reuse the three numeric raw input
+tables through private copies. No modeled choices are a cross-scenario cache.
+
+The persistent hybrid total averages about 70.78 seconds per scenario over
+these three runs. This is not a fresh-process median and does not meet the
+under-70-second fresh-process goal by a different definition. Batch timing
+also charges per-scenario input hashing, which the separate fresh-model
+experiment does not add. Compare like with like.
+
+Two repetitions per strategy establish a useful finite result, not a precise
+prediction of every future workload. A planner with different configurations,
+larger samples or a different machine should rerun the checks and timings.
+
+## 336. What did we prove, and what did we not prove?
+
+We implemented and executed the complete selected path. The formal evidence
+contains 43 full-model runs: 12 paired versions, four CPU controls, three
+changed scenarios and 24 batch scenarios. The repository suite passes 565
+tests, including deliberate mutation, cache identity, restoration and invalid
+batch-evidence cases. The full suite was rerun at delivery after the timed
+series. Source fingerprints tie measured runs to the delivered production
+code; input and report fingerprints help detect changes to the evidence.
+
+We did not prove that GPUs win every calculation. The unchanged strong CPU
+primitive comparisons still include CPU wins. We did not achieve an entirely
+GPU-resident model, a general persistent ActivitySim service, arbitrary
+network support, cold-install timings or a full 2.875-million-household run.
+The live independent CPU scheduling reference remains; Phase 62 reduces
+preparation around it rather than replacing it with previously saved answers.
+
+We also did not add broader shared-input consumers just to increase the
+count. The selected store still serves two columns in 19 segments. Its
+smaller footprint is useful, but has a narrow measured boundary. GPU skim
+retention was an investigated opportunity that did not earn a place in the
+selected runtime. Reporting a rejected optimization is part of the result.
+
+Finally, exactly reproducing a travel model is not the same as proving its
+predictions are true. Both CPU and GPU can reproduce an assumption that turns
+out to be inaccurate in the real world. Survey quality, behavioral calibration
+and validation against observed travel remain separate planning obligations.
+
+## 337. What is the next meaningful opportunity?
+
+The next performance work should target complete services that still take
+seconds, not simply add GPU kernels. Trip destination still takes about 7.55
+seconds and mandatory scheduling about 6.90. A supported, reusable compiled
+reference plan could further reduce repeated Sharrow preparation while
+preserving independent live arithmetic. This phase only removed part of that
+cost; it did not deliver a general upstream Sharrow GPU backend.
+
+The persistent worker needs a longer, memory-instrumented sequence and
+additional changed configurations before it can be called a durable scenario
+engine. That should include changing coefficients, samples and supported
+network inputs, checking output equivalence, peak memory and reset behavior.
+The first scenario and all setup must remain charged. Independent replication
+on another prepared machine is also needed before generalizing the speed
+ratios.
+
+For a planner, the larger achievement is already meaningful: complete public
+model runs take about one third of the regular CPU time under the tested
+conditions, and repeated scenarios can save additional setup work. For a
+researcher, the remaining task is to turn that local, auditable result into
+broader evidence and a maintainable integration, without weakening the
+replication contract to make the numbers look better.

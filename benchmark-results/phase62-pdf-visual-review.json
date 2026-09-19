@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "date": "2026-09-19",
+  "method": "Poppler rendering and assistant visual inspection",
+  "pdf_sha256": "f17f7618ec0410cecd0eade459bbb2b8292b89bf97b9f1db4d74b4d8fe059bc4",
+  "pdf_pages": 162,
+  "inspected_pages": [1, 2, 3, 157, 158, 159, 160, 161, 162],
+  "render_scale_pixels": 1250,
+  "checks": "Cover, opening summary, historical transition, all nine new sections, both new timing tables, text flow, page numbers, margins, legibility and absence of clipping/overlap inspected. Poppler emitted Symbol/ArialUnicode display-font warnings; no visible missing glyphs were found on the inspected pages. Unchanged historical pages outside this set were not newly visually reviewed.",
+  "text_checks_are_not_visual_checks": true
+}

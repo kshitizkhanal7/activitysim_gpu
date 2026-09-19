@@ -408,6 +408,11 @@ def _native_trip_logsum_values(state, bundle, combined_skims, draws):
         rows=len(bundle["combined"]),
         minimal_row_state=bool(phase37_fused and not phase37_shadow),
         cache_codegen=phase42_compiler,
+        # Normalized production executes its own fused kernel. Retain the base
+        # kernel for every shadow/reference or non-normalized branch.
+        compile_kernel=not (os.environ.get("CHOICEFORGE_PHASE62_SKIP_UNUSED_KERNEL") == "1"
+                            and phase38_normalized and not phase38_shadow
+                            and not phase37_shadow and not phase36_shadow),
     )
     plan = TripLogsumNativePlan(
         native.invocation, document=document, bindings=native.bindings

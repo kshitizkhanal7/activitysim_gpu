@@ -304,11 +304,13 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
-    latest = json.loads((ROOT / "benchmark-results/phase61-formal-qualification.json").read_text())
-    comparison = json.loads((ROOT / "benchmark-results/phase61-complete-comparison.json").read_text())
-    if latest["status"] not in {"replicated_improvement_wall_target_met", "replicated_improvement_wall_target_not_met",
-                                 "correctness_qualified_performance_not_replicated"}:
-        raise ValueError("The explainer cover requires completed Phase 61 qualification")
+    latest = json.loads((ROOT / "benchmark-results/phase62-formal-qualification.json").read_text())
+    comparison = json.loads((ROOT / "benchmark-results/phase62-complete-comparison.json").read_text())
+    batches = json.loads((ROOT / "benchmark-results/phase62-batch-comparison.json").read_text())
+    allowed = {base+target for base in ("replicated_improvement", "correctness_qualified_performance_not_replicated")
+               for target in ("_target_met", "_target_not_met")}
+    if latest["status"] not in allowed or batches["status"] != "qualified":
+        raise ValueError("The explainer cover requires completed Phase 62 fresh and batch qualification")
     previous = latest["medians"]["gpu"]["charged_total_seconds"]
     current = latest["medians"]["candidate"]["charged_total_seconds"]
     wall = latest["medians"]["candidate"]["process_wall_seconds"]
@@ -320,7 +322,7 @@ def cover_story():
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("wall median ratio<br/>Phase 60 / Phase 61", STYLES["metric_label"]),
+                Paragraph("wall median ratio<br/>Phase 61 / Phase 62", STYLES["metric_label"]),
                 Paragraph("launch-to-exit<br/>median seconds", STYLES["metric_label"]),
                 Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
             ],
@@ -359,16 +361,17 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            f"Latest evidence, Phase 61: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
+            f"Latest evidence, Phase 62: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
             + ("Every pair improves both clocks. " if latest["all_pairs_faster"] else "Not every pair improves both clocks; repeated superiority is not established. ")
-            + ("The under-75-second median target is met. " if latest["median_wall_under_75"] else "The under-75-second median target is NOT met. ")
+            + ("The under-70-second median target is met. " if latest["median_wall_under_70"] else "The under-70-second median target is NOT met. ")
             + "Checked travel decisions, matrix values and report values agree, with documented departure-key text formatting differences and bounded diagnostic scores. Three changed scenarios also pass. "
-            + f"The complete system is {comparison['cpu_over_phase61']['48']['process_wall_seconds']:.3f}x faster than the separately measured regular CPU control using 48 Numba threads, with other numerical libraries at one thread. "
-            "Start with the one-minute version, then read the chronological evidence. Phase 61 adds checked live skim access, shared device-column consumers, resident tour mode choice, faster CPU normal generation and compact timetable/chain preparation. Live CPU boundary checks remain. Strong CPU primitive controls include CPU wins: the selected timetable path is CPU. These are hybrid improvements, not proof that every calculation belongs on a GPU. Finite replication guarantees and remaining limits are disclosed.",
+            + f"The complete system is {comparison['cpu_over_phase62']['48']['process_wall_seconds']:.3f}x faster than the separately measured regular CPU control using 48 Numba threads. "
+            + f"Separately, three-scenario persistent batches take {batches['medians']['candidate_batch']:.2f} seconds for the hybrid and {batches['medians']['regular_batch']:.2f} seconds for CPU, with setup included. These are batch totals, not single-run times. "
+            "Phase 62 reuses executable plans, publishes only requested device columns and restarts scenarios with fresh mutable state. Both batch engines reuse private raw-input snapshots. Live CPU boundary checks remain. These are hybrid improvements, not GPU-only arithmetic gains or universal replication guarantees.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Evidence updated September 13, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Measurements September 14, 2026 | Delivery September 19, 2026", STYLES["small"]),
         PageBreak(),
     ]
 

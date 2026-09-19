@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "pdf_pages": 162,
+  "phase62_appendix_start_page": 158,
+  "frozen_source_files": 412,
+  "source_configuration_input_and_evidence_hashes_unchanged": true,
+  "final_claim_text_checks": true,
+  "visual_review": {
+    "status": "passed",
+    "date": "2026-09-19",
+    "method": "Poppler rendering and assistant visual inspection",
+    "pdf_sha256": "f17f7618ec0410cecd0eade459bbb2b8292b89bf97b9f1db4d74b4d8fe059bc4",
+    "pdf_pages": 162,
+    "inspected_pages": [
+      1,
+      2,
+      3,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162
+    ],
+    "render_scale_pixels": 1250,
+    "checks": "Cover, opening summary, historical transition, all nine new sections, both new timing tables, text flow, page numbers, margins, legibility and absence of clipping/overlap inspected. Poppler emitted Symbol/ArialUnicode display-font warnings; no visible missing glyphs were found on the inspected pages. Unchanged historical pages outside this set were not newly visually reviewed.",
+    "text_checks_are_not_visual_checks": true
+  },
+  "qualification_status": "replicated_improvement_target_not_met",
+  "artifact_sha256": {
+    "output\\pdf\\choiceforge-plain-english-explainer.pdf": "f17f7618ec0410cecd0eade459bbb2b8292b89bf97b9f1db4d74b4d8fe059bc4",
+    "README.md": "e91c14d962cf19a5e2c866f4e345a1ca90c12ae3ad0a40ecf411d01853a7fbd4",
+    "docs\\choiceforge-plain-english-explainer.md": "52b504da7de4d60a2f5b2ce1a5a640c6942b0088ab0ccdec024043806220b936",
+    "docs\\phase62-reusable-execution.md": "c3086c5a3a4bf715836b450f54f0c09fef90f2f52be732a37c00efff31722f3d",
+    "docs\\phase62-component-comparison.md": "06c6068dbc4232649128be5fb433ce7a95b3eaa3f019723eae58bbf5d1ddb726",
+    "docs\\phase62-batch-comparison.md": "78c04f77ef32c4c5d3284f2aea1fe2611e9203a04ad016282b474d1c5932f993",
+    "scripts\\build_plain_english_explainer_pdf.py": "404b17d2998aeb33468dee3169b3960d4cbcb2fc4ecabe64e33952d140ccec97",
+    "benchmark-results\\phase62-test-verification.json": "57a9de7c88da8e5f3aeace7d84395cf6ef7be0b19595f6b4ef5efe454a9b1bcd",
+    "scripts\\verify_phase62_delivery.py": "ae1ba4096ebdd7544aa55b0905cd02e3c9500cfa1d1d21e1f8161aa5c287c159",
+    "benchmark-results\\phase62-pdf-visual-review.json": "e4e52131c9137a5baf9227ae9734ec5c443f2b1bb4fee4174ab35a3c940a1b99"
+  }
+}

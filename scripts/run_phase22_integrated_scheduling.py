@@ -343,6 +343,7 @@ def main() -> int:
     parser.add_argument("--phase60-frequency-threads", type=int, default=48)
     parser.add_argument("--phase60-frequency-control", action="store_true")
     parser.add_argument("--phase61-features", default="")
+    parser.add_argument("--phase62-features", default="")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-timetable-backend", choices=("cpu","cuda"), default="cpu")
     args = parser.parse_args()
@@ -553,10 +554,16 @@ def main() -> int:
     phase60_events = []
     phase60_frequency_controls = []
     phase61_runtime = None
+    phase62_runtime = None
     if args.phase61_features:
         from choiceforge.phase61_runtime import Runtime
         phase61_runtime = Runtime(args.phase61_features, timetable_backend=args.phase61_timetable_backend,
                                   capture_directory=args.phase61_capture_inputs)
+    if args.phase62_features:
+        if phase61_runtime is None:
+            raise ValueError("Phase 62 requires the Phase 61 runtime")
+        from choiceforge.phase62_runtime import Runtime as Phase62Runtime
+        phase62_runtime = Phase62Runtime(phase61_runtime, args.phase62_features)
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1446,6 +1453,10 @@ def main() -> int:
                 activitysim_tour_destination.interaction_sample_simulate = compact_choice
                 activitysim_tour_destination.interaction_sample = resident_sample
         profiler = None
+        phase62_context = None
+        if phase62_runtime is not None:
+            phase62_context = phase62_runtime.for_step(self._obj, model_name_text)
+            phase62_context.__enter__()
         phase61_context = None
         if phase61_runtime is not None:
             phase61_context = phase61_runtime.for_step(self._obj, model_name_text)
@@ -1487,6 +1498,8 @@ def main() -> int:
         finally:
             if phase61_context is not None:
                 phase61_context.__exit__(*sys.exc_info())
+            if phase62_context is not None:
+                phase62_context.__exit__(*sys.exc_info())
             if preparation_context is not None:
                 preparation_context.__exit__(None, None, None)
             if original_matrix_writer is not None:
@@ -3133,6 +3146,7 @@ def main() -> int:
         "phase58_profiling_enabled": args.phase58_profile_trips is not None,
         "phase60_preparation": {"enabled":args.phase60_preparation, "events":phase60_events},
         "phase61_shared_inputs": phase61_runtime.summary() if phase61_runtime is not None else {"enabled":False},
+        "phase62_reusable_execution": phase62_runtime.summary() if phase62_runtime is not None else {"enabled":False},
         "phase60_frequency_control": {"instrumented_not_performance":args.phase60_frequency_control,
                                       "segments":phase60_frequency_controls},
         "phase57_live_scheduling": {
@@ -4067,12 +4081,19 @@ def main() -> int:
             }
         )
     if args.full_model:
+        from choiceforge.cuda_skims import _BATCH_SKIM_POOL
+        batch_skim_memory = _BATCH_SKIM_POOL.summary() if _BATCH_SKIM_POOL is not None else None
+        report["phase62_batch_skim_memory"] = batch_skim_memory
         report["proof_gates"].update(
             {
                 "all_34_model_steps_timed": len(model_timing_seconds) == 34,
-                "native_cuda_skims_released_after_last_gpu_consumer_once": (
+                ("native_cuda_skims_released_after_last_gpu_consumer_once" if batch_skim_memory is None
+                 else "phase62_skims_released_or_owned_by_bounded_content_cache"): (
                     full_model_native_release_calls == 1
-                    and full_model_native_release_freed_bytes > 5_000_000_000
+                    and full_model_native_release_freed_bytes + (
+                        batch_skim_memory["retained_bytes"] if batch_skim_memory else 0) > 5_000_000_000
+                    and (batch_skim_memory is None or
+                         0 <= batch_skim_memory["retained_bytes"] <= batch_skim_memory["limit_bytes"] <= 2 * 1024**3)
                     and full_model_native_release_after_model == "trip_mode_choice"
                 ),
                 "all_57_boundary_choices_adjudicated_on_device": (

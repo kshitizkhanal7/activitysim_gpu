@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "date": "2026-09-19",
+  "command": ".venv-phase8/Scripts/python.exe -m pytest -q --disable-warnings",
+  "exit_code": 0,
+  "passed": 565,
+  "warnings": 92,
+  "seconds": 44.75,
+  "scope": "Fresh full repository test run at delivery after all 43 formal model executions; no model timing ran concurrently. Recorded from execution output."
+}

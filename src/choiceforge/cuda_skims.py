@@ -19,6 +19,13 @@ _SKIM_CACHE = {}
 _DATASET_ARRAY_CACHE = {}
 _DATASET_BINDING_CACHE = {}
 _DATASET_CACHE_STATS = {"binding_hits": 0, "binding_misses": 0, "array_uploads": 0}
+_BATCH_SKIM_POOL = None  # Explicit owner supplied only by the isolated batch worker.
+
+
+def _upload_immutable_skim(cp, values):
+    if _BATCH_SKIM_POOL is not None:
+        return _BATCH_SKIM_POOL.upload(cp, values)
+    return cp.ascontiguousarray(cp.asarray(values))
 
 
 @dataclass(frozen=True)
@@ -87,7 +94,7 @@ def cuda_cube_from_activitysim(wrapper, key):
         host_values.dtype.str,
     )
     if device_key not in _DATASET_ARRAY_CACHE:
-        _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(cp.asarray(host_values))
+        _DATASET_ARRAY_CACHE[device_key] = _upload_immutable_skim(cp, host_values)
         _DATASET_CACHE_STATS["array_uploads"] += 1
     return (
         _DATASET_ARRAY_CACHE[device_key],
@@ -196,9 +203,7 @@ class CudaDatasetWrapper:
             host_values.dtype.str,
         )
         if device_key not in _DATASET_ARRAY_CACHE:
-            _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(
-                cp.asarray(host_values)
-            )
+            _DATASET_ARRAY_CACHE[device_key] = _upload_immutable_skim(cp, host_values)
         data = _DATASET_ARRAY_CACHE[device_key]
         orig, dest = self._device_position(odim), self._device_position(ddim)
         if has_time:
@@ -241,9 +246,7 @@ class CudaDatasetWrapper:
                 host_values.dtype.str,
             )
             if device_key not in _DATASET_ARRAY_CACHE:
-                _DATASET_ARRAY_CACHE[device_key] = cp.ascontiguousarray(
-                    cp.asarray(host_values)
-                )
+                _DATASET_ARRAY_CACHE[device_key] = _upload_immutable_skim(cp, host_values)
                 _DATASET_CACHE_STATS["array_uploads"] += 1
             cached = (
                 _DATASET_ARRAY_CACHE[device_key],

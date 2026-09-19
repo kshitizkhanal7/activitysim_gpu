@@ -27,6 +27,7 @@ def source_fingerprint():
     paths += [Path(__file__), ROOT / "scripts/run_phase22_integrated_scheduling.py",
               ROOT / "scripts/verify_phase15_outputs.py", ROOT / "scripts/verify_phase59_matrices.py"]
     paths += [ROOT / "scripts/verify_phase59_reports.py"]
+    paths += [ROOT / "scripts/phase62_batch_worker.py", ROOT / "scripts/run_phase62_batch.py"]
     return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 
@@ -48,6 +49,8 @@ def main():
     parser.add_argument("--phase59", action="store_true", help="Compare Phase 58 against the developing Phase 59 candidate")
     parser.add_argument("--phase60", action="store_true", help="Compare Phase 59 with whole-step preparation candidate")
     parser.add_argument("--phase61", action="store_true", help="Compare qualified Phase 60 with shared-live-input candidate")
+    parser.add_argument("--phase62", action="store_true", help="Compare Phase 61 with reusable preparation candidate")
+    parser.add_argument("--phase62-features", default="plans,trip,entities")
     parser.add_argument("--phase61-features", default="skims,timetable,tour_modes,entities,normals,uniforms,labels,packing")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-worker-wait-policy",choices=("default","PASSIVE"),default="PASSIVE")
@@ -66,6 +69,8 @@ def main():
     parser.add_argument("--sparse-matrices", action="store_true")
     parser.add_argument("--capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase62:
+        args.phase61 = True
     if args.phase61:
         args.phase60 = True
     if args.phase60:
@@ -121,7 +126,7 @@ def main():
             if args.phase60 and mode != "regular":
                 child_env["NUMBA_NUM_THREADS"] = "48"
                 child_env["CHOICEFORGE_NUMBA_INITIAL_THREADS"] = "1"
-            if args.phase61 and mode == "candidate" and args.phase61_worker_wait_policy != "default":
+            if args.phase61 and (mode == "candidate" or args.phase62 and mode == "gpu") and args.phase61_worker_wait_policy != "default":
                 child_env["OMP_WAIT_POLICY"] = args.phase61_worker_wait_policy
             child_env["CHOICEFORGE_STRICT_CUDA_CANDIDATE"] = "0" if mode == "regular" else "1"
             child_env["CHOICEFORGE_STRICT_CUDA_MODE_CHOICE"] = "0" if mode == "regular" else "1"
@@ -185,6 +190,12 @@ def main():
                                     "--phase61-timetable-backend",args.phase61_timetable_backend]
                         if args.phase61_capture_inputs:
                             command += ["--phase61-capture-inputs",str(args.phase61_capture_inputs.resolve())]
+                if args.phase62:
+                    if mode == "gpu":
+                        command += ["--phase61-features",args.phase61_features,
+                                    "--phase61-timetable-backend",args.phase61_timetable_backend]
+                    if mode == "candidate":
+                        command += ["--phase62-features",args.phase62_features]
                 cwd = ROOT
             fingerprint = source_fingerprint()
             config_hashes = config_fingerprint(args.scenario_overlay)
