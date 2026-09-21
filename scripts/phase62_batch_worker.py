@@ -15,6 +15,82 @@ from pathlib import Path
 import runpy
 import sys
 import time
+from contextlib import nullcontext
+import threading
+
+
+class ResidentMemorySampler:
+    """Observed RSS high-water sample, not a guarantee of the instantaneous peak."""
+    def __init__(self, interval=0.1):
+        import psutil
+        self.process = psutil.Process()
+        self.interval = interval
+        self.stopped = threading.Event()
+        self.peak = self.samples = 0
+        self.thread = threading.Thread(target=self.run,daemon=True)
+
+    def run(self):
+        while not self.stopped.is_set():
+            self.peak = max(self.peak,self.process.memory_info().rss)
+            self.samples += 1
+            self.stopped.wait(self.interval)
+
+    def start(self):
+        self.thread.start()
+        return self
+
+    def finish(self):
+        self.stopped.set()
+        self.thread.join()
+        self.peak = max(self.peak,self.process.memory_info().rss)
+        return dict(observed_peak_rss_bytes=self.peak,samples=self.samples,interval_seconds=self.interval,
+                    instantaneous_peak_guaranteed=False)
+
+
+def release_invocation_state():
+    """Cut state owners even if a compiler still references an old module graph.
+
+    Compiled programs may survive. GPU arrays, random ledgers, input-bound Flow
+    objects and invocation services may not. This runs only between models.
+    Do not import absent modules just to perform teardown.
+    """
+    released = []
+    for module_name,attribute in (
+        ("choiceforge.modelwide_service","_SERVICE"),
+        ("choiceforge.activitysim_trip_scheduling","_SERVICE"),
+        ("choiceforge.modelwide_graph","_EXP_CORRECTION_DEVICE"),
+    ):
+        module = sys.modules.get(module_name)
+        if module is not None:
+            setattr(module,attribute,None)
+            released.append(module_name+"."+attribute)
+    for module_name,attributes in (
+        ("activitysim.core.flow",("_FLOWS",)),
+        ("choiceforge.cuda_skims",("_SKIM_CACHE","_DATASET_ARRAY_CACHE","_DATASET_BINDING_CACHE")),
+        ("choiceforge.sharrow_cuda",("_COEFFICIENT_CACHE","_HOST_COEFFICIENT_CACHE","_COMPILED_PLAN_CACHE")),
+        ("choiceforge.activitysim_destination",("_TRIP_NATIVE_CUBE_CACHE","_TRIP_LOGSUM_CONTRACT_CACHE","_TRIP_SIMULATION_SPEC_CACHE")),
+        ("choiceforge.trip_logsum_native",("_RESIDENT_LAND_CACHE","_NORMALIZED_DEVICE_WORKSPACE")),
+    ):
+        module = sys.modules.get(module_name)
+        if module is not None:
+            for attribute in attributes:
+                getattr(module,attribute).clear()
+                released.append(module_name+"."+attribute)
+    return released
+
+
+def memory_snapshot(include_gpu=True):
+    """Boundary telemetry, explicitly outside per-step RSS-only scopes."""
+    import psutil
+    info = psutil.Process().memory_full_info()
+    result = {"rss_bytes":info.rss,"uss_bytes":info.uss}
+    # Merely importing CuPy must not make a CPU control create a CUDA context.
+    cp = sys.modules.get("cupy") if include_gpu else None
+    if cp is not None:
+        cp.cuda.Stream.null.synchronize()
+        result.update(gpu_pool_used_bytes=cp.get_default_memory_pool().used_bytes(),
+                      gpu_pool_reserved_bytes=cp.get_default_memory_pool().total_bytes())
+    return result
 
 
 def file_digest(path):
@@ -137,6 +213,7 @@ def reset_application_graph(programs=None, cpu_programs=None):
                 for name,value in vars(module).items():
                     if isinstance(value,CPUDispatcher):
                         cpu_programs[(module_name,name)] = value
+    release_invocation_state()
     names = [name for name in sys.modules if name == "activitysim" or name.startswith("activitysim.")
              or name == "choiceforge" or name.startswith("choiceforge.")]
     for name in names:
@@ -161,9 +238,11 @@ def main():
     base_env = dict(os.environ)
     for item in manifest["runs"]:
         scenario_started = time.perf_counter()
+        sampler = ResidentMemorySampler().start() if manifest.get("phase63_features") else None
         verify_files(manifest["data_sha256"])
         verify_files(generated_sources)
         removed = reset_application_graph(programs,cpu_programs)
+        memory_before = memory_snapshot(manifest.get("mode")=="candidate") if manifest.get("phase63_features") else None
         os.environ.clear()
         os.environ.update(base_env)
         os.environ.update(item["environment"])
@@ -190,11 +269,16 @@ def main():
             numba.set_num_threads(int(item["environment"]["NUMBA_NUM_THREADS"]))
             sys.argv = command
             from activitysim.cli.main import main as activitysim_main
-            try:
-                activitysim_main()
-            except SystemExit as exc:
-                if exc.code:
-                    raise
+            preparation = None
+            if manifest.get("phase63_features"):
+                from choiceforge.phase63_runtime import Runtime
+                preparation = Runtime(manifest["phase63_features"])
+            with preparation.cpu_steps() if preparation else nullcontext():
+                try:
+                    activitysim_main()
+                except SystemExit as exc:
+                    if exc.code:
+                        raise
         for name,module in tuple(sys.modules.items()):
             if name.startswith("flow_") and getattr(module,"__file__",None):
                 path = str(Path(module.__file__).resolve())
@@ -207,6 +291,10 @@ def main():
                      "reused_source_keyed_cuda_programs":sum(len(c) for c in (programs or {}).values()),
                      "reused_cpu_programs":len(cpu_programs),"input_tables":tables.summary(),
                      "generated_program_modules":sum(n.startswith("flow_") for n in sys.modules)})
+        if manifest.get("phase63_features"):
+            runs[-1].update(memory_before=memory_before,memory_after=memory_snapshot(manifest.get("mode")=="candidate"),
+                rss_sampling=sampler.finish(),
+                cpu_preparation=preparation.summary() if item["mode"] != "candidate" else None)
         # Close output handlers before the next model configures its own log.
         logging.shutdown()
         Path(manifest["result"]).write_text(json.dumps({"complete":False,"runs":runs},indent=2)+"\n")
@@ -216,6 +304,8 @@ def main():
               "input_tables":tables.summary(),
               "generated_program_sha256":generated_sources,"data_sha256":manifest["data_sha256"],
               "skim_pool":pool.summary(),"isolation":"fresh application module graph and workflow.State per scenario"}
+    if manifest.get("phase63_features"):
+        result.update(memory_after_final_reset=memory_snapshot(manifest.get("mode")=="candidate"),phase63_features=manifest["phase63_features"])
     Path(manifest["result"]).write_text(json.dumps(result,indent=2)+"\n")
 
 

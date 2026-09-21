@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "qualification_status": "replicated_improvement_target_not_met",
+  "formal_measured_models": 94,
+  "sequence_replayed": true,
+  "source_configuration_inputs_evidence_unchanged": true,
+  "pdf_pages": 169,
+  "phase63_appendix_start_page": 163,
+  "visual_review": {
+    "status": "passed",
+    "method": "Poppler rendering and assistant visual inspection",
+    "pdf_sha256": "8d65d839d3a38c04f7adaf9774d0b14cbee68916cf81ce7fe69c43087dff0e1a",
+    "pdf_pages": 169,
+    "inspected_pages": [
+      1,
+      2,
+      3,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169
+    ],
+    "render_dpi": 105,
+    "scope": "Updated cover and opening summary, transition page, and every Phase 63 appendix page. Unchanged historical pages 4-161 were not individually re-reviewed.",
+    "corrections": "Moved sections 344-346 onto explicit page breaks after visual review caught orphaned headings. Re-rendered and inspected affected pages; final headings, tables, body text and footers are legible and not clipped.",
+    "renderer_warnings": "Poppler reports unavailable Symbol and ArialUnicode display fonts. Inspected pages show no missing glyphs or black squares."
+  },
+  "artifact_sha256": {
+    "README.md": "3b1230c68dc577c03406321673a8546647225aa493d6d3d0bdaf6c53df430ecb",
+    "docs\\choiceforge-plain-english-explainer.md": "88c091698e664ef05f412821c1431bbe6247230769bb3955a4779c1c448b8211",
+    "docs\\phase63-component-comparison.md": "d1dfc4caa36bdb8a50770b99f87620a3131d4713c2ca696135e9b2aedb0a9725",
+    "docs\\phase63-durable-runtime.md": "8ead5aab6d3a94a9db589ee609510ce459d369bf9fbe1e43646e18b077698386",
+    "output\\pdf\\choiceforge-plain-english-explainer.pdf": "8d65d839d3a38c04f7adaf9774d0b14cbee68916cf81ce7fe69c43087dff0e1a",
+    "scripts\\verify_phase63_delivery.py": "e929c6ed79308e9dda4c7c1bd74e4eed6cbc0efc84d61ebce15e433bea3043b8",
+    "benchmark-results\\phase63-p63formal-references.json": "5af691b2396eabeddb9059011d6b83e1f27a32c51ff564b5cd70d6a9e9e93263",
+    "benchmark-results\\phase63-pdf-visual-review.json": "f00d3636ec43522d15343ae3de50871f744b512108d00f1a2d11194e2f48a53a",
+    "docs\\phase63-replication.md": "31423b5d14dda5432a4bf7d27ad2267d40571c531995dd10aa961045eb820fff",
+    "scripts\\build_plain_english_explainer_pdf.py": "37ac6348e687087fd08b3f631b71732536e92ae32bb4fa4dabe83a841a1a17c9",
+    "benchmark-results\\phase63-git-byte-verification.json": "52af6268a8e3c3c22d3c4f7785d9821e9ed842371dc946e61a5073e18e0e1683"
+  }
+}

@@ -344,6 +344,7 @@ def main() -> int:
     parser.add_argument("--phase60-frequency-control", action="store_true")
     parser.add_argument("--phase61-features", default="")
     parser.add_argument("--phase62-features", default="")
+    parser.add_argument("--phase63-features", default="")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-timetable-backend", choices=("cpu","cuda"), default="cpu")
     args = parser.parse_args()
@@ -564,6 +565,12 @@ def main() -> int:
             raise ValueError("Phase 62 requires the Phase 61 runtime")
         from choiceforge.phase62_runtime import Runtime as Phase62Runtime
         phase62_runtime = Phase62Runtime(phase61_runtime, args.phase62_features)
+    phase63_runtime = None
+    if args.phase63_features:
+        if phase62_runtime is None:
+            raise ValueError("Phase 63 requires the Phase 62 runtime")
+        from choiceforge.phase63_runtime import Runtime as Phase63Runtime
+        phase63_runtime = Phase63Runtime(args.phase63_features)
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1485,6 +1492,10 @@ def main() -> int:
                 phase58_runtime.mode_capture_directory = args.phase59_capture_mode_inputs
             trip_context = phase58_runtime.for_step(self._obj, model_name_text)
             trip_context.__enter__()
+        phase63_context = None
+        if phase63_runtime is not None:
+            phase63_context = phase63_runtime.for_step(self._obj, model_name_text)
+            phase63_context.__enter__()
         if args.phase58_profile_trips and model_name_text in {
             "trip_destination", "trip_scheduling", "trip_mode_choice", "write_trip_matrices",
             "mandatory_tour_scheduling", "non_mandatory_tour_frequency", "cdap_simulate",
@@ -1496,6 +1507,8 @@ def main() -> int:
         try:
             result = original_runner_by_name(self, model_name)
         finally:
+            if phase63_context is not None:
+                phase63_context.__exit__(*sys.exc_info())
             if phase61_context is not None:
                 phase61_context.__exit__(*sys.exc_info())
             if phase62_context is not None:
@@ -3147,6 +3160,7 @@ def main() -> int:
         "phase60_preparation": {"enabled":args.phase60_preparation, "events":phase60_events},
         "phase61_shared_inputs": phase61_runtime.summary() if phase61_runtime is not None else {"enabled":False},
         "phase62_reusable_execution": phase62_runtime.summary() if phase62_runtime is not None else {"enabled":False},
+        "phase63_durable_execution": phase63_runtime.summary() if phase63_runtime is not None else {"enabled":False},
         "phase60_frequency_control": {"instrumented_not_performance":args.phase60_frequency_control,
                                       "segments":phase60_frequency_controls},
         "phase57_live_scheduling": {

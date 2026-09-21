@@ -1,0 +1,15 @@
+{
+  "format_version": 2,
+  "phase": 22,
+  "checkpoint_name": "raw_skim_logsums_to_mandatory_tdd_on_device",
+  "completed_batches": 6,
+  "rows": 16278,
+  "tdd_sha256": "cad1963ef5b948549f44bb278f0dbf8d7266da4a7707121e93e622ee6816aa3d",
+  "timetable_sha256": "9d64bea9ef713cb2321588c83466092d82e085bf062cf0faf044c99beb6903d8",
+  "bulk_modeled_logsum_device_to_host_bytes": 0,
+  "exact_boundary_logsum_device_to_host_bytes": 2496,
+  "device_boundary_adjudications": 0,
+  "device_boundary_corrections": 0,
+  "qualified_boundary_map_entries": 0,
+  "final_tdd_device_to_host_bytes": 32556
+}

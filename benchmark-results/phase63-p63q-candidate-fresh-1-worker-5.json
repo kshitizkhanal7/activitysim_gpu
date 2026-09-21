@@ -1,0 +1,109 @@
+{
+  "complete": true,
+  "runs": [
+    {
+      "name": "06-C",
+      "scenario_wall_seconds": 48.59461090003606,
+      "reset_modules": 0,
+      "skim_pool": {
+        "hits": 0,
+        "misses": 0,
+        "hashed_bytes": 0,
+        "retained_bytes": 0,
+        "limit_bytes": 2147483648
+      },
+      "reused_source_keyed_cuda_programs": 0,
+      "reused_cpu_programs": 0,
+      "input_tables": {
+        "hits": 0,
+        "misses": 3,
+        "retained_bytes": 668561212,
+        "tables": 3,
+        "limit_bytes": 1073741824,
+        "returns_private_copies": true
+      },
+      "generated_program_modules": 28,
+      "memory_before": {
+        "rss_bytes": 227168256,
+        "uss_bytes": 139096064,
+        "gpu_pool_used_bytes": 0,
+        "gpu_pool_reserved_bytes": 0
+      },
+      "memory_after": {
+        "rss_bytes": 8248913920,
+        "uss_bytes": 1627316224,
+        "gpu_pool_used_bytes": 189585408,
+        "gpu_pool_reserved_bytes": 308181504
+      },
+      "rss_sampling": {
+        "observed_peak_rss_bytes": 8493547520,
+        "samples": 424,
+        "interval_seconds": 0.1,
+        "instantaneous_peak_guaranteed": false
+      },
+      "cpu_preparation": null
+    }
+  ],
+  "batch_worker_seconds": 49.59220790001564,
+  "skim_cache": "none",
+  "input_tables": {
+    "hits": 0,
+    "misses": 3,
+    "retained_bytes": 668561212,
+    "tables": 3,
+    "limit_bytes": 1073741824,
+    "returns_private_copies": true
+  },
+  "generated_program_sha256": {
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_WAL3SLY4KNS2B56DLWVAKD73ILDIDMUH\\__init__.py": "ab0bb460e693fa22927464e82c75a568aa2d27cc15f0f20bd19446797e7b3f5a",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_XT6HYZYZEIQUPUBFVS5JMNL3XEZW7LPV\\__init__.py": "4c38bae20df12ebfdfffae588768348afc71806390c15f28b88b8cacf0de7cd9",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_CSK5VPWFQ6DIW422P2MNE5YJCDJXLGVS\\__init__.py": "82c7a0cfc6227831c6703d7fef7e850cd65865e48a0f5766de2a75525435ca73",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_CYPLPVKVDFO3KALIFDSNDPWDW3LLKLOZ\\__init__.py": "6e85e107799044f2f38d7fca6d7efac463471ce89e554f9c4561da8bcd1b67f4",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_FPJQC3MVE2RJVDF5EVAUST6QM7EXYZOP\\__init__.py": "911796b040dea5620ee6f8231bf8fb6898eb5b4e233e6e39f28f6ad1a73bcfeb",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_2GM3TPGMWBXC62UQZRQBFQY2L6ZHEK23\\__init__.py": "a85a4e0544359038957c977225f0e8c49ef661d721fff0b93bb4ead6558bb211",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_IV6XPL5OARPU3INWUR45GQRYN4W5ZCQG\\__init__.py": "824b484658f0b04a842d313e44a8ad11b46a2912b0be9cc6cc05cddd8e6857a6",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_ALEEJHV4QOOJL2BW2UK3JUVPUTR3Y33E\\__init__.py": "33c93d16ec50e55d7f4aeecb3a7f1b0f745625533b05d3e72c0f0f6c2fdd3f94",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_NUCQY4OQFUNJAHGELTGQ7R3OAHAMMB4T\\__init__.py": "ff213f5c3b5e5c0a2ab732250fc7b2722ea4cac4ba48864834989926cf450ae2",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_LNN5USZZAIF6PJLUI2KQIZIYINCASQQ5\\__init__.py": "48529abeccc0f82975df48c97aed8f75f8a427a986de59632741feba3e90ae68",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_S4DF6GDX23AXFGNU2YYUX4ROHECLNCCO\\__init__.py": "2a63113c78d8894519fe9ce03cb28bd380f0faf52342dd6aa70b2287dd4930ae",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_U6LCMSDDDVVWJGGVU2QDL5BRTNZJS2Y7\\__init__.py": "1deecb787b1de789c2f0c98e582d5fcfa383b7b8b668cc67f7b1776f8c6baa9d",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_AVXVGV7HOBYACQQHRPY7X3Z3UCEPB7WY\\__init__.py": "d5cb450fdbebce7bd4731c72508629614a37504ee2336fd09497e9ce32d69ea2",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_YE3O6EL2223R5KQIBM5GTELHIRVKADU7\\__init__.py": "7b7ea94150246167e1ea91caf53cc657bbeaab678e1f01f20688dc6827d0b467",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_RDQQJPQVDDNNX5DMKLWEJJLU37AWOTUV\\__init__.py": "fb63a0e66a05516dcf5b87d1326a4c3452ff86217368a5fdb9ea2ae35f1fe6b6",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_26JYGBPLC56JXOEK4HIMU6POOU5ULY55\\__init__.py": "3b13b9224c4535caa2d08274895a928e14ac4792008e0411cd21deb613104fb2",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_6FYBWY5EIDVZZ6BRQ4JKAPHNPN2CYWTM\\__init__.py": "c66217be0199125745db32b7ba6303177f90b84adce7967851018a25549aa8ba",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_CZ2R3NFKIBHZNVQG3DFWW7YLNSOFBTFB\\__init__.py": "8296cab26aac4e4ca91cf1f777f1ae662076941494110141c1a7c4c944005610",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_NABDUYDNHQQYLYGGXRAIU44E5CHCUBXF\\__init__.py": "b88c4c03ca0b61854375bf48b38027e678af3ea9a7681518c0d306fb697ea348",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_GAWVDCAWWY5JKYTHC7ELWKXJ2N7AWHFK\\__init__.py": "b858d43068a5d49b6ee7218f2592b1b0b3e3c74b48c13239a5b7cf1c2c233f5c",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_ZDDZO3O7JDYODKFML7HZXBIBPWH2QJNV\\__init__.py": "4c3075a3c115c4ef4b0c2b48f6190f428ba9fed4df8a02e3c0bbe32f737a1f7b",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_DNCZ3WJP3SO7DTWKW3KKFQT4I4DFLDHE\\__init__.py": "4bc835faf7ac8dd276b12fedf3752ed82f037b99c1d3f3e4febdef7ecf4f5759",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_PHYWVJLM4REGRVMEFIUPRVIFZFW7FKCH\\__init__.py": "c1bfddee4a2c9109ac416393d3cffafcf85c3adbed2d82c35dcc40938f00d3d7",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_ITER3ZB6D5AMVSHSMUM57PXSB7UJTFNL\\__init__.py": "f9afd940ed9cebbde2cab33c7d7adf74de1cda7f754fd4c0a59261f2a7026018",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_G4HTC3O7U3U4CKEMNTDDQI7IZCUNKDYW\\__init__.py": "40cda5f891b2fc4bb02303f7431eba04a2b6d9bfc43efd8a44e40e709f59fae0",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_VP4NF763N3ITCGGOB36MW64UUMVDPANU\\__init__.py": "f43c4c85fb811fdb35a612f25312453c2dd530ab2e64499e43dbd6c5d9e5eaf7",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_DPBNVX4JQAEEIX7I36ZHLULWVYT36J4T\\__init__.py": "b693b44e1c864b357150515627fc0d56197bb759e4dbf1849f6afbd87be8daf6",
+    "C:\\Users\\kkhanal2\\AppData\\Local\\ActivitySim\\ActivitySim\\Cache\\sharrow-2.16-numba-0.66.0\\flow_CNJLKUHHFMYP3RDJQEGFMCPTWNTSY63W\\__init__.py": "d5e7bc669f089da79e799bf21ec06faea7bc1c2627e8fc4643702a0601430770"
+  },
+  "data_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\example_hwy_data.csv": "8bd5d7545a9f97fc73990d38c62595d871ad07cfff15968ef800b29d9b55a714",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\households.csv": "77bb2870677ebb430f3d7a813528445b1aea6d66096b9c03ace7201b901a527c",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\land_use.csv": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\persons.csv": "9b7e1c9972d5f16e06cf5baf8d552935cb4c9745c4da1d5743f8a76a8f5f5655",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\skims.omx": "04bddb2dd6b829a2ce25a27369d3276143fa9a354989ebd30ed9bba92f8e9bfb"
+  },
+  "skim_pool": {
+    "hits": 0,
+    "misses": 0,
+    "hashed_bytes": 0,
+    "retained_bytes": 0,
+    "limit_bytes": 2147483648
+  },
+  "isolation": "fresh application module graph and workflow.State per scenario",
+  "memory_after_final_reset": {
+    "rss_bytes": 1691570176,
+    "uss_bytes": 1510051840,
+    "gpu_pool_used_bytes": 0,
+    "gpu_pool_reserved_bytes": 308181504
+  },
+  "phase63_features": "plans,files,rss"
+}

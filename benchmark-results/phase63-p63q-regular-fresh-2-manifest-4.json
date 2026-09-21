@@ -1,0 +1,60 @@
+{
+  "runs": [
+    {
+      "name": "05-A",
+      "scenario": "A",
+      "mode": "regular",
+      "command": [
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\.venv-phase8\\Scripts\\activitysim.exe",
+        "run",
+        "-c",
+        "configs_sh",
+        "-c",
+        "configs",
+        "-d",
+        "data_full",
+        "-o",
+        "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\phase63-runs\\o-phase63-p63q-regular-fresh-2-05-A",
+        "--households_sample_size",
+        "50000",
+        "--fast"
+      ],
+      "cwd": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended",
+      "environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "48",
+        "CHOICEFORGE_STRICT_CUDA_CANDIDATE": "0",
+        "CHOICEFORGE_STRICT_CUDA_MAX_ROWS": "2000000",
+        "CHOICEFORGE_STRICT_CUDA_TILE_ROWS": "1",
+        "CHOICEFORGE_STRICT_CUDA_LOCALITY": "1",
+        "CHOICEFORGE_STRICT_CUDA_COMPACT_INPUTS": "1",
+        "CHOICEFORGE_STRICT_CUDA_GROUPED_INDICES": "1",
+        "CHOICEFORGE_STRICT_CUDA_SPARSE_COEFFICIENTS": "0",
+        "CHOICEFORGE_STRICT_CUDA_EXPRESSION_FLOAT32": "1",
+        "CHOICEFORGE_STRICT_CUDA_PERSISTENT_PLAN": "1",
+        "CHOICEFORGE_STRICT_CUDA_REUSE_BUFFERS": "0",
+        "CHOICEFORGE_STRICT_CUDA_MODE_CHOICE": "0",
+        "CHOICEFORGE_STRICT_CUDA_BATCHES": "0",
+        "CHOICEFORGE_STRICT_CUDA_SHARROW_FMA": "1",
+        "OMP_WAIT_POLICY": "PASSIVE",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "output": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\phase63-runs\\o-phase63-p63q-regular-fresh-2-05-A",
+      "reference": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\o-phase63-p63formal-reference-A",
+      "report": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-results\\phase63-p63q-regular-fresh-2-05-A-report.json"
+    }
+  ],
+  "result": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-results\\phase63-p63q-regular-fresh-2-worker-4.json",
+  "mode": "regular",
+  "skim_cache": "none",
+  "data_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\example_hwy_data.csv": "8bd5d7545a9f97fc73990d38c62595d871ad07cfff15968ef800b29d9b55a714",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\households.csv": "77bb2870677ebb430f3d7a813528445b1aea6d66096b9c03ace7201b901a527c",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\land_use.csv": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\persons.csv": "9b7e1c9972d5f16e06cf5baf8d552935cb4c9745c4da1d5743f8a76a8f5f5655",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\tmp\\phase63-replica2\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\skims.omx": "04bddb2dd6b829a2ce25a27369d3276143fa9a354989ebd30ed9bba92f8e9bfb"
+  },
+  "phase63_features": "plans,files,rss"
+}

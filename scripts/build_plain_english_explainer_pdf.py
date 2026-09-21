@@ -304,27 +304,26 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
-    latest = json.loads((ROOT / "benchmark-results/phase62-formal-qualification.json").read_text())
-    comparison = json.loads((ROOT / "benchmark-results/phase62-complete-comparison.json").read_text())
-    batches = json.loads((ROOT / "benchmark-results/phase62-batch-comparison.json").read_text())
-    allowed = {base+target for base in ("replicated_improvement", "correctness_qualified_performance_not_replicated")
+    latest = json.loads((ROOT / "benchmark-results/phase63-complete-comparison.json").read_text())
+    batches = json.loads((ROOT / "benchmark-results/phase63-sequence-qualification.json").read_text())
+    allowed = {base+target for base in ("replicated_improvement", "outputs_qualified_performance_not_replicated")
                for target in ("_target_met", "_target_not_met")}
-    if latest["status"] not in allowed or batches["status"] != "qualified":
-        raise ValueError("The explainer cover requires completed Phase 62 fresh and batch qualification")
-    previous = latest["medians"]["gpu"]["charged_total_seconds"]
-    current = latest["medians"]["candidate"]["charged_total_seconds"]
-    wall = latest["medians"]["candidate"]["process_wall_seconds"]
+    if latest["status"] not in allowed or batches["status"] != "outputs_qualified":
+        raise ValueError("The explainer cover requires completed Phase 63 fresh and batch qualification")
+    previous = latest["medians"]["phase62"]["process_wall_seconds"]
+    wall = latest["medians"]["phase63"]["process_wall_seconds"]
+    cpu = latest["medians"]["regular48"]["process_wall_seconds"]
     metrics = Table(
         [
             [
-                Paragraph(f'{latest["wall_speedup"]:.3f}x', STYLES["metric_num"]),
+                Paragraph(f'{latest["cpu_over_phase63"]:.2f}x', STYLES["metric_num"]),
                 Paragraph(f"{wall:.1f} s", STYLES["metric_num"]),
                 Paragraph("0", STYLES["metric_num"]),
             ],
             [
-                Paragraph("wall median ratio<br/>Phase 61 / Phase 62", STYLES["metric_label"]),
+                Paragraph("complete-system ratio<br/>ordinary CPU / hybrid", STYLES["metric_label"]),
                 Paragraph("launch-to-exit<br/>median seconds", STYLES["metric_label"]),
-                Paragraph("changed modeled<br/>decision cells", STYLES["metric_label"]),
+                Paragraph("disagreements in<br/>checked choices", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -361,17 +360,17 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            f"Latest evidence, Phase 62: six balanced old/new pairs on the public 50,000-household model give charged medians of {previous:.2f} and {current:.2f} seconds. Launch-to-exit median is {wall:.2f} seconds. "
+            f"Latest evidence, Phase 63: six balanced old/new pairs on the public 50,000-household model reduce launch-to-exit medians from {previous:.2f} to {wall:.2f} seconds. "
             + ("Every pair improves both clocks. " if latest["all_pairs_faster"] else "Not every pair improves both clocks; repeated superiority is not established. ")
             + ("The under-70-second median target is met. " if latest["median_wall_under_70"] else "The under-70-second median target is NOT met. ")
-            + "Checked travel decisions, matrix values and report values agree, with documented departure-key text formatting differences and bounded diagnostic scores. Three changed scenarios also pass. "
-            + f"The complete system is {comparison['cpu_over_phase62']['48']['process_wall_seconds']:.3f}x faster than the separately measured regular CPU control using 48 Numba threads. "
-            + f"Separately, three-scenario persistent batches take {batches['medians']['candidate_batch']:.2f} seconds for the hybrid and {batches['medians']['regular_batch']:.2f} seconds for CPU, with setup included. These are batch totals, not single-run times. "
-            "Phase 62 reuses executable plans, publishes only requested device columns and restarts scenarios with fresh mutable state. Both batch engines reuse private raw-input snapshots. Live CPU boundary checks remain. These are hybrid improvements, not GPU-only arithmetic gains or universal replication guarantees.",
+            + f"Ordinary CPU takes {cpu:.2f} seconds. Giving CPU the same new preparation options still leaves a {latest['matched_preparation_default_fresh']['cpu_over_hybrid']:.2f}x hybrid advantage in a separate fresh-worker comparison. "
+            + "All 94 measured models pass their output checks, including changed seeds, coefficients and household counts. Checked decisions, matrices and report values agree under the documented formatting and diagnostic-score contracts. "
+            + f"Ten-scenario persistent totals are {batches['medians']['candidate_batch']:.2f} seconds hybrid and {batches['medians']['regular_batch']:.2f} seconds CPU. These mixed-size batch totals are not single-run times. "
+            "Phase 63 safely reuses preparation and fixes retained GPU arrays. Live CPU checks remain. A clean same-machine rebuild downloads public inputs and pins 98 libraries; this is not independent hardware replication. The gains include CPU and file-writing improvements, not only GPU arithmetic.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Measurements September 14, 2026 | Delivery September 19, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Phase 63 completed September 21, 2026", STYLES["small"]),
         PageBreak(),
     ]
 
@@ -459,6 +458,9 @@ def markdown_story(text: str):
                 or stripped.startswith("## 160. Did Phase 42")
                 or stripped.startswith("## 161. Phase 43")
                 or stripped.startswith("## 167. Phase 44")
+                or stripped.startswith("## 344. What are the final Phase 63")
+                or stripped.startswith("## 345. What happens when a planner")
+                or stripped.startswith("## 346. What remains unproven")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

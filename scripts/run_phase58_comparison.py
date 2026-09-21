@@ -23,11 +23,12 @@ def source_fingerprint():
     paths += sorted((ROOT / "tmp/activitysim-phase8-source/activitysim").rglob("*.py"))
     paths += [ROOT / "src/choiceforge/kernels" / name for name in (
         "phase52_public_destination_tile4.cu", "phase55_public_destination_sm86.json",
-        "phase55_public_destination_plans.json")]
+        "phase55_public_destination_plans.json", "phase55_public_destination_sm86.cubin")]
     paths += [Path(__file__), ROOT / "scripts/run_phase22_integrated_scheduling.py",
               ROOT / "scripts/verify_phase15_outputs.py", ROOT / "scripts/verify_phase59_matrices.py"]
     paths += [ROOT / "scripts/verify_phase59_reports.py"]
     paths += [ROOT / "scripts/phase62_batch_worker.py", ROOT / "scripts/run_phase62_batch.py"]
+    paths += [ROOT / "scripts/run_phase32_full_model_ab.ps1"]
     return {str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 
@@ -51,6 +52,8 @@ def main():
     parser.add_argument("--phase61", action="store_true", help="Compare qualified Phase 60 with shared-live-input candidate")
     parser.add_argument("--phase62", action="store_true", help="Compare Phase 61 with reusable preparation candidate")
     parser.add_argument("--phase62-features", default="plans,trip,entities")
+    parser.add_argument("--phase63", action="store_true", help="Compare Phase 62 with durable preparation candidate")
+    parser.add_argument("--phase63-features", default="plans,files")
     parser.add_argument("--phase61-features", default="skims,timetable,tour_modes,entities,normals,uniforms,labels,packing")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-worker-wait-policy",choices=("default","PASSIVE"),default="PASSIVE")
@@ -69,6 +72,8 @@ def main():
     parser.add_argument("--sparse-matrices", action="store_true")
     parser.add_argument("--capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase63:
+        args.phase62 = True
     if args.phase62:
         args.phase61 = True
     if args.phase61:
@@ -196,6 +201,11 @@ def main():
                                     "--phase61-timetable-backend",args.phase61_timetable_backend]
                     if mode == "candidate":
                         command += ["--phase62-features",args.phase62_features]
+                if args.phase63:
+                    if mode == "gpu":
+                        command += ["--phase62-features",args.phase62_features]
+                    if mode == "candidate":
+                        command += ["--phase63-features",args.phase63_features]
                 cwd = ROOT
             fingerprint = source_fingerprint()
             config_hashes = config_fingerprint(args.scenario_overlay)

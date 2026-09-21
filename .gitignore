@@ -8,6 +8,7 @@ dist/
 tmp/
 output/
 cache_sharrow/
+phase63-runs/
 benchmark-data/
 .coverage
 htmlcov/

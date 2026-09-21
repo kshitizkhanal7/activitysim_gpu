@@ -15,32 +15,37 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 62: the complete public 50,000-household model takes
-76.81 seconds from launch to exit, compared with 204.84 seconds for newly
-measured regular CPU ActivitySim using 48 Numba threads. That is 2.67 times
-faster, or 62.50% less waiting, on this machine and configuration. Against
-the previous accelerated version measured in six balanced pairs, the gain is
-80.63 to 76.81 seconds, a 4.73% reduction. Every pair improves. All six new
-runs finish in 76.25-78.14 seconds. **The under-70-second fresh-process target
-and 65-second stretch target were not met.** A replicated improvement is not
-the same as meeting every goal.
+Latest result, Phase 63: the complete public 50,000-household model takes
+73.94 seconds from launch to exit, compared with 202.82 seconds for newly
+measured regular CPU ActivitySim using 48-thread capacity. That is 2.74 times
+faster, or 63.54% less waiting, on this machine and configuration. Against
+the previous accelerated version in six balanced pairs, time falls from
+82.19 to 73.94 seconds, a 10.04% reduction. Every pair improves. All six new
+runs finish in 73.17-80.00 seconds. **The under-70-second fresh-process target
+and 65-second stretch target were not met.** Improvement is not the same as
+meeting every goal. Earlier phases' times came from different sessions.
 
-Every checked travel decision, all 115 travel matrices and values throughout
-all 24 summary reports agree; four reports have documented `5` versus `5.0`
-departure-key formatting differences. Three changed scenarios also pass.
-The runtime handles complete departure retries, shares versioned data, and
-does not need captured mandatory-scheduling answers. It remains a CPU/GPU
-hybrid for the supported model. This phase reduces repeated preparation and
-adds a worker that reuses programs while restarting scenarios with fresh
-mutable state. For three scenarios, hybrid elapsed time falls from 235.65 to
-212.34 seconds, a 9.89% reduction. CPU gets equivalent reuse and takes 545.74
-seconds in its persistent worker. These are batch totals, not one-run times.
-Strong CPU comparisons show that some small calculations still favor CPU.
-Live CPU checks for borderline choices remain. The full gain is not a
-GPU-only hardware claim. All 565 tests pass, and all 43 formal model runs
-pass their output audits. Sections 329 onward explain these changes, the
-fair batch comparison, actual results and remaining limits. Earlier sections
-preserve the history and should not be read as the latest timing claim.
+All 94 measured models pass their output checks, including 80 models with
+changed seeds, coefficients and household counts. Checked travel decisions,
+all 115 matrices and values throughout all 24 summary reports agree with
+independently computed CPU answers. Existing `5` versus `5.0` departure-key
+formatting allowances and diagnostic-score bounds still apply. The runtime
+remains a CPU/GPU hybrid; live CPU checks for borderline choices remain.
+
+Phase 63 reuses calculation recipes, not old modeled answers, and fixes a real
+retained-GPU-memory defect. Giving CPU the same new preparation options still
+leaves a 2.53-times hybrid advantage: 193.18 versus 76.42 seconds in the separate
+fresh-worker comparison. Its clock includes extra input and reset checks.
+Ten-scenario hybrid batches take 590.70 seconds instead of 714.47 with fresh
+processes, a 17.32% reduction. Those batches mix household counts and are not
+single-run times. The full-system gains include CPU and file-writing changes,
+not only GPU arithmetic. Some small calculations still favor CPU.
+
+All 619 main tests pass. A separately rebuilt directory downloads public inputs,
+installs 98 pinned libraries and passes 618 tests with one expected historical
+checkpoint skip. This is same-machine reconstruction, not proof on another
+computer. Sections 338-346 explain the changes, results, memory limits,
+preparation costs and what remains to do. Earlier sections preserve the history.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -9050,3 +9055,330 @@ conditions, and repeated scenarios can save additional setup work. For a
 researcher, the remaining task is to turn that local, auditable result into
 broader evidence and a maintainable integration, without weakening the
 replication contract to make the numbers look better.
+
+## 338. Why did Phase 63 work on preparation instead of adding another GPU kernel?
+
+A faster calculator is not much help while someone is still finding the
+worksheet, translating the instructions and organizing the numbers. By this
+point, several GPU calculations were fast, but complete model runs still spent
+seconds preparing those calculations and their independent CPU checks.
+
+Phase 63 therefore has two linked aims: reduce preparation that can safely be
+reused, and show that repeated scenarios do not accumulate old state or memory.
+It also turns the measured setup into a more reproducible package: pinned
+software, downloadable public inputs and a command that runs the comparison.
+The fresh-process goal remains below 70 seconds, with 65 seconds as a stretch.
+A goal is not a result; the measured results below must decide whether it was met.
+
+This does not replace Phases 1-62. Those phases supplied the kernels, arithmetic
+rules, live CPU comparisons and complete-model integration. Phase 63 improves
+how that working system gets ready and runs repeatedly. It is still a CPU/GPU
+hybrid, not a new general-purpose Sharrow GPU backend.
+
+## 339. What can we reuse without remembering yesterday's answers?
+
+Think of a recipe and a cooked meal. Reusing the recipe is sensible. Serving
+yesterday's meal as if it were made from today's ingredients is not.
+
+Sharrow turns model expressions into executable instructions. Phase 63 saves
+some of the preparation metadata used to construct those instructions: generated
+code text, names, positions and other structural information. It does not save
+a household's chosen destination, a timetable, a probability array or an old
+model-state object. The ordinary CPU instructions still run on live input data.
+Sharrow still prepares the current data relationships before the reusable part
+is considered.
+
+The reuse key includes expression definitions, compiler options, relevant
+Sharrow source files and supported extra-function code and defaults. The cache
+also checks the generated program's actual source bytes. A digest is a short
+fingerprint computed from a file's contents: changing the contents should change
+the fingerprint. This helps detect stale or damaged entries; it is not a proof
+that the mathematical model is correct.
+
+The program also avoids repeatedly parsing unchanged specification and
+coefficient files. A coefficient is a number controlling how strongly a factor
+affects a score, such as the tendency of a full-time worker to do a mandatory
+activity. Each request resolves the current file and fingerprints its contents.
+Changing a coefficient must therefore be noticed even if the file has the same
+size and timestamp. Returned tables, including their row and column labels,
+are private copies so later changes cannot alter the cached original.
+
+Unsupported expression cases use the ordinary preparation path. Invalid cache
+entries rebuild rather than being accepted as valid. These checks and fallbacks
+are important parts of the optimization, not optional work to remove from the
+correctness experiment.
+
+## 340. Why did changing memory measurements help, and what did we give up?
+
+The model measures memory as it works. On this machine, one detailed measurement
+is expensive when repeated often. Phase 63 offers a less expensive in-step
+measurement, but only when the model is not using memory measurements to decide
+how to divide work into chunks.
+
+RSS, or resident set size, measures memory pages currently present in physical
+RAM for a process, including pages it may share. USS, or unique set size, measures
+pages private to that process. Finding USS can require more detailed inspection.
+Neither number alone describes every kind of memory used by the whole system.
+
+The selected option keeps RSS measurements inside model steps and still measures
+USS at scenario boundaries. A separate sampler checks RSS approximately every
+tenth of a second. Its highest reading is an **observed** peak: a shorter spike
+between readings could be missed. An in-step USS value that was not measured is
+reported as unavailable, never as zero actual memory.
+
+The option refuses to run if adaptive chunking or chunk training is enabled.
+That guard matters for larger workloads, where changing the memory information
+could change how the model divides its work. Both CPU and hybrid controls get
+the same option in the repeated-scenario comparison. Savings from lighter
+diagnostics are not GPU-kernel arithmetic speedups.
+
+## 341. What memory problem did the longer experiment find?
+
+The first ten-scenario development run produced correct outputs but retained
+nearly 8.00 billion bytes of active GPU array allocations after its last reset.
+Correct answers alone were not enough: repeating the worker longer would risk
+running out of GPU memory. Host private-memory growth also exceeded the
+predeclared 512 MiB tolerance. MiB means 1,048,576 bytes.
+
+The problem was like removing a book from a catalog while someone still held
+the book. Removing Python module names did not destroy old objects still
+referenced by compiled or library objects. Retained destination and scheduling
+services owned large random-state and calculation buffers.
+
+The fix explicitly releases those per-scenario service owners, live Sharrow
+objects and named input/device caches before discarding the application modules.
+Only eligible source-keyed compiled programs remain reusable. Every new scenario
+gets fresh mutable application state and current input data.
+
+In the corrected ten-scenario development run, all output audits passed. Active
+CuPy array-pool use returned to zero before every scenario and after the final
+reset. Host private-memory growth between the fifth and tenth scenarios was
+185,577,472 bytes, below the 512 MiB limit. These observations motivated the
+formal repetition; a single successful development run was not the final proof.
+
+Zero active pool bytes does **not** mean zero physical GPU use. The CUDA context,
+compiled programs and unused memory reserved by the allocator can remain. The
+corrected development worker still reserved about 2.24 billion GPU pool bytes
+after its final reset. The report distinguishes active allocations from reserved
+space rather than calling both a leak or calling both zero.
+
+## 342. How does the new experiment make the comparison fairer?
+
+There are four scenarios. A uses 50,000 households and the default random seed.
+B changes the seed to 17. C uses 10,000 households and seed 991. D changes a
+full-time-worker activity coefficient from 1.378734579 to 1.5. The CPU reference
+generator checks that D actually changes activity decisions, rather than merely
+changing an unused setting.
+It changed 6,373 person-activity choices in the newly generated CPU reference,
+while the sampled person IDs stayed the same.
+
+Each strategy runs A, B, C, D, A, C, B, A, D, A. Returning to A is especially
+useful: its answers should not change because a different scenario ran earlier.
+There are four strategies: fresh hybrid processes, one persistent hybrid worker,
+fresh CPU processes and one persistent CPU worker. The entire four-strategy
+experiment is repeated with the strategy order reversed. That makes 80 complete
+scenario models, compared against four newly generated independent CPU references.
+
+Both engines receive the same new preparation and memory-measurement options,
+48-thread capacity, passive waiting policy and private copies of reusable raw
+input tables. Every scenario checks its public-input digests. Timing includes
+worker startup, the first scenario and per-scenario input checking. Independent
+output audits occur after the timed work and are excluded for both engines.
+
+The memory contract was fixed before formal measurements: compare host USS and
+active GPU memory between the fifth and tenth scenarios, both A. Allowed growth
+is at most 512 MiB host USS and 128 MiB active device memory. The hybrid must also
+release all active default CuPy pool arrays before each scenario and after final
+reset. These are finite workload checks, not a mathematical guarantee that an
+unlimited service with arbitrary inputs can never leak.
+
+Separately, six reversed-order Phase 62/63 pairs measure fresh complete processes,
+and two ordinary CPU48 runs provide a familiar ActivitySim baseline. That is
+94 measured models in total, plus CPU-reference generation and raw-image
+preparation. The default-A cases also provide eight fresh processes per engine
+with matched new preparation. Their clocks include input checking and reset
+telemetry, so they are labeled separately from the fresh-pair harness.
+
+A ten-scenario total mixes eight 50,000-household and two 10,000-household runs.
+Dividing it by ten would not give the time for a normal 50,000-household run.
+Equal preparation also does not isolate GPU hardware: the hybrid retains earlier
+CPU-side, data-layout and output-writing improvements. It is a useful comparison
+of complete working systems, not proof that every improvement comes from GPU
+arithmetic or that no better CPU implementation is possible.
+
+## 343. What does rebuilding from public inputs establish?
+
+We staged the source in a new directory without copying the original Python
+environment, runtime caches, raw data or model answers. A bootstrap command
+installed 98 exact library versions, obtained the pinned ActivitySim revision
+and applied the reviewed integration patch. It downloaded the public data archive
+and verified all five selected input files against their expected digests.
+The configuration snapshot includes 158 configuration/license files so a moving
+online example cannot silently change the experiment.
+
+This exercise caught details that an existing working installation can hide.
+ActivitySim's generated version label depended on the clone's Git tag history.
+Patch application also changed newline bytes. The bootstrap now pins the version
+label and restores reviewed source bytes, refusing unexpected model-code edits.
+Git checkout rules preserve the relevant local-source and metadata bytes too.
+
+The first clean test attempt also found missing benchmark source scripts in the
+staging recipe. We repaired the recipe and copied those scripts, not old results.
+The subsequent clean-directory suite passed 601 tests with one intentional skip:
+an old public checkpoint was not staged. A prior 602-pass run launched from the
+original directory could see that old checkpoint, so it is not presented as
+fully isolated evidence. Final test counts after additional reporting checks
+are recorded with the completed qualification below.
+
+The reconstructed environment uses its own CuPy and Numba cache directories.
+Tests and preparation warm these caches. The first full CPU reference must still
+compile many Sharrow model expressions; its preparation cost is kept separate
+from the warmed comparison. A fresh **process** is not a fresh **installation**.
+Here, the first full CPU reference took 1,880.84 seconds, about 31 minutes.
+The later changed-seed, smaller-sample and changed-coefficient references took
+201.26, 111.48 and 205.11 seconds. These are reference-generation costs, not
+the final matched performance comparison. Reporting only the later timings
+without disclosing preparation would hide a real cost of getting started.
+
+This is stronger than merely saying that the code runs on the author's existing
+environment. It is not independent hardware replication: the rebuild still runs
+on the same Windows workstation, with the same processor and RTX A4000. Library
+version pins are not cryptographic guarantees of every installed binary. Another
+machine must execute the numerical gates and measure its own timings. The
+supported compiled destination path is specialized for this public specification
+and NVIDIA sm86; arbitrary GPU architectures are not silently certified.
+
+The first comparison attempt also found a Windows file-path limit. One
+checkpoint filename reached 260 characters because the rebuilt checkout was
+nested inside the original project. We shortened the output location and added
+a check before models start, rather than changing the system's registry. The
+failed attempt is retained but excluded from the complete comparison. The new
+series uses the same independently generated references and unchanged production
+code. Its raw-image preparation run took 272.80 seconds and passed the output
+checks; that setup cost is reported separately too.
+
+## 344. What are the final Phase 63 speed and accuracy results?
+
+Think of elapsed time as a stopwatch from launching the model until it exits.
+Charged service time is a narrower ledger of model, validation and prewarming
+work. We publish both but judge the fresh-run goal using the full stopwatch.
+Auditing saved outputs happens afterwards and is outside both engines' timed
+model work. Installing software and compiling everything for the first time
+are separate preparation costs described above.
+
+| Complete fresh model | Median elapsed seconds | Median charged seconds |
+|---|---:|---:|
+| Ordinary CPU ActivitySim, 48-thread capacity | 202.82 | 196.95 |
+| Previous hybrid, Phase 62 measured alongside Phase 63 | 82.19 | 75.25 |
+| Latest hybrid, Phase 63 | 73.94 | 67.15 |
+
+Six paired old/new trials alternate which version goes first. The new version
+wins every pair on both clocks, with a 10.04% reduction in median elapsed time.
+The ordinary CPU comparison is 2.74 times faster, or 63.54% less waiting. There
+are two ordinary CPU controls. The six latest-hybrid times range from 73.17 to
+80.00 seconds; we did not discard a slow successful run. The old Phase 62
+76.81-second result elsewhere in this guide belongs to an earlier session,
+not this paired experiment.
+
+The under-70-second median target is NOT met. Neither is the 65-second stretch.
+The 67.15-second charged number cannot be used to say otherwise: it is a
+different stopwatch. Likewise, a repeated-scenario average cannot stand in
+for a fresh 50,000-household run.
+
+Would CPU catch up if it received the new preparation improvements? We also
+measured that. Eight default-A fresh worker processes per engine, drawn from
+the balanced scenario campaign, give 193.18 seconds CPU versus 76.42 hybrid:
+2.53 times faster. Both get the same new recipe/file reuse and memory-tracing
+options. This worker clock includes input hashing and reset telemetry, unlike
+the fresh-pair harness, so only compare numbers within its own table/boundary.
+
+Accuracy is checked at several levels. All 94 measured models run all 34 model
+steps. Every checked decision matches its independent CPU reference; logical
+values in all 115 travel matrices and all 24 summary reports match under the
+existing key-format contract. Some diagnostic scores allow previously declared
+tiny numerical differences. This does not mean every file is byte-identical or
+that all conceivable inputs have been proven equivalent. It means the declared
+contracts passed the entire published experiment, including genuinely changed
+choices under the coefficient scenario.
+
+The [complete component comparison](https://github.com/kshitizkhanal7/activitysim_gpu/blob/codex/phase14/docs/phase63-component-comparison.md)
+lists all 34 steps. For orientation, ordinary CPU versus latest-hybrid medians
+are 23.75 versus 6.05 seconds for mandatory scheduling, 39.65 versus 6.85 for
+trip destination, and 9.25 versus 4.05 for trip mode choice. Auto ownership is
+slower in the hybrid (1.00 versus 0.80 seconds). These are rounded component
+logs, not isolated kernel benchmarks; their medians need not sum to the median
+whole-model time. Equal preparation still does not isolate GPU hardware,
+because earlier CPU, data-layout and output-writing improvements also remain.
+
+## 345. What happens when a planner runs many scenarios?
+
+A persistent worker keeps the program open between scenarios, like leaving a
+kitchen ready for the next recipe. Ingredients and decisions must still belong
+to the new order. Each ten-scenario sequence contains eight 50,000-household
+models and two 10,000-household models. Two trials reverse the strategy order.
+
+| Ten-scenario strategy | Median total seconds | Approximate minutes |
+|---|---:|---:|
+| CPU, new process per scenario | 1753.83 | 29.23 |
+| CPU, one persistent worker | 1466.35 | 24.44 |
+| Hybrid, new process per scenario | 714.47 | 11.91 |
+| Hybrid, one persistent worker | 590.70 | 9.85 |
+
+Persistence saves 17.32% of hybrid time and 16.39% of CPU time. The persistent
+hybrid is 2.48 times faster than the persistent CPU. These totals include the
+first scenario and setup; none are steady-state-only averages. They exclude
+external output audits equally. In practical terms, this particular workload
+falls from roughly 24 minutes to under 10 when comparing the two persistent
+engines. Whether that helps a real planning team depends on its actual models,
+hardware and how much time it spends outside model execution.
+
+The memory checks also pass, with limits chosen before the formal experiment.
+Between the fifth and tenth scenarios, hybrid private host-memory growth is
+189,591,552 and 189,046,784 bytes in the two trials (about 181 and 180 MiB).
+CPU growth is 357,072,896 and 128,790,528 bytes. All are below the 512 MiB limit,
+but none should be described as zero host growth. Hybrid active GPU-pool growth
+is zero, and every hybrid scenario begins and final reset ends with zero active
+default CuPy pool array bytes. Reserved GPU space and physical device usage are
+different measurements and can remain nonzero.
+
+Main tests finish with 619 passes. The independently rebuilt directory finishes
+with 618 passes and one expected skip because an old checkpoint was deliberately
+not copied. Both produce 91 dependency/deprecation warnings, not zero warnings.
+These tests supplement the 94 full model measurements; they do not replace them.
+Publication checks re-read evidence digests, reproduce the 80-model qualification
+and matched comparison, and verify the exact tested production source. Git
+checkout tests cover both common newline-conversion settings. PDF pages are
+rendered and visually checked, not approved from extracted text alone.
+
+## 346. What remains unproven, and what would move the project forward?
+
+This phase improves a complete public benchmark and makes its repeated use
+safer. It does not replace the earlier phases: those supplied the kernels,
+strict arithmetic, live CPU safety checks and integration that this runtime
+reuses. Phase 63 mostly removes repeated preparation and retained state around
+that work. Faster housekeeping is useful even when it is not new GPU math.
+
+The evidence is limited to the supported public model, sample sizes, scenarios,
+Windows environment and this workstation. We did not run a complete calibrated
+2.875-million-household model, certify another GPU architecture, or establish
+an indefinitely running multi-user server. Hooks are for sequential execution,
+not simultaneous callers. Parsed configuration reuse is limited to 256 entries;
+individual JSON plan files are limited to 16 MiB, but there is not yet a global
+disk-cache eviction policy. Boundary memory checks cannot prove an infinite
+service leak-free, and pinned versions alone do not verify every binary on
+someone else's machine. None of the timing ratios promise a universal speedup.
+
+Three useful next advances are distinct. First, run the pinned recipe on a
+second compatible workstation, including newly generated CPU references and
+all numerical gates. Second, profile the remaining complete-model cost and
+test larger reductions in preparation, scheduling and destination work against
+strong matched CPU implementations; keep the under-70 goal on the full clock.
+Third, prepare a small upstream Sharrow proposal with the data-only reuse
+contract, mutation tests and independent arithmetic evidence so others can
+review the integration. These are proposed next steps, not completed results.
+
+The bottom line is practical, not magical: the supported complete model is
+about 2.5-2.7 times faster than the measured CPU alternatives, and a tested
+ten-scenario service finishes in about ten minutes while preserving its checked
+answers. The reproducibility package exposes preparation costs, failed attempts
+and limits so a reviewer can challenge and rerun the claim.

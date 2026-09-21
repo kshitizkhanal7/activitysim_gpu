@@ -1,1 +1,23 @@
 *.pdf -diff -text
+.gitattributes text eol=lf
+.gitignore text eol=lf
+*.md text eol=lf
+
+# Preserve measured source bytes independently of the user's core.autocrlf.
+*.py text eol=lf
+*.ps1 text eol=lf
+src/choiceforge/kernels/*.cu text eol=lf
+src/choiceforge/kernels/phase55_public_destination_sm86.json text eol=crlf
+src/choiceforge/kernels/phase55_public_destination_plans.json text eol=crlf
+benchmark-data/configs_phase33_choiceforge/*.yaml text eol=lf
+benchmark-data/configs_phase59_seed17/*.yaml text eol=lf
+benchmark-data/configs_phase59_seed991/*.yaml text eol=lf
+benchmark-data/configs_phase63_coeff/*.yaml text eol=lf
+# The coefficient overlay intentionally preserves its mixed upstream newlines.
+benchmark-data/configs_phase63_coeff/*.csv -text
+reproducibility/* -text
+requirements-phase63-lock.txt -text
+integration/activitysim-phase63.patch -text
+benchmark-results/phase63*.json -text
+benchmark-results/phase63*.xml -text
+benchmark-results/phase58-p63*.json -text

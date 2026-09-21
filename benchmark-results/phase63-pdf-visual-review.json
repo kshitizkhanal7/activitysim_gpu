@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "method": "Poppler rendering and assistant visual inspection",
+  "pdf_sha256": "8d65d839d3a38c04f7adaf9774d0b14cbee68916cf81ce7fe69c43087dff0e1a",
+  "pdf_pages": 169,
+  "inspected_pages": [1, 2, 3, 162, 163, 164, 165, 166, 167, 168, 169],
+  "render_dpi": 105,
+  "scope": "Updated cover and opening summary, transition page, and every Phase 63 appendix page. Unchanged historical pages 4-161 were not individually re-reviewed.",
+  "corrections": "Moved sections 344-346 onto explicit page breaks after visual review caught orphaned headings. Re-rendered and inspected affected pages; final headings, tables, body text and footers are legible and not clipped.",
+  "renderer_warnings": "Poppler reports unavailable Symbol and ArialUnicode display fonts. Inspected pages show no missing glyphs or black squares."
+}

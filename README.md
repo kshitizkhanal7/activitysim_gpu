@@ -27,14 +27,58 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 repository test suite passes 565 tests, including
+The Python 3.11 repository test suite passes 619 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
 of the strict float32 utility accumulator. The generated strict CUDA path also
 matches the CPU oracle exactly on numeric edge cases and 30 real public batches.
 
-## Latest qualified result: Phase 62
+## Latest qualified result: Phase 63
+
+The complete public 50,000-household MTC model takes **73.94 seconds elapsed**
+versus **202.82 seconds** for ordinary CPU ActivitySim at 48-thread capacity:
+**2.743x faster, 63.54% less elapsed time**. Six balanced pairs improve from
+82.19 to 73.94 seconds against the contemporaneous Phase 62 control, a **10.04%**
+reduction. Every pair improves both elapsed and charged clocks. Candidate times
+span 73.17-80.00 seconds. **The under-70-second target and 65-second stretch were
+not met.** Historical Phase 62 measurements below are a different session.
+
+With the **same new preparation options given to CPU**, eight fresh default-A
+processes per engine take 193.18 seconds CPU versus 76.42 hybrid: **2.528x**.
+That worker clock also includes input hashing and reset telemetry. It is not
+interchangeable with the fresh-pair clock. All ratios compare complete systems,
+including CPU-side and output-writing improvements, not GPU hardware alone.
+
+All **94 measured models** pass: 12 paired models, two ordinary CPU controls,
+and 80 models covering changed seeds, household counts and coefficients. Each
+model runs all 34 components; checked decisions, 115 matrices and 24 report
+values match independent CPU references under the existing formatting and
+diagnostic-score contracts. The changed coefficient alters 6,373 person choices.
+Ten-scenario hybrid totals fall from **714.47 to 590.70 seconds** with persistence
+(17.32% less time); equivalent CPU totals fall from 1,753.83 to 1,466.35 seconds.
+These mixed-size batch totals are not 50,000-household single-run times.
+
+An actual retained-GPU-array defect was fixed. Both formal hybrid sequences
+start every scenario and finish final reset with zero active default CuPy pool
+bytes. Fifth-to-tenth host USS growth remains nonzero (about 180 MiB) but passes
+the predeclared 512 MiB limit. This is finite sequential-service qualification,
+not an infinite-service or zero-physical-GPU-memory guarantee.
+
+A separate directory rebuilt 98 pinned dependencies and downloaded verified
+public inputs without copying model answers. Main tests pass **619/619**; the
+clean replica passes **618 with one expected historical-checkpoint skip**.
+This is same-machine reconstruction, not independent hardware replication.
+First-use CPU compilation and raw-image preparation are disclosed separately;
+the performance results use warm installed caches and fresh live inputs.
+
+Read the [technical report](docs/phase63-durable-runtime.md),
+[all 34 component timings](docs/phase63-component-comparison.md),
+[executed replication recipe](docs/phase63-replication.md),
+[formal comparison](benchmark-results/phase63-complete-comparison.json),
+and [beginner explainer](docs/choiceforge-plain-english-explainer.md), sections 338-346.
+
+## Previous qualified result: Phase 62
 
 The complete public 50,000-household MTC model takes **76.81 seconds elapsed**,
 versus **204.84 seconds** for newly measured regular CPU controls using 48 Numba

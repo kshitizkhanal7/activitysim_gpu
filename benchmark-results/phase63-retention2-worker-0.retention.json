@@ -1,0 +1,745 @@
+{
+  "diagnostic_not_timing": true,
+  "resets": [
+    {
+      "before_reset": [],
+      "after_reset": [],
+      "memory": {
+        "rss_bytes": 227020800,
+        "uss_bytes": 138514432,
+        "gpu_pool_used_bytes": 0,
+        "gpu_pool_reserved_bytes": 0
+      }
+    },
+    {
+      "before_reset": [
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2237666326992,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245076070480,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "closure_cell",
+              "functions": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2245101486224,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "after_reset": [
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2237666326992,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245076070480,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": null,
+                      "keys": [
+                        "runtime"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2245101486224,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "memory": {
+        "rss_bytes": 1767149568,
+        "uss_bytes": 1585524736,
+        "gpu_pool_used_bytes": 952034816,
+        "gpu_pool_reserved_bytes": 1610934272
+      }
+    },
+    {
+      "before_reset": [
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2252510715024,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2237666326992,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245076070480,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": null,
+                      "keys": [
+                        "runtime"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245289727760,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "closure_cell",
+              "functions": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2245101486224,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2252061046992,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "after_reset": [
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2237666326992,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2252510715024,
+          "arrays": {
+            "_rng_states": 66134016,
+            "_rng_seeds": 105984,
+            "_rng_offsets": 105984,
+            "_rng_positions": 105984,
+            "_rng_mapping": 105984,
+            "_rng_output": 6359040,
+            "_utility": 154100736,
+            "_weights": 154100736,
+            "_choices": 3179520,
+            "_probabilities": 3179520,
+            "_first": 794880,
+            "_counts": 3179520,
+            "_guard": 26496,
+            "_bad": 26496,
+            "_risk": 105984,
+            "_totals": 105984,
+            "_normal_states": 66134016,
+            "_normal_seeds": 105984,
+            "_normal_offsets": 105984,
+            "_normal_output": 1271808
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": "choiceforge.modelwide_service",
+              "keys": [
+                "_SERVICE"
+              ],
+              "parents": []
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245076070480,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": null,
+                      "keys": [
+                        "runtime"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.Phase46DestinationService",
+          "id": 2245289727760,
+          "arrays": {
+            "_rng_states": 370778304,
+            "_rng_seeds": 594196,
+            "_rng_offsets": 594196,
+            "_rng_positions": 594196,
+            "_rng_mapping": 594196,
+            "_rng_output": 69690400
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "service"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.phase58_trip_runtime.TripRuntime",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": null,
+                      "keys": [
+                        "runtime"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2245101486224,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "choiceforge.modelwide_service.DestinationSampleLease",
+          "id": 2252061046992,
+          "arrays": {
+            "offsets_device": 120808,
+            "destinations_device": 1243872
+          },
+          "referrers": [
+            {
+              "type": "closure_cell",
+              "functions": []
+            },
+            {
+              "type": "dict",
+              "module": null,
+              "keys": [
+                "_active_destination_lease"
+              ],
+              "parents": [
+                {
+                  "type": "choiceforge.modelwide_service.Phase46DestinationService",
+                  "referrers": [
+                    {
+                      "type": "closure_cell"
+                    },
+                    {
+                      "type": "dict",
+                      "module": "choiceforge.modelwide_service",
+                      "keys": [
+                        "_SERVICE"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "memory": {
+        "rss_bytes": 1923141632,
+        "uss_bytes": 1741635584,
+        "gpu_pool_used_bytes": 1904069632,
+        "gpu_pool_reserved_bytes": 2803971584
+      }
+    }
+  ]
+}
