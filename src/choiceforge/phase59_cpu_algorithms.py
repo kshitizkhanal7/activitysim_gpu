@@ -138,7 +138,9 @@ def modes_cpu(raw, draws, c):
         for a in range(18, 21):
             p[a] = rh*ratio_cpu(u[a], sum_cpu(u, 18, 21, True))
         z, maximum, selected, maxpos = draws[row], -1., -1, 0
+        total = 0.
         for a in range(21):
+            total += p[a]
             if p[a] > maximum:
                 maximum, maxpos = p[a], a
             z -= p[a]
@@ -147,4 +149,6 @@ def modes_cpu(raw, draws, c):
             if selected < 0 and z <= 0:
                 selected = a
         choices[row] = maxpos if selected < 0 else selected
+        if not np.isfinite(total) or abs(total-1.)>1e-7:
+            logsums[row] = np.nan
     return choices, logsums, guards

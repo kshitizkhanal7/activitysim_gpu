@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\qualify_phase64_campaign.py", line 165, in <module>
+    main()
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\qualify_phase64_campaign.py", line 157, in main
+    result=qualify(docs[0],docs[1],docs[2:6],docs[6:],source_fingerprint(),read_report)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\qualify_phase64_campaign.py", line 53, in qualify
+    require(run["thread_environment"]["NUMBA_NUM_THREADS"]=="48" and run["thread_environment"]["OMP_WAIT_POLICY"]=="PASSIVE","Unmatched thread controls")
+                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+KeyError: 'OMP_WAIT_POLICY'
+Traceback (most recent call last):
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\run_phase64_campaign.py", line 54, in <module>
+    main()
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\run_phase64_campaign.py", line 49, in main
+    subprocess.run([str(PYTHON),str(ROOT/"scripts/qualify_phase64_campaign.py"),"--tag",args.tag],
+  File "C:\Users\kkhanal2\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Scripts\\python.exe', 'C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\qualify_phase64_campaign.py', '--tag', 'p64f1']' returned non-zero exit status 1.

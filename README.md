@@ -27,14 +27,45 @@ contains:
 - a transfer-inclusive and GPU-resident benchmark harness;
 - ActivitySim fallback handling and a documented integration roadmap.
 
-The Python 3.11 repository test suite passes 619 tests, including
+The Python 3.11 repository test suite currently passes 663 tests, including
 exact comparison with ActivitySim's actual Numba `choice_maker` and multi-warp
 CUDA regression cases at 33 and 190 alternatives, canonical execution of all
 379 MTC utility terms across 21 alternatives, and an independent scalar check
 of the strict float32 utility accumulator. The generated strict CUDA path also
 matches the CPU oracle exactly on numeric edge cases and 30 real public batches.
 
-## Latest qualified result: Phase 63
+## Latest qualified result: Phase 64
+
+The complete 50,000-household model takes **74.95 seconds** versus **208.93** for
+ordinary CPU ActivitySim: **2.787x faster, 64.12% less elapsed time**. Six balanced
+pairs improve the previous hybrid's 76.17-second median by **1.59%**, with every
+pair improving both clocks. **The under-70-second and 65-second targets were
+not met.** Giving CPU the same preparation options leaves **2.671x** in a
+separate fresh-worker comparison: 206.83 versus 77.44 seconds.
+
+The corrected complete public 250,000-household model passes the independent
+decision, matrix and report audits. A prior attempt exposed a one-person
+workplace rounding mismatch; live upstream CPU recomputation for borderline
+destinations fixes it without new random draws or saved answers. Its final-code
+repeat takes **299.09 seconds**, versus 501.25 with first-use compilation. These
+different setup conditions do not form a paired optimization ratio. The larger
+repeat uses a retained independent CPU reference, not a newly timed CPU control.
+
+Same-input nested mode reduction on 603,161 real rows is 1.42x faster on GPU
+when data stays resident; including transfers makes it slightly slower than the
+strongest tested CPU configuration. Neither ratio describes the whole model.
+All **42 selected campaign models** pass output and finite-memory qualification;
+two unspecified-policy CPU controls were retained, excluded and repeated, for
+44 executed campaign models. Four reducer controls and both final-code larger
+rechecks also pass. Both ten-scenario sequences clear active GPU arrays on reset;
+host USS growth is 174.45 and 188.35 MiB under the declared 512 MiB limit.
+All **663 tests pass**, with 91 dependency warnings. This is one-workstation
+evidence, not a new clean install or independent-hardware replication.
+See the [complete 34-component table](docs/phase64-component-comparison.md),
+[Phase 64 notes](docs/phase64-pipeline-and-scale.md) and
+[reproduction commands](docs/phase64-reproduction.md).
+
+## Historical published result: Phase 63
 
 The complete public 50,000-household MTC model takes **73.94 seconds elapsed**
 versus **202.82 seconds** for ordinary CPU ActivitySim at 48-thread capacity:

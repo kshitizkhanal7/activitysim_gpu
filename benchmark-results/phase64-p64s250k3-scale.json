@@ -1,0 +1,2406 @@
+{
+  "status": "outputs_qualified_scale_feasibility",
+  "households": 250000,
+  "command": [
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Scripts\\python.exe",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\run_phase58_comparison.py",
+    "--tag",
+    "p64s250k3",
+    "--phase64",
+    "--phase64-features",
+    "expressions,inputs,location_boundary",
+    "--phase63-features",
+    "plans,files,rss",
+    "--households",
+    "250000",
+    "--modes",
+    "candidate",
+    "--repetitions",
+    "1",
+    "--regular-numba-threads",
+    "48",
+    "--output-root",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\phase63-runs",
+    "--scenario-baseline",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\phase63-runs\\o-p58-p64s250k1-regular-1"
+  ],
+  "exit_code": 0,
+  "guard_stop_reason": null,
+  "monitored_campaign_seconds": 327.61122279999836,
+  "initial_disk_free_bytes": 96606990336,
+  "initial_host_available_bytes": 47027568640,
+  "observed_maximum_child_rss_bytes": 20055449600,
+  "minimum_host_available_bytes": 26801876992,
+  "samples": [
+    {
+      "elapsed_seconds": 0.02469020000717137,
+      "maximum_child_rss_bytes": 7618560,
+      "host_available_bytes": 47014342656,
+      "disk_free_bytes": 96606990336
+    },
+    {
+      "elapsed_seconds": 1.0364985000051092,
+      "maximum_child_rss_bytes": 104722432,
+      "host_available_bytes": 46920146944,
+      "disk_free_bytes": 96606990336
+    },
+    {
+      "elapsed_seconds": 2.0477023999992525,
+      "maximum_child_rss_bytes": 336031744,
+      "host_available_bytes": 46680010752,
+      "disk_free_bytes": 96607023104
+    },
+    {
+      "elapsed_seconds": 3.0579051000095205,
+      "maximum_child_rss_bytes": 408018944,
+      "host_available_bytes": 46595506176,
+      "disk_free_bytes": 96607023104
+    },
+    {
+      "elapsed_seconds": 4.069594500004314,
+      "maximum_child_rss_bytes": 484556800,
+      "host_available_bytes": 46524506112,
+      "disk_free_bytes": 96607035392
+    },
+    {
+      "elapsed_seconds": 5.081058700001449,
+      "maximum_child_rss_bytes": 590213120,
+      "host_available_bytes": 46436642816,
+      "disk_free_bytes": 96607019008
+    },
+    {
+      "elapsed_seconds": 6.092486800000188,
+      "maximum_child_rss_bytes": 612605952,
+      "host_available_bytes": 46413762560,
+      "disk_free_bytes": 96606982144
+    },
+    {
+      "elapsed_seconds": 7.106965600003605,
+      "maximum_child_rss_bytes": 835047424,
+      "host_available_bytes": 46191906816,
+      "disk_free_bytes": 96606793728
+    },
+    {
+      "elapsed_seconds": 8.119664099998772,
+      "maximum_child_rss_bytes": 1630838784,
+      "host_available_bytes": 45401567232,
+      "disk_free_bytes": 96606793728
+    },
+    {
+      "elapsed_seconds": 9.133397199999308,
+      "maximum_child_rss_bytes": 1290911744,
+      "host_available_bytes": 45738057728,
+      "disk_free_bytes": 96606760960
+    },
+    {
+      "elapsed_seconds": 10.147658900008537,
+      "maximum_child_rss_bytes": 1351708672,
+      "host_available_bytes": 45636677632,
+      "disk_free_bytes": 96606760960
+    },
+    {
+      "elapsed_seconds": 11.160406299997703,
+      "maximum_child_rss_bytes": 1211547648,
+      "host_available_bytes": 45815001088,
+      "disk_free_bytes": 96596508672
+    },
+    {
+      "elapsed_seconds": 12.174987799997325,
+      "maximum_child_rss_bytes": 1734467584,
+      "host_available_bytes": 45277663232,
+      "disk_free_bytes": 96585900032
+    },
+    {
+      "elapsed_seconds": 13.190432800009148,
+      "maximum_child_rss_bytes": 1457381376,
+      "host_available_bytes": 45558919168,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 14.20293670000683,
+      "maximum_child_rss_bytes": 2828484608,
+      "host_available_bytes": 44188684288,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 15.21713630000886,
+      "maximum_child_rss_bytes": 5867098112,
+      "host_available_bytes": 41137590272,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 16.231193200001144,
+      "maximum_child_rss_bytes": 8144384000,
+      "host_available_bytes": 38850088960,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 17.24361790000694,
+      "maximum_child_rss_bytes": 8205824000,
+      "host_available_bytes": 38789914624,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 18.256514000007883,
+      "maximum_child_rss_bytes": 8304226304,
+      "host_available_bytes": 38694567936,
+      "disk_free_bytes": 96585752576
+    },
+    {
+      "elapsed_seconds": 19.26899160000903,
+      "maximum_child_rss_bytes": 8161107968,
+      "host_available_bytes": 38848675840,
+      "disk_free_bytes": 96585699328
+    },
+    {
+      "elapsed_seconds": 20.28333879999991,
+      "maximum_child_rss_bytes": 8429752320,
+      "host_available_bytes": 38553681920,
+      "disk_free_bytes": 96571699200
+    },
+    {
+      "elapsed_seconds": 21.296161699996446,
+      "maximum_child_rss_bytes": 8668958720,
+      "host_available_bytes": 38326427648,
+      "disk_free_bytes": 96571695104
+    },
+    {
+      "elapsed_seconds": 22.307637999998406,
+      "maximum_child_rss_bytes": 8562438144,
+      "host_available_bytes": 38431379456,
+      "disk_free_bytes": 96571695104
+    },
+    {
+      "elapsed_seconds": 23.319524899998214,
+      "maximum_child_rss_bytes": 8590540800,
+      "host_available_bytes": 38402064384,
+      "disk_free_bytes": 96571650048
+    },
+    {
+      "elapsed_seconds": 24.333271600000444,
+      "maximum_child_rss_bytes": 8809242624,
+      "host_available_bytes": 38186426368,
+      "disk_free_bytes": 96571645952
+    },
+    {
+      "elapsed_seconds": 25.344900099997176,
+      "maximum_child_rss_bytes": 8656461824,
+      "host_available_bytes": 38331805696,
+      "disk_free_bytes": 96571645952
+    },
+    {
+      "elapsed_seconds": 26.35562810000556,
+      "maximum_child_rss_bytes": 9002119168,
+      "host_available_bytes": 37985767424,
+      "disk_free_bytes": 96571645952
+    },
+    {
+      "elapsed_seconds": 27.368190100009087,
+      "maximum_child_rss_bytes": 8507473920,
+      "host_available_bytes": 38477889536,
+      "disk_free_bytes": 96571535360
+    },
+    {
+      "elapsed_seconds": 28.383772600005614,
+      "maximum_child_rss_bytes": 7765827584,
+      "host_available_bytes": 39209029632,
+      "disk_free_bytes": 96543322112
+    },
+    {
+      "elapsed_seconds": 29.396414800008642,
+      "maximum_child_rss_bytes": 8206110720,
+      "host_available_bytes": 38748282880,
+      "disk_free_bytes": 96542576640
+    },
+    {
+      "elapsed_seconds": 30.408884799995576,
+      "maximum_child_rss_bytes": 8217001984,
+      "host_available_bytes": 38742396928,
+      "disk_free_bytes": 96542588928
+    },
+    {
+      "elapsed_seconds": 31.422499399996013,
+      "maximum_child_rss_bytes": 8891748352,
+      "host_available_bytes": 38054211584,
+      "disk_free_bytes": 96535085056
+    },
+    {
+      "elapsed_seconds": 32.432917400001315,
+      "maximum_child_rss_bytes": 8224317440,
+      "host_available_bytes": 38725861376,
+      "disk_free_bytes": 96513572864
+    },
+    {
+      "elapsed_seconds": 33.445424899997306,
+      "maximum_child_rss_bytes": 8766607360,
+      "host_available_bytes": 38164930560,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 34.455000700007076,
+      "maximum_child_rss_bytes": 8769474560,
+      "host_available_bytes": 38156926976,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 35.46834960000706,
+      "maximum_child_rss_bytes": 9162317824,
+      "host_available_bytes": 37772845056,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 36.482148700000835,
+      "maximum_child_rss_bytes": 9183711232,
+      "host_available_bytes": 37764358144,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 37.495920000001206,
+      "maximum_child_rss_bytes": 8351232000,
+      "host_available_bytes": 38599065600,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 38.51103019999573,
+      "maximum_child_rss_bytes": 8231661568,
+      "host_available_bytes": 38717718528,
+      "disk_free_bytes": 96512778240
+    },
+    {
+      "elapsed_seconds": 39.524168600008124,
+      "maximum_child_rss_bytes": 7859179520,
+      "host_available_bytes": 39083106304,
+      "disk_free_bytes": 96491376640
+    },
+    {
+      "elapsed_seconds": 40.538635600009,
+      "maximum_child_rss_bytes": 8398491648,
+      "host_available_bytes": 38522671104,
+      "disk_free_bytes": 96482754560
+    },
+    {
+      "elapsed_seconds": 41.551214599996456,
+      "maximum_child_rss_bytes": 8468164608,
+      "host_available_bytes": 38452977664,
+      "disk_free_bytes": 96482754560
+    },
+    {
+      "elapsed_seconds": 42.5660743000044,
+      "maximum_child_rss_bytes": 7916183552,
+      "host_available_bytes": 39002132480,
+      "disk_free_bytes": 96475316224
+    },
+    {
+      "elapsed_seconds": 43.58199790000799,
+      "maximum_child_rss_bytes": 8533327872,
+      "host_available_bytes": 38366269440,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 44.5960286000045,
+      "maximum_child_rss_bytes": 8339042304,
+      "host_available_bytes": 38560788480,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 45.60910349999904,
+      "maximum_child_rss_bytes": 8454807552,
+      "host_available_bytes": 38459162624,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 46.62037820000842,
+      "maximum_child_rss_bytes": 9137614848,
+      "host_available_bytes": 37773410304,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 47.631560900001205,
+      "maximum_child_rss_bytes": 9702772736,
+      "host_available_bytes": 36742369280,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 48.64660140000342,
+      "maximum_child_rss_bytes": 10719977472,
+      "host_available_bytes": 35651866624,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 49.66049809999822,
+      "maximum_child_rss_bytes": 10724970496,
+      "host_available_bytes": 35610247168,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 50.67387090000557,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35611176960,
+      "disk_free_bytes": 96453881856
+    },
+    {
+      "elapsed_seconds": 51.69075700000394,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35630850048,
+      "disk_free_bytes": 96453767168
+    },
+    {
+      "elapsed_seconds": 52.70354060000682,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35635486720,
+      "disk_free_bytes": 96453767168
+    },
+    {
+      "elapsed_seconds": 53.717256899995846,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35619090432,
+      "disk_free_bytes": 96453754880
+    },
+    {
+      "elapsed_seconds": 54.73606180000934,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35618930688,
+      "disk_free_bytes": 96453754880
+    },
+    {
+      "elapsed_seconds": 55.750640700003714,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35625123840,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 56.76865070000349,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35587649536,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 57.784972199995536,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35582251008,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 58.7992849000002,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35577184256,
+      "disk_free_bytes": 96453570560
+    },
+    {
+      "elapsed_seconds": 59.813347600007546,
+      "maximum_child_rss_bytes": 10720903168,
+      "host_available_bytes": 35577741312,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 60.8273354999983,
+      "maximum_child_rss_bytes": 10720833536,
+      "host_available_bytes": 35589083136,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 61.841628199996194,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35582558208,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 62.85546289999911,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35583025152,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 63.87081940000644,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35585339392,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 64.8852721000003,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35584282624,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 65.899659600007,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35594924032,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 66.91453910000564,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35602522112,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 67.92810489999829,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35606765568,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 68.94267210000544,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35621310464,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 69.95727620000253,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35622006784,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 70.97111210000003,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35625951232,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 71.98560929999803,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35655237632,
+      "disk_free_bytes": 96453558272
+    },
+    {
+      "elapsed_seconds": 72.99991100000625,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35659812864,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 74.01373659999808,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35660308480,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 75.0282084000064,
+      "maximum_child_rss_bytes": 10720837632,
+      "host_available_bytes": 35664781312,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 76.04202419999638,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35758428160,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 77.05613969999831,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35763089408,
+      "disk_free_bytes": 96453554176
+    },
+    {
+      "elapsed_seconds": 78.07110300000932,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35748028416,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 79.08596490000491,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35766013952,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 80.10050369999954,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35766829056,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 81.11533660000714,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35772424192,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 82.12870450000628,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35795705856,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 83.1424920999998,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35790766080,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 84.1559494999965,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35794681856,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 85.1717340000032,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35791171584,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 86.187104800003,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35792814080,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 87.20183230000839,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35789312000,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 88.21630729999742,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35789783040,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 89.23059490000014,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35789651968,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 90.24546289999853,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35789975552,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 91.25936039999942,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35791392768,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 92.27410640000016,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35784376320,
+      "disk_free_bytes": 96453545984
+    },
+    {
+      "elapsed_seconds": 93.2889567999955,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35786387456,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 94.30440300000191,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 35917840384,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 95.31935970000632,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 36108554240,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 96.33557039999869,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 36187660288,
+      "disk_free_bytes": 96453525504
+    },
+    {
+      "elapsed_seconds": 97.34986699999718,
+      "maximum_child_rss_bytes": 10629988352,
+      "host_available_bytes": 36254855168,
+      "disk_free_bytes": 96453525504
+    },
+    {
+      "elapsed_seconds": 98.36464600000181,
+      "maximum_child_rss_bytes": 10653057024,
+      "host_available_bytes": 36228784128,
+      "disk_free_bytes": 96453525504
+    },
+    {
+      "elapsed_seconds": 99.37737950000155,
+      "maximum_child_rss_bytes": 10653057024,
+      "host_available_bytes": 36243255296,
+      "disk_free_bytes": 96453525504
+    },
+    {
+      "elapsed_seconds": 100.38956730000791,
+      "maximum_child_rss_bytes": 10653057024,
+      "host_available_bytes": 36245860352,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 101.40209960000357,
+      "maximum_child_rss_bytes": 10653057024,
+      "host_available_bytes": 36228714496,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 102.41234700000496,
+      "maximum_child_rss_bytes": 10653057024,
+      "host_available_bytes": 36210528256,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 103.42879160000302,
+      "maximum_child_rss_bytes": 10145341440,
+      "host_available_bytes": 36709744640,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 104.44090539999888,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35280318464,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 105.4561609000084,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35247906816,
+      "disk_free_bytes": 96453541888
+    },
+    {
+      "elapsed_seconds": 106.47058170000673,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35217018880,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 107.48446210000839,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35217199104,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 108.49546649999684,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35234750464,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 109.5075385000091,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35237044224,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 110.52072159999807,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35236147200,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 111.5337073999981,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35235835904,
+      "disk_free_bytes": 96453550080
+    },
+    {
+      "elapsed_seconds": 112.54667979999795,
+      "maximum_child_rss_bytes": 11589165056,
+      "host_available_bytes": 35235176448,
+      "disk_free_bytes": 96453545984
+    },
+    {
+      "elapsed_seconds": 113.55737300000328,
+      "maximum_child_rss_bytes": 11588382720,
+      "host_available_bytes": 35234078720,
+      "disk_free_bytes": 96453545984
+    },
+    {
+      "elapsed_seconds": 114.57130419999885,
+      "maximum_child_rss_bytes": 11777871872,
+      "host_available_bytes": 35084165120,
+      "disk_free_bytes": 96453545984
+    },
+    {
+      "elapsed_seconds": 115.58325989999867,
+      "maximum_child_rss_bytes": 11750092800,
+      "host_available_bytes": 35088527360,
+      "disk_free_bytes": 96453545984
+    },
+    {
+      "elapsed_seconds": 116.59640160000708,
+      "maximum_child_rss_bytes": 11462025216,
+      "host_available_bytes": 35359752192,
+      "disk_free_bytes": 96453480448
+    },
+    {
+      "elapsed_seconds": 117.61011280000093,
+      "maximum_child_rss_bytes": 11349176320,
+      "host_available_bytes": 35480555520,
+      "disk_free_bytes": 96453488640
+    },
+    {
+      "elapsed_seconds": 118.62160140000924,
+      "maximum_child_rss_bytes": 11228602368,
+      "host_available_bytes": 35599863808,
+      "disk_free_bytes": 96453488640
+    },
+    {
+      "elapsed_seconds": 119.63410370000929,
+      "maximum_child_rss_bytes": 11717718016,
+      "host_available_bytes": 35155795968,
+      "disk_free_bytes": 96453488640
+    },
+    {
+      "elapsed_seconds": 120.6455866000033,
+      "maximum_child_rss_bytes": 11692814336,
+      "host_available_bytes": 35186360320,
+      "disk_free_bytes": 96453488640
+    },
+    {
+      "elapsed_seconds": 121.66040520000388,
+      "maximum_child_rss_bytes": 11347165184,
+      "host_available_bytes": 35497762816,
+      "disk_free_bytes": 96453488640
+    },
+    {
+      "elapsed_seconds": 122.67379650000657,
+      "maximum_child_rss_bytes": 11613945856,
+      "host_available_bytes": 35235270656,
+      "disk_free_bytes": 96439668736
+    },
+    {
+      "elapsed_seconds": 123.68412220000755,
+      "maximum_child_rss_bytes": 11495899136,
+      "host_available_bytes": 35364446208,
+      "disk_free_bytes": 96439668736
+    },
+    {
+      "elapsed_seconds": 124.6944741000043,
+      "maximum_child_rss_bytes": 10826883072,
+      "host_available_bytes": 36041363456,
+      "disk_free_bytes": 96423460864
+    },
+    {
+      "elapsed_seconds": 125.70811720000347,
+      "maximum_child_rss_bytes": 11338547200,
+      "host_available_bytes": 35508682752,
+      "disk_free_bytes": 96415514624
+    },
+    {
+      "elapsed_seconds": 126.7212778999965,
+      "maximum_child_rss_bytes": 11594420224,
+      "host_available_bytes": 35263397888,
+      "disk_free_bytes": 96415514624
+    },
+    {
+      "elapsed_seconds": 127.73593290000281,
+      "maximum_child_rss_bytes": 11286962176,
+      "host_available_bytes": 35581616128,
+      "disk_free_bytes": 96415408128
+    },
+    {
+      "elapsed_seconds": 128.7498798000015,
+      "maximum_child_rss_bytes": 11286974464,
+      "host_available_bytes": 35583127552,
+      "disk_free_bytes": 96415260672
+    },
+    {
+      "elapsed_seconds": 129.76344979999703,
+      "maximum_child_rss_bytes": 11286974464,
+      "host_available_bytes": 35584020480,
+      "disk_free_bytes": 96415064064
+    },
+    {
+      "elapsed_seconds": 130.7757588000095,
+      "maximum_child_rss_bytes": 11286974464,
+      "host_available_bytes": 35597705216,
+      "disk_free_bytes": 96414801920
+    },
+    {
+      "elapsed_seconds": 131.78588540000783,
+      "maximum_child_rss_bytes": 10933096448,
+      "host_available_bytes": 35948564480,
+      "disk_free_bytes": 96410804224
+    },
+    {
+      "elapsed_seconds": 132.80058480000298,
+      "maximum_child_rss_bytes": 11276873728,
+      "host_available_bytes": 35555991552,
+      "disk_free_bytes": 96383496192
+    },
+    {
+      "elapsed_seconds": 133.81564620000427,
+      "maximum_child_rss_bytes": 11309948928,
+      "host_available_bytes": 35530092544,
+      "disk_free_bytes": 96383496192
+    },
+    {
+      "elapsed_seconds": 134.82916140000452,
+      "maximum_child_rss_bytes": 11252269056,
+      "host_available_bytes": 35606622208,
+      "disk_free_bytes": 96381333504
+    },
+    {
+      "elapsed_seconds": 135.84187960000418,
+      "maximum_child_rss_bytes": 11525337088,
+      "host_available_bytes": 35335217152,
+      "disk_free_bytes": 96375435264
+    },
+    {
+      "elapsed_seconds": 136.85408220000681,
+      "maximum_child_rss_bytes": 11528744960,
+      "host_available_bytes": 35335426048,
+      "disk_free_bytes": 96375435264
+    },
+    {
+      "elapsed_seconds": 137.86711880000075,
+      "maximum_child_rss_bytes": 11388039168,
+      "host_available_bytes": 35471343616,
+      "disk_free_bytes": 96361111552
+    },
+    {
+      "elapsed_seconds": 138.88475300000573,
+      "maximum_child_rss_bytes": 12046761984,
+      "host_available_bytes": 34803666944,
+      "disk_free_bytes": 96361111552
+    },
+    {
+      "elapsed_seconds": 139.89850280000246,
+      "maximum_child_rss_bytes": 12394344448,
+      "host_available_bytes": 34475659264,
+      "disk_free_bytes": 96361111552
+    },
+    {
+      "elapsed_seconds": 140.9113042000099,
+      "maximum_child_rss_bytes": 12063248384,
+      "host_available_bytes": 34801659904,
+      "disk_free_bytes": 96361111552
+    },
+    {
+      "elapsed_seconds": 141.92574669999885,
+      "maximum_child_rss_bytes": 12044017664,
+      "host_available_bytes": 34821861376,
+      "disk_free_bytes": 96361107456
+    },
+    {
+      "elapsed_seconds": 142.93792320000648,
+      "maximum_child_rss_bytes": 12085645312,
+      "host_available_bytes": 34778161152,
+      "disk_free_bytes": 96361107456
+    },
+    {
+      "elapsed_seconds": 143.94932670000708,
+      "maximum_child_rss_bytes": 11137134592,
+      "host_available_bytes": 35734847488,
+      "disk_free_bytes": 96340398080
+    },
+    {
+      "elapsed_seconds": 144.96384769999713,
+      "maximum_child_rss_bytes": 11270635520,
+      "host_available_bytes": 35572211712,
+      "disk_free_bytes": 96324415488
+    },
+    {
+      "elapsed_seconds": 145.97639250000066,
+      "maximum_child_rss_bytes": 11598184448,
+      "host_available_bytes": 35262201856,
+      "disk_free_bytes": 96324415488
+    },
+    {
+      "elapsed_seconds": 146.98982230000547,
+      "maximum_child_rss_bytes": 11673358336,
+      "host_available_bytes": 35193987072,
+      "disk_free_bytes": 96324423680
+    },
+    {
+      "elapsed_seconds": 148.00356369999645,
+      "maximum_child_rss_bytes": 11825627136,
+      "host_available_bytes": 35056447488,
+      "disk_free_bytes": 96324526080
+    },
+    {
+      "elapsed_seconds": 149.01793109999562,
+      "maximum_child_rss_bytes": 11646431232,
+      "host_available_bytes": 35216883712,
+      "disk_free_bytes": 96324526080
+    },
+    {
+      "elapsed_seconds": 150.02989510000043,
+      "maximum_child_rss_bytes": 11600621568,
+      "host_available_bytes": 35262955520,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 151.04218720000063,
+      "maximum_child_rss_bytes": 11689857024,
+      "host_available_bytes": 35184132096,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 152.0560608000087,
+      "maximum_child_rss_bytes": 11588579328,
+      "host_available_bytes": 35283341312,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 153.0699670000031,
+      "maximum_child_rss_bytes": 11592916992,
+      "host_available_bytes": 35279081472,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 154.08416650000436,
+      "maximum_child_rss_bytes": 11617370112,
+      "host_available_bytes": 35257257984,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 155.09733550000237,
+      "maximum_child_rss_bytes": 11699335168,
+      "host_available_bytes": 35186585600,
+      "disk_free_bytes": 96319807488
+    },
+    {
+      "elapsed_seconds": 156.11031190000358,
+      "maximum_child_rss_bytes": 11483983872,
+      "host_available_bytes": 35403522048,
+      "disk_free_bytes": 96304517120
+    },
+    {
+      "elapsed_seconds": 157.12666370000807,
+      "maximum_child_rss_bytes": 13358129152,
+      "host_available_bytes": 33529262080,
+      "disk_free_bytes": 96304517120
+    },
+    {
+      "elapsed_seconds": 158.1373248000018,
+      "maximum_child_rss_bytes": 13557223424,
+      "host_available_bytes": 33277071360,
+      "disk_free_bytes": 96304373760
+    },
+    {
+      "elapsed_seconds": 159.15234420000343,
+      "maximum_child_rss_bytes": 13838180352,
+      "host_available_bytes": 33012862976,
+      "disk_free_bytes": 96304197632
+    },
+    {
+      "elapsed_seconds": 160.16447370000242,
+      "maximum_child_rss_bytes": 12810211328,
+      "host_available_bytes": 34071863296,
+      "disk_free_bytes": 96304197632
+    },
+    {
+      "elapsed_seconds": 161.18023660000472,
+      "maximum_child_rss_bytes": 13139542016,
+      "host_available_bytes": 33736695808,
+      "disk_free_bytes": 96304197632
+    },
+    {
+      "elapsed_seconds": 162.1941899000085,
+      "maximum_child_rss_bytes": 13736275968,
+      "host_available_bytes": 33099599872,
+      "disk_free_bytes": 96304234496
+    },
+    {
+      "elapsed_seconds": 163.21009490000142,
+      "maximum_child_rss_bytes": 15641554944,
+      "host_available_bytes": 31219793920,
+      "disk_free_bytes": 96303673344
+    },
+    {
+      "elapsed_seconds": 164.23349349999626,
+      "maximum_child_rss_bytes": 15320170496,
+      "host_available_bytes": 31564996608,
+      "disk_free_bytes": 96303673344
+    },
+    {
+      "elapsed_seconds": 165.24655630000052,
+      "maximum_child_rss_bytes": 16176766976,
+      "host_available_bytes": 30679846912,
+      "disk_free_bytes": 96303669248
+    },
+    {
+      "elapsed_seconds": 166.2593598000094,
+      "maximum_child_rss_bytes": 13577256960,
+      "host_available_bytes": 33281318912,
+      "disk_free_bytes": 96303669248
+    },
+    {
+      "elapsed_seconds": 167.27208890000475,
+      "maximum_child_rss_bytes": 14100787200,
+      "host_available_bytes": 32764887040,
+      "disk_free_bytes": 96303669248
+    },
+    {
+      "elapsed_seconds": 168.2873658000026,
+      "maximum_child_rss_bytes": 13176250368,
+      "host_available_bytes": 33682612224,
+      "disk_free_bytes": 96303652864
+    },
+    {
+      "elapsed_seconds": 169.29939169999852,
+      "maximum_child_rss_bytes": 13359276032,
+      "host_available_bytes": 33504137216,
+      "disk_free_bytes": 96303640576
+    },
+    {
+      "elapsed_seconds": 170.31255349999992,
+      "maximum_child_rss_bytes": 13439631360,
+      "host_available_bytes": 33421955072,
+      "disk_free_bytes": 96303640576
+    },
+    {
+      "elapsed_seconds": 171.32617880000907,
+      "maximum_child_rss_bytes": 13467484160,
+      "host_available_bytes": 33390637056,
+      "disk_free_bytes": 96303640576
+    },
+    {
+      "elapsed_seconds": 172.3401584000094,
+      "maximum_child_rss_bytes": 13060448256,
+      "host_available_bytes": 33778769920,
+      "disk_free_bytes": 96280502272
+    },
+    {
+      "elapsed_seconds": 173.35157510000863,
+      "maximum_child_rss_bytes": 14021316608,
+      "host_available_bytes": 32821964800,
+      "disk_free_bytes": 96280485888
+    },
+    {
+      "elapsed_seconds": 174.3649804000015,
+      "maximum_child_rss_bytes": 14024794112,
+      "host_available_bytes": 32800661504,
+      "disk_free_bytes": 96280481792
+    },
+    {
+      "elapsed_seconds": 175.37979890000133,
+      "maximum_child_rss_bytes": 14115921920,
+      "host_available_bytes": 32726310912,
+      "disk_free_bytes": 96280469504
+    },
+    {
+      "elapsed_seconds": 176.39345770000364,
+      "maximum_child_rss_bytes": 14012510208,
+      "host_available_bytes": 32816988160,
+      "disk_free_bytes": 96280461312
+    },
+    {
+      "elapsed_seconds": 177.4035339999973,
+      "maximum_child_rss_bytes": 14232035328,
+      "host_available_bytes": 32595042304,
+      "disk_free_bytes": 96280453120
+    },
+    {
+      "elapsed_seconds": 178.4169428000023,
+      "maximum_child_rss_bytes": 12890275840,
+      "host_available_bytes": 33940643840,
+      "disk_free_bytes": 96277172224
+    },
+    {
+      "elapsed_seconds": 179.43024430000514,
+      "maximum_child_rss_bytes": 13150093312,
+      "host_available_bytes": 33663950848,
+      "disk_free_bytes": 96256811008
+    },
+    {
+      "elapsed_seconds": 180.44323600000644,
+      "maximum_child_rss_bytes": 12867305472,
+      "host_available_bytes": 33949675520,
+      "disk_free_bytes": 96231530496
+    },
+    {
+      "elapsed_seconds": 181.45729669999855,
+      "maximum_child_rss_bytes": 13025935360,
+      "host_available_bytes": 33769836544,
+      "disk_free_bytes": 96231661568
+    },
+    {
+      "elapsed_seconds": 182.46680000000924,
+      "maximum_child_rss_bytes": 13114494976,
+      "host_available_bytes": 33687924736,
+      "disk_free_bytes": 96231645184
+    },
+    {
+      "elapsed_seconds": 183.47929889999796,
+      "maximum_child_rss_bytes": 13009072128,
+      "host_available_bytes": 33807237120,
+      "disk_free_bytes": 96227512320
+    },
+    {
+      "elapsed_seconds": 184.49104069999885,
+      "maximum_child_rss_bytes": 8880832512,
+      "host_available_bytes": 37953744896,
+      "disk_free_bytes": 96205975552
+    },
+    {
+      "elapsed_seconds": 185.50474200000463,
+      "maximum_child_rss_bytes": 9275490304,
+      "host_available_bytes": 37578088448,
+      "disk_free_bytes": 96205991936
+    },
+    {
+      "elapsed_seconds": 186.51719400000002,
+      "maximum_child_rss_bytes": 9674227712,
+      "host_available_bytes": 37184950272,
+      "disk_free_bytes": 96205991936
+    },
+    {
+      "elapsed_seconds": 187.52762870000151,
+      "maximum_child_rss_bytes": 9534742528,
+      "host_available_bytes": 37330391040,
+      "disk_free_bytes": 96205991936
+    },
+    {
+      "elapsed_seconds": 188.541767600007,
+      "maximum_child_rss_bytes": 9295638528,
+      "host_available_bytes": 37547864064,
+      "disk_free_bytes": 96180113408
+    },
+    {
+      "elapsed_seconds": 189.55519970000023,
+      "maximum_child_rss_bytes": 9162891264,
+      "host_available_bytes": 37678637056,
+      "disk_free_bytes": 96170278912
+    },
+    {
+      "elapsed_seconds": 190.56973570000264,
+      "maximum_child_rss_bytes": 9810243584,
+      "host_available_bytes": 37015920640,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 191.5840617000067,
+      "maximum_child_rss_bytes": 9860988928,
+      "host_available_bytes": 36973494272,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 192.59767460000876,
+      "maximum_child_rss_bytes": 9802428416,
+      "host_available_bytes": 37031059456,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 193.61093300000357,
+      "maximum_child_rss_bytes": 9804107776,
+      "host_available_bytes": 37038678016,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 194.6264899000089,
+      "maximum_child_rss_bytes": 10058854400,
+      "host_available_bytes": 36780810240,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 195.63964609999675,
+      "maximum_child_rss_bytes": 9801682944,
+      "host_available_bytes": 37044121600,
+      "disk_free_bytes": 96153591808
+    },
+    {
+      "elapsed_seconds": 196.6529642000096,
+      "maximum_child_rss_bytes": 9346519040,
+      "host_available_bytes": 37468114944,
+      "disk_free_bytes": 96098897920
+    },
+    {
+      "elapsed_seconds": 197.66805819999718,
+      "maximum_child_rss_bytes": 9612636160,
+      "host_available_bytes": 37198364672,
+      "disk_free_bytes": 96091222016
+    },
+    {
+      "elapsed_seconds": 198.68355000000156,
+      "maximum_child_rss_bytes": 9432772608,
+      "host_available_bytes": 37392465920,
+      "disk_free_bytes": 96091222016
+    },
+    {
+      "elapsed_seconds": 199.70050520000223,
+      "maximum_child_rss_bytes": 9401839616,
+      "host_available_bytes": 37395058688,
+      "disk_free_bytes": 96055078912
+    },
+    {
+      "elapsed_seconds": 200.71534720000636,
+      "maximum_child_rss_bytes": 10530504704,
+      "host_available_bytes": 36267520000,
+      "disk_free_bytes": 96055078912
+    },
+    {
+      "elapsed_seconds": 201.72830620000605,
+      "maximum_child_rss_bytes": 10782498816,
+      "host_available_bytes": 36024610816,
+      "disk_free_bytes": 96055078912
+    },
+    {
+      "elapsed_seconds": 202.7440212000074,
+      "maximum_child_rss_bytes": 11268603904,
+      "host_available_bytes": 35551817728,
+      "disk_free_bytes": 96055074816
+    },
+    {
+      "elapsed_seconds": 203.75627209999948,
+      "maximum_child_rss_bytes": 11684478976,
+      "host_available_bytes": 35132174336,
+      "disk_free_bytes": 96055074816
+    },
+    {
+      "elapsed_seconds": 204.76966350000293,
+      "maximum_child_rss_bytes": 11992408064,
+      "host_available_bytes": 34833178624,
+      "disk_free_bytes": 96055074816
+    },
+    {
+      "elapsed_seconds": 205.78286700000172,
+      "maximum_child_rss_bytes": 12177068032,
+      "host_available_bytes": 34645389312,
+      "disk_free_bytes": 96055083008
+    },
+    {
+      "elapsed_seconds": 206.79647260000638,
+      "maximum_child_rss_bytes": 12805795840,
+      "host_available_bytes": 34055581696,
+      "disk_free_bytes": 96055083008
+    },
+    {
+      "elapsed_seconds": 207.80761170000187,
+      "maximum_child_rss_bytes": 12886855680,
+      "host_available_bytes": 33944567808,
+      "disk_free_bytes": 96055148544
+    },
+    {
+      "elapsed_seconds": 208.8196300999989,
+      "maximum_child_rss_bytes": 12924067840,
+      "host_available_bytes": 33918697472,
+      "disk_free_bytes": 96055132160
+    },
+    {
+      "elapsed_seconds": 209.83248230000027,
+      "maximum_child_rss_bytes": 12940427264,
+      "host_available_bytes": 33858117632,
+      "disk_free_bytes": 96055054336
+    },
+    {
+      "elapsed_seconds": 210.84638879999693,
+      "maximum_child_rss_bytes": 12972371968,
+      "host_available_bytes": 33856888832,
+      "disk_free_bytes": 96055054336
+    },
+    {
+      "elapsed_seconds": 211.86112349999894,
+      "maximum_child_rss_bytes": 12997959680,
+      "host_available_bytes": 33845149696,
+      "disk_free_bytes": 96055070720
+    },
+    {
+      "elapsed_seconds": 212.87511960000847,
+      "maximum_child_rss_bytes": 13226201088,
+      "host_available_bytes": 33618534400,
+      "disk_free_bytes": 96054964224
+    },
+    {
+      "elapsed_seconds": 213.88484400000016,
+      "maximum_child_rss_bytes": 13062336512,
+      "host_available_bytes": 33791348736,
+      "disk_free_bytes": 96054964224
+    },
+    {
+      "elapsed_seconds": 214.8997104000009,
+      "maximum_child_rss_bytes": 13962416128,
+      "host_available_bytes": 32893480960,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 215.91374990000622,
+      "maximum_child_rss_bytes": 14215127040,
+      "host_available_bytes": 32654712832,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 216.92923280000105,
+      "maximum_child_rss_bytes": 12290875392,
+      "host_available_bytes": 34581057536,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 217.94344960000308,
+      "maximum_child_rss_bytes": 12033953792,
+      "host_available_bytes": 34844762112,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 218.9541309000051,
+      "maximum_child_rss_bytes": 12286484480,
+      "host_available_bytes": 34600226816,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 219.96768090000842,
+      "maximum_child_rss_bytes": 12390019072,
+      "host_available_bytes": 34491105280,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 220.9811553000036,
+      "maximum_child_rss_bytes": 12427350016,
+      "host_available_bytes": 34458820608,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 221.9964314999961,
+      "maximum_child_rss_bytes": 11844530176,
+      "host_available_bytes": 35047747584,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 223.0126600000076,
+      "maximum_child_rss_bytes": 11932733440,
+      "host_available_bytes": 34970427392,
+      "disk_free_bytes": 96055029760
+    },
+    {
+      "elapsed_seconds": 224.02568489999976,
+      "maximum_child_rss_bytes": 11984441344,
+      "host_available_bytes": 34913464320,
+      "disk_free_bytes": 96054964224
+    },
+    {
+      "elapsed_seconds": 225.0393463000073,
+      "maximum_child_rss_bytes": 11790815232,
+      "host_available_bytes": 35096170496,
+      "disk_free_bytes": 96054951936
+    },
+    {
+      "elapsed_seconds": 226.05337960000907,
+      "maximum_child_rss_bytes": 11583873024,
+      "host_available_bytes": 35254579200,
+      "disk_free_bytes": 96018268160
+    },
+    {
+      "elapsed_seconds": 227.06663709999702,
+      "maximum_child_rss_bytes": 11495165952,
+      "host_available_bytes": 35335737344,
+      "disk_free_bytes": 95982616576
+    },
+    {
+      "elapsed_seconds": 228.07818120000593,
+      "maximum_child_rss_bytes": 11876253696,
+      "host_available_bytes": 34958606336,
+      "disk_free_bytes": 95981600768
+    },
+    {
+      "elapsed_seconds": 229.09348260000115,
+      "maximum_child_rss_bytes": 12121378816,
+      "host_available_bytes": 34713288704,
+      "disk_free_bytes": 95981600768
+    },
+    {
+      "elapsed_seconds": 230.12579130000086,
+      "maximum_child_rss_bytes": 13023367168,
+      "host_available_bytes": 33788911616,
+      "disk_free_bytes": 95981580288
+    },
+    {
+      "elapsed_seconds": 231.15027530000953,
+      "maximum_child_rss_bytes": 13110202368,
+      "host_available_bytes": 33704910848,
+      "disk_free_bytes": 95981580288
+    },
+    {
+      "elapsed_seconds": 232.17384600000514,
+      "maximum_child_rss_bytes": 13110202368,
+      "host_available_bytes": 33715593216,
+      "disk_free_bytes": 95981588480
+    },
+    {
+      "elapsed_seconds": 233.18864960000792,
+      "maximum_child_rss_bytes": 13187022848,
+      "host_available_bytes": 33635160064,
+      "disk_free_bytes": 95981588480
+    },
+    {
+      "elapsed_seconds": 234.20357379999768,
+      "maximum_child_rss_bytes": 12760248320,
+      "host_available_bytes": 33978073088,
+      "disk_free_bytes": 95943532544
+    },
+    {
+      "elapsed_seconds": 235.21820390000357,
+      "maximum_child_rss_bytes": 13179047936,
+      "host_available_bytes": 33517998080,
+      "disk_free_bytes": 95943532544
+    },
+    {
+      "elapsed_seconds": 236.22977920000267,
+      "maximum_child_rss_bytes": 13709234176,
+      "host_available_bytes": 33004052480,
+      "disk_free_bytes": 95943139328
+    },
+    {
+      "elapsed_seconds": 237.24827589999768,
+      "maximum_child_rss_bytes": 13637115904,
+      "host_available_bytes": 33119289344,
+      "disk_free_bytes": 95943139328
+    },
+    {
+      "elapsed_seconds": 238.27474940000684,
+      "maximum_child_rss_bytes": 13602082816,
+      "host_available_bytes": 33155772416,
+      "disk_free_bytes": 95942889472
+    },
+    {
+      "elapsed_seconds": 239.28890919999685,
+      "maximum_child_rss_bytes": 13877915648,
+      "host_available_bytes": 32871383040,
+      "disk_free_bytes": 95942868992
+    },
+    {
+      "elapsed_seconds": 240.314352100002,
+      "maximum_child_rss_bytes": 13785522176,
+      "host_available_bytes": 33000841216,
+      "disk_free_bytes": 95942840320
+    },
+    {
+      "elapsed_seconds": 241.3270729000069,
+      "maximum_child_rss_bytes": 13995270144,
+      "host_available_bytes": 32869216256,
+      "disk_free_bytes": 95942836224
+    },
+    {
+      "elapsed_seconds": 242.34541370000807,
+      "maximum_child_rss_bytes": 13803503616,
+      "host_available_bytes": 33060753408,
+      "disk_free_bytes": 95942807552
+    },
+    {
+      "elapsed_seconds": 243.3605749999988,
+      "maximum_child_rss_bytes": 13988093952,
+      "host_available_bytes": 32890331136,
+      "disk_free_bytes": 95942803456
+    },
+    {
+      "elapsed_seconds": 244.38850410000305,
+      "maximum_child_rss_bytes": 13793816576,
+      "host_available_bytes": 33104326656,
+      "disk_free_bytes": 95942803456
+    },
+    {
+      "elapsed_seconds": 245.40152660000604,
+      "maximum_child_rss_bytes": 13843238912,
+      "host_available_bytes": 33057816576,
+      "disk_free_bytes": 95942467584
+    },
+    {
+      "elapsed_seconds": 246.43266420000873,
+      "maximum_child_rss_bytes": 13851680768,
+      "host_available_bytes": 33056587776,
+      "disk_free_bytes": 95942320128
+    },
+    {
+      "elapsed_seconds": 247.4464738000097,
+      "maximum_child_rss_bytes": 13888024576,
+      "host_available_bytes": 33009446912,
+      "disk_free_bytes": 95942242304
+    },
+    {
+      "elapsed_seconds": 248.47234520000347,
+      "maximum_child_rss_bytes": 13867134976,
+      "host_available_bytes": 33037090816,
+      "disk_free_bytes": 95942111232
+    },
+    {
+      "elapsed_seconds": 249.5017300000036,
+      "maximum_child_rss_bytes": 13867134976,
+      "host_available_bytes": 33042505728,
+      "disk_free_bytes": 95942111232
+    },
+    {
+      "elapsed_seconds": 250.52876980000292,
+      "maximum_child_rss_bytes": 13793247232,
+      "host_available_bytes": 33117847552,
+      "disk_free_bytes": 95942041600
+    },
+    {
+      "elapsed_seconds": 251.54177710000658,
+      "maximum_child_rss_bytes": 13343318016,
+      "host_available_bytes": 33572986880,
+      "disk_free_bytes": 95942037504
+    },
+    {
+      "elapsed_seconds": 252.55636360000062,
+      "maximum_child_rss_bytes": 13623652352,
+      "host_available_bytes": 33288871936,
+      "disk_free_bytes": 95942033408
+    },
+    {
+      "elapsed_seconds": 253.5745714000077,
+      "maximum_child_rss_bytes": 14091333632,
+      "host_available_bytes": 32828252160,
+      "disk_free_bytes": 95942033408
+    },
+    {
+      "elapsed_seconds": 254.59908100000757,
+      "maximum_child_rss_bytes": 15690326016,
+      "host_available_bytes": 31243132928,
+      "disk_free_bytes": 95942025216
+    },
+    {
+      "elapsed_seconds": 255.62702939999872,
+      "maximum_child_rss_bytes": 15690326016,
+      "host_available_bytes": 31251451904,
+      "disk_free_bytes": 95942025216
+    },
+    {
+      "elapsed_seconds": 256.6573364000069,
+      "maximum_child_rss_bytes": 15690326016,
+      "host_available_bytes": 31256592384,
+      "disk_free_bytes": 95942025216
+    },
+    {
+      "elapsed_seconds": 257.68638040000224,
+      "maximum_child_rss_bytes": 15690326016,
+      "host_available_bytes": 31266635776,
+      "disk_free_bytes": 95942025216
+    },
+    {
+      "elapsed_seconds": 258.71188899999834,
+      "maximum_child_rss_bytes": 15690326016,
+      "host_available_bytes": 31202783232,
+      "disk_free_bytes": 95941951488
+    },
+    {
+      "elapsed_seconds": 259.7273630999989,
+      "maximum_child_rss_bytes": 15710793728,
+      "host_available_bytes": 31184818176,
+      "disk_free_bytes": 95941951488
+    },
+    {
+      "elapsed_seconds": 260.74149800000305,
+      "maximum_child_rss_bytes": 14676897792,
+      "host_available_bytes": 32186544128,
+      "disk_free_bytes": 95930269696
+    },
+    {
+      "elapsed_seconds": 261.75538940000115,
+      "maximum_child_rss_bytes": 12991946752,
+      "host_available_bytes": 33843474432,
+      "disk_free_bytes": 95884505088
+    },
+    {
+      "elapsed_seconds": 262.76887780000106,
+      "maximum_child_rss_bytes": 12634693632,
+      "host_available_bytes": 34184462336,
+      "disk_free_bytes": 95884443648
+    },
+    {
+      "elapsed_seconds": 263.7818612999981,
+      "maximum_child_rss_bytes": 12609241088,
+      "host_available_bytes": 34207653888,
+      "disk_free_bytes": 95884419072
+    },
+    {
+      "elapsed_seconds": 264.7957946999959,
+      "maximum_child_rss_bytes": 12362309632,
+      "host_available_bytes": 34460868608,
+      "disk_free_bytes": 95884492800
+    },
+    {
+      "elapsed_seconds": 265.8110696000076,
+      "maximum_child_rss_bytes": 12567429120,
+      "host_available_bytes": 34269007872,
+      "disk_free_bytes": 95884492800
+    },
+    {
+      "elapsed_seconds": 266.82385539999814,
+      "maximum_child_rss_bytes": 12695474176,
+      "host_available_bytes": 34155872256,
+      "disk_free_bytes": 95884374016
+    },
+    {
+      "elapsed_seconds": 267.83890339999925,
+      "maximum_child_rss_bytes": 13856763904,
+      "host_available_bytes": 33005502464,
+      "disk_free_bytes": 95884308480
+    },
+    {
+      "elapsed_seconds": 268.85233780001,
+      "maximum_child_rss_bytes": 17310248960,
+      "host_available_bytes": 29537665024,
+      "disk_free_bytes": 95884374016
+    },
+    {
+      "elapsed_seconds": 269.8681435000035,
+      "maximum_child_rss_bytes": 20055449600,
+      "host_available_bytes": 26801876992,
+      "disk_free_bytes": 95887114240
+    },
+    {
+      "elapsed_seconds": 270.88044660000014,
+      "maximum_child_rss_bytes": 18440413184,
+      "host_available_bytes": 28401897472,
+      "disk_free_bytes": 95886983168
+    },
+    {
+      "elapsed_seconds": 271.896585399998,
+      "maximum_child_rss_bytes": 14571761664,
+      "host_available_bytes": 32286511104,
+      "disk_free_bytes": 95886983168
+    },
+    {
+      "elapsed_seconds": 272.91064420000475,
+      "maximum_child_rss_bytes": 14699397120,
+      "host_available_bytes": 32178819072,
+      "disk_free_bytes": 95886888960
+    },
+    {
+      "elapsed_seconds": 273.9239465999999,
+      "maximum_child_rss_bytes": 14827151360,
+      "host_available_bytes": 32047075328,
+      "disk_free_bytes": 95886643200
+    },
+    {
+      "elapsed_seconds": 274.935333100002,
+      "maximum_child_rss_bytes": 14877081600,
+      "host_available_bytes": 31997779968,
+      "disk_free_bytes": 95885971456
+    },
+    {
+      "elapsed_seconds": 275.94753689999925,
+      "maximum_child_rss_bytes": 14886125568,
+      "host_available_bytes": 31966855168,
+      "disk_free_bytes": 95874805760
+    },
+    {
+      "elapsed_seconds": 276.9595551999955,
+      "maximum_child_rss_bytes": 11881177088,
+      "host_available_bytes": 34977300480,
+      "disk_free_bytes": 95847677952
+    },
+    {
+      "elapsed_seconds": 277.9742821999971,
+      "maximum_child_rss_bytes": 11895742464,
+      "host_available_bytes": 34920521728,
+      "disk_free_bytes": 95785377792
+    },
+    {
+      "elapsed_seconds": 278.9882551000046,
+      "maximum_child_rss_bytes": 11895767040,
+      "host_available_bytes": 34800537600,
+      "disk_free_bytes": 95648079872
+    },
+    {
+      "elapsed_seconds": 280.0022456000006,
+      "maximum_child_rss_bytes": 11890819072,
+      "host_available_bytes": 34744516608,
+      "disk_free_bytes": 95580913664
+    },
+    {
+      "elapsed_seconds": 281.01633800000127,
+      "maximum_child_rss_bytes": 12116561920,
+      "host_available_bytes": 34472546304,
+      "disk_free_bytes": 95510192128
+    },
+    {
+      "elapsed_seconds": 282.02895030000946,
+      "maximum_child_rss_bytes": 11912728576,
+      "host_available_bytes": 34652004352,
+      "disk_free_bytes": 95465615360
+    },
+    {
+      "elapsed_seconds": 283.04021590000775,
+      "maximum_child_rss_bytes": 11894763520,
+      "host_available_bytes": 34498740224,
+      "disk_free_bytes": 95267229696
+    },
+    {
+      "elapsed_seconds": 284.0542554999993,
+      "maximum_child_rss_bytes": 13765406720,
+      "host_available_bytes": 32612868096,
+      "disk_free_bytes": 95266578432
+    },
+    {
+      "elapsed_seconds": 285.06802099999913,
+      "maximum_child_rss_bytes": 14268928000,
+      "host_available_bytes": 32138027008,
+      "disk_free_bytes": 95266578432
+    },
+    {
+      "elapsed_seconds": 286.0819976000057,
+      "maximum_child_rss_bytes": 14666768384,
+      "host_available_bytes": 31764434944,
+      "disk_free_bytes": 95266578432
+    },
+    {
+      "elapsed_seconds": 287.0951886999974,
+      "maximum_child_rss_bytes": 14895996928,
+      "host_available_bytes": 31566876672,
+      "disk_free_bytes": 95266578432
+    },
+    {
+      "elapsed_seconds": 288.107330800005,
+      "maximum_child_rss_bytes": 15149432832,
+      "host_available_bytes": 31323889664,
+      "disk_free_bytes": 95266574336
+    },
+    {
+      "elapsed_seconds": 289.1206391000014,
+      "maximum_child_rss_bytes": 15449313280,
+      "host_available_bytes": 31040290816,
+      "disk_free_bytes": 95266643968
+    },
+    {
+      "elapsed_seconds": 290.13356850000855,
+      "maximum_child_rss_bytes": 16010256384,
+      "host_available_bytes": 30501376000,
+      "disk_free_bytes": 95267336192
+    },
+    {
+      "elapsed_seconds": 291.14503230000264,
+      "maximum_child_rss_bytes": 14805123072,
+      "host_available_bytes": 31734439936,
+      "disk_free_bytes": 95267192832
+    },
+    {
+      "elapsed_seconds": 292.16059739999764,
+      "maximum_child_rss_bytes": 18949918720,
+      "host_available_bytes": 27594510336,
+      "disk_free_bytes": 95267192832
+    },
+    {
+      "elapsed_seconds": 293.17301480000606,
+      "maximum_child_rss_bytes": 16678453248,
+      "host_available_bytes": 29900193792,
+      "disk_free_bytes": 95267192832
+    },
+    {
+      "elapsed_seconds": 294.18574990000343,
+      "maximum_child_rss_bytes": 16718323712,
+      "host_available_bytes": 29857992704,
+      "disk_free_bytes": 95267188736
+    },
+    {
+      "elapsed_seconds": 295.1974324000039,
+      "maximum_child_rss_bytes": 18444058624,
+      "host_available_bytes": 28182896640,
+      "disk_free_bytes": 95267147776
+    },
+    {
+      "elapsed_seconds": 296.2112505999976,
+      "maximum_child_rss_bytes": 12082200576,
+      "host_available_bytes": 34551787520,
+      "disk_free_bytes": 95267119104
+    },
+    {
+      "elapsed_seconds": 297.2259730000078,
+      "maximum_child_rss_bytes": 11822809088,
+      "host_available_bytes": 34824597504,
+      "disk_free_bytes": 95252951040
+    },
+    {
+      "elapsed_seconds": 298.2401147000055,
+      "maximum_child_rss_bytes": 3900989440,
+      "host_available_bytes": 42768027648,
+      "disk_free_bytes": 95252885504
+    },
+    {
+      "elapsed_seconds": 299.25371489999816,
+      "maximum_child_rss_bytes": 1055506432,
+      "host_available_bytes": 45647474688,
+      "disk_free_bytes": 95252885504
+    },
+    {
+      "elapsed_seconds": 300.26548630000616,
+      "maximum_child_rss_bytes": 280416256,
+      "host_available_bytes": 46417788928,
+      "disk_free_bytes": 95265366016
+    },
+    {
+      "elapsed_seconds": 301.27630409999983,
+      "maximum_child_rss_bytes": 291659776,
+      "host_available_bytes": 46450110464,
+      "disk_free_bytes": 95265357824
+    },
+    {
+      "elapsed_seconds": 302.2856396999996,
+      "maximum_child_rss_bytes": 566362112,
+      "host_available_bytes": 46180999168,
+      "disk_free_bytes": 95265357824
+    },
+    {
+      "elapsed_seconds": 303.2990109000093,
+      "maximum_child_rss_bytes": 712855552,
+      "host_available_bytes": 46045814784,
+      "disk_free_bytes": 95265357824
+    },
+    {
+      "elapsed_seconds": 304.3115076999966,
+      "maximum_child_rss_bytes": 993837056,
+      "host_available_bytes": 45783547904,
+      "disk_free_bytes": 95265366016
+    },
+    {
+      "elapsed_seconds": 305.32611399999587,
+      "maximum_child_rss_bytes": 1231015936,
+      "host_available_bytes": 45562277888,
+      "disk_free_bytes": 95265366016
+    },
+    {
+      "elapsed_seconds": 306.3369173999963,
+      "maximum_child_rss_bytes": 1840979968,
+      "host_available_bytes": 44954161152,
+      "disk_free_bytes": 95265366016
+    },
+    {
+      "elapsed_seconds": 307.35482480000064,
+      "maximum_child_rss_bytes": 1866649600,
+      "host_available_bytes": 44930945024,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 308.370702500004,
+      "maximum_child_rss_bytes": 1379221504,
+      "host_available_bytes": 45427818496,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 309.3846238999977,
+      "maximum_child_rss_bytes": 1693290496,
+      "host_available_bytes": 45126144000,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 310.39708920000703,
+      "maximum_child_rss_bytes": 1439457280,
+      "host_available_bytes": 45395247104,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 311.410684100003,
+      "maximum_child_rss_bytes": 1474715648,
+      "host_available_bytes": 45358141440,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 312.42325400000846,
+      "maximum_child_rss_bytes": 1151770624,
+      "host_available_bytes": 45682057216,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 313.43837400000484,
+      "maximum_child_rss_bytes": 1239396352,
+      "host_available_bytes": 45603409920,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 314.44935700000497,
+      "maximum_child_rss_bytes": 1422401536,
+      "host_available_bytes": 45426147328,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 315.4654798999982,
+      "maximum_child_rss_bytes": 1675497472,
+      "host_available_bytes": 45167054848,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 316.47849470000074,
+      "maximum_child_rss_bytes": 1474621440,
+      "host_available_bytes": 45384314880,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 317.49263470000005,
+      "maximum_child_rss_bytes": 1751248896,
+      "host_available_bytes": 45110169600,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 318.5067240000062,
+      "maximum_child_rss_bytes": 1982861312,
+      "host_available_bytes": 44889264128,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 319.519902,
+      "maximum_child_rss_bytes": 2252505088,
+      "host_available_bytes": 44668932096,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 320.5304938000045,
+      "maximum_child_rss_bytes": 1829683200,
+      "host_available_bytes": 45112188928,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 321.54302219999954,
+      "maximum_child_rss_bytes": 1017786368,
+      "host_available_bytes": 45929988096,
+      "disk_free_bytes": 95265300480
+    },
+    {
+      "elapsed_seconds": 322.5546639000095,
+      "maximum_child_rss_bytes": 47181824,
+      "host_available_bytes": 46948540416,
+      "disk_free_bytes": 95265296384
+    },
+    {
+      "elapsed_seconds": 323.56791130000784,
+      "maximum_child_rss_bytes": 51933184,
+      "host_available_bytes": 46937800704,
+      "disk_free_bytes": 95265296384
+    },
+    {
+      "elapsed_seconds": 324.5821330000035,
+      "maximum_child_rss_bytes": 58908672,
+      "host_available_bytes": 46930690048,
+      "disk_free_bytes": 95265296384
+    },
+    {
+      "elapsed_seconds": 325.59664180000254,
+      "maximum_child_rss_bytes": 50651136,
+      "host_available_bytes": 46947528704,
+      "disk_free_bytes": 95265296384
+    },
+    {
+      "elapsed_seconds": 326.61049180000555,
+      "maximum_child_rss_bytes": 59379712,
+      "host_available_bytes": 46935437312,
+      "disk_free_bytes": 95265296384
+    }
+  ],
+  "source_sha256": {
+    "src\\choiceforge\\__init__.py": "0ba610396f0ea1cbcb18ad7d2b54112d0cae2d53a63cd62cbf3b4c25854aaedd",
+    "src\\choiceforge\\activitysim_adapter.py": "2209bbb51735affe50aa2ea8e2a223ad7a0d9956ddc2f2724e8b70bc39ac6dcb",
+    "src\\choiceforge\\activitysim_destination.py": "31d3e35cb7a5c73e81bd2a48559ce35e1c29b5e74f9169273de68a0e3b71c40a",
+    "src\\choiceforge\\activitysim_expression.py": "996db9cfc53e48814bee4e268dd0f0db7cf14dec94dfd01ec3443061e386818e",
+    "src\\choiceforge\\activitysim_mode_choice.py": "b154c137255c79e83ad842b18f7cc271f944514560fab974a56d06842afc59d3",
+    "src\\choiceforge\\activitysim_scheduling.py": "98ff02074da0009763d065887d095c42d6aaf6c03483c457962f2cfe205990d8",
+    "src\\choiceforge\\activitysim_trip_scheduling.py": "cd07beb15c4e0c77dc4f22cffb6c5f3cdfc317c29efb1fda191295ce16927f55",
+    "src\\choiceforge\\api.py": "820135a87b39a60dae19e604953a05f6b307570b7d6dc03b4375c157886c78e8",
+    "src\\choiceforge\\arithmetic_abi.py": "d1c616cfa055056ee51b37abba1404fa2315a2ae7b2fe235dd7d34a5e0a9a913",
+    "src\\choiceforge\\calibrated_chain.py": "d68070ec35fd07b10992d901f49d3f28e758c0939fa4a2a029f7cffe7ea65cc7",
+    "src\\choiceforge\\cuda_backend.py": "a9fbadb7ccc23578862fd3ef31d31ab4b86a3f14b072e9fee66a41998a9d3337",
+    "src\\choiceforge\\cuda_skims.py": "cdf57f587ba0009f1e8d861cf7f5081859597108d638d4505c5f3aab4b40d807",
+    "src\\choiceforge\\destination_input_supergraph.py": "ef40524b00b6d433051de96ba81597109e08f52041714f3088eabe214402146a",
+    "src\\choiceforge\\destination_supergraph.py": "7fcdb690c246d5330eb07d7b0872e21a53b4be28db76883e75a323cca10c4312",
+    "src\\choiceforge\\destination_utility.py": "9310886e0da75d9df2be317ff20b6d30b602c2b08ed23cb6dd327b4cc6098cf8",
+    "src\\choiceforge\\device_input_expansion.py": "64f26c2a9b19aa436e0aeea3f609fdcc0be13ae29b21d6bbdb0650e4d2e26602",
+    "src\\choiceforge\\device_resident_runtime.py": "d3dc086bbe24b809ebe08e8bafc09581c77ec33cd819c17def71a488a106c6a0",
+    "src\\choiceforge\\fused_mnl.py": "c8257abec4ec57cfe5b663d7bcba1e72879123d2cdcf16534c7d9242423b80ca",
+    "src\\choiceforge\\gpu_native.py": "9da69889f4f3916e6d871e7dbb805a3470c92d38b5e6277cd46cef776ccc8006",
+    "src\\choiceforge\\gpu_scheduling_integration.py": "7443fa5d351e0ee8420631ff0900b9a5e7c2ca1c1187b9850d44f6d40a3a446a",
+    "src\\choiceforge\\gpu_scheduling_pipeline.py": "a0731fc13e795c7cf5e31d1e2ac60846dedefa46e00c206a2d319300443d835a",
+    "src\\choiceforge\\interaction_backend.py": "dce311379368b8a937db647ba092e8084969f98543dca060822cc9a4819d191f",
+    "src\\choiceforge\\modelwide_choice.py": "8aad08f8145383a99729112c33bff2ed1cb9957860cdd0b601b1f1eaf1accf38",
+    "src\\choiceforge\\modelwide_final.py": "40195d825fcfd4c06a039e567e4daff658701ba7f2ef7e5f67376b8ede558ecc",
+    "src\\choiceforge\\modelwide_graph.py": "b06183950b3e1f2f9cb2e57622d715ef84a280eb40bc131518b5a32b3dbef47c",
+    "src\\choiceforge\\modelwide_sampling.py": "8915e0f5050457cb9093f02ed25feb5b729395567c5803111d1324d0687246be",
+    "src\\choiceforge\\modelwide_service.py": "2c6d8cfd434e70e6abec9ea0be8d7f328d13caa71a921ad0571e798a1df5be7b",
+    "src\\choiceforge\\native_abi_bootstrap.py": "e8a4eb9ce07db4341d74fe0016947d599cfa698f13f617257807961afb12ee70",
+    "src\\choiceforge\\native_skim_store.py": "4df5f380a5f1c52c5685f63b7263a2a2f8909953c24855fc3728218e15beac78",
+    "src\\choiceforge\\nested_logit.py": "613e03cbbb359c1ba8f62ede9d9327dfa9264165fbd63620846a6e09f178fdc8",
+    "src\\choiceforge\\numba_backend.py": "70f70acf3079586cae953a8ec01c6209fdd383ccbf31774c0fed1e4726fe3a50",
+    "src\\choiceforge\\phase56_skim_cache.py": "cf44782322bbb930fa8de68dd5103db58240ef9fe5824227c56b2313b4a983cd",
+    "src\\choiceforge\\phase57_live_scheduling.py": "9cf86445f238c1077b5ae0d6b10301ac7501bed5b2e97b7d0ebe6fa414e99c6b",
+    "src\\choiceforge\\phase58_cpu_control.py": "22c928d7e57d918caf267e324641f499b98dda0488919a9d8f26818dc24b8f80",
+    "src\\choiceforge\\phase58_mode_reduction.py": "c9386efb4dc3c5b1758a4aacbb9c6694a80ba3c346a6ef4e09cbe80f9e382110",
+    "src\\choiceforge\\phase58_schedule_chain.py": "a339746f028ea06aefb05441e653a93ac7a6fcf259204cdbebaf8bd938ec0396",
+    "src\\choiceforge\\phase58_trip_runtime.py": "dc15c3ace710b8f2e5313de6618564430502dbc5557acace7e535cfcd851645b",
+    "src\\choiceforge\\phase59_boundary_logsums.py": "0f95e063620ba6689508940a71671aa0b03f0b78f697747a2669752a6da79b78",
+    "src\\choiceforge\\phase59_config_contract.py": "844505cdc88b52780b6f43c1f1a9e24c3587da0c2136603bc5961d21e4cd2e59",
+    "src\\choiceforge\\phase59_cpu_algorithms.py": "076553a01812472b2901d30fe38bae15517adceff835172a36b9211131d80fbf",
+    "src\\choiceforge\\phase59_entity_store.py": "9acf07bf2799eb19d4218b2a893dbc04ccd2d5a8ec02ae41fed9b09abfd71f98",
+    "src\\choiceforge\\phase59_live_mandatory.py": "bc45163361ba34ed53e430ad8fd371bde16cd5d8a4e26ed070100ff1e9b7de7e",
+    "src\\choiceforge\\phase59_retry.py": "e1d85eabd8cfa1866b733d1ccb8c8f20eda796571b396873327a25867ba4bd87",
+    "src\\choiceforge\\phase59_sparse_matrices.py": "e1b24be9753e0412a563baed6cef025ed814cafb8d2c9955b70fe1ed58757846",
+    "src\\choiceforge\\phase60_frequency_control.py": "c1b0676ce0c4b535c7ba5a8f819883ea95b25f834cd5b5c843ffe60b9cd74389",
+    "src\\choiceforge\\phase60_preparation.py": "972c86fd353829b2dc74340cc51f0948e8310c92b46fe799238390ac7b6c7371",
+    "src\\choiceforge\\phase61_inputs.py": "d3e4f13731f6cf426cf705a23d886d3a46f7ebe08e753efee376cf414bb108de",
+    "src\\choiceforge\\phase61_normals.py": "fe04db97975dbe10d1e083ad2018b56f19d00dfb653d199e6a6bad86dc36f2f7",
+    "src\\choiceforge\\phase61_runtime.py": "7aba08a2bcfff79c9dee06bc5bebf4e9702e75cbef5176e6d262d6c28f65a5f2",
+    "src\\choiceforge\\phase61_timetable.py": "be8c8912607aee8842267866114ff3afe6dab12d4aea6e658f7461867b9a9320",
+    "src\\choiceforge\\phase62_runtime.py": "3c2fe2115838708340a0e85488a14033ea759deb1cfda6d83757e5ee2a1d461e",
+    "src\\choiceforge\\phase63_plans.py": "f1d15ad419a7398cfecfeec33450ce42a5e06bb6144d68aac3be81d7d495b52a",
+    "src\\choiceforge\\phase63_runtime.py": "31bcf8ef7fe3258151e531edf6d4afdd714d4eb6622ad502b205c165909e4590",
+    "src\\choiceforge\\phase64_inputs.py": "ddadff4c602a57da009cee435c06dde0d4768593eea96064b460e2f6c8366a85",
+    "src\\choiceforge\\phase64_location_boundary.py": "e0df9d7cac35c50502190786de50bfb234fa9be3e6bdc279a5cf09862f12bb06",
+    "src\\choiceforge\\phase64_runtime.py": "b971cb042c091a8e0ef8d2ac8e6a60f35cb29f52dfafd02a044e1c911a416803",
+    "src\\choiceforge\\raw_table_input_generation.py": "fcb2726395184eeea35b4ab50301e792f26d7f95982bf3c40694b5b59c31ae40",
+    "src\\choiceforge\\reference.py": "286d2562ddc4a0ba2591ce00714b7328c1bf94bd5f1ab467ead15857f53d1c45",
+    "src\\choiceforge\\resident_skim_cache.py": "d68b30fb11a9884def9251d206b171e3e6546bc5b7a8f0e9ef5484c9d96cfe15",
+    "src\\choiceforge\\scheduling_compiler.py": "fb98b97c300422b92707fc98f55e4653d25ceae0cb6903261554a87be44cee17",
+    "src\\choiceforge\\semantic_input_generation.py": "b4e55a76e7c7fce432e3d8cdae09b35296b983cdf32617b202b47759f49edc60",
+    "src\\choiceforge\\sharrow_cuda.py": "4e34c08eb8bfc157055b8b232ce4bac5364517615beecf63b32231f05daa89db",
+    "src\\choiceforge\\sharrow_ir.py": "360d68963f0b53f34946deb7e04ac178edacc22025cabe277d410c1abe67c317",
+    "src\\choiceforge\\tour_expansion.py": "bc91b42eea214018142cbeaa603b9da965f5d1d50a00d5261d23473a35ffcdb8",
+    "src\\choiceforge\\trip_destination_final.py": "04deaa54f99f47d531c8dde055cddbf9997d68ea27e4f4313e73e580eb298391",
+    "src\\choiceforge\\trip_destination_resident.py": "8702352b991a6b7072dcee4fa16c9e0bb4cd7c32efcb06527d3c7a38a7014860",
+    "src\\choiceforge\\trip_destination_sampling.py": "e4cf094a367b2cfadeaeec60e07f78d0b82ddc44715add507c00192a2dc343d9",
+    "src\\choiceforge\\trip_logsum_native.py": "fb500eb06b9a9abb03f189e1da58000240580c895bf6636bd47efbd93be92738",
+    "tmp\\activitysim-phase8-source\\activitysim\\__init__.py": "f50dff61910dc8b6da74da4cbb18e05eae060fe47742169b9b7d633e8f37559e",
+    "tmp\\activitysim-phase8-source\\activitysim\\__main__.py": "779f5eb98925af07d1d66b29bd531961b6da1012eb23a7f8cb2bed3ec2c10bd9",
+    "tmp\\activitysim-phase8-source\\activitysim\\_generated_version.py": "4c25579e44e29b8bb0c417222ce00f3c929a9bfc3fb50841071a931ee23cec78",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\__init__.py": "ffc4b92b1c676f6f8824a44084b278bb82932614fc770eefcbac826df1d46201",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\misc.py": "0d5ad62e085134607e819bb524ad9dc22b43b62bcc7a1f5b9ef5e738d494d83b",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\__init__.py": "bc90a6af3abb494cad760006ee66157a2e79d1f561fb8de21c7365494501d306",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\accessibility.py": "d0c0171c47313bdfa9c9927f7f12ddfeff030498b64b3ecd506c6605b27b7bf3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\atwork_subtour_destination.py": "a65c66773b16e7e93d20ede700b063d044ac50be0b0464369ac451a15a00f021",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\atwork_subtour_frequency.py": "af866c4b69fd0e89e553b406990f59f8220ee16c83cf56c4315ee7511c0e038f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\atwork_subtour_mode_choice.py": "243fa0f7456076019274bb3875a1eb3fb6acd4d50549115469f687279918db10",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\atwork_subtour_scheduling.py": "4f6f72f9a11ffd876b2a59a9ea75e53bc99cd0ed7ae298590c8edb0ecf2307c2",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\auto_ownership.py": "efc08559a80e39aad0e3810f5dc8be824bb328940539d9d3f928f9eb2bafe1b4",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\cdap.py": "0766da977368c42bd848c68066f95e1af2d5045fcc013c34d1b62a8ca660df3d",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\disaggregate_accessibility.py": "38be5df4dea6b336ef4b6a156a2da54c650e08a2a5ca2a594456945edf9219b8",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\free_parking.py": "5c3eddd3f0a3550d57a750cf8ab8e192258dea039db8c099d572fd4059cd9e87",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\initialize.py": "b1a59027cbaed2a5de7e09bdf55a5e6787a5531cceee42e7ffbcb24ca95ff6e7",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\initialize_tours.py": "94b5ad71d3a3343b02ea58790607794be7a0696d3995d374c4827e21f4b119dc",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\input_checker.py": "f65905b35863eb009618458fa0aefb280068ffbc432b86c139634cb90e34ba2a",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_composition.py": "494d76ca8e2eaddf3a5345c924a1000ef9134f664938520c802320466899022f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_destination.py": "6fabda51a911cb9631764b202ede01d9247602420423a07b924dcf953758f45f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_frequency.py": "a4b1f4c1e9a9409600d922166a5f20fe4d8abb1932da4da6171ed559109c472c",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_frequency_composition.py": "f4aed4a8f78f10261931dd9b7cf8519502d682c7afc9ba49c71d1278af02f31f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_participation.py": "4af3eed8e8eadf9773267b3f6e93b6eca3018fd770d3b256ea32f08beeb39698",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\joint_tour_scheduling.py": "1e03ab0447807a45c655dcd10a2908c18795ba70e1c0be5bcccc1d0fcad4ffcf",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\location_choice.py": "7d191a88749fa506f833fa7f64700c4c4ce6ee8053c9848e6eee78cf44a02d78",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\mandatory_scheduling.py": "4bc23883cc6e122d7b44ba24758cfae13510fd3db14cc6fbce303d98856492d7",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\mandatory_tour_frequency.py": "4d4bd68878804cd72565167f0160977baa9ab49e1132858584f230ba660915a3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\non_mandatory_destination.py": "61133656c8307af9b25356dde13f7c47653f6e79f9347496edf5aa1ef2271994",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\non_mandatory_scheduling.py": "39f143e35ecdb2497b77c8becfa2d158ccdfdbd514b04373d40d8f99b4f8bf5a",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\non_mandatory_tour_frequency.py": "c6d6b5f89a545bf4aefd6e0904a69603f44bfae5170bd4482ee1791c58427af4",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\parking_location_choice.py": "77f08516685907a7a8e862cf56571fe9cc75f254a82016aa02c4384d583ae3ad",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\school_escorting.py": "763bf5fda431790cb9da71b61bacbcaf33c88c8411f0941fd8a594c45bdf81c2",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\settings_checker.py": "9840c61501c2e0346005c122d7f6f42a352ca718a51ec9609d154652f8b67a54",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\stop_frequency.py": "b809f07a2aff6f862ae9228d20b42d70d86f0738f72f90a4a979a6b063e72665",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\summarize.py": "ed50bc98a780949891c8bbb2725b7685d7ef96fdc89069d5947e2d2faf512a2e",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\telecommute_frequency.py": "2d97bff61b39693c794568fe291f92d287878e90121724633806202e6c47e2bb",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\telecommute_status.py": "a95425427bd5773a594b64e2fd8c678fd09436073be4e1acc21175f58bae7f0c",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\tour_mode_choice.py": "2652b4bd0c45cdd766a115cebb62da5ea3dc7a2a7d9be902f9082ecba98f033e",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\tour_od_choice.py": "537095fea432828eba7773d922b90e897689b50de45715b9cc783c9a6c2e3b1c",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\tour_scheduling_probabilistic.py": "6a2f0ae2cd225e83cc765455056f0cae20de8fcd249c7e08b510dae3cfb6ae9b",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\transit_pass_ownership.py": "6ba0d072a96574fae9e705d2d15f15b36d945f383a772cbe6126fb984e80d0ef",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\transit_pass_subsidy.py": "ef3dcb66a102c5b4cf7cbb01d13250df778ddcf9e7a18ccbd04a77824215a7a3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_departure_choice.py": "c6f6d7a3b9c4cf90c8b146a4ffe7a4de644da29bd7c9e755ca7b7692418a0e45",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_destination.py": "82d8d89cc292e2eee9bba97d6e13dbc211417bacaa9d4ebf5b1a926390e9f66f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_matrices.py": "a9abf5b16278d16eeb5fe079f8bc912a8edab372f1b324a8962272e22eddfc71",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_mode_choice.py": "35ac851d1b17f2d1e465c32fbe4db814bb0723a54d04c3c156d1a9102e64e1dc",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_purpose.py": "088e4a1ceac9525255659252e15ed2fd32c6864d4248dfa244c802f2979bcaa9",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_purpose_and_destination.py": "09bc93fbe6947f1fc385684068a2b68b13976c47cc1d8f19ade9484428fa404a",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling.py": "5e0afb8dad3d8215e5b1a8fbe1faa0ac731304ac08d22989e10ff970cc59c794",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\trip_scheduling_choice.py": "9270020690f5716b94ca36b01429ddf17a10e16d79249dc846960078be8691aa",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\bias_logsums.py": "c8b10fc64c159d1e3e7de7a401c5dcd74ade5b9a62494e1eb28dec65bd0e82b3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\canonical_ids.py": "a35205f7695068324786dc9838c7645426e74b81a91da240a2d07cb07736bad7",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\cdap.py": "25e511a382979ca1b233c1f44cdc68f4e048026ced44dd9f7dc8c4b649efbcb3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\logsums.py": "a44a0ee51c1fc1c12ffdee7d352955d6f0ff122f8048ae082363a982d35909ab",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\maz_sampling.py": "ab4aac620431542a6c7e13424967c571ca0a445a0590a0dcc3c53a5a661876d8",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\mode.py": "c8fbb622a818d5f62494f80e65d42bde79d56432df7e8d83b900f64515d40573",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\overlap.py": "f9c263002ec94b93fe9a168894f455516d1614014d0d107eb5ddd4152f3122e8",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\probabilistic_scheduling.py": "307c4de9fd9c5a2c4f0d1fe0b3ed2eeadc2c5f939fc17e7f0d05760d7cb09e34",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\school_escort_tours_trips.py": "c311c70da1f4d7548576323e50b80466c033155f68c2ca2e374ed15adace0d01",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\__init__.py": "6ef7b5ee5ec269c02aab6e7ffd34280e2497b69c740854b7b067132310c36c8b",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_cdap.py": "af0e31976b6ac24acab5db9ea26923573cf69842a679d62c2caef7fee69dbb5c",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_flexible_tour_trip_ids.py": "b5649227198e25e195f8355b8a75c670b81c381f6cf44fa194c77b52d9edd031",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_input_checker.py": "8e63e11d6139a7b9bd3eed969e02c55cfcec23a5282b8c4447c1a6e966646394",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_mandatory_tour_frequency.py": "2377a6490bc4df1ac73e3f404762e37a6e466b02cdd6d839a5d50a7535c52405",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_non_mandatory_tour_frequency.py": "b5c3e53239b3fdd16efb901772ba2a7b1006b083cfea94f7367f25fbf0f6f869",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_person_available_periods.py": "ef948cd39f8ee95c2e02373484ffc42f5a3fa9c8730fe355599d4e51aa60e176",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_school_escorting_utils.py": "0ae62f4cf06d78d5cd2d620a9e0d5a48eb99822f8aa6154dae67de3610670e3f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_vectorize_tour_scheduling.py": "95c9384b19abb4148d3c5d51464d0ad1037bf6478c0070b627e1bdfb668a5d68",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\test\\test_vehicle_type_alts.py": "d42782d56a110f669bab43034285f29b7e50694977cd2759f94bddf1d5291b71",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\tour_destination.py": "51d8c5376cfd6ac8322058cc18157ded16fcef01e904158ca4f0c3316da87337",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\tour_frequency.py": "4a9e9712a5e681bab29259dd18f39490f69889299242982dfb6f14793a3c7b95",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\tour_od.py": "b5ba3bd657bea8768c086c4a79e1f4155a8311661ca2e60f18f074888aedeb5d",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\tour_scheduling.py": "78132013ade3e885ee4fd46c4d7e59baa2588675b88febbb282c866e6b33ce34",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\trip.py": "f2959f556ce65ceb554fc5e0fcbf1ae955e22734e85f3a311c72930219ef2d94",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\util\\vectorize_tour_scheduling.py": "27e9cf84a12efd2d3fd0d9ce7a77ff7bd0bd7c0557a26b91fe414b634da5b9f4",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\vehicle_allocation.py": "2564a42acb4ae252111ae4dc4c1defddfac88672713095676bab51984dce9b65",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\vehicle_type_choice.py": "8c6ab6aa7ae6bbc9e6d0e4b45ee9a1eef107dec1b8be0c10910dd3df4e6d85f2",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\models\\work_from_home.py": "0404afa0dd1c746dfa2c83072e631f2d84e868025bfbf43b7b6d2d0c0234abaf",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\__init__.py": "c8a6ccb5f35bf364fbc3f04e6797df8c2dd0d2b4b5f45217e3df1472c619b6bf",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\accessibility.py": "25477b078ffb3dd6e7f70f0881ccc1629cbbde27b190810bf01c59485eab2516",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\disaggregate_accessibility.py": "7f5fdadb802c3bc0c66ba74344903feb51e0a1e7d5c15b2127c2f041e644e155",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\households.py": "cfbf3c8755231307eaaf08564034e4a44715bb9c806d5f9132f419be18539bb7",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\landuse.py": "35c7cce7c33b8a0e07fab46dfdf85a5dc056108948f41124f798692f96acdae9",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\persons.py": "d2fa2a4bd98d8d3ee404116f5faf040de287fc74f95219f0f78f076ce359e699",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\shadow_pricing.py": "45d6d1e5d07e89e38b269b739037d728d0ce7e7d841d28fe028ce99bd7647c60",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\size_terms.py": "124453d38d7cd8248975465b5eb6b6a44a5899c182cbfaa6276fd6cfe2beefff",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\skims.py": "bdc47439bfec79333c4b311f21423876c26f95c574db8b94a4c27d5847f083a0",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\table_dict.py": "0771fe190b4251dd8ff9e2db2dd3d655126632a4351a12f4f582a3abc1c94e10",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\time_windows.py": "d3922b8df0e38a32d873e91fe648a6a1b0afdffa7245e7d3244dea392ed5c9b4",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\tours.py": "79591beb181bba1792a3d64224b63992446163767d454d68dd4075229c10642d",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\trips.py": "9aa4e545d588d45e6eab6317ad26f9a2fc5f787cb7f11f84e33f180a69c97c3d",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\util.py": "0d11fc50fd9707496540468eba4968148fddf9d52a7bc085a5b9d4753b0d9442",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\tables\\vehicles.py": "3b729136af813e1f687452195f1ac02c2c05e3ffd6b4a5e256e48eb82e01f516",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\run_multi_zone_mp.py": "cf275ff9bf82b0eb90acf485abc35f498b895ecc5d234af9acea6816f6b772c4",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_agg_accessibility.py": "290d63e5b5e4ec7164727a3ca7a7d6c5b7116c7c958bcb894347c7ada918b716",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_location_choice.py": "832663dca41df16a25070adb5a14751658cbd11a6ebff57de9ccbf9f5be610d3",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\setup_utils.py": "1f33d1c4a44478fea92d3fba79c6b48dff9873d1a3d1abe8587d5f6ef8ac5961",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_joint_tour_participation.py": "8dec8198bc94e477f4029673af6bf186be945847abde563552a0427d637a0719",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_load_cached_accessibility.py": "fec330097b5d9fcef0042f5b31dd34a5bbad64406329ea6d7fd1d7fb1e754192",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_location_choice_sampling.py": "0573d8dc5a6f5e47b5055c6ceaa2601cc0c3899c89d0797211dc3bd1dca4a52a",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_misc.py": "b7bb8819c73de747fbd2459b17cdfac3a46c3ddf12cd34c21745608e14d2a684",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_sample_rate.py": "f0ba18fed837d49fbd3916126749e78dfb7a1bfe8f27b0769a56d7d8c5c361b7",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_shadow_pricing_simulate.py": "c2c47bc2095e5db35ad3b55266a5f78751d69afb3563ab125506d4427bc5e957",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_tour_destination_sampling.py": "2da7b0ff4c8cbce820998ab9c6fccefc05ab75e1e540c62e6c16b9b8e50e2f5e",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_tour_od_sampling.py": "6a302fc7218872e57d001a5d97f319b44106eb12f2593879d1ccd404e47da3de",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_trip_departure_choice.py": "d23b8bbfccb2caccf5277a348e721163560cc1cef2f2b28aa80398bbfc50cee5",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_trip_destination_sampling.py": "7a27b4291e48d19a1b8395d75ba5938ea271677756bbfecb105c7a3983697aa9",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_trip_scheduling_choice.py": "ec479c9c2261e6b04bd95a43969b97a83bf945fab1d7d2a420bfc7d0ac50d4ba",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_trip_utils.py": "6ef7ec0bd67eaea4e53b44e678d81675a1e34d86035e8c7232f74ea0fadbd70f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_misc\\test_vehicle_type_alternatives.py": "c3bae2e51b57c5b877c1b3e2e125fd5d38692b6199d475b278b2919d2ea2716d",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_pipeline\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\test_pipeline\\test_pipeline.py": "d3e0df9105ef581d671fe243cab2d688076c256c0d8c04002a7b885c40280f3f",
+    "tmp\\activitysim-phase8-source\\activitysim\\abm\\test\\trip_dest\\test_trip_destination.py": "6e7d63e1fa81b996b1cce3f7ccb386134ae3f421064b893a86d3013807e5f797",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\__init__.py": "543a6aea9b9e2015950d6d394403decf0bb46c89ca959b1c4e2391da0ce41281",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\mtc1full.py": "5690f2063dd130e1cfa1f756dffec2da1abbbc1d237887fcc9016e5f7d4b1a16",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\mtc1mp4.py": "25edaeb1471c4ca31956fe201f83d6d6104ecb64ce8570b0e633cfaea7713efd",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag1example.py": "2d8c1fac77f2bf3525488730e8b53ce26e9711de141a7069998fff22b1761a20",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag1full.py": "50c42ef660bf6b4b13a5e1bb479669be60d0f832498cbb6e2fdf92276ce40308",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag2example.py": "1d19a094000bf58800137424b2490c0dfc0f4590f196ee55f4ac9d25c78b0bc4",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag2full.py": "9cbd7c566922a0bd52399ff93a76109dad7d815ee4b68d1740188cd1846c35b1",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag3example.py": "abb79cc6f1f6c3dd9a1e58262f0996972a8965da2f078c7c7f4f3ad084c41d84",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag3full.py": "851fab877e02143c62125331b1dffc4d0891c8a118c9cba514990a28fbaeb765",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag_example.py": "529f34688ecd345306b741fe15bbfcbd0cac7a96e302fa0a4fcd86336c82b140",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\benchmarks\\sandag_full.py": "8d410b626072402d2f980fad48533aa85ac988232ca3dc26b1178bfc8512206e",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\componentwise.py": "82310fa3596fa92d4b5d3f17ccad29b6362e8c5e2abbc5f66c3b20070f6d4e6a",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\instrument.py": "8f30fb90d38e0a11f069c72808b0e8ff94489c86eab548bf9acfd7fe8c9aefb7",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\latest.py": "bd68a3931d3cd1d6192f66cf320bc26b3c441313bab27e756a2d62ceb3dd3e32",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\profile_inspector.py": "bebf335f0cfdefffc14e3761dac658e70e44e563d34becef0cba67a0d716f213",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\reader.py": "3e0f219cf413791fb3099f64f8ceee126777c2bfed830a8f5022300cd0577fcb",
+    "tmp\\activitysim-phase8-source\\activitysim\\benchmarking\\workspace.py": "82aeaa584d20655a4174311f41fdd4fbf300e24295de1ea410492c65e3773894",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\__init__.py": "5010311d975bf9888c888de50949bbc7d44a5b0c56502556a8feda03101b09c5",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\benchmark.py": "200de2819992ecf723ed98f20b78b98b3373c6f19bb7b95666c93fc87e7b621d",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\cli.py": "1678a9133e9b7e531bfe7211e61d86a3bdc9b74b3cb7010b1b23f142b9b76922",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\create.py": "816ecfd5aaae1ba753c8003f44b6b35da87a0b42ab6b90f6f43b1f32d1e5229a",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\exercise.py": "044e79168ebd3d522ae4775ca9d7fb5eeb3e6ff4976a7993bd094f4bc9fcb670",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\main.py": "e20398644b9bc06713282b6c37706dd262e672d661220c9b3ccb9ddfa1130845",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\run.py": "dcb55c1aea8ebe5b4d8132024a2413064fc5164c84e92bd2567063fa922a8c46",
+    "tmp\\activitysim-phase8-source\\activitysim\\cli\\test\\test_cli.py": "816a2c545ad6f37b4e2b4e960c98cf13c3bd012e81bfa4bdbbaaa4ad38cc4fd0",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\assign.py": "f9b99b4e1f32234171ebd1022af667b6b17b07fe8cad9671f5c1c49bb95b1b9a",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\choosing.py": "4b2449a2db2128e48bb09b44201c7d88293048134e66a394d8cfaaf048482f56",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\chunk.py": "6cc3fbdb37a21d2237115f5a14dcc3528e2405c326feceaca2c6fc4c3cb45126",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\cleaning.py": "e7b85575a39f51a7f4bb11f2297ea7bb069aca77e56fe9ff3d58795ff4cc20ca",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\config.py": "5f833269abcdc58b6110491b2b711b3bd6ae35ef0528b410f96f99a3ee317e2b",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\__init__.py": "8e7e2ed6bb9af1da78ac5d0ae38a35bf70a13a934c683f3a43b95891da036572",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\base.py": "cf10d35a2768bec2fdc1b7b64d51d9d984db82bbe40c69faf6fb423e82446c19",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\filesystem.py": "2ac1f91c4dcfc9952ca09ae0c4f756e5f224ce456855734817325a3871a9f8b6",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\logit.py": "bdaa90830bd55c2f3d2ac8c52f5bc74496f4074bb77778cbeed93a48e6dde399",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\network.py": "c0b0f27ae6c6e7552d0ce527891f665580d45c59b64e52906bad09ffc01593f0",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\configuration\\top.py": "9d63730348b94cd540bdd54870832ed2dcb3684b287c979fcd3a727665d0f287",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\contrast\\__init__.py": "2095da33d535e8faa25c42469e4f528f8482ef0eca5d45108dfa19fca06b081d",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\contrast\\_optional.py": "e8c44f8df797ae87db00730f5fd41cb8555a75de0dab3a29fd3a5d56cf7a7912",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\contrast\\continuous.py": "00cc546fb8ff36fb5e828fda55d8dff7efc9e4d397162081c6780b4ad4ae3472",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\contrast\\nominal.py": "ce3adb12afbd62e54c13050b1a602cf829dc36fc9d1214fc6783c1e731746fb5",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\estimation.py": "1f0436ccbd259fb2f4b627751e9766281c9f7ed47f23a2b691cff5899f26fbdd",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\exceptions.py": "697744cc6ba622178604e1a3f015083f9ae495625187a028c84b85a787335481",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\expressions.py": "5d1194d6893aa6a89e84845e836244fc3f72606efa3a0abf09d4689444b56911",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\fast_eval.py": "c8f30249c6bd049c759fbb92f1f16e67ae8121a79d2097da6cad08092a78589e",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\fast_mapping.py": "e0f4302ec4ccd237b231b24268084832d23cfa3a7d7be5a5d98791444e9d6401",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\flow.py": "2a5a843f00c424937637b22d6c8597704a83df0059a285ee88dc465705057a87",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\input.py": "f2b28c24f98b0cd95630bab25d49e7b95ca896d736dce432f2dcdf0d546b8c90",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\interaction_sample.py": "29282846b253a719ad22a93117b362b6bd96e8ccac3fce61957510e7e0d54648",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\interaction_sample_simulate.py": "8e29dd20da67b2aeffb041343ea19bfd14b043324a9d7bb83921cf1bc7c416d9",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\interaction_simulate.py": "26408035cd496344cd364f2220a720f08d24654c08f82ee014729399d9465c47",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\logit.py": "8adcb549802bbfbaec2bed8891e34ec199d40e9c8c3bda628a277e08363d7aad",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\los.py": "aca7c1d4667b582cb968a01010a3209ee9debdf375900ff7fa54114da5521dd5",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\mem.py": "c7845839cc83ea7302527e8bafc1f3a93e2ac51fbabb57287702acbf4ca69514",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\memory_sidecar.py": "8ac2727de618b8bc8557908d44a8e1cc3d383c3255f3fe5ec8276dee8b1fa757",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\mp_tasks.py": "c29b849ee638031b9ad9a4ddded4a96df190c5bfa08cdb66b8c04c9102e32a27",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\random.py": "b2fa1dfabc5a61483076443fa9a7e3d7e21d247126ad37da04eb38ae0df235ce",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\run_id.py": "b2348a2b82c810fb81982579a858747ee746da3b4de6479ee05933c855db0d2d",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\simulate.py": "e922648fbb8ea50f302df3ea1d31f1f8bf04b7a0da98ad7250cdb436eb2cfd9b",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\simulate_consts.py": "a479eaeb1d1bb2a7cdd8dcd62374a566a387699bec4e2e4c24f0261e2b09e1d1",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\skim_dataset.py": "35e99ab7518ef152ee6c31c74b1d19cea903b93545e3729d7cb73ee2fcaed807",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\skim_dict_factory.py": "5ff69cc381b9b3718f791ed0578f70c319d575ec9bb5c185062c898578b83fd6",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\skim_dictionary.py": "405ec8ab19fba3068732efe9f638f225a2300fe98f11d170d26a0b1119ccb9f8",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\steps\\__init__.py": "608597b2c5c527e91c49e4a20967df407bba8d64839b422f6c1244163d746041",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\steps\\_decode.py": "a274559ecf4d75bcf466f382834a562cf2bec33542090ec6aac46cce70bb2839",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\steps\\output.py": "b4951074839e97a1bfd48e329ca8c10d32ba2df16e434ea5b53902b7d0cbff72",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\__init__.py": "a9067291bf73a32cf90f90aedf883f004a7a553cf3553c55c413993897f5c104",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\_tools.py": "ec29d8197a83cbd2f57f519fd2e51e4f6c317a34f688b3746991eb274d281023",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\extensions\\__init__.py": "d1e7e12157e7dd996934a6a0712cb176404faf0cdc274385ee57e792b6e3558a",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\extensions\\steps.py": "ce5b02fa0e300618214c55814ca6f4278dbd4e5d479fff22a404fd5367b3f77a",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_assign.py": "ab34818aafb767bd2ff1a50176400d1609a5aca9c2efcfff6dfa06e6c2f963c8",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_inject_defaults.py": "d9315de5d0ead02c57cf4254e86ccd7b7718477484af6dcc75bb68c551667991",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_input.py": "3749c96e400f7aef5f11f451efadb1b95c6ab52592bba59d4ce88c12779bb32a",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_interaction_sample.py": "b8dc6565cdfddf6e1d4af629b6adf15dddb3adec71a5782bab857bbc295dc0cc",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_interaction_sample_simulate.py": "7b3147c4c60e8d2bb1b323d3ba91eacec039637581dca4a9be49c3250a13caab",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_interaction_simulate.py": "1cb00a02c4bbcd50baf9d87eb618b8b3b711eafaaee6111f0353e61bfe1303f0",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_logging.py": "46b2f2821addc31aadc152ee1599701c3bcb2164bccd8faa4622db1eb0c9b81d",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_logit.py": "2395194720e1c073f03e3c680cf523391ba747f91104fec116bd07b9600d8cb2",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_los.py": "a4e7a5462c282f80546606c26c65e5635005fbf18c35c7e1d5de5c8e288f3010",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_output.py": "352198204070fcefee73af38c4563530179653507081ac5383a278ab369b2e86",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_pipeline.py": "57710133ff3c0ccd5e2e280b28a30edee2781e18629e9029e95cdc1407f79e9d",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_preprocessing.py": "a5337024984a71a15c44457e1b4640b9dcfe6fd0356949c8be117db2258d42d5",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_random.py": "a50a5dada1e89f36f6e8c603bc3901d98158e4255d6505a9e81342a63cc5a7a5",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_simulate.py": "cdc6168f3580d6523083c40b4dafaef575093a661e93f451edcf6980f4d6bdfb",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_skim.py": "c144475112298d498d509fdb3d78b5dfb3b9bb29406dc8b846df7c13f83245be",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_timetable.py": "cdba4c42495890fa65b5ece7a20452b08876aee235eb1d53bf506017b2cabd8e",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_tracing.py": "52d49a00bd07d51b617a4a12559e7eb5c825f010cb585787a2cbf92a753705eb",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\test_util.py": "1375a3b903ebcb38c9e3d204d48f6833127ae95766116fab1b451d51fb5611dc",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\test\\utils_testing.py": "89e9fa89c8707d0693c5012d9ce89d33e8d21e34bcf54038b92ef3e32314f239",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\testing.py": "6c8d71f3c24dfa46c9c18ebecf7959c7e9bbc8b9d2313964df54aa1d8180597a",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\timetable.py": "01a4430957bc8f536d14848bdd439633a1456ab6d5834dcf9b5466d3b307a6de",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\timing.py": "7258f80b6d55a96eeddcc268d08c9808e2fbb60a83a66c332855e77805ed1d7c",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\tracing.py": "6904d2eb3624499d4586ce71c74c48524461db03d57f4e1b91e49d02660e7f33",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\util.py": "24d027f6651587e1466237b269346eebce2dd905ecadaad6c34d69e9c98405c3",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\__init__.py": "8a82325b4eb673d8d7e34124431880570ac33900a020c509e4b9a302c61ba528",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\accessor.py": "b785c426102264b9aed87d04c11ba6321d2a037c02a02a51646f3510e51b0028",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\checkpoint.py": "43be4135b2dcce99a43fdb9c401b758acef148073da6a55f672d76a254cb5d37",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\chunking.py": "166909b56521c599bb18c9c245ca5615864c26875fb047e8b06ab9c0074cd312",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\dataset.py": "ad18538701380b6e4f1fcc38689d3f9f36d78cabf65041a675d27fc7050fb05f",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\examples.py": "bf25abda7183de4383c3c8aa5700fdfd92284df19267cf3850a871bcba49cc7f",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\extending.py": "7c5389317fb54467409910062c787487434969ce82c6717b1504522bf808ea84",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\logging.py": "f46ca2b043b2b0ea61eb13e726e6ff82d76c0f38d4871822539e742fdc58cda0",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\report.py": "a91ca6d4fbdab46af4a26fa44bc84b5f925ebc9f7bcfc012120f2b9cfe56b6ae",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\runner.py": "668866d5be21c3ddfb5cce40eeb9fd7348e2fec1fdb232bf0068a453455dd6e5",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\state.py": "d58a06f628d0b868a7525bc5e7cd6e79d0ebc7eadda3ce298634af48f2ac6476",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\steps.py": "2a5ef6cfb20e5fb16bdd6ec709acfb1379f971af8fc59046007b56c95d8892f8",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\test\\conftest.py": "ec04311ae6fd54b9f71cae43434793ce0383e2e7ee4d23488a5b62d244190f10",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\test\\test_parquet_store.py": "5b5409c7d3fa3f996e3a4d4ba1ef3f0827303a42e35919ccf0f3f0358765b92d",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\tracing.py": "49e05749e3f09eb16cc9a1292add49c4a2eff3314e69da71fa64e864ba616aa0",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\workflow\\util.py": "f74167c5095678d29c78cb6cc99d8012e2a40dd677b2d929302330287dc5db1f",
+    "tmp\\activitysim-phase8-source\\activitysim\\core\\yaml_tools.py": "7a0517511f29b0f55854292e2e97296fc29dba2124ffce097c75e8acf1364601",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\__init__.py": "8c807174fcca70b8a67aba875988f7e12805da2c0434a91b3d26477d7593007b",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\cdap.py": "ac7aada8f68d8205de6fc58b00b15efd3d13713f369c71cce888d913d30d223e",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\data_maker.py": "41ac2a1f929d4edb7dfd563e1598975a38d4b889939f339c41b81406fa9ce8ce",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\general.py": "9b2388aa6e398c36bbbc820ef62ca396539a086681fdcbbf1cbdc4e1f414cbe9",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\location_choice.py": "e451a0b33bc6d8f4251b43145004a4a5bcfe6e4410017ab0a0cb22eb02950514",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\mode_choice.py": "44b877b856b0bf0a59f948ea6e203aa91c2081e26c377351eee2e16c20448084",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\nonmand_tour_freq.py": "8a14676d09b6c41ee45a8d5ccafaa1086ff887f81e716f6ef6594fcd3c8527ce",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\scheduling.py": "decbb035389cc24b97e3da0a902f1eddc335ec8adb3276bbcefecda3e71328df",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\simple_simulate.py": "8b955d88661a2d2be252c5d32be542aca87627e9b9145dc700e2ace6b6767964",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\larch\\stop_frequency.py": "482d0c978543f3bbd15e92994ad4c8a523ed8e1fe1800339e4d30571b676dfb5",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\test\\test_edb_creation\\test_edb_formation.py": "97f6348f7418baf642f68e44fb7c33dcd6f55f12500b10892d21f7348cbba24c",
+    "tmp\\activitysim-phase8-source\\activitysim\\estimation\\test\\test_larch_estimation.py": "dbe9b1378294e1e3d538b83597d871916e2d6c6443a30b23a4d8d08e48f1ee1e",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\__init__.py": "01f8e6769ba7bf2740a6f823d5e708c60596f8eb6c83e58577a758733c39b894",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\create_run_all_examples.py": "6071bc4f42cb032ff4f95d25c851cc83df033183bf97db10db4f8f3958d0f466",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\build_example_data\\build_stop_coeffs.py": "335f4c6758826a507314ae0fa45f0a1308afae2cc815f5d26183b21d18f00bbd",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\build_example_data\\mode_choice_wrangle.py": "1a25713bea718a84e7142909d30d9ce2f9741126a260ebd94e3170bde8a94074",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\build_full_mtc_example.py": "592557b409ca5a754a9c929b25f1ceb6ab1d781f0dbf78a4c1c833e0c1e5fb87",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\notebooks\\est_mode_setup.py": "910579b421257d07fb73ffdcc5f7b82a80ee05636b362b4ece5864544e45632a",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\scripts\\extract_survey_data.py": "7e577df0b4bf2db7c3484e7d5776829f9539becaf3867948a4690ae3a2c4ef00",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\example_estimation\\scripts\\infer.py": "9faa371ec80552477de8767842f3ac4d8a4af1b90924c90c30952e44ea5bb0ad",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\external.py": "2e525d5a0b597a4ae655ae9f338124f94e996a61a9658bfd42d91b80628f385e",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\optimize_example_data.py": "dc2b179c9b29aaec2f491e543040a922b7ecb6a0cabdbf89dcc165cd75a75622",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\marin_crop.py": "029634750085e77c7b43d0b4d51dcf17f8a67a3f9e23b7ecfdea1f2408c7ab06",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\marin_fix.py": "10a2698daf3702f3c2db9c50ba59631a8b2a709f8b45f8ff98ffece0c19cb449",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\marin_work_tour_mode_choice_data.py": "074edb2f0541e37b4aa5e9ce2333d77288f871e78b28275857603869da736126",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\scripts\\two_zone_example_data.py": "1c5fba0399b29de1a230b5c44d5cddffa178ff22997675434ad4dd4f4c9906a6",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\test\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\test\\test_multiple_zone.py": "677f58ae2c438545974d1d76f3090276f759dbb2809c329c544dfac185514e96",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_multiple_zone\\two_zone_example_data.py": "bd86a4b0f6e93b05938c29ce67b6c3819b0d8771518fddacc053632e8ea6e813",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_psrc\\scripts\\integrity.py": "e9d5c8785eea7c93a4855b8f82013e7ca5ecdfe52112f71804deaf82030ffb39",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_psrc\\scripts\\psrc_crop.py": "e13cef44e1ed9669edc1e30d11e1d2aecab9e692c9449e34a8e59cb469602b53",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_psrc\\test\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_psrc\\test\\test_psrc.py": "4b47c613d27eaeaec6a3d91a07f9cc96629aa372587c8a3fada15b1151e5489c",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_sandag\\scripts\\sandag_crop_1_zone.py": "1cdd1ead0b34c175524765d687a4e72c63ed331ff17f10c92b665a84a2bc80b0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_sandag\\scripts\\sandag_crop_2_zone.py": "316f39d2946fd692e260bc8d598c3fc87a230354dc97aa8aa0936cb953ef0ee7",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\placeholder_sandag\\test\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\data_model\\enums.py": "d0f89c7fbccb0325ee35a8d20fae6389356a1724b0cd8f647357922c43aa0e73",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\data_model\\input_checks.py": "0c024eebc632333e3f5b73d299be2c2873f75d8f47767c87bafaf3446ea25d28",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\extensions\\__init__.py": "29819f8d0839b68accc90e61821c1b343394354188f766844967670e2a74b6ab",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\extensions\\parking_location_choice_at_university.py": "5e8f86c9a2df7225a0e699d6ea75c384f8b4ebff692f04cdeed4e369bc691766",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\extensions\\stop_frequency_university_parking.py": "97190658f1210ef1270f21a95ae44f519865946133829d1366568c95d5171d4c",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\extensions\\university_location_zone_override.py": "7d292da5812fdd18404e2a2b955b27789da35fb7cea2d9fa707bbf2efa4bb851",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\scripts\\semcog_crop.py": "011e4d3b57ee7f581278482a1212358ede8ba0bc4c907fc412c9241e78b6836b",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\simulation.py": "a040854bf4e3f52ada3cda813589ca27379f68710e116ae74465162f5b511ecd",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\production_semcog\\test\\test_semcog.py": "5e7ffec88508f9c581d8e56a5826cd09ecf1fa2a75855200d2a595f71c0551cb",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_arc\\scripts\\arc_crop.py": "861642adff95116fd6dd7cc78b259f180730dbd557007c2074941ea879290b7c",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_arc\\simulation.py": "db82095adef93212e4e8f0cd7cd5eb1b978883be9f5234d01365c14d6f70804c",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc\\simulation.py": "d38b5c3c3c6f31cf37f3500b9008dd796b76fda80c3a2ea65159ce4d2a46eb20",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc\\test\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc\\test\\test_mtc.py": "40bb16acf4c592b58b10ba872d33419289eaf7a13d8e0170129121d30bbaf2fd",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\data_model\\enums.py": "b343e69d15ac69021e2319b6ab78e01a7fa5aaffac53386b2bd3e3ad42a6e018",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\data_model\\input_checks.py": "d09a398e3474b0e71b91b6ffb364ed6e908cd034509efc2e25850c892018fb21",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\data_model\\input_checks_pydantic_dev.py": "3488d6e7f9f4dc59770bdd9ba64239a08028338c91d7e6a783c613d8c26552d2",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\sampling_scenarios.py": "bc1c4deb8a907e30f632b632f90e59b9ec058ac9d9b363550416a459254f6c36",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\test\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mtc_extended\\test\\test_mtc_extended.py": "9b0545edf750eddad8ba28ec2c7049dd61f1d1ecab54105a64cf57f87782c8e9",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mwcog\\scripts\\mwcog_crop.py": "bc522a67aac5737ddb31cd1430ba7ce1bbe09f692fa9ff36be5c279e89062d73",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mwcog\\simulation.py": "c04c287761e37828973355bcef0ce54df3ca3e8c87732de0851c1e3dae904ae0",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\prototype_mwcog\\test\\test_mwcog.py": "81ff127621c1e2c8d5898c1833aca2a17f99623e0f1ab230fd39737ff7a65a6d",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\scan_examples_for_errors.py": "add86bf83661ee5ca9fb4a095e1b4b2b48918e21ab6937d94bdadef811c0726e",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\test\\__init__.py": "8562b1b0dcf0d8a431e988a831c5b95ac9dd36a1169eebd6713df55a4d717b42",
+    "tmp\\activitysim-phase8-source\\activitysim\\examples\\test\\test_external_examples.py": "7bd41192b69a807d2c6ceea41ee6cad9a174a05754d5a07befd68e0a8e499a44",
+    "tmp\\activitysim-phase8-source\\activitysim\\preconfigure.py": "2fcea1809f7da44a4c536e266ecb09af75fa324c6fd59d12df3688985d7774f9",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\__init__.py": "a4b0a6a53a9efb04bdcd7a82307eaacbee54104841f670182c7cea835dbed315",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\__init__.py": "64059e590ff5ae73583e34dae23b1d3cbf2c0348a99f9c01beae7cfca28c512d",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\chunk_sizing.py": "eaf99267edb2f70329ae55d7563c8c89046a8506e6a8243686b18439254c51de",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\cmd\\__init__.py": "eb18e6a04b34201ac3e445230d2122ee385381b9d1caa85bd45dc053f9e8c387",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\cmd\\dsl.py": "c9fa6aeb1c488e2eee3cad428e2e821f385aa8bd38fe481610bf4a3a80c8676a",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\__init__.py": "f811274683f22429940ecae696864cf860d07f90e3efd66c66328ffa03c87a71",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\attach_skim_data.py": "460343f94ecaad63b4abc79e8a1a92cc067e851cdf80479dcf2716e13511dccc",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\composite_log.py": "fce8ac0159e98074650ff0fc024410e4a116dfd7abb670a3121033a35384d53d",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\contrast_setup.py": "3f0b5e2709fbe50cf3555f086fec6f0f30bdd8ebbcc24f47b9deae574e1f76ce",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\data_inventory.py": "6e29f1dedaf0f78af0bc6ac27e10588b17272d14d73190649d6273da859ca7d6",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\directory_prep.py": "be0b36f5cb57783cb08ff9c8673c56df71c62f1df37b5d43f338dbe245c97f2b",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\district_to_district.py": "31a74b40f087648dd60b83f442db4551ddf52611d5d26e03004047cab02fd3eb",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\join_table_data.py": "ce1a8abfc38c6eda0add959f02ff8639d51d2257c98031ed6b1a6fda765889d7",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\load_skims.py": "dec9102692ad7110598c35a3a08d0f8666fc3b50a4203a9ee2c4f02527af3371",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\load_tables.py": "b446ff502f8d31905dbc95c2817adb1dc281366cf169e02e5bca5007ab17752f",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\memory_use.py": "a9f3e4252c081073995a5b52424570d04365d4a2d17f61f7a91e038e10bd28e0",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\memory_use_peak.py": "9ae4c3738b1f69a424c7f33a95f50c0ba7f2a871b65fedc980346632b7f98a3c",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\nominal_choice.py": "ee84320c5ceab0b06eaf1eecd6c153675f5d260ec7f53b0946d29f2b9f6c62ae",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\ordinal_distribution.py": "349f857702fca8506ecba0eb40ba470bc29bdb5c16cf89e33308bfc3f37146d1",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\runtime.py": "fa0fa37adb5ca584b3e1d8c67a7bbe9c40f7521c432be0377bc8c7fc35e00e6a",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\transform_data.py": "fa5a9270f7fda8502843e233c6ffe681ddbcb90261432efc4f84509f2a2e07d6",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\contrast\\trip_distance.py": "7c149f6c9f3e65835de85a91a611a9daed33f7ebaa824895e23045387c12e5b9",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\copy_files.py": "e61d0ff745097bc31b8d14633caffee9f2923d5690c659fc712e1bda61e06f3f",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\create.py": "b1bd88018dc2012503970b8b81d19e780ed8ec9cf444fc72785c8fe875ffa4cd",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\error_handler.py": "8c8dd93e9203a36c53d921f063fd03913b9ee61f1937469c632826fc7899e8ba",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\install_env.py": "63bd1abf929f309d79cf497fb214c448ef221f5bbbc8f2697bc46be12e37750b",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\main.py": "70e48eb68fe4621bbd1ab816a012f6d6e786b1d12dfaa132dff6f223018d4d57",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\make_tag.py": "f204a7b36b0c9df95b11bb795f2785bbf2416ea24020cd79048f8df909b7d17b",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\memory_stress_test.py": "e7275b7b024cdd3e9ff5d7e8e249ea33314161930e7746ca0d80ebe08350e17b",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\progression.py": "4f0b6f844c0d659fc6a7d9f4d82f1143369bf31b165979ce3308280d49bf5515",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\py.py": "388a68931d120268404f7677fa2c95ce7c154204bcf5364d07ab4bc22f1866ad",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\pype.py": "58ca1a083498c1beafb874cf43383b9a3752e7c14f2ffd1d4a61d3d85980fe24",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\init_report.py": "96aa3d13a1976ac4a73a2afdb3efb370e8cc5daa17cf3adf818023c8992760e9",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\load_data_dictionary.py": "f58eb0a6ea747a81b54a889046713bd00834bc63efb943b2ebda5e79bfcb649d",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\machine_info.py": "acd727b9c86abe71cbe0f919c529aa5703cb047964136df3fca1d748b3087e07",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\save_report.py": "75e8c343bff6e4247c4c4bbd4344dc84ab417fbc5891a31d62eed364c6afe06e",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\section_title.py": "1adf28933f401ea2175a7a143d829b58464dbed03c3ce9cfd9e4236f7fd10f65",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\reporting\\settings.py": "2fb232500cad7f8b10f4ca83fec85a1077522f5c2ed0bbfc1821a8506feffa13",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\run.py": "617cdd482d38c1a27a9bb5903340308f928870e85889620381fa37491b53f86a",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\run_subprocess.py": "5d9fe354b0f851287072c4e2c867ca0fe0355afc7fcbb35a9a1808274734bb09",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\title.py": "20b3d7e1f9ebfc9cdedef8ed8efc2f7a7a7e29ca8450a97feb5d44c73704e6b5",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\update_yaml.py": "aac25b8c22ebb4989c62ac5f1c94205e5e1f78b6c26c0f873e737b9a72096d47",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\steps\\wrapping.py": "edd40b04f12e4c9c702841bcd54478f581b3472ec137ecc4fc5135a2e3605849",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\utils\\__init__.py": "e7e68c956b443b44b2c908875b4ab8a3ddb330297e29ff06913c6e75f77e6112",
+    "tmp\\activitysim-phase8-source\\activitysim\\workflows\\utils\\data_dictionary.py": "c73b53936065aaeb69e7f2e691d4ed94c1c8e3fffafca22a045cc0d0b1af0fca",
+    "src\\choiceforge\\kernels\\phase52_public_destination_tile4.cu": "599a9704be0992d2863320390cbca0028c7a578ecacf72d69de2e658a5d79906",
+    "src\\choiceforge\\kernels\\phase55_public_destination_sm86.json": "924f7bc2f08f839f8d7d72f4eb8ade7aa9cd2391b3fa6d08f690a6695f7e56c6",
+    "src\\choiceforge\\kernels\\phase55_public_destination_plans.json": "bac80896fa2261ba81c6eaf98d49ece75885adbbd0d2aae8d7ac6f1f39428f77",
+    "src\\choiceforge\\kernels\\phase55_public_destination_sm86.cubin": "9872bc0c9031f5ab29d99065db960652ff5fa5ffdb8733e0f0c8d5e1008d7f06",
+    "scripts\\run_phase58_comparison.py": "b88a14d8079f85f10d43c0d68e0a91aba2d6ba0d497dc43277baa63ab76a9403",
+    "scripts\\run_phase22_integrated_scheduling.py": "863b460e231cea124cad0a088fb4121bddc2e1ae94ce50bc6adc247de5c64307",
+    "scripts\\verify_phase15_outputs.py": "a1c75ce1fcac1efc1a6a3e72e31818c6b53eb9272c55e38f842b5af76729526d",
+    "scripts\\verify_phase59_matrices.py": "d5d67823b5540f97cc6401734e0d7ff77dc0f8cec445434fb68565d8b2e0b66d",
+    "scripts\\verify_phase59_reports.py": "8c94cb559e901eaadc27c98253cb4808c6696c1b17b1fed060a672eb73a169da",
+    "scripts\\phase62_batch_worker.py": "7aae0679e880989d4203355c86726d4092b56e78f6db043f094e188caf38f93d",
+    "scripts\\run_phase62_batch.py": "4e7cb6ac7f34947161b7f5d250a0b629abb9fc52d61156f2cf50c5075f115a51",
+    "scripts\\run_phase32_full_model_ab.ps1": "73312f4bbc120dd6162f0c74062ede9e0e924011e22230eb81c4da5c1b2924ac"
+  },
+  "source_unchanged": true,
+  "diagnostic_not_repeated_performance_qualification": true,
+  "memory_scope": "One-second maximum individual owned-child RSS; not aggregate USS, GPU memory or guaranteed peak.",
+  "reference_scope": "Candidate-only diagnostic checked against existing independent CPU reference; no contemporaneous CPU timing.",
+  "summary": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p64s250k3-summary.json",
+  "evidence_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\run_phase64_scale.py": "a23532d65c104a206ffff13446dbfa3840950bfa844c4fb00791845b80bb66c4",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-p64s250k3-scale.stdout.log": "f7787f138a5cffe72ecced528a3408b8a9ccbcda561146c54c61221f32212d38",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-p64s250k3-scale.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p64s250k3-summary.json": "799447ff723f967a5416f6c3407f7499fff908be4cb063bb0330f9fb0a1c84c8"
+  }
+}

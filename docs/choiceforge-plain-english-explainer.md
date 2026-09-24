@@ -15,37 +15,39 @@ This guide is for a curious high school student. You do not need to know transpo
 
 ## The one-minute version
 
-Latest result, Phase 63: the complete public 50,000-household model takes
-73.94 seconds from launch to exit, compared with 202.82 seconds for newly
-measured regular CPU ActivitySim using 48-thread capacity. That is 2.74 times
-faster, or 63.54% less waiting, on this machine and configuration. Against
-the previous accelerated version in six balanced pairs, time falls from
-82.19 to 73.94 seconds, a 10.04% reduction. Every pair improves. All six new
-runs finish in 73.17-80.00 seconds. **The under-70-second fresh-process target
-and 65-second stretch target were not met.** Improvement is not the same as
-meeting every goal. Earlier phases' times came from different sessions.
+Latest result, Phase 64: the complete public 50,000-household model takes
+74.95 seconds from launch to exit, compared with 208.93 seconds for ordinary
+CPU ActivitySim at 48-thread capacity. That is 2.79 times faster, or 64.12%
+less waiting, on this workstation. Six balanced pairs reduce the previous
+version's median from 76.17 to 74.95 seconds: a modest 1.59% improvement, with
+every pair improving both clocks. **The under-70-second target and 65-second
+stretch target were not met.** Historical phases used different sessions.
 
-All 94 measured models pass their output checks, including 80 models with
-changed seeds, coefficients and household counts. Checked travel decisions,
-all 115 matrices and values throughout all 24 summary reports agree with
-independently computed CPU answers. Existing `5` versus `5.0` departure-key
-formatting allowances and diagnostic-score bounds still apply. The runtime
-remains a CPU/GPU hybrid; live CPU checks for borderline choices remain.
+The larger achievement is a complete, corrected 250,000-household model that
+passes the independent output audit in 299.09 seconds, about five minutes.
+An earlier attempt found one wrong workplace choice caused by tiny rounding
+differences. The new safeguard fixes borderline decisions from live CPU inputs,
+without changing random draws or looking up saved answers. This larger repeat
+reuses an independent CPU reference; it is not a new paired CPU timing claim.
 
-Phase 63 reuses calculation recipes, not old modeled answers, and fixes a real
-retained-GPU-memory defect. Giving CPU the same new preparation options still
-leaves a 2.53-times hybrid advantage: 193.18 versus 76.42 seconds in the separate
-fresh-worker comparison. Its clock includes extra input and reset checks.
-Ten-scenario hybrid batches take 590.70 seconds instead of 714.47 with fresh
-processes, a 17.32% reduction. Those batches mix household counts and are not
-single-run times. The full-system gains include CPU and file-writing changes,
-not only GPU arithmetic. Some small calculations still favor CPU.
+All 42 selected campaign models pass their output and finite-memory checks,
+including changed seeds, coefficients and household counts. Two earlier CPU
+controls were excluded and repeated because their thread-wait setting was
+unspecified. Checked decisions, all 115 matrices and values in all 24 reports
+match CPU references under the existing formatting and diagnostic-score rules.
+Giving CPU the same preparation improvements still leaves a 2.67-times hybrid
+advantage: 206.83 versus 77.44 seconds on a separate worker clock that includes
+input hashing and reset checks. These remain whole-system, not pure-GPU ratios.
 
-All 619 main tests pass. A separately rebuilt directory downloads public inputs,
-installs 98 pinned libraries and passes 618 tests with one expected historical
-checkpoint skip. This is same-machine reconstruction, not proof on another
-computer. Sections 338-346 explain the changes, results, memory limits,
-preparation costs and what remains to do. Earlier sections preserve the history.
+The GPU is not best at everything. An isolated mode reducer is 1.42 times faster
+with large arrays already on the GPU, but slightly slower when transfers count.
+Replacing only that reducer with CPU does not demonstrate a whole-model GPU
+benefit. The hybrid's larger GPU utility calculations remain in that control.
+
+All 663 current tests pass. Sections 347-354 explain the changes, failure and
+repair, measurements, assumptions and remaining work. The earlier Phase 63
+same-machine clean rebuild and all previous phase results remain historical
+evidence, not a new Phase 64 clean installation or another-machine replication.
 
 A city may want to know what could happen if it adds a bus line, changes a toll, builds housing, or closes a bridge. It cannot test every idea in the real world first, so planners use a **travel demand model**: a computer simulation of how people may decide where, when, why, and how to travel.
 
@@ -9382,3 +9384,271 @@ about 2.5-2.7 times faster than the measured CPU alternatives, and a tested
 ten-scenario service finishes in about ten minutes while preserving its checked
 answers. The reproducibility package exposes preparation costs, failed attempts
 and limits so a reviewer can challenge and rerun the claim.
+
+## 347. Phase 64: can the result survive a much bigger model?
+
+The earlier complete benchmark represented 50,000 households. Phase 64 tries
+100,000 and then 250,000 households on the same public geography. The latter
+is five times as many households, not five copies of the same finished answer.
+Each run starts with public inputs and computes the actual ActivitySim model:
+jobs and schools, daily activities, tours, destinations, times, travel modes,
+trips, travel matrices and summary reports. All 34 model steps remain in scope.
+
+This differs from Phase 18's 2.875-million-household experiment. That experiment
+demonstrated a large GPU-resident chain, but some equations were synthetic.
+The new scale test keeps the real calibrated model and its complete outputs.
+A larger number alone does not make two experiments equally demanding.
+
+We run ordinary CPU ActivitySim independently to produce comparison answers.
+The accelerated model must not read those answers while making choices. A
+separate audit reads both completed outputs afterward. Model execution and
+checking a model are different jobs, like sitting an exam and marking it.
+
+## 348. Why can a millionth change a person's destination?
+
+Computers store most decimal calculations using a limited number of bits.
+Two correct-looking routes through arithmetic can round slightly differently.
+Imagine a lottery divided into numbered intervals. A random ticket selects
+the interval containing it. Moving a boundary by a tiny amount usually does
+not matter, but a ticket extremely close to that boundary can switch sides.
+
+The first 250,000-household attempt exposed exactly this problem. One person's
+workplace differed. That changed one derived household value, even though the
+integrated run's narrower internal checks had passed. The external full-output
+audit caught it, and the run was rejected rather than counted as a speed win.
+
+Independent live captures showed the same random ticket, about 0.7311568635,
+on both processors. Three of 30 padded scores differed by about 0.000000954.
+The relevant probability boundary lay just below the ticket on CPU and just
+above it in the GPU-derived calculation. The workplace switched from published
+zone 764 to zone 752. This is a numerical issue, not evidence that either zone
+is a better real-world prediction for that person.
+
+Our existing safety check already identified the person as borderline. But it
+rechecked probabilities using scores produced by the GPU. That could not remove
+rounding introduced earlier, when creating those scores. Checking the last
+step alone was insufficient.
+
+## 349. How does the stronger safeguard work without cheating?
+
+For borderline destination decisions, the new safeguard repeats the relevant
+upstream CPU calculation from the current person's inputs. It recomputes the
+sampling-probability correction, the mode-choice accessibility score, and the
+final destination scores. It leaves ordinary non-borderline GPU decisions on
+the fast path. This remains a CPU/GPU hybrid, not an all-GPU model.
+
+A destination model often samples a shorter list from a much longer list of
+possible places. Its final calculation corrects for the sampling probabilities.
+Even if two versions sample the same places, slightly different probabilities
+can change that correction. Our first repair picked the right workplace but
+still had two rounded score differences. Recomputing this earlier correction
+as well made all 30 scores and all 30 probabilities exactly match the CPU
+capture, bit for bit.
+
+Randomness also has to stay aligned. The model has already generated six normal
+random values per person for this calculation. The safeguard temporarily keeps
+those values on the GPU, borrows only the needed person's values, and checks
+that the random-number ledger does not advance. It does not request another
+lottery ticket. The original alternative order and padded row width also stay
+unchanged because they can affect summation rounding.
+
+The production path never looks up the known failing person's identity or
+loads a saved destination. That person's capture is a diagnostic example,
+not a special-case answer patch. One exact diagnostic does not prove every
+possible future input. Whole-model tests and changed scenarios remain necessary.
+
+## 350. What has actually passed so far?
+
+The initial complete 100,000-household CPU/hybrid pair passed its output audit:
+333.11 seconds for CPU and 105.26 seconds for the hybrid. This is one monitored
+development pair, not a repeated performance qualification of the final version.
+The final guarded version also passes a separate 100,000-household repeat in
+109.63 seconds against that retained independent CPU reference. Because CPU
+was not remeasured in this repeat, it does not create a new paired speed ratio.
+
+After the rounding repair, the complete 250,000-household hybrid passes the
+independent output comparison: checked decisions, travel matrices and report
+values agree. It took 501.25 seconds from launch to exit, including first-use
+CPU compilation for the new safeguard. The comparison reused the already
+generated independent CPU reference. Therefore this run establishes scale and
+correctness, not a newly measured CPU/GPU speed ratio or a warmed timing claim.
+
+The final-code repeat at 250,000 households now also passes, taking 299.09
+seconds, or about five minutes. The live safeguard handles 28 borderline owners
+in about 3.31 seconds. Earlier CPU compilation is already available, which helps
+explain the difference from 501.25 seconds. We do not call that change a paired
+optimization speedup: the setup conditions differ. CPU was not remeasured in
+this repeat either. Its peak sampled process memory is about 20.06 billion bytes.
+
+The earlier first-use run's largest sampled process resident memory was about 20.63 billion
+bytes. Resident memory means pages currently held in host RAM. This is not GPU
+memory, not the sum of all child processes, and not a guaranteed instantaneous
+peak: sampling can miss brief spikes. The resource monitor did not need to stop
+the run. The harness can stop only its own children if available memory or disk
+space becomes dangerously low; it does not delete old results automatically.
+
+The final full software suite passes 663 tests with 91 dependency warnings.
+Tests include changed raw inputs, corrupt preparation files, bounded expression
+reuse, borrowed randomness, CPU/GPU reducers and rejection of invalid evidence.
+Passing tests supplements the completed model runs; it cannot substitute for
+them. The failed scale attempt remains part of the evidence.
+
+## 351. Which gains belong to the GPU, and which are housekeeping?
+
+Phase 64 also tries two CPU-side preparation improvements. First, it remembers
+compiled expression recipes while evaluating them against new inputs every
+time. Remembering how to calculate an answer is different from remembering
+the answer. This cache holds at most 8,192 recipes and falls back to ordinary
+evaluation for unsupported cases.
+
+Second, it explicitly prepares numeric public input tables in a binary format
+called Feather, which can avoid reparsing millions of CSV text fields. Creating
+the three artifacts took 4.47 seconds in the measured preparation run. These
+files contain original household, person and land-use values, not predictions.
+Every use checks the entire original input and artifact with SHA-256 hashes,
+then returns a private copy. A hash is a content fingerprint: changing even a
+value while keeping a file's timestamp cannot legitimately reuse its old key.
+These checks have real costs that stay in the measured model.
+
+Both improvements are available to the matched CPU competitor. Otherwise we
+could accidentally credit the GPU for better file handling. The planned controls
+also give CPU and GPU identical real mode-score arrays and random draws. One
+GPU clock includes uploads and downloads; another starts and ends with data
+already on the GPU. Neither is a complete ActivitySim clock. This control is
+now complete on 19 real batches containing 603,161 rows. With the strongest
+tested CPU setting (48 threads), the GPU is 1.42 times faster when the inputs
+and outputs stay on it. Charging transfers makes the GPU slightly slower than
+CPU. That is why keeping data on the device matters; this result does not
+justify claiming every GPU calculation is automatically faster.
+Here "resident" refers to the large arrays of scores, random tickets and
+results. The timed GPU call still sends a few coefficients and returns a small
+error-status number to the CPU. Those costs are included; it is not CPU-free.
+
+Finally, a full-model control replaces only the tour/trip mode reducer with CPU
+code and charges the resulting transfers. This asks how much that GPU operation
+helps its actual surrounding application. It is not the same as replacing all
+GPU work or comparing with ordinary all-CPU ActivitySim. All four runs pass
+their output checks. Across two reversed pairs, median whole-model time is
+74.86 seconds with the GPU reducer and 73.75 with the CPU replacement. This
+experiment does not show a total-time win from this particular GPU operation.
+The small difference is not a reason to claim that all GPU work is ineffective:
+the control leaves the much larger GPU utility calculations in place, and two
+pairs cannot confidently separate a one-second difference from system variation.
+
+## 352. What must happen before Phase 64 gets a new speed headline?
+
+The predeclared main campaign contains 42 sequential complete models: six
+reversed-order old/new pairs, two ordinary CPU controls, four matched-preparation
+fresh processes per engine, and two ten-scenario hybrid sequences. Reversing the
+order helps expose an advantage caused merely by running later on a warm machine.
+Changed scenarios include different random seeds, household counts and model
+coefficients, each checked against independent CPU results.
+
+The repeated sequences also check memory cleanup and reuse of calculation
+programs. GPU arrays must not survive a reset. Host-memory growth from invocation
+five to ten must stay within 512 MiB, and active GPU growth within 128 MiB.
+These finite tests can expose leaks, but cannot prove that an unlimited service
+will never leak. This campaign does not remeasure a persistent CPU sequence,
+so it cannot support a new persistent CPU/GPU speed ratio.
+
+The forty-two models finish, but the final audit finds that two ordinary-CPU
+controls did not explicitly select the same thread-wait policy. This policy
+governs whether idle worker threads keep actively waiting or yield processor
+time; it can affect performance. We retain and exclude those two measurements
+and repeat only those controls with the required setting. That means forty-four
+executed campaign models for a final selection of forty-two. A new audit test
+rejects missing policy metadata. Both ten-scenario memory sequences pass their
+finite limits, with about 174 and 188 MiB of host-memory growth and no active
+GPU arrays after their final resets.
+
+The fresh-process target is below 70 seconds, with 60-65 seconds an ambition,
+not a promised result. A stronger numerical safeguard may cost time; correctness
+is not relaxed to reach the target. We must separately report correct outputs,
+memory qualification, improvement against the paired older version, and whether
+the time target was met. None automatically implies the others.
+
+The final campaign is now qualified with the replacement CPU controls. A
+complete model on another compatible machine and a full 2.875-million-household
+calibrated run remain unproven. The completed results follow.
+
+## 353. What are the final Phase 64 speed and accuracy results?
+
+The complete 50,000-household process takes median 74.95 seconds with the hybrid,
+versus 208.93 seconds with ordinary CPU ActivitySim. There are six candidate
+measurements and two correctly configured CPU controls. The ratio is 2.79, or
+64.12% less waiting. Against the previous hybrid's newly measured 76.17 seconds,
+the improvement is only 1.59%. All six reversed pairs improve both elapsed and
+charged time; candidate elapsed times range from 74.04 to 75.76 seconds. Neither
+the under-70-second goal nor the 65-second stretch is met.
+
+Giving CPU the same preparation options produces a separate comparison with
+four fresh processes per engine: 206.83 seconds CPU versus 77.44 hybrid, or
+2.67 times faster. That clock includes extra input and reset checks. Do not
+mix it with the 74.95-second process clock or call the difference a regression.
+
+The table below shows selected model components. They include preparation and
+CPU work, not just GPU kernels. The technical component report contains all
+34 rows, including steps that regress. Component medians need not add to the
+whole-process median, and the component timer's precision is limited.
+
+| Model component | CPU seconds | Hybrid seconds | CPU / hybrid |
+|---|---:|---:|---:|
+| Workplace destination | 13.00 | 2.10 | 6.19x |
+| Mandatory tour scheduling | 23.45 | 5.70 | 4.11x |
+| Non-mandatory destination | 12.35 | 2.20 | 5.61x |
+| Trip destination | 38.50 | 6.70 | 5.75x |
+| Trip mode choice | 10.05 | 3.85 | 2.61x |
+| Writing trip matrices | 6.70 | 2.40 | 2.79x |
+| Auto ownership | 0.80 | 1.10 | 0.73x |
+| Complete process | 208.93 | 74.95 | 2.79x |
+
+All 42 selected campaign models agree with independent CPU references for the
+checked decision columns, all 115 travel matrices and values in all 24 summary
+reports. Existing diagnostic-score tolerances and the allowed `5` versus `5.0`
+departure-key formatting remain; this is not a claim that every output byte
+is identical. Both ten-scenario hybrid sequences pass finite memory checks.
+Four additional full-model reducer controls and the final-code 100,000- and
+250,000-household rechecks also pass their output audits. All 663 software tests
+pass, with 91 dependency warnings rather than zero warnings.
+
+That is computational agreement, not proof that the travel model predicts
+every real person's behavior correctly. A travel forecast also depends on its
+input data, estimated behavior equations and assumptions about the future.
+
+## 354. What does this change, and what should happen next?
+
+The practical result is a faster complete public model, now tested at five
+times the previous household count with a discovered numerical bug repaired.
+Phase 64 does not replace the earlier kernels or strict-arithmetic work. It
+depends on them and shows why tests must grow with the intended workload.
+Passing at 50,000 households did not automatically imply passing at 250,000.
+
+The new speed improvement is incremental, not a breakthrough in total time.
+Removing time from a very small reducer cannot by itself remove several seconds
+from the complete model. The next performance work should target measured large
+costs such as mandatory scheduling, trip-destination preparation and trip-mode
+preparation, then repeat the complete-model controls. Preserve the safeguard;
+disabling a correctness check is not an optimization success.
+
+For larger populations, measure memory and component growth rather than simply
+multiplying a small-run speed ratio. The 250,000-household repeat needs about
+20.06 billion bytes of sampled host resident memory. That does not establish
+capacity for the complete calibrated 2.875-million-household population on this
+machine. A bounded-memory design must preserve household relationships, random
+streams and the arithmetic order of final aggregates when processing chunks.
+
+For stronger replication, another compatible workstation should rebuild the
+pinned source and public data, generate its own CPU references, and rerun the
+same numerical and timing gates. Phase 64 has not done that. Its source hashes,
+input fingerprints, preserved failures, tests and publication-byte checks make
+the claim inspectable; they do not guarantee identical speed under different
+hardware, software versions, temperatures or background loads. The earlier
+same-machine clean reconstruction is useful but is a different kind of evidence.
+
+An upstream Sharrow proposal should therefore be narrow and reviewable: define
+arithmetic and randomness contracts, separate reusable calculation recipes
+from mutable data and saved answers, and carry the independent comparison
+tests with the implementation. Those are proposed next steps, not work secretly
+completed by the benchmark. The strongest conclusion here is conditional and
+practical: this supported hybrid is faster than its measured CPU alternatives,
+and its qualified outputs remain reproducible within the tested contract.

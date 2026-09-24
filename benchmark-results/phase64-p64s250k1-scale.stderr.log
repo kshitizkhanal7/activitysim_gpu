@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\verify_phase15_outputs.py", line 162, in <module>
+    main()
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\verify_phase15_outputs.py", line 153, in main
+    result = verify(args.reference, args.candidate)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\verify_phase15_outputs.py", line 72, in verify
+    raise RuntimeError(
+RuntimeError: final_households.csv changed 1 modeled cells across 1 rows
+Traceback (most recent call last):
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\run_phase58_comparison.py", line 290, in <module>
+    main()
+  File "C:\Users\kkhanal2\Documents\ChatGPT\GPU-kernel-travel-demand-modeling\scripts\run_phase58_comparison.py", line 232, in main
+    subprocess.run([str(PYTHON), str(ROOT / "scripts/verify_phase15_outputs.py"),
+  File "C:\Users\kkhanal2\AppData\Roaming\uv\python\cpython-3.11.14-windows-x86_64-none\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\.venv-phase8\\Scripts\\python.exe', 'C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\verify_phase15_outputs.py', '--reference', 'C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\phase63-runs\\o-p58-p64s250k1-regular-1', '--candidate', 'C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\phase63-runs\\o-p58-p64s250k1-candidate-1', '--output', 'C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase58-p64s250k1-candidate-1-exact.json']' returned non-zero exit status 1.

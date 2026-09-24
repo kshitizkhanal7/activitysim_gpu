@@ -1,0 +1,28 @@
+{
+  "complete": true,
+  "diagnostic_not_full_model_proof": true,
+  "original_utility_bit_mismatches": 3,
+  "old_guard_already_flagged": true,
+  "corrected_utilities_bit_exact": true,
+  "corrected_probabilities_bit_exact": true,
+  "draw": 0.7311568634551859,
+  "draw_unchanged": true,
+  "cpu_internal_zone": 763,
+  "original_gpu_internal_zone": 751,
+  "corrected_internal_zone": 763,
+  "scope": "One live captured public-population chooser, not a universal rounding theorem. Internal zero-based zone codes are one less than published zone IDs. Full-model regression required. These captures are diagnostic data, never loaded by production.",
+  "evidence_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-loccpu1-location\\receipt.json": "957a95a835d19bc184c52fdb33e7c0a8813fe25430279a035d05f17cc5775c48",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-loccpu1-location\\00-cpu-probabilities.npz": "3c373cc3985dded25fe475e929244043b0ed0fc213c9b455d9a3ac72784f0b10",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-loccpu1-location\\01-cpu-probabilities.npz": "478e003f8f8fe4879d563af39400a96ab5fa80dc71eb54bb8a102d2f1a16edc2",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-loccpu1-location\\02-cpu-choices.npz": "d4c1e7ca1a34e94dc3b87fe4f506e395909ea6b1edb111406927e7805a446b8d",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locgpu2-location\\receipt.json": "1686faabf70faf2ef9baaddae99c5ba5c9e96467b378ecf42873e1d561541877",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locgpu2-location\\00-cpu-probabilities.npz": "94b321c19d32f787ca98c92cda512431ea244ddbb670c75192a9d956a7792371",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locgpu2-location\\01-gpu-final.npz": "d4720c6d75447dc2a5b3d29ba9b8db28c4c16023e09d03cb788ce563db4846e4",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locfix2-location\\receipt.json": "049377070c8f09461733f5d49e55c0799d2e9d7ad4168a42e40aa5ae6e48bcd9",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locfix2-location\\00-cpu-probabilities.npz": "3c373cc3985dded25fe475e929244043b0ed0fc213c9b455d9a3ac72784f0b10",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locfix2-location\\01-cpu-probabilities.npz": "478e003f8f8fe4879d563af39400a96ab5fa80dc71eb54bb8a102d2f1a16edc2",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-results\\phase64-locfix2-location\\02-gpu-final.npz": "246bc2c78f92f982460cb3b06e048e177194e8c740997899f96ec0b0b3461800",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\report_phase64_location_diagnostic.py": "63cee72aad508a92a37e3a48bae85dd32b12ab72a99630074a0a5bea87496814"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "complete": true,
+  "preparation_seconds": 4.469628200051375,
+  "records": [
+    {
+      "identity": {
+        "format": 1,
+        "source_sha256": "77bb2870677ebb430f3d7a813528445b1aea6d66096b9c03ace7201b901a527c",
+        "dtypes": [],
+        "parser_sha256": "f2b28c24f98b0cd95630bab25d49e7b95ca896d736dce432f2dcdf0d546b8c90",
+        "pandas": "2.3.3",
+        "numpy": "2.4.6",
+        "pyarrow": "25.0.1"
+      },
+      "source": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\households.csv",
+      "schema": {
+        "rows": 2875192,
+        "columns": [
+          "household_id",
+          "TAZ",
+          "income",
+          "hhsize",
+          "HHT",
+          "auto_ownership",
+          "num_workers",
+          "sample_rate"
+        ],
+        "dtypes": [
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8"
+        ]
+      },
+      "artifact_sha256": "d0c1eab5f26b4677bb2425ab2ac6f7698f5750deb87c08335a83f76d9e293931",
+      "artifact_bytes": 184038146,
+      "bit_exact_round_trip": true,
+      "modeled_answers": false
+    },
+    {
+      "identity": {
+        "format": 1,
+        "source_sha256": "9b7e1c9972d5f16e06cf5baf8d552935cb4c9745c4da1d5743f8a76a8f5f5655",
+        "dtypes": [],
+        "parser_sha256": "f2b28c24f98b0cd95630bab25d49e7b95ca896d736dce432f2dcdf0d546b8c90",
+        "pandas": "2.3.3",
+        "numpy": "2.4.6",
+        "pyarrow": "25.0.1"
+      },
+      "source": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\persons.csv",
+      "schema": {
+        "rows": 7566527,
+        "columns": [
+          "person_id",
+          "household_id",
+          "age",
+          "PNUM",
+          "sex",
+          "pemploy",
+          "pstudent",
+          "ptype"
+        ],
+        "dtypes": [
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8"
+        ]
+      },
+      "artifact_sha256": "e489a3ed03c38ed33d1414720e818a42afdc877cb8d8772ecb5fec5ecfa0bb21",
+      "artifact_bytes": 484319794,
+      "bit_exact_round_trip": true,
+      "modeled_answers": false
+    },
+    {
+      "identity": {
+        "format": 1,
+        "source_sha256": "fac71207925a34c32b956632fe375814e42860624a99f88401c42317af0fc203",
+        "dtypes": [],
+        "parser_sha256": "f2b28c24f98b0cd95630bab25d49e7b95ca896d736dce432f2dcdf0d546b8c90",
+        "pandas": "2.3.3",
+        "numpy": "2.4.6",
+        "pyarrow": "25.0.1"
+      },
+      "source": "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase9-mtc-full\\prototype_mtc_extended\\data_full\\land_use.csv",
+      "schema": {
+        "rows": 1454,
+        "columns": [
+          "TAZ",
+          "DISTRICT",
+          "SD",
+          "COUNTY",
+          "TOTHH",
+          "TOTPOP",
+          "TOTACRE",
+          "RESACRE",
+          "CIACRE",
+          "TOTEMP",
+          "AGE0519",
+          "RETEMPN",
+          "FPSEMPN",
+          "HEREMPN",
+          "OTHEMPN",
+          "AGREMPN",
+          "MWTEMPN",
+          "PRKCST",
+          "OPRKCST",
+          "area_type",
+          "HSENROLL",
+          "COLLFTE",
+          "COLLPTE",
+          "TOPOLOGY",
+          "TERMINAL"
+        ],
+        "dtypes": [
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<f8",
+          "<f8",
+          "<f8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<i8",
+          "<f8",
+          "<f8",
+          "<i8",
+          "<f8",
+          "<f8",
+          "<f8",
+          "<i8",
+          "<f8"
+        ]
+      },
+      "artifact_sha256": "d7ea69f076a142a6b5e162cb088db0deba6ec9664122edc5d1bc13a5657dba15",
+      "artifact_bytes": 301258,
+      "bit_exact_round_trip": true,
+      "modeled_answers": false
+    }
+  ],
+  "raw_inputs_only": true,
+  "modeled_answers": false,
+  "summary": {
+    "events": [],
+    "hits": 0,
+    "misses": 0,
+    "saved_answers_read": false,
+    "scope": "raw CSV values, full source/artifact SHA each read, private numeric frames"
+  }
+}

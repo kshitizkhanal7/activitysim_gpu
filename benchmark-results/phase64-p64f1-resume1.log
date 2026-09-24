@@ -1,0 +1,8 @@
+Verified completed stage: phase58-p64f1-fresh-summary.json
+Verified completed stage: phase64-p64f1-matched-regular-1.json
+Verified completed stage: phase64-p64f1-matched-candidate-1.json
+Verified completed stage: phase64-p64f1-matched-candidate-2.json
+Verified completed stage: phase64-p64f1-matched-regular-2.json
+Verified completed stage: phase64-p64f1-memory-1.json
+Verified completed stage: phase64-p64f1-memory-2.json
+{"status": "outputs_and_memory_qualified", "model_runs": 42, "medians_seconds": {"phase63": 76.16939894999814, "phase64": 74.95470165000734, "ordinary_cpu": 208.92907435000234}, "under_70": false}

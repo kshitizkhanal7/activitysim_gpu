@@ -356,9 +356,11 @@ def finish_resident_final_choice(
     selected_positions = gpu_positions
     pre_guard_mismatches = 0
     if len(guard_rows):
-        guard_utilities = cp.asnumpy(padded[cp.asarray(guard_rows)])
+        live_cpu_boundary = getattr(service, "phase64_boundary_utilities", None)
+        guard_utilities = (live_cpu_boundary(guard_rows, width) if live_cpu_boundary is not None
+                           else cp.asnumpy(padded[cp.asarray(guard_rows)]))
         guard_draws = cp.asnumpy(device_draws[cp.asarray(guard_rows)])
-        transfer_bytes += guard_utilities.nbytes + guard_draws.nbytes
+        transfer_bytes += (guard_utilities.nbytes if live_cpu_boundary is None else 0) + guard_draws.nbytes
         exact_probs = logit.utils_to_probs(
             state,
             pd.DataFrame(guard_utilities, index=choosers.index[guard_rows]),

@@ -345,6 +345,7 @@ def main() -> int:
     parser.add_argument("--phase61-features", default="")
     parser.add_argument("--phase62-features", default="")
     parser.add_argument("--phase63-features", default="")
+    parser.add_argument("--phase64-features", default="")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-timetable-backend", choices=("cpu","cuda"), default="cpu")
     args = parser.parse_args()
@@ -571,6 +572,12 @@ def main() -> int:
             raise ValueError("Phase 63 requires the Phase 62 runtime")
         from choiceforge.phase63_runtime import Runtime as Phase63Runtime
         phase63_runtime = Phase63Runtime(args.phase63_features)
+    phase64_runtime = None
+    if args.phase64_features:
+        if phase63_runtime is None:
+            raise ValueError("Phase 64 requires Phase 63")
+        from choiceforge.phase64_runtime import Runtime as Phase64Runtime
+        phase64_runtime = Phase64Runtime(args.phase64_features)
     original_simple_simulate_logsums = simulate.simple_simulate_logsums
     original_skims_for_logsums = vts.skims_for_logsums
     original_network_los_load_skim_info = activitysim_los.Network_LOS.load_skim_info
@@ -1496,6 +1503,10 @@ def main() -> int:
         if phase63_runtime is not None:
             phase63_context = phase63_runtime.for_step(self._obj, model_name_text)
             phase63_context.__enter__()
+        phase64_context = None
+        if phase64_runtime is not None:
+            phase64_context = phase64_runtime.for_step(self._obj, model_name_text)
+            phase64_context.__enter__()
         if args.phase58_profile_trips and model_name_text in {
             "trip_destination", "trip_scheduling", "trip_mode_choice", "write_trip_matrices",
             "mandatory_tour_scheduling", "non_mandatory_tour_frequency", "cdap_simulate",
@@ -1507,6 +1518,8 @@ def main() -> int:
         try:
             result = original_runner_by_name(self, model_name)
         finally:
+            if phase64_context is not None:
+                phase64_context.__exit__(*sys.exc_info())
             if phase63_context is not None:
                 phase63_context.__exit__(*sys.exc_info())
             if phase61_context is not None:
@@ -3161,6 +3174,7 @@ def main() -> int:
         "phase61_shared_inputs": phase61_runtime.summary() if phase61_runtime is not None else {"enabled":False},
         "phase62_reusable_execution": phase62_runtime.summary() if phase62_runtime is not None else {"enabled":False},
         "phase63_durable_execution": phase63_runtime.summary() if phase63_runtime is not None else {"enabled":False},
+        "phase64_pipeline": phase64_runtime.summary() if phase64_runtime is not None else {"enabled":False},
         "phase60_frequency_control": {"instrumented_not_performance":args.phase60_frequency_control,
                                       "segments":phase60_frequency_controls},
         "phase57_live_scheduling": {
@@ -3378,6 +3392,8 @@ def main() -> int:
         trip_events = trip_proof.get("events", [])
         chains = trip_proof.get("chain_events", [])
         modes = trip_proof.get("mode_events", [])
+        phase64_cpu_modes = "mode_cpu" in args.phase64_features.split(",")
+        expected_mode_backend = "cpu_ablation" if phase64_cpu_modes else "gpu"
         report["proof_gates"].update({
             "phase58_all_three_live_trip_epochs": trip_proof.get("epochs") == 3
                 and {e["step"] for e in trip_events} == {"trip_destination", "trip_scheduling", "trip_mode_choice"},
@@ -3387,8 +3403,10 @@ def main() -> int:
             "phase58_live_chain_iterations_used": len(chains) > 0 and sum(e["choosers"] for e in chains) > 0,
             "phase58_no_intermediate_chain_choice_download": len(chains) > 0
                 and all(e["intermediate_choice_download_bytes"] == 0 for e in chains),
-            "phase58_all_trip_modes_reduced_on_device": len(modes) == 10
-                and sum(e["rows"] for e in modes) == trip_proof.get("expected_mode_rows"),
+            ("phase64_all_trip_modes_reduced_by_cpu_control" if phase64_cpu_modes else
+             "phase58_all_trip_modes_reduced_on_device"): len(modes) == 10
+                and sum(e["rows"] for e in modes) == trip_proof.get("expected_mode_rows")
+                and all(e.get("reducer_backend","gpu")==expected_mode_backend for e in modes),
             "phase58_no_saved_trip_results": trip_proof.get("result_replay_enabled") is False,
         })
     if args.native_skim_store:
@@ -4521,14 +4539,26 @@ def main() -> int:
             "phase59_live_mandatory_outputs_match_external_oracle",
         )
         report["proof_gates"] = {name:report["fixed_benchmark_proof_gates"][name] for name in required}
-        report["proof_gates"]["phase59_all_current_trip_modes_reduced_on_device"] = (
+        report["proof_gates"]["phase64_all_current_trip_modes_reduced_by_cpu_control" if phase64_cpu_modes else
+                              "phase59_all_current_trip_modes_reduced_on_device"] = (
             sum(e["rows"] for e in report["phase58_trip_runtime"]["mode_events"])
-            == report["phase58_trip_runtime"]["expected_mode_rows"])
+            == report["phase58_trip_runtime"]["expected_mode_rows"] and
+            all(e.get("reducer_backend","gpu")==expected_mode_backend for e in report["phase58_trip_runtime"]["mode_events"]))
         report["proof_gates"]["phase59_all_current_mandatory_batches_have_live_logsums"] = (
             report["integrated_batches"] == len(native_manifests) == len(phase57_live_events))
         if args.phase59_sparse_matrices:
             report["proof_gates"]["phase59_all_115_matrices_written"] = report["fixed_benchmark_proof_gates"]["phase59_all_115_matrices_written"]
         report["qualification_scope"] = "changed scenario: live contracts plus independent output oracle; original fixed-benchmark audit retained separately"
+    if "location_boundary" in args.phase64_features.split(","):
+        boundary=report["phase64_pipeline"]["location_boundary"]
+        events=boundary["events"]
+        report["proof_gates"]["phase64_live_destination_boundary_complete"] = (
+            bool(events) and boundary["contexts_outstanding"]==0
+            and all(e["complete"] for e in events))
+        report["proof_gates"]["phase64_destination_boundary_rng_unchanged"] = (
+            bool(events) and all(e["rng_unchanged"] for e in events))
+        report["proof_gates"]["phase64_no_saved_destination_boundary_answers"] = (
+            not boundary["saved_answers_read"] and all(not e["saved_answers_read"] for e in events))
     args.report.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     resident_ok = (

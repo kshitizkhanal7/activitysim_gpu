@@ -54,6 +54,8 @@ def main():
     parser.add_argument("--phase62-features", default="plans,trip,entities")
     parser.add_argument("--phase63", action="store_true", help="Compare Phase 62 with durable preparation candidate")
     parser.add_argument("--phase63-features", default="plans,files")
+    parser.add_argument("--phase64", action="store_true", help="Compare Phase 63 with pipeline candidate")
+    parser.add_argument("--phase64-features", default="expressions,inputs,location_boundary")
     parser.add_argument("--phase61-features", default="skims,timetable,tour_modes,entities,normals,uniforms,labels,packing")
     parser.add_argument("--phase61-capture-inputs", type=Path)
     parser.add_argument("--phase61-worker-wait-policy",choices=("default","PASSIVE"),default="PASSIVE")
@@ -72,6 +74,8 @@ def main():
     parser.add_argument("--sparse-matrices", action="store_true")
     parser.add_argument("--capture-mode-inputs", type=Path)
     args = parser.parse_args()
+    if args.phase64:
+        args.phase63 = True
     if args.phase63:
         args.phase62 = True
     if args.phase62:
@@ -206,6 +210,11 @@ def main():
                         command += ["--phase62-features",args.phase62_features]
                     if mode == "candidate":
                         command += ["--phase63-features",args.phase63_features]
+                if args.phase64:
+                    if mode == "gpu":
+                        command += ["--phase63-features",args.phase63_features]
+                    if mode == "candidate":
+                        command += ["--phase64-features",args.phase64_features]
                 cwd = ROOT
             fingerprint = source_fingerprint()
             config_hashes = config_fingerprint(args.scenario_overlay)

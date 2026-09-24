@@ -21,3 +21,8 @@ integration/activitysim-phase63.patch -text
 benchmark-results/phase63*.json -text
 benchmark-results/phase63*.xml -text
 benchmark-results/phase58-p63*.json -text
+benchmark-results/phase64*.json -text
+benchmark-results/phase64*.xml -text
+benchmark-results/phase58-p64*.json -text
+benchmark-results/phase64*.log -text
+benchmark-results/phase64-*-location/* -text

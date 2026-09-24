@@ -1,0 +1,446 @@
+{
+  "complete": true,
+  "checks": [
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-00.npz",
+      "rows": 7887,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-01.npz",
+      "rows": 16703,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-02.npz",
+      "rows": 16514,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-03.npz",
+      "rows": 11427,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-04.npz",
+      "rows": 21833,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-05.npz",
+      "rows": 20709,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-06.npz",
+      "rows": 5256,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-07.npz",
+      "rows": 3919,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-inputs\\tour_modes\\batch-08.npz",
+      "rows": 56231,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-00.npz",
+      "rows": 34611,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-01.npz",
+      "rows": 17916,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-02.npz",
+      "rows": 39691,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-03.npz",
+      "rows": 42042,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-04.npz",
+      "rows": 28975,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.3322676295501878e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-05.npz",
+      "rows": 53011,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-06.npz",
+      "rows": 55445,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-07.npz",
+      "rows": 12579,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 8.881784197001252e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-08.npz",
+      "rows": 9863,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 4.440892098500626e-16
+    },
+    {
+      "input": "benchmark-data\\phase64-live-trip-inputs\\batch-09.npz",
+      "rows": 148549,
+      "guarded_rows": 0,
+      "off_boundary_choices_exact": true,
+      "logsums_rtol": 1e-12,
+      "logsums_atol": 1e-12,
+      "cpu_max_logsum_error": 0.0,
+      "gpu_max_logsum_error": 1.7763568394002505e-15
+    }
+  ],
+  "batches": 19,
+  "rows": 603161,
+  "preparation_validation_seconds": 4.702685999989626,
+  "sweep": [
+    {
+      "threads": 1,
+      "samples_seconds": {
+        "cpu": [
+          0.3417371999967145,
+          0.345799699993222,
+          0.33805210000718944,
+          0.33990419999463484,
+          0.34971260000020266,
+          0.3451528000005055,
+          0.3511073999979999,
+          0.33814320000237785,
+          0.3363416999927722
+        ],
+        "gpu_transfer_inclusive": [
+          0.02481759998772759,
+          0.024657900008605793,
+          0.024580400000559166,
+          0.02367880000383593,
+          0.025059399995370768,
+          0.02392050001071766,
+          0.047270800001570024,
+          0.04707749999943189,
+          0.03195179998874664
+        ],
+        "gpu_resident": [
+          0.015596400000504218,
+          0.01584369999181945,
+          0.01591770000231918,
+          0.015619300000253133,
+          0.015605499997036532,
+          0.015595599994412623,
+          0.03168720001121983,
+          0.03050930000608787,
+          0.023361200001090765
+        ]
+      },
+      "medians_seconds": {
+        "cpu": 0.3417371999967145,
+        "gpu_transfer_inclusive": 0.02481759998772759,
+        "gpu_resident": 0.01584369999181945
+      }
+    },
+    {
+      "threads": 4,
+      "samples_seconds": {
+        "cpu": [
+          0.1485065000015311,
+          0.15429910000239033,
+          0.14990129999932833,
+          0.1482805000123335,
+          0.14613789999566507,
+          0.148611600001459,
+          0.14763150000362657,
+          0.15141969999240246,
+          0.14978220000921283
+        ],
+        "gpu_transfer_inclusive": [
+          0.03195810000761412,
+          0.031133299999055453,
+          0.02968669999972917,
+          0.030442199989920482,
+          0.0462680999917211,
+          0.0466113000002224,
+          0.04932729998836294,
+          0.04775689999223687,
+          0.046805400008452125
+        ],
+        "gpu_resident": [
+          0.022224200001801364,
+          0.02268539999204222,
+          0.021462099990458228,
+          0.02046919999702368,
+          0.03296080000291113,
+          0.03569170000264421,
+          0.03228780000063125,
+          0.02766209999390412,
+          0.03260809999483172
+        ]
+      },
+      "medians_seconds": {
+        "cpu": 0.148611600001459,
+        "gpu_transfer_inclusive": 0.0462680999917211,
+        "gpu_resident": 0.02766209999390412
+      }
+    },
+    {
+      "threads": 12,
+      "samples_seconds": {
+        "cpu": [
+          0.05608090000168886,
+          0.055331800002022646,
+          0.05560720000357833,
+          0.05615470001066569,
+          0.05561389999638777,
+          0.055871999997179955,
+          0.05580109999573324,
+          0.05638399999588728,
+          0.05597269999270793
+        ],
+        "gpu_transfer_inclusive": [
+          0.04669530001410749,
+          0.03690849999838974,
+          0.028395300003467128,
+          0.0292704000021331,
+          0.03215739999723155,
+          0.030897699994966388,
+          0.0317153999931179,
+          0.031199899996863678,
+          0.02876260000630282
+        ],
+        "gpu_resident": [
+          0.025920400003087707,
+          0.025107800000114366,
+          0.01871190000383649,
+          0.019496099994285032,
+          0.021151900000404567,
+          0.020913599990308285,
+          0.020852999994531274,
+          0.020005400001537055,
+          0.01938890000747051
+        ]
+      },
+      "medians_seconds": {
+        "cpu": 0.055871999997179955,
+        "gpu_transfer_inclusive": 0.031199899996863678,
+        "gpu_resident": 0.020852999994531274
+      }
+    },
+    {
+      "threads": 24,
+      "samples_seconds": {
+        "cpu": [
+          0.03539970000565518,
+          0.03439030000299681,
+          0.034376800002064556,
+          0.03558470000280067,
+          0.035393500002101064,
+          0.035182899999199435,
+          0.034848000010242686,
+          0.03507759999774862,
+          0.03412609999941196
+        ],
+        "gpu_transfer_inclusive": [
+          0.027263199997833,
+          0.02671649999683723,
+          0.02770520000194665,
+          0.02602800000749994,
+          0.026726800002506934,
+          0.02586680000240449,
+          0.027757000003475696,
+          0.026266600005328655,
+          0.026909400010481477
+        ],
+        "gpu_resident": [
+          0.0182591000047978,
+          0.018056600005365908,
+          0.01830500000505708,
+          0.01786819999688305,
+          0.01754659999278374,
+          0.0175333000079263,
+          0.017725800003972836,
+          0.01785329999984242,
+          0.01846030000888277
+        ]
+      },
+      "medians_seconds": {
+        "cpu": 0.03507759999774862,
+        "gpu_transfer_inclusive": 0.026726800002506934,
+        "gpu_resident": 0.01786819999688305
+      }
+    },
+    {
+      "threads": 48,
+      "samples_seconds": {
+        "cpu": [
+          0.02393819999997504,
+          0.027682999992975965,
+          0.023498900001868606,
+          0.02547449999838136,
+          0.022614200002863072,
+          0.022759799991035834,
+          0.022233900002902374,
+          0.02275519999966491,
+          0.022309499996481463
+        ],
+        "gpu_transfer_inclusive": [
+          0.02799139999842737,
+          0.02533009999024216,
+          0.02524410000478383,
+          0.02457219999632798,
+          0.02501470000424888,
+          0.024003099999390543,
+          0.02425670000957325,
+          0.02402549999533221,
+          0.024413999999524094
+        ],
+        "gpu_resident": [
+          0.018062000002828427,
+          0.017706800004816614,
+          0.01596119999885559,
+          0.01599960000021383,
+          0.015943100006552413,
+          0.015962899997248314,
+          0.016051999991759658,
+          0.016305900004226714,
+          0.014506499996059574
+        ]
+      },
+      "medians_seconds": {
+        "cpu": 0.022759799991035834,
+        "gpu_transfer_inclusive": 0.02457219999632798,
+        "gpu_resident": 0.01599960000021383
+      }
+    }
+  ],
+  "best_cpu_threads": 48,
+  "cpu_over_gpu_transfer_inclusive": 0.926241850320159,
+  "cpu_over_gpu_resident": 1.4225230624972909,
+  "scope": "Nested reduction only; same float32 utilities, float64 draws/arithmetic, no fastmath. Host-start controls include GPU uploads/downloads; resident control starts and ends on GPU. Allocations included. Excludes utility evaluation, RNG and live boundary adjudication equally.",
+  "qualified_boundary_policy": "Union of CPU/GPU 1e-9 guards excluded from exact primitive choices; production still adjudicates boundaries live. Both checked against independent upstream nested probabilities.",
+  "not_full_model_speedup": true,
+  "wait_policy": "PASSIVE",
+  "evidence_sha256": {
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-00.npz": "c776622b22c5ce4ac9ec6c01b153a4d8d0bec9b07e9fd0e8ed3c8008b16808b0",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-01.npz": "a9d18a8a650d78e62c62ec152b59cfdd9c64649c88f070cb3daf517135c4a259",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-02.npz": "46c905b2ab81494c002e2303b69dcc5b6651c11465c97e70a6d759a412dd8e28",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-03.npz": "405d4364ca45a49be0b291bacff987465f4fcb32c0bcc7e1f8e84aeb257159e6",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-04.npz": "970e0ce14bf5296798c14d0ff57c588e00a0f3e7fc0bf8dc9d26878c97cf36b0",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-05.npz": "d9a8d4801c086f54d6d3c212bbf2ab6b19698a106c81f96ada3ad2419aa6efcf",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-06.npz": "558a70468128cdca992a408458d73cdb024d406a2afa71c3715a79ca1d121b3e",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-07.npz": "7f42863da885437e1404e68ac17a48921352fd864fc98b93a57c25c616623ca7",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-inputs\\tour_modes\\batch-08.npz": "ef1cd01641d507ba0ceece10f83ce6f0444fc45323a274cc44ee1fb3e4a1676f",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-00.npz": "dfb56bcdc3c6b6234e61a7bad6bfe09e5d9440c8567e240dc40f6d65b34e666c",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-01.npz": "db9f0081d17c68bd97ef0dbcdda9b3d7dbe6b21ef2b67bf3a152ef4524e45ddf",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-02.npz": "d05fb04562872d305b12329ec02a4ff8908a5a3b7e4d7962f4f527d3da75ddef",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-03.npz": "c0e99b0985b5d88097c9e35a0a8ba2bd6fa4d8bf1e3c89d57f21585167f8409b",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-04.npz": "8b955bf7e9fbc538131d54c70f46b4e2dbe7fda6d664d435d4fbf2ca14ab72d5",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-05.npz": "6ff647009bbf81a4ce6b44ea8966dbb112b04bc94746064f59242ec5591cc9d1",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-06.npz": "b3bf56ac2516e2b75f1fabb9c334dcd3c079c1fdb58c837c2ca89458554e7762",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-07.npz": "a4c4b49189d9e03210a20c799499bd16bd4f6dc4d08d0eea7857d7b14d6d2939",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-08.npz": "198731450eb3d17f551e265161e3f256c1b973e254cbec4f4f698fba9733a004",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\benchmark-data\\phase64-live-trip-inputs\\batch-09.npz": "f7787c3f631f20dd929730110131c8b108b838dc5db0b822687adcda0abf7067",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\scripts\\benchmark_phase64_modes.py": "10498b8f948cbd01fd93cf1e755e5b6aeb57363410c1ee37eb100b3364725670",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase58_mode_reduction.py": "c9386efb4dc3c5b1758a4aacbb9c6694a80ba3c346a6ef4e09cbe80f9e382110",
+    "C:\\Users\\kkhanal2\\Documents\\ChatGPT\\GPU-kernel-travel-demand-modeling\\src\\choiceforge\\phase59_cpu_algorithms.py": "076553a01812472b2901d30fe38bae15517adceff835172a36b9211131d80fbf"
+  }
+}

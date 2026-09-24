@@ -159,6 +159,8 @@ def mode_choice_simulate(runtime, state, choosers, spec, nest_spec, skims, local
     if logsum_column_name is not None:
         result[logsum_column_name] = host_logsums
     t = generated.telemetry
+    cpu_control = globals().get("_cpu_reducer_control")
+    reduction_transfer = cpu_control.mode_events[-1] if cpu_control is not None else None
     _write_report({"phase": 58, "component": getattr(runtime,"mode_component","trip_mode_choice"), "trace_label": trace_label,
         "rows": len(choosers), "terms": t.terms, "alternatives": t.alternatives,
         "candidate_used": True, "fallback_used": False, "expression_dtype": t.expression_dtype,
@@ -166,10 +168,15 @@ def mode_choice_simulate(runtime, state, choosers, spec, nest_spec, skims, local
         "plan_build_ms": t.plan_build_ms, "ir_cache_hit": ir_hit, "ir_compile_ms": ir_ms,
         "binding_resolve_ms": t.binding_resolve_ms, "host_pack_ms": t.host_pack_ms,
         "input_upload_ms": t.input_upload_ms, "kernel_ms": t.kernel_ms,
-        "utility_download_ms": 0., "elapsed_ms": (time.perf_counter()-started)*1000,
+        "utility_download_ms": reduction_transfer["download_seconds"]*1000 if reduction_transfer else 0.,
+        "reducer_backend": "cpu_ablation" if reduction_transfer else "gpu",
+        "elapsed_ms": (time.perf_counter()-started)*1000,
         "cache_key": t.cache_key, "source_sha256": t.source_sha256,
         "live_boundary_guard_rows": len(risk_rows)})
     runtime.mode_events.append({"rows": len(choosers), "guard_rows": len(risk_rows),
-        "dense_utility_download_bytes_avoided": int(generated.utilities.nbytes),
+        "dense_utility_download_bytes_avoided": 0 if reduction_transfer else int(generated.utilities.nbytes),
+        "reducer_backend": "cpu_ablation" if reduction_transfer else "gpu",
+        "reducer_device_to_host_bytes": reduction_transfer["device_to_host_bytes"] if reduction_transfer else 0,
+        "reducer_host_to_device_bytes": reduction_transfer["host_to_device_bytes"] if reduction_transfer else 0,
         "seconds": time.perf_counter()-started})
     return result

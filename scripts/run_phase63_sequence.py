@@ -56,6 +56,7 @@ def main():
     parser.add_argument("--trial",type=int,default=0)
     parser.add_argument("--position",type=int,default=0)
     parser.add_argument("--features",default="plans,files,rss")
+    parser.add_argument("--phase64-features",default="")
     parser.add_argument("--template",type=Path,help="Optional development override; default is the portable explicit command")
     parser.add_argument("--reference-map",type=Path)
     parser.add_argument("--worker-script",type=Path,default=ROOT/"scripts/phase62_batch_worker.py")
@@ -69,7 +70,7 @@ def main():
     sequence = args.sequence.split(",")
     if not sequence or not set(sequence)<=set(cases):
         raise ValueError("Unknown scenario")
-    prefix = "phase63-"+args.tag
+    prefix = ("phase64-" if args.phase64_features else "phase63-")+args.tag
     target = RESULTS/f"{prefix}.json"
     if target.exists():
         raise FileExistsError(target)
@@ -102,6 +103,11 @@ def main():
         if args.mode=="candidate":
             command = list(template["command"]) if template else candidate_command(output,reference,report,kernels,
                 RESULTS/f"{prefix}-{name}-checkpoint.json",households,overlay,args.features)
+            if args.phase64_features:
+                if "--phase64-features" in command:
+                    command[command.index("--phase64-features")+1]=args.phase64_features
+                else:
+                    command += ["--phase64-features",args.phase64_features]
             for flag,value in (("--output",output),("--report",report),("--kernel-reports",kernels),
                                ("--checkpoint",RESULTS/f"{prefix}-{name}-checkpoint.json"),
                                ("--reference-pipeline",reference/"pipeline.parquetpipeline"),
@@ -137,7 +143,8 @@ def main():
             manifest = RESULTS/f"{prefix}-manifest-{index}.json"
             result = RESULTS/f"{prefix}-worker-{index}.json"
             manifest.write_text(json.dumps(dict(runs=group,result=str(result),mode=args.mode,
-                skim_cache="none",data_sha256=data,phase63_features=args.features),indent=2)+"\n")
+                skim_cache="none",data_sha256=data,phase63_features=args.features,
+                phase64_features=args.phase64_features),indent=2)+"\n")
             started = time.perf_counter()
             subprocess.run([str(PYTHON),str(worker_script),str(manifest)],
                            cwd=ROOT,env=env,stdout=stdout,stderr=stderr,check=True,
@@ -169,6 +176,7 @@ def main():
             if not all(proof["proof_gates"].values()) or not proof["phase63_durable_execution"]["enabled"]:
                 raise ValueError("Candidate proof failed")
     result = dict(complete=True,mode=args.mode,execution=args.execution,sequence=sequence,features=args.features,
+                  phase64_features=args.phase64_features,
                   series_trial=args.trial,series_position=args.position,started_at_ns=started_at_ns,
                   batch_process_wall_seconds=sum(process_times),process_wall_seconds=process_times,
                   runs=runs,workers=workers,source_sha256=source,configuration_sha256=configs,

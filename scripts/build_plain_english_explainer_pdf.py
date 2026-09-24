@@ -304,26 +304,25 @@ def draw_body(canvas, doc):
 
 
 def cover_story():
-    latest = json.loads((ROOT / "benchmark-results/phase63-complete-comparison.json").read_text())
-    batches = json.loads((ROOT / "benchmark-results/phase63-sequence-qualification.json").read_text())
-    allowed = {base+target for base in ("replicated_improvement", "outputs_qualified_performance_not_replicated")
-               for target in ("_target_met", "_target_not_met")}
-    if latest["status"] not in allowed or batches["status"] != "outputs_qualified":
-        raise ValueError("The explainer cover requires completed Phase 63 fresh and batch qualification")
-    previous = latest["medians"]["phase62"]["process_wall_seconds"]
-    wall = latest["medians"]["phase63"]["process_wall_seconds"]
-    cpu = latest["medians"]["regular48"]["process_wall_seconds"]
+    evidence = json.loads((ROOT / "benchmark-results/phase64-complete-comparison.json").read_text())
+    latest = evidence["campaign"]
+    if evidence["status"] != "outputs_memory_controls_qualified" or latest["status"] != "outputs_and_memory_qualified":
+        raise ValueError("The explainer cover requires completed Phase 64 output and memory qualification")
+    previous = latest["medians_seconds"]["phase63"]
+    wall = latest["medians_seconds"]["phase64"]
+    cpu = latest["medians_seconds"]["ordinary_cpu"]
+    large = next(r for r in evidence["scale"] if r["households"] == 250000)
     metrics = Table(
         [
             [
-                Paragraph(f'{latest["cpu_over_phase63"]:.2f}x', STYLES["metric_num"]),
+                Paragraph(f'{latest["ordinary_cpu_over_hybrid"]:.2f}x', STYLES["metric_num"]),
                 Paragraph(f"{wall:.1f} s", STYLES["metric_num"]),
-                Paragraph("0", STYLES["metric_num"]),
+                Paragraph("250k", STYLES["metric_num"]),
             ],
             [
                 Paragraph("complete-system ratio<br/>ordinary CPU / hybrid", STYLES["metric_label"]),
                 Paragraph("launch-to-exit<br/>median seconds", STYLES["metric_label"]),
-                Paragraph("disagreements in<br/>checked choices", STYLES["metric_label"]),
+                Paragraph("households in complete<br/>larger-model validation", STYLES["metric_label"]),
             ],
         ],
         colWidths=[2.08 * inch] * 3,
@@ -360,17 +359,17 @@ def cover_story():
         metrics,
         Spacer(1, 0.25 * inch),
         Paragraph(
-            f"Latest evidence, Phase 63: six balanced old/new pairs on the public 50,000-household model reduce launch-to-exit medians from {previous:.2f} to {wall:.2f} seconds. "
+            f"Latest evidence, Phase 64: six balanced old/new pairs on the public 50,000-household model give launch-to-exit medians of {previous:.2f} and {wall:.2f} seconds. "
             + ("Every pair improves both clocks. " if latest["all_pairs_faster"] else "Not every pair improves both clocks; repeated superiority is not established. ")
-            + ("The under-70-second median target is met. " if latest["median_wall_under_70"] else "The under-70-second median target is NOT met. ")
-            + f"Ordinary CPU takes {cpu:.2f} seconds. Giving CPU the same new preparation options still leaves a {latest['matched_preparation_default_fresh']['cpu_over_hybrid']:.2f}x hybrid advantage in a separate fresh-worker comparison. "
-            + "All 94 measured models pass their output checks, including changed seeds, coefficients and household counts. Checked decisions, matrices and report values agree under the documented formatting and diagnostic-score contracts. "
-            + f"Ten-scenario persistent totals are {batches['medians']['candidate_batch']:.2f} seconds hybrid and {batches['medians']['regular_batch']:.2f} seconds CPU. These mixed-size batch totals are not single-run times. "
-            "Phase 63 safely reuses preparation and fixes retained GPU arrays. Live CPU checks remain. A clean same-machine rebuild downloads public inputs and pins 98 libraries; this is not independent hardware replication. The gains include CPU and file-writing improvements, not only GPU arithmetic.",
+            + ("The under-70-second median target is met. " if latest["under_70"] else "The under-70-second median target is NOT met. ")
+            + f"Ordinary CPU takes {cpu:.2f} seconds. Giving CPU the same preparation options leaves a {latest['matched_fresh']['cpu_over_hybrid']:.2f}x hybrid advantage in a separate fresh-worker comparison. "
+            + "The qualified campaign includes 42 complete models with exact checked decisions, matrices and reports. Two earlier CPU controls were excluded and repeated because their thread-wait setting was unspecified. "
+            + f"A corrected complete 250,000-household repeat finishes in {large['process_wall_seconds']:.2f} seconds against a retained independent CPU reference; that is scale evidence, not a newly paired CPU ratio. "
+            + "An earlier workplace rounding mismatch motivated a stronger live CPU safeguard. This remains a hybrid: the mode-reducer control does not show a whole-model GPU win, and transfers erase its small resident advantage. The evidence is from one pinned workstation, not independent hardware replication.",
             STYLES["small"],
         ),
         Spacer(1, 0.9 * inch),
-        Paragraph("ChoiceForge project | Phase 63 completed September 21, 2026", STYLES["small"]),
+        Paragraph("ChoiceForge project | Phase 64 evidence and limits | September 2026", STYLES["small"]),
         PageBreak(),
     ]
 
@@ -461,6 +460,9 @@ def markdown_story(text: str):
                 or stripped.startswith("## 344. What are the final Phase 63")
                 or stripped.startswith("## 345. What happens when a planner")
                 or stripped.startswith("## 346. What remains unproven")
+                or stripped.startswith("## 347. Phase 64")
+                or stripped.startswith("## 353. What are the final Phase 64")
+                or stripped.startswith("## 354. What does this change")
             ):
                 story.append(PageBreak())
             story.append(Paragraph(inline_markup(stripped[3:]), STYLES["h2"]))

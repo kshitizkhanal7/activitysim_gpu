@@ -566,6 +566,10 @@ def sample_destinations_resident(
     work_high_segment_id=3, service=None,
 ):
     """Return ActivitySim's exact narrow sample for one reviewed segment."""
+    boundary_observer = globals().get("_phase64_sampling_observer")
+    if boundary_observer is not None:
+        boundary_observer(dict(state=state,choosers=choosers,alternatives=alternatives,spec=spec,
+            locals_d=locals_d,trace_label=trace_label,zone_layer=zone_layer,compute_settings=compute_settings))
     started = time.perf_counter()
     if sample_size <= 0 or sample_size > 32 or len(spec.columns) != 1:
         raise Phase45Unsupported("resident sampler requires 1..32 draws and one coefficient column")

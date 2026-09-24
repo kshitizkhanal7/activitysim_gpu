@@ -270,10 +270,14 @@ def main():
             sys.argv = command
             from activitysim.cli.main import main as activitysim_main
             preparation = None
+            pipeline_preparation = None
             if manifest.get("phase63_features"):
                 from choiceforge.phase63_runtime import Runtime
                 preparation = Runtime(manifest["phase63_features"])
-            with preparation.cpu_steps() if preparation else nullcontext():
+            if manifest.get("phase64_features"):
+                from choiceforge.phase64_runtime import Runtime as PipelineRuntime
+                pipeline_preparation = PipelineRuntime(manifest["phase64_features"])
+            with (preparation.cpu_steps() if preparation else nullcontext()), (pipeline_preparation.cpu_steps() if pipeline_preparation else nullcontext()):
                 try:
                     activitysim_main()
                 except SystemExit as exc:
@@ -295,6 +299,8 @@ def main():
             runs[-1].update(memory_before=memory_before,memory_after=memory_snapshot(manifest.get("mode")=="candidate"),
                 rss_sampling=sampler.finish(),
                 cpu_preparation=preparation.summary() if item["mode"] != "candidate" else None)
+            if manifest.get("phase64_features"):
+                runs[-1]["cpu_pipeline_preparation"] = pipeline_preparation.summary() if item["mode"] != "candidate" else None
         # Close output handlers before the next model configures its own log.
         logging.shutdown()
         Path(manifest["result"]).write_text(json.dumps({"complete":False,"runs":runs},indent=2)+"\n")
